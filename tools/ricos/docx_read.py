@@ -224,12 +224,20 @@ def _blip_ids(p):
 def _figure(rel_id, rels, z):
     """One picture, measured from the file Word stored rather than from the XML.
 
-    The two ways this can come up short stay apart, because they are different
+    The ways this can come up short stay apart, because they are different
     faults and get counted separately. An empty filename means the paragraph
     pointed at a relationship the document never declares, so there is no file to
-    go and get. A filename with zero width and height means the part is there but
-    could not be measured — which still belongs on the page, since a picture
-    Pillow cannot open is no reason to stop reading the document.
+    go and get.
+
+    A filename with zero width and height means one of two things, and this
+    function cannot tell them apart. Either the part is there and Pillow could
+    not open it, or there is no part: the target is resolved exactly as Word
+    wrote it, so a relationship carrying `TargetMode="External"`, or pointing
+    somewhere other than `word/media/`, still yields its basename and measures
+    as nothing. Both belong on the page — a picture that cannot be measured is
+    no reason to stop reading the document — and what separates them is whether
+    the name is among the files copied out of the package, which only the CLI
+    knows; `missing_media` in the manifest is where it says so.
     """
     target = rels.get(rel_id, "")
     if not target:

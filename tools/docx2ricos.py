@@ -71,8 +71,46 @@ OK, WARNINGS, FAILED = 0, 1, 2
 
 
 def slugify(name):
+    """The output directory name for one source file.
+
+    Raises ValueError when nothing is left of it. Only `[a-z0-9]` survives the
+    substitution, so a stem written entirely outside ASCII - "SGU.docx" with
+    Turkish letters, an ordinary name here - reduces to "". `os.path.join(OUT,
+    "")` is OUT itself, and `convert` empties that directory before it writes:
+    an empty slug deletes the whole output tree, the documents already
+    converted earlier in the same run included, and then drops part-01.json in
+    the root beside the per-document directories. There is no safe answer but
+    to refuse, and `main` reports the file like any other that will not convert.
+    """
     base = os.path.splitext(os.path.basename(name))[0]
-    return re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")
+    slug = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")
+    if not slug:
+        raise ValueError(
+            "the file name leaves no output directory name behind - nothing in "
+            "it is an ASCII letter or digit. Rename the file to convert it")
+    return slug
+
+
+def colliding_slugs(paths):
+    """{slug: [path, ...]} for the slugs more than one of these paths claims.
+
+    "A B.docx" and "A-B.docx" reduce to the same directory name, and `convert`
+    empties that directory before it writes, so the second document would
+    delete the first one's parts halfway through the run and nothing would say
+    so. The whole command line is checked before anything is written, because
+    by the time the second file is reached the damage is already done.
+
+    A name with no slug at all is left out rather than grouped under "":
+    `slugify` refuses it, and the run reports that file on its own.
+    """
+    by_slug = {}
+    for path in paths:
+        try:
+            slug = slugify(path)
+        except ValueError:
+            continue
+        by_slug.setdefault(slug, []).append(path)
+    return {slug: names for slug, names in by_slug.items() if len(names) > 1}
 
 
 def _n(count, noun):
@@ -199,10 +237,18 @@ def convert(path):
     fewer parts than the one before, or a document whose pictures came back from
     Word under new names, would otherwise leave the old files sitting beside the
     new ones with nothing to say which is which.
+
+    The clearing is allowed to fail. `ignore_errors=True` silenced exactly the
+    case the clearing exists for: one part file held open by an editor, an
+    indexer or a virus scanner - routine on Windows - and the stale file
+    survives into a directory the next phase will publish, with `makedirs`
+    carrying on as though the directory had been emptied. Better the document
+    is reported as not converted.
     """
     slug = slugify(path)
     out_dir = os.path.join(OUT, slug)
-    shutil.rmtree(out_dir, ignore_errors=True)
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
     blocks = read_blocks(path)
@@ -230,6 +276,11 @@ def convert(path):
                      "caption": f.caption} for f in figures],
         "media_files": sorted(media),
         "unreferenced_media": sorted(set(media) - referenced),
+        # Both directions, because they fail differently. A stored picture
+        # nothing points at is spare weight; a part pointing at a name
+        # `figures/` does not hold is a hole on the published page, and it is
+        # the direction the upload step breaks on.
+        "missing_media": sorted(referenced - set(media)),
         "counts": {
             "blocks": len(blocks),
             "figures": len(figures),
@@ -254,10 +305,11 @@ def convert(path):
 def warnings_for(manifest):
     """What this document has to report about itself, as lines to print.
 
-    All but the first are findings about the document, and each line says whose
-    decision made it so. The first is the exception and the only one here that
-    would mean the converter lost something; it does not fire on this corpus,
-    and if it ever does the fix belongs in the reader.
+    All but the first two are findings about the document, and each line says
+    whose decision made it so. The first two are the exceptions and the only
+    ones here that would mean a part cannot be published as written; neither
+    fires on this corpus, and if either does the fix belongs upstream of the
+    manifest rather than in the document.
     """
     c = manifest["counts"]
     src = manifest["source"]
@@ -268,6 +320,14 @@ def warnings_for(manifest):
             f"with no picture, against {c['figures']} figures - the two do not add up, "
             f"so pictures are being lost or invented on the way through. This one is a "
             f"defect in the reader, not in the document")
+    if manifest["missing_media"]:
+        names = ", ".join(manifest["missing_media"])
+        out.append(
+            f"{src}: {_n(len(manifest['missing_media']), 'figure')} naming a file "
+            f"figures/ does not hold ({names}) - the relationship resolves to a "
+            f"target outside word/media/, or to an external one, so the name went "
+            f"into the part and no file went with it. There is nothing for the "
+            f"upload to send and the picture would be a hole on the page")
     if c["drawings_without_picture"]:
         kinds = ", ".join(f"{n} {kind}" for kind, n
                           in sorted(c["drawings_without_picture_kinds"].items()))
@@ -323,6 +383,15 @@ def main(argv):
     paths = argv or sorted(glob.glob(os.path.join(SOURCE, "*.docx")))
     if not paths:
         print(f"no .docx files in {SOURCE}")
+        return FAILED
+    clashes = colliding_slugs(paths)
+    if clashes:
+        print("not converted - these are errors in the conversion:")
+        for slug, names in sorted(clashes.items()):
+            files = ", ".join(os.path.basename(n) for n in names)
+            print(f" x {files}: all convert to build/ricos/{slug}/, and each one "
+                  f"empties that directory before it writes, so only the last "
+                  f"would survive. Rename one of them")
         return FAILED
     print(f"{'document':46s} {'parts':>5s} {'largest':>9s} {'figs':>5s} {'nocap':>5s} "
           f"{'tbl':>4s} {'call':>5s}")

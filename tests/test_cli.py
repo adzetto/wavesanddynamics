@@ -18,6 +18,7 @@ one. A test that only asserted "non-zero" would not know the difference either.
 """
 import json
 
+import pytest
 from conftest import picture, shape
 
 from tools import docx2ricos
@@ -25,6 +26,7 @@ from tools.docx2ricos import (
     FAILED,
     OK,
     WARNINGS,
+    colliding_slugs,
     convert,
     drawing_counts,
     figures_in,
@@ -69,13 +71,38 @@ def _manifest(**counts):
     if base["drawings_without_picture"] and not base["drawings_without_picture_kinds"]:
         base["drawings_without_picture_kinds"] = {"shape": base["drawings_without_picture"]}
     return {"source": "D.docx", "slug": "d", "unreferenced_media": [],
-            "records": [], "counts": base}
+            "missing_media": [], "records": [], "counts": base}
 
 
 def test_slugify_reduces_a_filename_to_a_folder_name():
     assert (slugify("content/source/Brochure - SHM and NDT - 2 pages.docx")
             == "brochure-shm-and-ndt-2-pages")
     assert slugify("/x/From_Bridges_to_Photons.docx") == "from-bridges-to-photons"
+
+
+def test_a_name_with_nothing_ascii_in_it_is_refused():
+    """The empty slug is the destructive one, and the name is not a contrivance.
+
+    `os.path.join(OUT, "")` is OUT itself, so `convert` would empty the whole
+    output tree - every document converted earlier in the same run included -
+    and then write part-01.json into the root beside the directories.
+    """
+    with pytest.raises(ValueError):
+        slugify("ŞĞÜ.docx")
+    with pytest.raises(ValueError):
+        slugify("____.docx")
+
+
+def test_two_names_that_share_a_slug_are_found_before_anything_is_written():
+    """"A B.docx" and "A-B.docx" claim one directory, and the directory is
+    emptied before it is written, so the first document's parts would be gone
+    by the time anyone could notice. A name with no slug at all is left to
+    `slugify` to refuse rather than grouped under "".
+    """
+    assert colliding_slugs(["/x/A B.docx", "/y/A-B.docx", "/z/C.docx"]) == {
+        "a-b": ["/x/A B.docx", "/y/A-B.docx"]}
+    assert colliding_slugs(["/x/A.docx", "/y/B.docx"]) == {}
+    assert colliding_slugs(["/x/ŞĞÜ.docx", "/y/ÇÖİ.docx"]) == {}
 
 
 def test_figures_in_finds_the_pictures_inside_tables_and_asides():
@@ -218,6 +245,22 @@ def test_a_figure_pointing_at_no_relationship_is_reported():
     assert "no file to publish" in line
 
 
+def test_a_figure_whose_file_never_reached_the_directory_is_reported():
+    """The direction that breaks the upload, and the one nothing checked.
+
+    `_figure` resolves whatever target the relationship names, `TargetMode=
+    "External"` and anything outside `word/media/` included, and hands back its
+    basename - which the emitter writes into `src.id`. `save_media` copies only
+    what is under `word/media/`, so the part names a picture `figures/` does
+    not hold. Empty on this corpus, and reachable the first time a picture is
+    linked instead of embedded.
+    """
+    m = _manifest(figures=1, media_in_zip=0)
+    m["missing_media"] = ["linked.png"]
+    (line,) = warnings_for(m)
+    assert "linked.png" in line and "figures/ does not hold" in line
+
+
 def test_a_document_with_no_heading_at_all_is_one_untitled_section():
     """The Brochure and From Bridges to Photons: no Heading1 anywhere."""
     (line,) = warnings_for(_manifest(headings=0, untitled_preamble_bytes=18_627))
@@ -282,6 +325,57 @@ def test_convert_clears_what_an_earlier_run_left_behind(
     assert not (out / "part-09.json").exists()
     assert not (out / "figures" / "renamed-since.png").exists()
     assert (out / "part-01.json").exists()
+
+
+def test_a_directory_that_will_not_clear_is_not_written_into(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    """One part file held open - an editor, an indexer, a virus scanner, all
+    routine on Windows - used to be swallowed: the clearing failed, `makedirs`
+    carried on, and the stale part survived into the published directory. The
+    document is reported as not converted instead.
+    """
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    (tmp_path / "ricos" / "doc").mkdir(parents=True)
+
+    def held_open(_path):
+        raise PermissionError(13, "used by another process")
+
+    monkeypatch.setattr(docx2ricos.shutil, "rmtree", held_open)
+    path = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1") + para_factory("body"))
+    assert main([path]) == FAILED
+    assert "PermissionError" in capsys.readouterr().out
+
+
+def test_a_name_that_leaves_no_directory_stops_that_document_and_not_the_run(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    body = para_factory("One", style="Heading1") + para_factory("body")
+    bad = tmp_path / "ŞĞÜ.docx"
+    bad.write_bytes(docx_factory(body))
+    good = _docx(tmp_path, docx_factory, body)
+
+    assert main([str(bad), good]) == FAILED
+    out = capsys.readouterr().out
+    assert "ValueError" in out
+    assert (tmp_path / "ricos" / "doc" / "part-01.json").exists()
+    assert not (tmp_path / "ricos" / "part-01.json").exists()
+
+
+def test_two_documents_claiming_one_directory_stop_the_run(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    """Before anything is written: the first document's parts would already be
+    deleted by the time the second one reached them."""
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    body = para_factory("One", style="Heading1") + para_factory("body")
+    first = tmp_path / "A B.docx"
+    second = tmp_path / "A-B.docx"
+    for path in (first, second):
+        path.write_bytes(docx_factory(body))
+
+    assert main([str(first), str(second)]) == FAILED
+    assert "only the last would survive" in capsys.readouterr().out
+    assert not (tmp_path / "ricos").exists()
 
 
 def test_a_run_with_nothing_to_report_exits_clean(

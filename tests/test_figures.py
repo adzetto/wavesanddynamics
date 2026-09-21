@@ -102,6 +102,43 @@ def test_pairs_a_caption_sharing_the_picture_paragraph(docx_factory):
     assert blocks[0].caption == "Figure 5. Two ways of obtaining the equation."
 
 
+def test_a_cross_reference_under_a_picture_is_taken_as_its_caption(docx_factory):
+    """The edge of the rule, written down rather than left to be discovered.
+
+    Captions here are not reliably italic, so what marks one is that it opens the
+    way the author numbers his figures. A body sentence that opens with a
+    cross-reference opens the same way and is absorbed too. No such sentence
+    follows a picture anywhere in the corpus; when one does, this test is where
+    the trade-off was accepted and the italic condition is one line to restore.
+    """
+    body = DRAWING + (
+        "<w:p><w:r><w:t>Figure 6 (d) shows the dispersion curves for the rail "
+        "section, and the same pattern recurs in every other section.</w:t>"
+        "</w:r></w:p>"
+    )
+    blocks = read_blocks(
+        docx_factory(body, rels={"rId5": "media/image1.png"},
+                     media={"word/media/image1.png": _png(10, 10)})
+    )
+    assert [type(b) for b in blocks] == [Figure]
+    assert blocks[0].caption.startswith("Figure 6 (d) shows the dispersion")
+
+
+def test_keeps_the_first_caption_when_two_lines_follow_one_picture(docx_factory):
+    """A second "Figure N." line belongs to the text, not to the picture above."""
+    body = DRAWING + (
+        "<w:p><w:r><w:t>Figure 1. Dispersion curves.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:t>Figure 2. The rail section.</w:t></w:r></w:p>"
+    )
+    blocks = read_blocks(
+        docx_factory(body, rels={"rId5": "media/image1.png"},
+                     media={"word/media/image1.png": _png(10, 10)})
+    )
+    assert [type(b) for b in blocks] == [Figure, Para]
+    assert blocks[0].caption == "Figure 1. Dispersion curves."
+    assert blocks[1].runs[0].text == "Figure 2. The rail section."
+
+
 def test_leaves_an_italic_line_that_is_not_a_caption_alone(docx_factory):
     """Emphasis under a picture is not a caption; only the writer's numbering is."""
     body = DRAWING + (

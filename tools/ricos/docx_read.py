@@ -4,8 +4,8 @@ We parse the XML rather than going through pandoc because everything that decide
 the page is what a generic converter flattens. A heading arriving as an ordinary
 paragraph costs the page its outline. Bold, italic and a link are decorations in
 Ricos, so a mark dropped here can never be recovered downstream. A picture and
-the italic line beneath it are one figure to a reader and two paragraphs in the
-file, and nothing but their order says so. Even a tab is an empty element:
+the line beneath it are one figure to a reader and two paragraphs in the file,
+and nothing but their order says so. Even a tab is an empty element:
 invisible until it is gone and the words on either side have fused.
 
 Only body-level paragraphs are read so far, so the pictures and text that live
@@ -40,8 +40,12 @@ MARK_OFF = {"0", "false", "off", "none"}
 # in the ML guide came out as "What is Machine Learning?2".
 WHITESPACE = {W + "tab": "\t", W + "br": "\n"}
 
-# Word leaves a caption as an ordinary italic paragraph. What tells it apart from
-# any other emphasis is that it opens the way the author numbers his figures.
+# Word leaves a caption as an ordinary paragraph under the picture, and in these
+# documents some are italic and some are not, so the only thing that marks one is
+# that it opens the way the author numbers his figures. The price of a rule that
+# loose is that a sentence beginning "Figure 6 (d) shows ..." reads as a caption
+# too; no such sentence follows a picture in the corpus, and the alternative cost
+# four real captions.
 CAPTION_RE = re.compile(r"^\s*(figure|table)\s+\d+", re.I)
 
 
@@ -155,17 +159,16 @@ def _figure(rel_id, rels, z):
 def _is_caption(block):
     if not isinstance(block, Para) or not block.runs:
         return False
-    if not all(r.italic for r in block.runs):
-        return False
     return bool(CAPTION_RE.match("".join(r.text for r in block.runs)))
 
 
 def read_blocks(path_or_bytes):
     """Return the document as a flat list of blocks, in reading order.
 
-    Pictures become Figure blocks. The italic "Figure N." line Word leaves under
-    a picture is folded into that Figure and removed from the flow, so it is
-    never rendered twice.
+    Pictures become Figure blocks. The "Figure N." line Word leaves under a
+    picture is folded into that Figure and removed from the flow, so it is never
+    rendered twice. Only the first such line is taken: the second one belongs to
+    the next picture, or to the text.
     """
     with _open(path_or_bytes) as z:
         rels = _read_rels(z)
@@ -188,8 +191,9 @@ def read_blocks(path_or_bytes):
 
     merged = []
     for block in out:
-        if _is_caption(block) and merged and isinstance(merged[-1], Figure):
-            merged[-1].caption = "".join(r.text for r in block.runs).strip()
+        prev = merged[-1] if merged else None
+        if isinstance(prev, Figure) and not prev.caption and _is_caption(block):
+            prev.caption = "".join(r.text for r in block.runs).strip()
             continue
         merged.append(block)
 

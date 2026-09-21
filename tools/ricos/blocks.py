@@ -57,3 +57,32 @@ class Callout:
     """A one-cell Word table. He uses these as highlighted asides, not as data."""
 
     blocks: list = field(default_factory=list)
+
+
+def walk(blocks):
+    """Every block in reading order, the ones inside tables and asides included.
+
+    These five dataclasses are a tree, not a list: a Table holds cells and a
+    cell holds blocks, a Callout holds blocks, and a picture inside either is a
+    picture on the page like any other. Anything that has to see all of them has
+    to recurse, and this is the one place that knows how.
+
+    That it is one place is the point. The recursion was written twice - once to
+    number the figures, once to count them for the manifest - and the two
+    disagreed silently: the numbering reached all 101 of the corpus's pictures
+    while the count reached the 85 at the top level, so the manifest reported 85
+    figures numbered up to 101 and nothing said anything was wrong. Two copies
+    of a walk over a shape that lives somewhere else is how that happens, so the
+    walk lives with the shape.
+
+    A container is yielded before what it contains, which lets a caller filter
+    for a kind of block without having to know where it sat.
+    """
+    for block in blocks:
+        yield block
+        if isinstance(block, Table):
+            for row in block.rows:
+                for cell in row:
+                    yield from walk(cell)
+        elif isinstance(block, Callout):
+            yield from walk(block.blocks)

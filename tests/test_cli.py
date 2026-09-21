@@ -36,6 +36,7 @@ from tools.docx2ricos import (
     warnings_for,
 )
 from tools.ricos.blocks import Callout, Figure, Para, Run, Table
+from tools.ricos.docx_read import read_blocks
 from tools.ricos.split import pack, split_at_headings
 
 
@@ -44,6 +45,11 @@ def _docx(tmp_path, docx_factory, body, rels=None, media=None):
     path = tmp_path / "doc.docx"
     path.write_bytes(docx_factory(body, rels=rels, media=media))
     return str(path)
+
+
+def _tbl(*cells):
+    """A Word table of one row; one cell makes it a Callout, two a Table."""
+    return "<w:tbl><w:tr>" + "".join(f"<w:tc>{c}</w:tc>" for c in cells) + "</w:tr></w:tbl>"
 
 
 def _fig(number, filename):
@@ -55,10 +61,13 @@ def _manifest(**counts):
     base = {"blocks": 0, "figures": 0, "figures_without_caption": 0,
             "figures_without_file": 0, "tables": 0, "callouts": 0,
             "media_in_zip": 0, "drawings": 0, "drawings_without_picture": 0,
-            "headings": 1, "untitled_preamble_bytes": 0}
+            "drawings_without_picture_kinds": {}, "headings": 1,
+            "untitled_preamble_bytes": 0}
     base.update(counts)
     if "drawings" not in counts:
         base["drawings"] = base["figures"] + base["drawings_without_picture"]
+    if base["drawings_without_picture"] and not base["drawings_without_picture_kinds"]:
+        base["drawings_without_picture_kinds"] = {"shape": base["drawings_without_picture"]}
     return {"source": "D.docx", "slug": "d", "unreferenced_media": [],
             "records": [], "counts": base}
 
@@ -76,6 +85,24 @@ def test_figures_in_finds_the_pictures_inside_tables_and_asides():
               Callout(blocks=[_fig(3, "c.png")]),
               _fig(4, "d.png")]
     assert [f.number for f in figures_in(blocks)] == [1, 2, 3, 4]
+
+
+def test_the_numbering_and_the_manifest_walk_the_same_tree(docx_factory):
+    """The invariant the shared `walk` buys, end to end: the reader numbers the
+    figures and the manifest counts them, and while each had its own copy of the
+    recursion the count stopped at the top level while the numbers ran past it.
+    """
+    body = (f"<w:p>{picture('rId5')}</w:p>"
+            + _tbl(f"<w:p>{picture('rId6')}</w:p>", f"<w:p>{picture('rId7')}</w:p>")
+            + _tbl(f"<w:p>{picture('rId8')}</w:p>")
+            + f"<w:p>{picture('rId9')}</w:p>")
+    rels = {f"rId{i}": f"media/image{i}.png" for i in range(5, 10)}
+    blocks = read_blocks(docx_factory(body, rels=rels))
+
+    assert isinstance(blocks[1], Table) and isinstance(blocks[2], Callout)
+    figures = list(figures_in(blocks))
+    assert [f.number for f in figures] == [1, 2, 3, 4, 5]
+    assert [f.filename for f in figures] == [f"image{i}.png" for i in range(5, 10)]
 
 
 def test_figures_in_counts_one_picture_used_twice_as_two_figures():
@@ -99,10 +126,20 @@ def test_title_candidates_takes_the_title_style_and_nothing_else():
 
 def test_drawing_counts_separates_a_drawing_with_a_picture_from_one_without(
         tmp_path, docx_factory):
+    """And names what the blind one holds, off a:graphicData/@uri, rather than
+    calling it a connector line because the corpus's four happen to be."""
     path = _docx(tmp_path, docx_factory,
                  f"<w:p>{picture('rId5')}</w:p><w:p>{shape()}</w:p>",
                  rels={"rId5": "media/image1.png"})
-    assert drawing_counts(path) == (2, 1)
+    assert drawing_counts(path) == (2, {"shape": 1})
+
+
+def test_a_drawing_of_an_unknown_kind_is_counted_without_being_named(
+        tmp_path, docx_factory):
+    body = ('<w:p><w:r><w:drawing><wp:inline><a:graphic>'
+            '<a:graphicData uri="urn:something:else"/>'
+            "</a:graphic></wp:inline></w:drawing></w:r></w:p>")
+    assert drawing_counts(_docx(tmp_path, docx_factory, body)) == (1, {"other": 1})
 
 
 def test_save_media_copies_the_pictures_and_skips_the_directory_entry(
@@ -132,9 +169,12 @@ def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
 
 
 def test_a_drawing_with_no_picture_is_reported_as_dropped_on_purpose():
-    """Four of the 105: connector lines, with no image to carry over."""
-    (line,) = warnings_for(_manifest(drawings=4, drawings_without_picture=1, figures=3))
-    assert "correctly dropped" in line
+    """Four of the 105, and the line names the kind instead of asserting one."""
+    (line,) = warnings_for(_manifest(drawings=4, figures=3,
+                                     drawings_without_picture=1,
+                                     drawings_without_picture_kinds={"chart": 1}))
+    assert "1 drawing with no picture file (1 chart)" in line
+    assert "dropped rather than lost" in line
     assert "defect" not in line
 
 
@@ -152,6 +192,18 @@ def test_an_uncaptioned_figure_is_reported_as_the_authors_gap():
     (line,) = warnings_for(_manifest(figures=26, figures_without_caption=23))
     assert "the author wrote no caption line under them" in line
     assert "defect" not in line
+
+
+def test_the_report_agrees_with_itself_about_one_and_many():
+    """Understanding_SHM_and_NDT has exactly one uncaptioned figure, and one
+    document in the run reading "1 of 6 figures carry" is how a report stops
+    being trusted."""
+    (line,) = warnings_for(_manifest(figures=6, figures_without_caption=1))
+    assert "1 of 6 figures with no caption" in line
+    (one,) = warnings_for(_manifest(figures=1, figures_without_file=1))
+    assert "1 figure pointing at" in one
+    (many,) = warnings_for(_manifest(figures=2, figures_without_file=2))
+    assert "2 figures pointing at" in many
 
 
 def test_a_stored_picture_nothing_anchors_is_reported_by_name():
@@ -214,6 +266,24 @@ def test_convert_writes_the_parts_the_figures_and_the_manifest(
     assert manifest["records"][0]["titles"] == ["", "One"]
 
 
+def test_convert_clears_what_an_earlier_run_left_behind(
+        tmp_path, monkeypatch, docx_factory, para_factory):
+    """The directory is the published contract, so a part or a picture that no
+    longer belongs to the document must not survive into the next run."""
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    out = tmp_path / "ricos" / "doc"
+    (out / "figures").mkdir(parents=True)
+    (out / "part-09.json").write_text("{}", encoding="utf-8")
+    (out / "figures" / "renamed-since.png").write_bytes(b"old")
+
+    convert(_docx(tmp_path, docx_factory,
+                  para_factory("One", style="Heading1") + para_factory("body")))
+
+    assert not (out / "part-09.json").exists()
+    assert not (out / "figures" / "renamed-since.png").exists()
+    assert (out / "part-01.json").exists()
+
+
 def test_a_run_with_nothing_to_report_exits_clean(
         tmp_path, monkeypatch, docx_factory, para_factory, capsys):
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
@@ -226,6 +296,7 @@ def test_a_run_with_nothing_to_report_exits_clean(
 def test_a_run_that_converted_everything_and_found_something_is_not_a_failure(
         tmp_path, monkeypatch, docx_factory, para_factory, capsys):
     """This is what all seven documents do, and it is the report working."""
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
     path = _docx(tmp_path, docx_factory,
                  para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
                  rels={"rId5": "media/image1.png"},
@@ -260,4 +331,12 @@ def test_one_document_failing_does_not_stop_the_others(
 
 def test_help_says_what_a_non_zero_exit_means(capsys):
     assert main(["--help"]) == OK
-    assert "not a fault in the\n       conversion" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "a finding about a" in out
+    assert "2  a document could not be converted" in out
+
+
+def test_help_is_recognised_wherever_it_appears(capsys):
+    """It is the answer to the whole command line, not to its first word."""
+    assert main(["some.docx", "-h"]) == OK
+    assert "python tools/docx2ricos.py" in capsys.readouterr().out

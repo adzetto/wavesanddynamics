@@ -26,6 +26,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import sys
 import zipfile
 
@@ -42,7 +43,7 @@ if sys.path and os.path.abspath(sys.path[0]) == os.path.dirname(os.path.abspath(
 
 from lxml import etree
 
-from tools.ricos.blocks import Callout, Figure, Para, Table
+from tools.ricos.blocks import Callout, Figure, Para, Table, walk
 from tools.ricos.docx_read import read_blocks
 from tools.ricos.emit import emit
 from tools.ricos.split import LIMIT, doc_bytes, pack, split_at_headings
@@ -56,12 +57,27 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 DRAW = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
+# What a drawing holds, read off a:graphicData/@uri. Only the first of these
+# carries an image part; the rest are drawn in Word and have nothing to publish.
+GRAPHIC_KIND = {
+    "http://schemas.openxmlformats.org/drawingml/2006/picture": "picture",
+    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape": "shape",
+    "http://schemas.openxmlformats.org/drawingml/2006/chart": "chart",
+    "http://schemas.openxmlformats.org/drawingml/2006/diagram": "SmartArt",
+    "http://schemas.openxmlformats.org/drawingml/2006/table": "drawing table",
+}
+
 OK, WARNINGS, FAILED = 0, 1, 2
 
 
 def slugify(name):
     base = os.path.splitext(os.path.basename(name))[0]
     return re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")
+
+
+def _n(count, noun):
+    """"1 drawing" or "2 drawings". The report is read by a person."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
 def figures_in(blocks):
@@ -71,18 +87,13 @@ def figures_in(blocks):
     are in table cells - six in the Brochure, ten in Dynamical Behavior - which
     is where the author puts pictures he wants laid out side by side. The reader
     numbers all of them in one sequence over the whole document, so a manifest
-    counting only the top level would report 85 figures numbered up to 101 and
-    leave the gaps looking like losses.
+    counting only the top level reports 85 figures numbered up to 101 and leaves
+    the gaps looking like losses.
+
+    The recursion is `walk`, shared with the reader's numbering. Writing it here
+    a second time is what let the count and the numbers disagree unnoticed.
     """
-    for block in blocks:
-        if isinstance(block, Figure):
-            yield block
-        elif isinstance(block, Table):
-            for row in block.rows:
-                for cell in row:
-                    yield from figures_in(cell)
-        elif isinstance(block, Callout):
-            yield from figures_in(block.blocks)
+    return (block for block in walk(blocks) if isinstance(block, Figure))
 
 
 def title_candidates(blocks):
@@ -107,24 +118,36 @@ def title_candidates(blocks):
 
 
 def drawing_counts(path):
-    """(drawings in the body, how many of them hold no picture).
+    """(drawings in the body, {kind: how many} for the ones holding no picture).
 
     A `w:drawing` is any anchored drawing object. Only one carrying an `a:blip`
     with an `r:embed` points at a picture file, which is the test the reader
-    applies; the rest are connector lines and shapes drawn in Word, with no
-    image to carry over, and they are dropped on purpose.
+    applies; the rest were drawn in Word and have no image part to carry over,
+    so they are dropped on purpose.
 
     Counting both is what separates a drawing deliberately dropped from a
     picture accidentally lost. Across this corpus: 105 drawings, 4 of them
     without a picture, 101 figures - so the two sides add up and nothing is
     going missing.
+
+    The kind comes from `a:graphicData/@uri` rather than from a guess. All four
+    of this corpus's blind drawings are `shape` (Word names them "Straight
+    Connector"), but a chart and a SmartArt diagram look identical from the
+    outside - no blip, nothing to publish - and the report has no business
+    calling one a connector line because the other four were.
     """
     with zipfile.ZipFile(path) as z:
         root = etree.fromstring(z.read("word/document.xml"))
     drawings = list(root.iter(W + "drawing"))
-    blind = sum(1 for d in drawings
-                if not any(b.get(REL + "embed") for b in d.iter(DRAW + "blip")))
-    return len(drawings), blind
+    kinds = {}
+    for drawing in drawings:
+        if any(b.get(REL + "embed") for b in drawing.iter(DRAW + "blip")):
+            continue
+        data = next(drawing.iter(DRAW + "graphicData"), None)
+        uri = data.get("uri") if data is not None else ""
+        kind = GRAPHIC_KIND.get(uri, "other")
+        kinds[kind] = kinds.get(kind, 0) + 1
+    return len(drawings), kinds
 
 
 def save_media(path, out_dir):
@@ -169,9 +192,17 @@ def preamble_bytes(sections):
 
 
 def convert(path):
-    """Convert one .docx into build/ricos/<slug>/, and return its manifest."""
+    """Convert one .docx into build/ricos/<slug>/, and return its manifest.
+
+    The directory is emptied first. What is in it is the whole of what this
+    document converts to, and the next phase reads it as such: a run that emits
+    fewer parts than the one before, or a document whose pictures came back from
+    Word under new names, would otherwise leave the old files sitting beside the
+    new ones with nothing to say which is which.
+    """
     slug = slugify(path)
     out_dir = os.path.join(OUT, slug)
+    shutil.rmtree(out_dir, ignore_errors=True)
     os.makedirs(out_dir, exist_ok=True)
 
     blocks = read_blocks(path)
@@ -185,7 +216,7 @@ def convert(path):
             json.dump(rec["doc"], fh, ensure_ascii=False)
 
     figures = list(figures_in(blocks))
-    drawings, drawings_without_picture = drawing_counts(path)
+    drawings, blind_kinds = drawing_counts(path)
     referenced = {f.filename for f in figures if f.filename}
     manifest = {
         "source": os.path.basename(path),
@@ -208,7 +239,8 @@ def convert(path):
             "callouts": sum(1 for b in blocks if isinstance(b, Callout)),
             "media_in_zip": len(media),
             "drawings": drawings,
-            "drawings_without_picture": drawings_without_picture,
+            "drawings_without_picture": sum(blind_kinds.values()),
+            "drawings_without_picture_kinds": blind_kinds,
             "headings": sum(1 for title, _ in sections if title),
             "untitled_preamble_bytes": preamble_bytes(sections),
         },
@@ -237,22 +269,24 @@ def warnings_for(manifest):
             f"so pictures are being lost or invented on the way through. This one is a "
             f"defect in the reader, not in the document")
     if c["drawings_without_picture"]:
+        kinds = ", ".join(f"{n} {kind}" for kind, n
+                          in sorted(c["drawings_without_picture_kinds"].items()))
         out.append(
-            f"{src}: {c['drawings_without_picture']} drawing(s) hold no picture - "
-            f"connector lines and shapes drawn in Word, correctly dropped because there "
-            f"is no image to carry over. Redraw them by hand if the page needs them")
+            f"{src}: {_n(c['drawings_without_picture'], 'drawing')} with no picture file "
+            f"({kinds}) - drawn in Word, with no image part to carry over, so the drawing "
+            f"is dropped rather than lost. Redraw by hand where the page needs it")
     if c["figures_without_file"]:
         out.append(
-            f"{src}: {c['figures_without_file']} figure(s) point at a relationship the "
-            f"document never declares, so there is no file to publish for them")
+            f"{src}: {_n(c['figures_without_file'], 'figure')} pointing at a relationship "
+            f"the document never declares, so there is no file to publish")
     if manifest["unreferenced_media"]:
         names = ", ".join(manifest["unreferenced_media"])
         out.append(
-            f"{src}: {len(manifest['unreferenced_media'])} stored picture(s) are anchored "
+            f"{src}: {_n(len(manifest['unreferenced_media']), 'stored picture')} anchored "
             f"nowhere in the body ({names}) - copied to figures/ and used by no part")
     if c["figures_without_caption"]:
         out.append(
-            f"{src}: {c['figures_without_caption']} of {c['figures']} figures carry no "
+            f"{src}: {c['figures_without_caption']} of {c['figures']} figures with no "
             f"caption, because the author wrote no caption line under them. An editorial "
             f"gap in the document; the converter folds in every caption that is there")
     if c["untitled_preamble_bytes"] and not c["headings"]:
@@ -283,7 +317,7 @@ def main(argv):
     in the tool. One document that will not convert does not stop the others, so
     every file is attempted and the failures are listed at the end.
     """
-    if argv and argv[0] in ("-h", "--help"):
+    if "-h" in argv or "--help" in argv:
         print(__doc__.strip())
         return OK
     paths = argv or sorted(glob.glob(os.path.join(SOURCE, "*.docx")))

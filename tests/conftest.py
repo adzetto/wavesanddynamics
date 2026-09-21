@@ -28,6 +28,8 @@ NAMESPACES = (
     'mc:Ignorable="w14 wp14"'
 )
 
+SHAPE_URI = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
+
 IMAGE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 HYPERLINK_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 
@@ -130,13 +132,18 @@ def shape(name="Straight Connector 1"):
     carry over to Wix. Four of this corpus's 105 drawings are this, and telling
     them apart from a picture that went missing is why both are counted.
 
+    The `uri` is the one Word writes for a shape, and it is what says which kind
+    of drawing this is. Leaving it off would make the fixture agree with code
+    that cannot tell a shape from a chart, which is the mistake it is here to
+    catch; the corpus's four blind drawings all carry exactly this.
+
     Here beside `picture` for the same reason: the prefixes are declared once,
     on the document element, and a second copy would go stale against them.
     """
     return (
         '<w:r><w:drawing><wp:inline>'
         f'<wp:docPr id="1" name="{escape_attr(name)}"/>'
-        "<a:graphic><a:graphicData/></a:graphic>"
+        f'<a:graphic><a:graphicData uri="{SHAPE_URI}"/></a:graphic>'
         "</wp:inline></w:drawing></w:r>"
     )
 

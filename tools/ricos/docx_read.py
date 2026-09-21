@@ -22,7 +22,7 @@ import zipfile
 from lxml import etree
 from PIL import Image
 
-from tools.ricos.blocks import Callout, Figure, Para, Run, Table
+from tools.ricos.blocks import Callout, Figure, Para, Run, Table, walk
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 DRAW = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
@@ -379,24 +379,20 @@ def _fold_captions(blocks):
     return out
 
 
-def _number_figures(blocks, n=0):
-    """Number the pictures in reading order, cells included, and return the count.
+def _number_figures(blocks):
+    """Number the pictures in reading order, cells included.
 
     One sequence over the whole document, because a picture in a cell is a
     picture: numbering only the top level would leave every one of them at zero
     while the body counted on around it, and nothing would report the collision.
+
+    The recursion is `walk`, which belongs to the model and is shared with
+    whatever else has to see every block - see its docstring for what a second
+    copy of it cost.
     """
-    for block in blocks:
-        if isinstance(block, Figure):
-            n += 1
-            block.number = n
-        elif isinstance(block, Table):
-            for row in block.rows:
-                for cell in row:
-                    n = _number_figures(cell, n)
-        elif isinstance(block, Callout):
-            n = _number_figures(block.blocks, n)
-    return n
+    for number, figure in enumerate(
+            (b for b in walk(blocks) if isinstance(b, Figure)), 1):
+        figure.number = number
 
 
 def read_blocks(path_or_bytes):

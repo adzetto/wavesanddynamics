@@ -12,7 +12,9 @@ the empty id a TEXT node carries and the bare media id an image's `src` holds.
 The decorations were read off the published ricos-schema typings
 (ricos_document.d.ts, v10.102.0): BoldDecoration l.209, ItalicDecoration l.219,
 UnderlineDecoration l.229, LinkDecoration l.269 with LinkData l.308 and
-Link.url l.73.
+Link.url l.73. The containers come from the same file: BlockquoteNode l.340,
+OrderedListNode l.416, BulletedListNode l.440, ListItemNode l.457 with
+ListItemChildNode l.467.
 
 Bytes are the standing constraint. A CMS item holds 500,000 bytes across all of
 its fields and the rich content counts against that, so nothing optional is
@@ -24,6 +26,11 @@ from dataclasses import replace
 from tools.ricos.blocks import Callout, Figure, Para, Table
 
 HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
+
+# A list kind, as the reader names it, to its node type and the key its own
+# options live under. Paired here so the two can never drift apart.
+LIST_NODE = {"bullet": ("BULLETED_LIST", "bulletedListData"),
+             "ordered": ("ORDERED_LIST", "orderedListData")}
 
 # Word's own styles for the lines of a contents list, TOC1 down to TOC9.
 TOC_STYLE = re.compile(r"TOC[1-9]$")
@@ -73,10 +80,15 @@ def _text_nodes(runs):
 def _para(block, ids):
     """One paragraph or heading node. Nothing is filtered here.
 
-    Everything reaches it through `_nodes`, from the body and from inside a
+    Most blocks reach it through `_nodes`, from the body and from inside a
     table cell alike, so an empty paragraph standing in an empty cell still
     produces its placeholder node; the body's filter is `_drop_from_body`, and
     `emit` applies it before dispatching.
+
+    `_callout` is the exception and calls it directly, past `_nodes`. That is
+    deliberate and schema-forced, not an oversight: `_nodes` folds a run of
+    list paragraphs into a BULLETED_LIST, and `BlockquoteNode.nodes` is
+    `ParagraphNode[]`, which admits no list. See `_callout`.
     """
     level = HEADING_LEVEL.get(block.style)
     if level:
@@ -88,6 +100,16 @@ def _para(block, ids):
             "nodes": _text_nodes(block.runs),
             "paragraphData": {"textStyle": {"textAlignment": block.align},
                               "indentation": 0}}
+
+
+def _has_text(block):
+    """True when a paragraph says anything of its own.
+
+    Whitespace does not count. A paragraph holding eight spaces renders as the
+    same blank block as an empty one, even though the schema would take it as a
+    non-empty string.
+    """
+    return bool("".join(r.text for r in block.runs).strip())
 
 
 def _drop_from_body(block):
@@ -108,19 +130,18 @@ def _drop_from_body(block):
 
     A paragraph with no text of its own is how Word leaves vertical space. In
     Ricos spacing is styling, not content, so an empty block would render as a
-    stray gap and cost about 100 bytes of the item's budget to do it. Nothing
-    but whitespace counts as no text: a paragraph holding eight spaces is the
-    same artefact typed a different way and renders as the same blank block,
-    even though the schema would accept it as a non-empty string.
+    stray gap and cost about 100 bytes of the item's budget to do it.
 
-    **Body only.** This is called from `emit`'s own loop and from nowhere else.
-    An empty paragraph inside a table cell is a placeholder that keeps the grid
+    **Body only.** This is called from `emit` and from nowhere else. An empty
+    paragraph inside a table cell is a placeholder that keeps the grid
     rectangular, and it has to survive - see `_cell`, which reaches `_para`
-    through `_nodes` and drops nothing on the way.
+    through `_nodes` and drops nothing on the way. An aside has no grid to keep
+    square, so `_callout` drops its blank paragraphs; it asks `_has_text`
+    directly, because the TOC half of this test has no meaning inside a quote.
     """
     if TOC_STYLE.match(block.style):
         return True
-    return not "".join(r.text for r in block.runs).strip()
+    return not _has_text(block)
 
 
 def _image(block, ids, media_ids):
@@ -159,9 +180,9 @@ def _cell(blocks, ids, media_ids):
     Nothing is filtered here. A cell whose only paragraph is empty still emits
     that paragraph, because dropping it would cost the row a cell and leave the
     table ragged. The placeholder also catches a cell whose only content was a
-    picture with no source, which `_nodes` skips.
+    picture with no source, which `_node` skips.
     """
-    nodes = [n for b in blocks for n in _nodes(b, ids, media_ids)]
+    nodes = _nodes(blocks, ids, media_ids)
     if not nodes:
         nodes = [{"type": "PARAGRAPH", "id": ids.next(), "nodes": [],
                   "paragraphData": {"textStyle": {"textAlignment": "AUTO"},
@@ -198,6 +219,19 @@ def _callout(block, ids, media_ids):
     sibling. The aside loses the picture's position inside itself and keeps the
     picture, which is the right way round.
 
+    A list is the third thing `ParagraphNode[]` shuts out, and it is why the
+    paragraphs below go to `_para` directly instead of through `_nodes`: that
+    helper folds a run of list paragraphs into a BULLETED_LIST, which would be
+    off-type here. Inside an aside a list item stays a flat paragraph and loses
+    its marker. No aside in this corpus holds one - this is the reason written
+    down, so that routing the quote through `_nodes` does not look like a tidy-
+    up waiting to happen.
+
+    A paragraph with nothing in it is dropped. It is the same stray gap
+    `_drop_from_body` removes from the body, and the reason a cell keeps its
+    blanks - a rectangular grid - does not transfer to a box with no grid in
+    it. Latent: no aside in this corpus has one either.
+
     An aside holding no paragraphs is just its contents: an empty quote box
     around them would be a stray frame on the page.
 
@@ -205,18 +239,21 @@ def _callout(block, ids, media_ids):
     of a better box: collapsed content undercuts the raw-HTML indexing this
     whole project depends on.
     """
-    paras = [_para(replace(b, style=""), ids)
-             for b in block.blocks if isinstance(b, Para)]
+    said = [b for b in block.blocks if isinstance(b, Para) and _has_text(b)]
     out = []
-    if paras:
-        out.append({"type": "BLOCKQUOTE", "id": ids.next(), "nodes": paras,
-                    "blockquoteData": {"indentation": 0}})
+    if said:
+        quote = {"type": "BLOCKQUOTE", "id": ids.next(), "nodes": [],
+                 "blockquoteData": {"indentation": 0}}
+        # Filled after the dict is made so the quote takes its id before its
+        # children take theirs, the way every other container here does.
+        quote["nodes"] = [_para(replace(b, style=""), ids) for b in said]
+        out.append(quote)
     out.extend(n for b in block.blocks if not isinstance(b, Para)
-               for n in _nodes(b, ids, media_ids))
+               for n in _node(b, ids, media_ids))
     return out
 
 
-def _nodes(block, ids, media_ids):
+def _node(block, ids, media_ids):
     """The nodes for one block: none, one, or - for an aside - several.
 
     Reached from the body and from inside a cell alike, so it filters nothing
@@ -227,7 +264,11 @@ def _nodes(block, ids, media_ids):
     measured size is kept - the file exists, and the upload step can repair the
     dimensions. Neither state occurs in the present corpus.
 
-    `_cell` and `_callout` are defined above it and call it; that is fine,
+    A list paragraph arrives here as an ordinary paragraph, because whether it
+    belongs in a list is a question about its neighbours and this function sees
+    one block. `_nodes` answers it; `_callout` deliberately does not ask.
+
+    `_cell` and `_callout` are defined above it and reach it; that is fine,
     because the name is resolved when the call runs, not when it is compiled.
     """
     if isinstance(block, Para):
@@ -241,25 +282,78 @@ def _nodes(block, ids, media_ids):
     return []
 
 
+def _list(kind, items, ids):
+    """One BULLETED_LIST or ORDERED_LIST over a run of list paragraphs.
+
+    `ListItemNode.nodes` is `ListItemChildNode[]` (l.457, l.467) and that union
+    holds no text node, so an item wraps a PARAGRAPH rather than TEXT. Routing
+    it through `_para` gets that for free, along with the item's alignment and,
+    since HEADING is in the union too, a heading that was also a list item.
+
+    Nesting is not built. The reader records `list_level` and the union does
+    admit a list inside an item, but all 107 list paragraphs in this corpus sit
+    at level 0, so a nesting rule here would be a guess with nothing to check
+    it against. A deeper item joins its list as a sibling and loses its indent.
+    """
+    node_type, data_key = LIST_NODE[kind]
+    return {"type": node_type, "id": ids.next(),
+            "nodes": [{"type": "LIST_ITEM", "id": ids.next(),
+                       "nodes": [_para(item, ids)]} for item in items],
+            data_key: {"indentation": 0}}
+
+
+def _nodes(blocks, ids, media_ids):
+    """One flow of blocks, with each run of list paragraphs folded into a list.
+
+    The folding belongs to the flow and not to any block in it, because Word
+    has no list node at all: a list is only a stretch of paragraphs naming the
+    same numbering definition, and it ends wherever the next block stops being
+    one - a different marker, a picture hoisted out of an item, a table, or
+    plain prose.
+
+    The body and a table cell both come through here, so a list in a cell is a
+    list. An aside does not and must not; the reason is in `_callout`.
+    """
+    out = []
+    run_kind, run_items = "", []
+
+    def flush():
+        nonlocal run_kind, run_items
+        if run_items:
+            out.append(_list(run_kind, run_items, ids))
+        run_kind, run_items = "", []
+
+    for block in blocks:
+        kind = block.list_kind if isinstance(block, Para) else ""
+        if kind:
+            if kind != run_kind:
+                flush()
+                run_kind = kind
+            run_items.append(block)
+            continue
+        flush()
+        out.extend(_node(block, ids, media_ids))
+    flush()
+    return out
+
+
 def emit(blocks, media_ids=None):
     """Return a complete Ricos document for these blocks.
 
     `media_ids` maps a filename to the id Wix stored the file under. Phase 1
     has not uploaded anything yet, so without it the filename stands in.
 
-    The body filter is applied here and only here. `_drop_from_body` reads
-    `block.style`, which only a Para has, so the test for it is asked first and
-    every other kind of block goes straight to `_nodes`.
-
-    Lists are not handled yet and pass through silently; they arrive later.
+    The body filter is applied here and only here, and before `_nodes` rather
+    than inside it. `_drop_from_body` reads `block.style`, which only a Para
+    has, so the test for it is asked first and every other kind of block goes
+    through untouched. Filtering first also settles a case the folding would
+    otherwise get wrong: an empty paragraph typed between two bullets is a
+    stray gap, not a boundary, so removing it before the folding leaves the one
+    list the page shows instead of two lists restarting.
     """
-    media_ids = media_ids or {}
     ids = Ids()
-    nodes = []
-    for block in blocks:
-        if isinstance(block, Para) and _drop_from_body(block):
-            continue
-        nodes.extend(_nodes(block, ids, media_ids))
-    return {"nodes": nodes,
+    kept = [block for block in blocks
+            if not (isinstance(block, Para) and _drop_from_body(block))]
+    return {"nodes": _nodes(kept, ids, media_ids or {}),
             "metadata": {"version": 1},
             "documentStyle": {}}

@@ -70,6 +70,43 @@ def _read_rels(z):
     return {r.get("Id"): r.get("Target") for r in root.findall(RELS_NS + "Relationship")}
 
 
+def _numbering_kinds(z):
+    """numId -> "bullet" | "ordered", read from word/numbering.xml.
+
+    A paragraph's `w:numPr` names a numbering definition; nothing there says
+    what the marker looks like. Only `w:numFmt` in this part does, two
+    indirections away: the paragraph names a `w:num`, the `w:num` names a
+    `w:abstractNum`, and that holds one `w:lvl` per depth.
+
+    Level 0's format stands for the whole definition. Word allows a different
+    one at every depth, but the writer has no nesting to hang the difference
+    on, so reading per level could only split a list Word drew as one - and all
+    107 list paragraphs in this corpus sit at level 0.
+
+    `bullet` is the only Word format that is not a counter, so every other
+    value - and a `w:lvl` declaring none - reads as ordered. A `w:num` pointing
+    at an abstract definition the part never declares reads as a bullet
+    instead: there is no format to go on at all, and a bullet is the marker
+    that assumes least. Neither fallback fires on this corpus.
+    """
+    try:
+        root = etree.fromstring(z.read("word/numbering.xml"))
+    except KeyError:
+        return {}
+    abstract = {}
+    for a in root.findall(W + "abstractNum"):
+        lvl = a.find(W + "lvl")
+        fmt = None if lvl is None else lvl.find(W + "numFmt")
+        val = "" if fmt is None else fmt.get(W + "val")
+        abstract[a.get(W + "abstractNumId")] = "bullet" if val == "bullet" else "ordered"
+    out = {}
+    for n in root.findall(W + "num"):
+        ref = n.find(W + "abstractNumId")
+        if ref is not None:
+            out[n.get(W + "numId")] = abstract.get(ref.get(W + "val"), "bullet")
+    return out
+
+
 def _mark(rpr, name):
     """True when run property `name` is present and not switched off."""
     if rpr is None:
@@ -125,7 +162,27 @@ def _runs(p, rels):
     return merged
 
 
-def _para(p, rels):
+def _list_of(ppr, kinds):
+    """The list this paragraph belongs to, as (kind, level); ("", 0) for none.
+
+    Membership is `w:numPr` and never the style name. Word styles the indented
+    continuation of an item `ListParagraph` as well, and twelve paragraphs in
+    this corpus are exactly that - prose carrying no `w:numPr`, which a
+    style-based test would turn into bullets.
+    """
+    if ppr is None:
+        return "", 0
+    numpr = ppr.find(W + "numPr")
+    if numpr is None:
+        return "", 0
+    num_id = numpr.find(W + "numId")
+    ilvl = numpr.find(W + "ilvl")
+    kind = kinds.get(num_id.get(W + "val") if num_id is not None else "", "bullet")
+    level = int(ilvl.get(W + "val")) if ilvl is not None else 0
+    return kind, level
+
+
+def _para(p, rels, kinds):
     ppr = p.find(W + "pPr")
     style = ""
     align = "AUTO"
@@ -136,7 +193,9 @@ def _para(p, rels):
         j = ppr.find(W + "jc")
         if j is not None:
             align = ALIGN.get(j.get(W + "val") or "", "AUTO")
-    return Para(runs=_runs(p, rels), style=style, align=align)
+    kind, level = _list_of(ppr, kinds)
+    return Para(runs=_runs(p, rels), style=style, align=align,
+                list_kind=kind, list_level=level)
 
 
 def _blip_ids(p):
@@ -174,22 +233,27 @@ def _is_caption(block):
     return bool(CAPTION_RE.match("".join(r.text for r in block.runs)))
 
 
-def _para_blocks(p, rels, z):
+def _para_blocks(p, rels, z, kinds):
     """The blocks one paragraph contributes: its pictures, then the paragraph.
 
     A picture can sit inside the paragraph that describes it. Ricos has no
     inline image, so the picture is hoisted above the sentences it sat in rather
     than taking them down with it. A paragraph carrying no picture is kept even
     when it has no runs, since an empty paragraph is still a line on the page.
+
+    This is the only route to `_para`, from the body and from inside a cell
+    alike, so `kinds` has to travel every path that reaches here or a list
+    paragraph reads as a plain one - silently, because the fields it would have
+    filled already have harmless defaults.
     """
     out = [_figure(rel_id, rels, z) for rel_id in _blip_ids(p)]
-    para = _para(p, rels)
+    para = _para(p, rels, kinds)
     if para.runs or not out:
         out.append(para)
     return out
 
 
-def _cell_blocks(tc, rels, z):
+def _cell_blocks(tc, rels, z, kinds):
     """One cell, read the way the body is read.
 
     Never empty, so a row keeps its cell count and the grid stays rectangular.
@@ -197,13 +261,13 @@ def _cell_blocks(tc, rels, z):
     out = []
     for child in tc:
         if child.tag == W + "p":
-            out.extend(_para_blocks(child, rels, z))
+            out.extend(_para_blocks(child, rels, z, kinds))
         elif child.tag == W + "tbl":
             # Ricos forbids a table inside a cell, so the inner grid cannot
             # survive either way. Flattening it to its paragraphs keeps the words.
             for row in child.findall(W + "tr"):
                 for cell in row.findall(W + "tc"):
-                    out.extend(_cell_blocks(cell, rels, z))
+                    out.extend(_cell_blocks(cell, rels, z, kinds))
     return out or [Para()]
 
 
@@ -230,7 +294,7 @@ def _span(tc):
         return 1
 
 
-def _row_cells(tr, rels, z):
+def _row_cells(tr, rels, z, kinds):
     """One row's cells, with a merged cell expanded to the columns it covers.
 
     Ricos builds a table strictly as rows of cells and has no reliable colspan,
@@ -239,12 +303,12 @@ def _row_cells(tr, rels, z):
     """
     out = []
     for tc in tr.findall(W + "tc"):
-        out.append(_cell_blocks(tc, rels, z))
+        out.append(_cell_blocks(tc, rels, z, kinds))
         out.extend([Para()] for _ in range(_span(tc) - 1))
     return out
 
 
-def _table(tbl, rels, z):
+def _table(tbl, rels, z, kinds):
     """A Table, or a Callout when the table is the one-cell kind he asides with.
 
     The aside test counts the cells the author drew, before any span is
@@ -266,8 +330,8 @@ def _table(tbl, rels, z):
     trs = tbl.findall(W + "tr")
     drawn = trs[0].findall(W + "tc") if len(trs) == 1 else []
     if len(drawn) == 1:
-        return Callout(blocks=_cell_blocks(drawn[0], rels, z))
-    rows = [_row_cells(tr, rels, z) for tr in trs]
+        return Callout(blocks=_cell_blocks(drawn[0], rels, z, kinds))
+    rows = [_row_cells(tr, rels, z, kinds) for tr in trs]
     width = max((len(row) for row in rows), default=0)
     for row in rows:
         row.extend([Para()] for _ in range(width - len(row)))
@@ -328,18 +392,23 @@ def read_blocks(path_or_bytes):
     Pictures become Figure blocks, in a cell as much as in the body, each with
     the "Figure N." line Word left under it folded in and numbered over the
     whole document.
+
+    `rels` and `kinds` are the two side parts a paragraph cannot be read
+    without - one for its links and pictures, one for its list marker - so both
+    are read once here and handed down every branch of the walk.
     """
     with _open(path_or_bytes) as z:
         rels = _read_rels(z)
+        kinds = _numbering_kinds(z)
         root = etree.fromstring(z.read("word/document.xml"))
         body = root.find(W + "body")
 
         out = []
         for child in body:
             if child.tag == W + "p":
-                out.extend(_para_blocks(child, rels, z))
+                out.extend(_para_blocks(child, rels, z, kinds))
             elif child.tag == W + "tbl":
-                out.append(_table(child, rels, z))
+                out.append(_table(child, rels, z, kinds))
 
     blocks = _fold_captions(out)
     _number_figures(blocks)

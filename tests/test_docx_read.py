@@ -103,3 +103,20 @@ def test_does_not_merge_a_link_into_the_text_around_it(docx_factory):
         ("ruder.io", "https://ruder.io/"),
         (" today", ""),
     ]
+
+
+def test_keeps_tabs_and_line_breaks_as_whitespace(docx_factory):
+    """A run holding only `<w:tab/>` carries no text, and dropping it lets the
+    merge fuse its neighbours: the hand-typed contents list in the ML guide comes
+    out as "What is Machine Learning?2", heading glued to page number."""
+    body = (
+        "<w:p>"
+        "<w:r><w:t>What is Machine Learning?</w:t></w:r>"
+        "<w:r><w:tab/></w:r>"
+        "<w:r><w:t>2</w:t></w:r>"
+        "</w:p>"
+        "<w:p><w:r><w:t>one</w:t><w:br/><w:t>two</w:t></w:r></w:p>"
+    )
+    blocks = read_blocks(docx_factory(body))
+    assert blocks[0].runs[0].text == "What is Machine Learning?\t2"
+    assert blocks[1].runs[0].text == "one\ntwo"

@@ -19,8 +19,9 @@ its fields and the rich content counts against that, so nothing optional is
 emitted and node ids stay as short as uniqueness allows.
 """
 import re
+from dataclasses import replace
 
-from tools.ricos.blocks import Callout, Figure, Para, Run, Table
+from tools.ricos.blocks import Callout, Figure, Para, Table
 
 HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
 
@@ -72,9 +73,10 @@ def _text_nodes(runs):
 def _para(block, ids):
     """One paragraph or heading node. Nothing is filtered here.
 
-    Cell emission calls this directly, so that an empty paragraph standing in
-    an empty table cell still produces its placeholder node; the body's filter
-    is `_drop_from_body`, one level up.
+    Everything reaches it through `_nodes`, from the body and from inside a
+    table cell alike, so an empty paragraph standing in an empty cell still
+    produces its placeholder node; the body's filter is `_drop_from_body`, and
+    `emit` applies it before dispatching.
     """
     level = HEADING_LEVEL.get(block.style)
     if level:
@@ -177,48 +179,37 @@ def _table(block, ids, media_ids):
             "tableData": {"rowHeader": block.header_row}}
 
 
-def _joined_runs(blocks):
-    """The paragraphs of an aside, flattened into one paragraph's worth of runs.
-
-    Separated by a newline, not run end to end. Ten of the twelve asides in the
-    corpus have more than one paragraph and the first is usually a title, so
-    joining the runs directly would read "How to use this guideRead the
-    document step by step". A newline is the safe separator: a viewer that
-    honours it breaks the line, and one that does not collapses it to a space,
-    which is still a word gap.
-
-    **Unverified against a live Ricos viewer.** Whether a newline inside a TEXT
-    node renders as a line break or collapses has not been checked on a real
-    page. If it collapses and the title still reads as glued to the sentence
-    after it, the fallback is one BLOCKQUOTE per source paragraph instead of
-    one carrying them all - several boxes where Word drew one, which is why it
-    is not the first choice. That decision belongs to the phase that renders a
-    real page; it is written down here so it need not be rediscovered.
-    """
-    out = []
-    for para in (b for b in blocks if isinstance(b, Para)):
-        if out:
-            out.append(Run(text="\n"))
-        out.extend(para.runs)
-    return out
-
-
 def _callout(block, ids, media_ids):
-    """A BLOCKQUOTE for the aside's words, then whatever else it held.
+    """A BLOCKQUOTE holding the aside's paragraphs, then whatever else it held.
 
-    The BLOCKQUOTE takes exactly one child - see `_joined_runs` - so the
-    paragraphs become one and anything that is not a paragraph follows the
-    quote as a sibling instead of being dropped. The aside loses the picture's
-    position inside itself and keeps the picture, which is the right way round.
-    An aside holding no paragraphs at all is just its contents: an empty quote
-    box around them would be a stray frame on the page.
+    `BlockquoteNode.nodes` is declared `ParagraphNode[]` in the published
+    ricos-schema typings (ricos_document.d.ts, v10.102.0, l.346), so the quote
+    takes as many paragraphs as the aside had and each keeps its own
+    properties. Folding them into one would need a separator between them and
+    would flatten every paragraph's alignment to the default - the asides in
+    this corpus are justified, thirty-four paragraphs of them.
+
+    `ParagraphNode[]` is exact, and that decides the two things the quote
+    cannot hold. A heading loses its style and stays a paragraph, because a
+    HEADING node in that array is stored without complaint and renders as
+    nothing; the words are worth more than the weight, and the alignment
+    survives either way. A picture cannot be represented at all - the typings
+    declare no BlockquoteChildNode union - so it follows the quote as a
+    sibling. The aside loses the picture's position inside itself and keeps the
+    picture, which is the right way round.
+
+    An aside holding no paragraphs is just its contents: an empty quote box
+    around them would be a stray frame on the page.
+
+    COLLAPSIBLE_LIST was passed over for asides deliberately, and not for want
+    of a better box: collapsed content undercuts the raw-HTML indexing this
+    whole project depends on.
     """
-    paras = [b for b in block.blocks if isinstance(b, Para)]
+    paras = [_para(replace(b, style=""), ids)
+             for b in block.blocks if isinstance(b, Para)]
     out = []
     if paras:
-        one = paras[0] if len(paras) == 1 else Para(runs=_joined_runs(paras))
-        out.append({"type": "BLOCKQUOTE", "id": ids.next(),
-                    "nodes": [_para(one, ids)],
+        out.append({"type": "BLOCKQUOTE", "id": ids.next(), "nodes": paras,
                     "blockquoteData": {"indentation": 0}})
     out.extend(n for b in block.blocks if not isinstance(b, Para)
                for n in _nodes(b, ids, media_ids))

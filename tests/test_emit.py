@@ -138,6 +138,9 @@ def test_image_caption_is_a_child_node_and_alt_text():
     assert cap["type"] == "CAPTION"
     assert cap["nodes"][0]["textData"]["text"] == "Figure 3. Dispersion curves."
     assert node["imageData"]["altText"] == "Figure 3. Dispersion curves."
+    # The deprecated form, emitted on purpose. Nothing else guards it, so a
+    # tidy-up would otherwise delete it without a test noticing.
+    assert node["imageData"]["caption"] == "Figure 3. Dispersion curves."
 
 
 def test_table_nests_row_cell_paragraph():
@@ -154,6 +157,14 @@ def test_table_nests_row_cell_paragraph():
     cell = row["nodes"][0]
     assert cell["type"] == "TABLE_CELL"
     assert cell["nodes"][0]["type"] == "PARAGRAPH"
+
+
+def test_table_without_a_header_row_says_so():
+    """`rowHeader` is emitted either way. False is not the same as absent, and
+    a table whose first row is not bold must not claim a header.
+    """
+    doc = emit([Table(rows=[[[Para(runs=[Run(text="a")])]]], header_row=False)])
+    assert doc["nodes"][0]["tableData"]["rowHeader"] is False
 
 
 def test_empty_cell_gets_paragraph_with_no_text_child():
@@ -179,7 +190,7 @@ def test_the_body_filter_does_not_reach_inside_a_cell():
     assert all(c["nodes"][0]["type"] == "PARAGRAPH" for c in row["nodes"])
 
 
-def test_callout_becomes_blockquote_with_one_child():
+def test_a_one_paragraph_callout_becomes_a_one_paragraph_blockquote():
     doc = emit([Callout(blocks=[Para(runs=[Run(text="How to use this guide")])])])
     node = doc["nodes"][0]
     assert node["type"] == "BLOCKQUOTE"
@@ -187,19 +198,44 @@ def test_callout_becomes_blockquote_with_one_child():
     assert node["nodes"][0]["type"] == "PARAGRAPH"
 
 
-def test_callout_paragraphs_are_joined_with_a_line_break():
-    """A BLOCKQUOTE takes exactly one child, so the paragraphs of a multi-part
-    aside have to become one. They are joined with a newline and not end to
-    end: ten of the twelve asides in the corpus run to several paragraphs, the
-    first of them a title, so gluing the runs directly would read "How to use
-    this guideRead the document step by step".
+def test_callout_keeps_one_paragraph_per_source_paragraph():
+    """`BlockquoteNode.nodes` is declared `ParagraphNode[]` in the published
+    typings (ricos_document.d.ts v10.102.0, l.346), so the quote holds as many
+    paragraphs as the aside had. Folding them into one would need a separator
+    and would throw away each paragraph's own properties.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
                                 Para(runs=[Run(text="It has four parts.")])])])
-    para = doc["nodes"][0]["nodes"][0]
-    assert len(doc["nodes"][0]["nodes"]) == 1
-    text = "".join(t["textData"]["text"] for t in para["nodes"])
-    assert text == "The core idea\nIt has four parts."
+    quote = doc["nodes"][0]
+    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
+    texts = ["".join(t["textData"]["text"] for t in n["nodes"])
+             for n in quote["nodes"]]
+    assert texts == ["The core idea", "It has four parts."]
+
+
+def test_callout_paragraphs_keep_their_own_alignment():
+    """Every multi-paragraph aside in the corpus is justified or centred in
+    Word. Rebuilding the quote's paragraph from its runs alone silently reset
+    all of them to AUTO, which no test caught because none looked at this
+    field.
+    """
+    doc = emit([Callout(blocks=[Para(runs=[Run(text="a")], align="JUSTIFY"),
+                                Para(runs=[Run(text="b")], align="CENTER")])])
+    aligns = [n["paragraphData"]["textStyle"]["textAlignment"]
+              for n in doc["nodes"][0]["nodes"]]
+    assert aligns == ["JUSTIFY", "CENTER"]
+
+
+def test_a_heading_inside_a_callout_stays_a_paragraph():
+    """`ParagraphNode[]` is exact: a HEADING node in that array is stored
+    without complaint and renders as nothing. The words are worth more than the
+    weight, so the style goes and the paragraph stays - alignment included.
+    """
+    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")],
+                                     style="Heading2", align="CENTER")])])
+    inner = doc["nodes"][0]["nodes"][0]
+    assert inner["type"] == "PARAGRAPH"
+    assert inner["paragraphData"]["textStyle"]["textAlignment"] == "CENTER"
 
 
 def test_the_body_filter_still_applies_beside_the_new_block_types():
@@ -220,19 +256,19 @@ def test_the_body_filter_still_applies_beside_the_new_block_types():
 
 
 def test_a_picture_in_a_callout_survives_as_a_sibling():
-    """A BLOCKQUOTE takes one child and the aside's words have it, so a picture
-    inside the aside has nowhere to go. It follows the quote instead of being
-    dropped: the aside loses where the picture sat inside it and keeps the
-    picture, which is the right way round. No aside in the corpus holds one, so
-    this is the latent case, pinned before it can happen quietly.
+    """A BLOCKQUOTE holds `ParagraphNode[]` and nothing else - there is no
+    BlockquoteChildNode union in the typings - so a picture inside the aside
+    has nowhere to go. It follows the quote instead of being dropped: the aside
+    loses where the picture sat inside it and keeps the picture, which is the
+    right way round. No aside in the corpus holds one, so this is the latent
+    case, pinned before it can happen quietly.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
                                 Figure(filename="i.png", width=1, height=1),
                                 Para(runs=[Run(text="It has four parts.")])])])
     assert [n["type"] for n in doc["nodes"]] == ["BLOCKQUOTE", "IMAGE"]
     quote = doc["nodes"][0]
-    text = "".join(t["textData"]["text"] for t in quote["nodes"][0]["nodes"])
-    assert text == "The core idea\nIt has four parts."
+    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
 
 
 def test_a_callout_holding_no_paragraphs_is_not_wrapped_in_an_empty_quote():

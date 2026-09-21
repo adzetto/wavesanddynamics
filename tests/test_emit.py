@@ -34,7 +34,7 @@ def test_bold_run_carries_decoration():
     assert {"type": "BOLD", "fontWeightValue": 700} in decs
 
 
-def test_empty_paragraph_has_no_text_child():
+def test_para_keeps_empty_paragraph_for_cell_placeholder():
     """The body drops these, but a table cell's placeholder keeps the grid
     rectangular and has to survive, so the node it gets still matters: an empty
     paragraph is a node with no children, never a TEXT holding "". That is the
@@ -42,6 +42,22 @@ def test_empty_paragraph_has_no_text_child():
     """
     node = _para(Para(runs=[]), Ids())
     assert node["nodes"] == []
+
+
+def test_italic_underline_and_link_runs_carry_their_decorations():
+    """The three shapes this module exists to pin down.
+
+    Only BOLD was verified from a published Wix example; these three were read
+    off the ricos-schema typings (v10.102.0): ItalicDecoration l.219,
+    UnderlineDecoration l.229, LinkDecoration l.269 with LinkData l.308 and
+    Link.url l.73. The whole dict is asserted, not just the type, because a
+    renamed data field is stored without complaint and then renders as nothing.
+    """
+    run = Run(text="x", italic=True, underline=True, link="https://x.test/p")
+    decs = emit([Para(runs=[run])])["nodes"][0]["nodes"][0]["textData"]["decorations"]
+    assert {"type": "ITALIC", "italicData": True} in decs
+    assert {"type": "UNDERLINE", "underlineData": True} in decs
+    assert {"type": "LINK", "linkData": {"link": {"url": "https://x.test/p"}}} in decs
 
 
 def test_empty_paragraph_is_not_emitted_in_the_body():
@@ -57,12 +73,18 @@ def test_whitespace_only_paragraph_is_not_emitted_in_the_body():
 
 def test_contents_list_paragraph_is_not_emitted():
     """TOC1-TOC9 is a hand-typed contents list: redundant, and glued to the page
-    numbers it was typed with."""
+    numbers it was typed with.
+
+    TOCHeading is the near-miss the `$` anchor in TOC_STYLE exists for: it is
+    the word "Contents" itself, a real heading, and it stays.
+    """
     blocks = [Para(runs=[Run(text="1. What is Machine Learning?\t2")], style="TOC1"),
               Para(runs=[Run(text="body")], style="TOC9"),
+              Para(runs=[Run(text="Contents")], style="TOCHeading"),
               Para(runs=[Run(text="kept")])]
     doc = emit(blocks)
-    assert [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]] == ["kept"]
+    texts = [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]]
+    assert texts == ["Contents", "kept"]
 
 
 def test_every_block_node_has_a_unique_id():

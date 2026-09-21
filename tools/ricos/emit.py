@@ -103,9 +103,12 @@ def _drop_from_body(block):
     anyway - "1. What is Machine Learning?\t2", the heading fused to a page
     number that means nothing on a web page.
 
-    A paragraph with no text is how Word leaves vertical space. In Ricos
-    spacing is styling, not content, so an empty block would render as a stray
-    gap and cost about 100 bytes of the item's budget to do it.
+    A paragraph with no text of its own is how Word leaves vertical space. In
+    Ricos spacing is styling, not content, so an empty block would render as a
+    stray gap and cost about 100 bytes of the item's budget to do it. Nothing
+    but whitespace counts as no text: a paragraph holding eight spaces is the
+    same artefact typed a different way and renders as the same blank block,
+    even though the schema would accept it as a non-empty string.
 
     **Body only.** An empty paragraph inside a table cell is a placeholder that
     keeps the grid rectangular, and it has to survive - see `_para`, which
@@ -113,7 +116,7 @@ def _drop_from_body(block):
     """
     if TOC_STYLE.match(block.style):
         return True
-    return not any(r.text for r in block.runs)
+    return not "".join(r.text for r in block.runs).strip()
 
 
 def emit(blocks):

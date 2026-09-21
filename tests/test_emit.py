@@ -49,6 +49,12 @@ def test_empty_paragraph_is_not_emitted_in_the_body():
     assert [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]] == ["a", "b"]
 
 
+def test_whitespace_only_paragraph_is_not_emitted_in_the_body():
+    """Spacing the author typed instead of leaving blank: same stray block."""
+    doc = emit([Para(runs=[Run(text="a")]), Para(runs=[Run(text="        ")])])
+    assert [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]] == ["a"]
+
+
 def test_contents_list_paragraph_is_not_emitted():
     """TOC1-TOC9 is a hand-typed contents list: redundant, and glued to the page
     numbers it was typed with."""

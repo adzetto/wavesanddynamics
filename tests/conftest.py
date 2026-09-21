@@ -6,6 +6,7 @@ exercised against the same XML Word actually writes.
 """
 import io
 import zipfile
+from xml.sax.saxutils import escape
 
 import pytest
 
@@ -14,6 +15,21 @@ R = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationship
 A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
 PIC = 'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
 WP = 'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
+MC = 'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
+WP14 = 'xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"'
+W14 = 'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"'
+VML = 'xmlns:v="urn:schemas-microsoft-com:vml"'
+OFFICE = 'xmlns:o="urn:schemas-microsoft-com:office:office"'
+MATH = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
+# Word wraps drawings in mc:AlternateContent and marks its 2010 namespaces
+# ignorable, so a snippet pasted out of a real file needs these declarations.
+NAMESPACES = (
+    f"{W} {R} {A} {PIC} {WP} {MC} {WP14} {W14} {VML} {OFFICE} {MATH} "
+    'mc:Ignorable="w14 wp14"'
+)
+
+IMAGE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+HYPERLINK_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 
 CONTENT_TYPES = (
     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -32,20 +48,37 @@ ROOT_RELS = (
 )
 
 
+def escape_attr(value):
+    """Escape `value` for a double-quoted XML attribute."""
+    return escape(value, {'"': "&quot;"})
+
+
+def relationship(rid, target):
+    """One <Relationship> element.
+
+    An http(s) target is an external hyperlink; anything else is an image part.
+    """
+    if target.startswith(("http://", "https://")):
+        return (
+            f'<Relationship Id="{escape_attr(rid)}" Type="{HYPERLINK_REL}" '
+            f'Target="{escape_attr(target)}" TargetMode="External"/>'
+        )
+    return (
+        f'<Relationship Id="{escape_attr(rid)}" Type="{IMAGE_REL}" '
+        f'Target="{escape_attr(target)}"/>'
+    )
+
+
 def make_docx(body_xml, rels=None, media=None):
     """Return .docx bytes whose word/document.xml body is `body_xml`.
 
-    rels  : {rId: target} entries for word/_rels/document.xml.rels
+    rels  : {rId: target} entries for word/_rels/document.xml.rels; an http(s)
+            target becomes an external hyperlink, anything else an image part
     media : {"word/media/image1.png": b"..."} extra parts
     """
     rels = rels or {}
     media = media or {}
-    rel_xml = "".join(
-        f'<Relationship Id="{rid}" '
-        f'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" '
-        f'Target="{target}"/>'
-        for rid, target in rels.items()
-    )
+    rel_xml = "".join(relationship(rid, target) for rid, target in rels.items())
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", CONTENT_TYPES)
@@ -53,7 +86,7 @@ def make_docx(body_xml, rels=None, media=None):
         z.writestr(
             "word/document.xml",
             f'<?xml version="1.0" encoding="UTF-8"?>'
-            f"<w:document {W} {R} {A} {PIC} {WP}><w:body>{body_xml}</w:body></w:document>",
+            f"<w:document {NAMESPACES}><w:body>{body_xml}</w:body></w:document>",
         )
         z.writestr(
             "word/_rels/document.xml.rels",
@@ -67,10 +100,10 @@ def make_docx(body_xml, rels=None, media=None):
 
 
 def para(text, style=None, bold=False):
-    """One <w:p> with a single run."""
-    ppr = f'<w:pPr><w:pStyle w:val="{style}"/></w:pPr>' if style else ""
+    """One <w:p> with a single run; `text` and `style` are escaped the way Word does."""
+    ppr = f'<w:pPr><w:pStyle w:val="{escape_attr(style)}"/></w:pPr>' if style else ""
     rpr = "<w:rPr><w:b/></w:rPr>" if bold else ""
-    return f"<w:p>{ppr}<w:r>{rpr}<w:t>{text}</w:t></w:r></w:p>"
+    return f"<w:p>{ppr}<w:r>{rpr}<w:t>{escape(text)}</w:t></w:r></w:p>"
 
 
 @pytest.fixture

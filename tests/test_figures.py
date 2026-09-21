@@ -12,13 +12,18 @@ import zlib
 from tools.ricos.blocks import Figure, Para
 from tools.ricos.docx_read import read_blocks
 
-PICTURE = (
-    '<w:r><w:drawing><wp:inline>'
-    '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
-    '<a:blip r:embed="rId5"/>'
-    "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
-    "</wp:inline></w:drawing></w:r>"
-)
+def picture(rel_id="rId5"):
+    """One run holding an inline picture that points at `rel_id`."""
+    return (
+        '<w:r><w:drawing><wp:inline>'
+        '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
+        f'<a:blip r:embed="{rel_id}"/>'
+        "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
+        "</wp:inline></w:drawing></w:r>"
+    )
+
+
+PICTURE = picture()
 DRAWING = f"<w:p>{PICTURE}</w:p>"
 
 
@@ -107,9 +112,10 @@ def test_a_cross_reference_under_a_picture_is_taken_as_its_caption(docx_factory)
 
     Captions here are not reliably italic, so what marks one is that it opens the
     way the author numbers his figures. A body sentence that opens with a
-    cross-reference opens the same way and is absorbed too. No such sentence
-    follows a picture anywhere in the corpus; when one does, this test is where
-    the trade-off was accepted and the italic condition is one line to restore.
+    cross-reference opens the same way and is absorbed too. Three such sentences
+    follow a picture in the corpus, and all three sit second, behind the real
+    caption, where the test below stops them. A sentence sitting first would land
+    here instead; restoring the italic condition is one line.
     """
     body = DRAWING + (
         "<w:p><w:r><w:t>Figure 6 (d) shows the dispersion curves for the rail "
@@ -125,7 +131,13 @@ def test_a_cross_reference_under_a_picture_is_taken_as_its_caption(docx_factory)
 
 
 def test_keeps_the_first_caption_when_two_lines_follow_one_picture(docx_factory):
-    """A second "Figure N." line belongs to the text, not to the picture above."""
+    """A second "Figure N." line belongs to the text, not to the picture above.
+
+    This is live, not hypothetical: three figures in the corpus are followed by
+    their caption and then by a sentence opening "Figure 13 puts ...", "Table 1
+    pulls ...", "Figure 18 below zooms ...". Drop the guard and those captions
+    are overwritten and the sentences vanish from the flow.
+    """
     body = DRAWING + (
         "<w:p><w:r><w:t>Figure 1. Dispersion curves.</w:t></w:r></w:p>"
         "<w:p><w:r><w:t>Figure 2. The rail section.</w:t></w:r></w:p>"
@@ -152,6 +164,23 @@ def test_leaves_an_italic_line_that_is_not_a_caption_alone(docx_factory):
     assert blocks[0].caption == ""
 
 
+def test_reads_every_picture_in_one_paragraph(docx_factory):
+    """Signal Processing lines book covers up two to four to a paragraph."""
+    body = f"<w:p>{picture('rId5')}{picture('rId6')}</w:p>"
+    blocks = read_blocks(
+        docx_factory(
+            body,
+            rels={"rId5": "media/image1.png", "rId6": "media/image2.png"},
+            media={"word/media/image1.png": _png(10, 10),
+                   "word/media/image2.png": _png(20, 30)},
+        )
+    )
+    assert [type(b) for b in blocks] == [Figure, Figure]
+    assert [b.filename for b in blocks] == ["image1.png", "image2.png"]
+    assert [(b.width, b.height) for b in blocks] == [(10, 10), (20, 30)]
+    assert [b.number for b in blocks] == [1, 2]
+
+
 def test_figure_survives_an_image_that_cannot_be_measured(docx_factory):
     """A picture Word kept but Pillow cannot open still belongs on the page."""
     blocks = read_blocks(
@@ -159,4 +188,13 @@ def test_figure_survives_an_image_that_cannot_be_measured(docx_factory):
                      media={"word/media/image1.png": b"not a png"})
     )
     assert blocks[0].filename == "image1.png"
+    assert (blocks[0].width, blocks[0].height) == (0, 0)
+
+
+def test_figure_whose_relationship_is_missing_has_no_filename(docx_factory):
+    """The two faults stay apart: nothing to fetch, versus fetched but unreadable."""
+    blocks = read_blocks(docx_factory(DRAWING))
+    assert [type(b) for b in blocks] == [Figure]
+    assert blocks[0].rel_id == "rId5"
+    assert blocks[0].filename == ""
     assert (blocks[0].width, blocks[0].height) == (0, 0)

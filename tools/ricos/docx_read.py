@@ -43,9 +43,12 @@ WHITESPACE = {W + "tab": "\t", W + "br": "\n"}
 # Word leaves a caption as an ordinary paragraph under the picture, and in these
 # documents some are italic and some are not, so the only thing that marks one is
 # that it opens the way the author numbers his figures. The price of a rule that
-# loose is that a sentence beginning "Figure 6 (d) shows ..." reads as a caption
-# too; no such sentence follows a picture in the corpus, and the alternative cost
-# four real captions.
+# loose is that a sentence beginning "Figure 13 puts the coverage difference ..."
+# reads as a caption too. Three of those follow a picture in the corpus, and all
+# three sit second, behind the real caption, where folding the first one is what
+# brings them within reach. That is the guard in read_blocks, not a spare check:
+# without it those three captions are overwritten and the sentences leave the
+# flow. The alternative, requiring italics, cost four real captions.
 CAPTION_RE = re.compile(r"^\s*(figure|table)\s+\d+", re.I)
 
 
@@ -142,18 +145,24 @@ def _blip_ids(p):
 def _figure(rel_id, rels, z):
     """One picture, measured from the file Word stored rather than from the XML.
 
-    A picture Pillow cannot open still belongs on the page, so a failure leaves
-    the size at zero instead of stopping the document; zero reads as unknown.
+    The two ways this can come up short stay apart, because they are different
+    faults and get counted separately. An empty filename means the paragraph
+    pointed at a relationship the document never declares, so there is no file to
+    go and get. A filename with zero width and height means the part is there but
+    could not be measured — which still belongs on the page, since a picture
+    Pillow cannot open is no reason to stop reading the document.
     """
     target = rels.get(rel_id, "")
-    name = os.path.basename(target)
+    if not target:
+        return Figure(rel_id=rel_id)
     width = height = 0
     try:
         with Image.open(io.BytesIO(z.read("word/" + target.lstrip("/")))) as im:
             width, height = im.size
-    except Exception:
+    except (KeyError, OSError, ValueError):
         pass
-    return Figure(rel_id=rel_id, filename=name, width=width, height=height)
+    return Figure(rel_id=rel_id, filename=os.path.basename(target),
+                  width=width, height=height)
 
 
 def _is_caption(block):

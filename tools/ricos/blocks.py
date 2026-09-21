@@ -28,7 +28,14 @@ class Para:
 
 @dataclass
 class Figure:
-    """A picture, plus the italic line Word left underneath it."""
+    """A picture, plus the line Word left underneath it.
+
+    An empty filename means the relationship it points at was never declared.
+    Zero width and height under a real filename mean the file is there but could
+    not be measured. `number` is reading order, for ordering and anchors: it is
+    not the number in the caption, which is the author's and sometimes counts
+    pictures that never made it into the file.
+    """
 
     rel_id: str = ""
     filename: str = ""

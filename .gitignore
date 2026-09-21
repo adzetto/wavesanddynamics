@@ -1,0 +1,16 @@
+build/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.superpowers/
+
+# Kaynak medya: diskte duruyor, depoya girmiyor (yuzlerce MB)
+reference/wix-media/
+reference/design-mockup/
+reference/wix-site/
+content/blog/
+content/dynamical-behavior/figures/
+content/source/*.docx
+content/source/*.pptx
+content/source/ppt-icons/

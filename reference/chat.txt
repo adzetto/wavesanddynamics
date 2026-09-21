@@ -1,0 +1,50 @@
+Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+[9/21/26, 2:37:49 PM] - Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Tap to learn more.
+[9/21/26, 2:40:45 PM] You: Merhaba Hocam Muhammet ben. Mailinize buradan dönüyorum. wavesanddata.com'a baktım, gönderdiğiniz belgeye de göz gezdirdim biraz. Şekilleriyle birlikte çok güzel bence, şekilleri vs LaTeX TikZ üzerinden çizebilirim hatta. AI'ın çıkardığı şablonun videosunu gönderebilirseniz bakabiliriz ona da.
+
+Bir de hocam siteyi Wix dışında kurduğumuzda barındırma açısından çok daha iyi olur yıllık 500tl ye falan düşer hem aalan adıda bizde kalır. Düşündünüz mü başkan bir barındırmayı
+[9/21/26, 3:47:03 PM] +1 (512) 300-4065: Merhaba, ben tum icerigi ve figurleri claude den hazirladim zaten, bir tek siteyi build etmesi kaliyor. Aynen wix disinda kurmak istiyorum, birde mumkun oldugu kadar yeni kontent eklemeyi kolay hale getircek sekilde.
+[9/21/26, 3:47:16 PM] +1 (512) 300-4065: <album message>
+[9/21/26, 3:47:16 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:16 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:17 PM] +1 (512) 300-4065: <image omitted>
+[9/21/26, 3:47:17 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:17 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:19 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:20 PM] +1 (512) 300-4065: <video omitted>
+[9/21/26, 3:47:44 PM] +1 (512) 300-4065: Bu taslagi beyenmistim mesala, renkler dizayn falan, sol kisimda menu olcak hep.
+[9/21/26, 3:47:55 PM] +1 (512) 300-4065: Iceriklerin hepsi bende var zaten
+[9/21/26, 3:48:03 PM] +1 (512) 300-4065: Mailde boyutu yuksek diye hepsini gonderemedim
+[9/21/26, 3:49:02 PM] +1 (512) 300-4065: <video omitted> Mesala machine learning section su sekilde hazir
+[9/21/26, 3:49:52 PM] +1 (512) 300-4065: Nasil, yapabilirim ve yaparim diyor musun? Bolum disi kendi sitem oldugu icin, independent is olarak alabilirsin, ucretini belirleyebilcegin bir sekilde.
+[9/21/26, 3:55:48 PM] You: Merhaba Hocam evet yapabilirim memnuniyetle. Astro kullanmayı düşünüyorum bu tür bir dinamik bileşenler içerdiği için site
+[9/21/26, 3:56:14 PM] You: Frontend dizaynlarının zipleri veya claude session linkiniz varsa başlayabilirim şimdiden
+[9/21/26, 3:57:58 PM] You: İçerikleri Word üzerinden yazmışsınız ya hocam, hani yeni content eklemeyi direkt markdown olarak mı eklemeyi düşünüyorsunuz yeni bir elementi eğer öyleyse bir tür deployer yazabilirim sizin için kolay olur kullanmanız
+[9/21/26, 4:08:38 PM] +1 (512) 300-4065: Linkler yok ama ben bi ppt hazirlanistim, aklima geldi lovable diye bi site kullanmistim o bu sekilde dizayna cevirmisti. Cok ilerlemezm zaten, oyle hizlica bakmistim. Icerikleri wors olarak hazirladim, sitye koyarken belki pdf e cevirip kimse pdf oldunu anlamadan scroll down yapar, yada siteye gomebilirsin. Back end te hangisi daha guzel olcaksa. Bir tek bunlari editlemem, yada benzeri baska bir section siteye eklemem kolay olsun
+[9/21/26, 4:12:24 PM] +1 (512) 300-4065: Buna gore bunu en iyi sen karar verirwin sanirim uzman sensin:)
+[9/21/26, 4:15:39 PM] You: Tamamdır hocam sorun değil bu, alan adı şu an Wix'te mi kayıtlı nerede acaba? Hazırladığınız PPTyi gönderebilir misiniz Lovable'ın çıkardığı tasarımı oradan yakalarım ben diğer word dosyalarını ve şekilleri de DPI bozulmasın istiyorsanız siz atabilirsiniz yine
+[9/21/26, 4:16:46 PM] +1 (512) 300-4065: Ppt yi birazdan atacagim. Ben sana wix sifremi veriyim. Bir tek blog kismini duzenleyemedim, onlari zaten chatgdpye koysan falan hemen guzel dosya olusturur.
+[9/21/26, 4:16:51 PM] +1 (512) 300-4065: Wixteki bilgiler eski
+[9/21/26, 4:16:55 PM] You: Word dosyalarını bir tür .tex dosyası şeklinde panelden düzenlenebilir halde siteye gömsem sorun olur mu sizin için kolay editlenebilir hem
+[9/21/26, 4:17:00 PM] +1 (512) 300-4065: Educational seksinlarda dahil olmak uzere
+[9/21/26, 4:17:14 PM] +1 (512) 300-4065: Ben sana yenilerini atiyim dropbox linki ile
+[9/21/26, 4:17:41 PM] +1 (512) 300-4065: Yo olmaz guzel gozuktugu surece sorun degil bana
+[9/21/26, 4:19:38 PM] You: Tamamdır hocam bekliyorum o halde
+[9/21/26, 4:24:32 PM] +1 (512) 300-4065: Tmmdir aksama dogru atacaim
+[9/21/26, 4:24:34 PM] +1 (512) 300-4065: Wix sifresi
+[9/21/26, 4:24:39 PM] +1 (512) 300-4065: <image omitted>
+[9/21/26, 4:24:54 PM] +1 (512) 300-4065: korkut.kaynardag@utexas.edu
+[9/21/26, 4:25:17 PM] +1 (512) 300-4065: Siteyi yaparken ai yoktu hizli hizli yapmaya calisiyordum, en duzenleyebilcegin kisim blogtaki postlar
+[9/21/26, 4:25:30 PM] +1 (512) 300-4065: Sanarim boyle wordten screenshot alip koymustum siteye
+[9/21/26, 4:25:45 PM] +1 (512) 300-4065: Onlari direk chatgdp ile falan guzel dokumana cebirebilirsin diye dusunuyorum
+[9/21/26, 4:25:52 PM] +1 (512) 300-4065: Onun disindaki tum contentler hazir
+[9/21/26, 4:25:56 PM] +1 (512) 300-4065: Gonderecegim
+[9/21/26, 4:30:47 PM] You: Evet hocam 100 kelime falan gerçek metin var sitede şu an diğerleri screenshot yazıya çeviririm onları OCR ile problem değil
+[9/21/26, 4:32:44 PM] You: Giriş yapıyorum hocam şimdi, kod gelmiş olması gerek size
+[9/21/26, 4:32:58 PM] +1 (512) 300-4065: Tesekkurler onla ugrascak vaktim kalmadi diger iceriklwre cok vakit harcadim
+[9/21/26, 4:33:11 PM] +1 (512) 300-4065: Kod emailimemk gelcek
+[9/21/26, 4:33:33 PM] +1 (512) 300-4065: Introya falan yeni yazcaklarimizda ppt de olcak gondercegim
+[9/21/26, 4:35:15 PM] +1 (512) 300-4065: Emailime gelen bir kod yok
+[9/21/26, 4:37:45 PM] You: Emaile değil de telefon numaranıza geliyor galiba hocam, WP üzerinden göndere tıkladım
+[9/21/26, 4:37:55 PM] +1 (512) 300-4065: 970023
+[9/21/26, 4:39:36 PM] You: Tamamdır hocam dropboxı bekliyorum o halde şimdi

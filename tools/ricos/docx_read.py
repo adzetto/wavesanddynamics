@@ -16,6 +16,14 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 ALIGN = {"both": "JUSTIFY", "center": "CENTER", "right": "RIGHT", "left": "LEFT"}
 
+REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+RELS_NS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+
+# Word switches a mark off with a value, not by leaving the element out: a run
+# that escapes a bold style carries <w:b w:val="0"/>, and an underline is
+# cancelled with <w:u w:val="none"/>. Presence alone would read those as on.
+MARK_OFF = {"0", "false", "off", "none"}
+
 
 def _open(path_or_bytes):
     if isinstance(path_or_bytes, (bytes, bytearray)):
@@ -23,25 +31,64 @@ def _open(path_or_bytes):
     return zipfile.ZipFile(path_or_bytes)
 
 
-def _runs(p):
+def _read_rels(z):
+    """rId -> target, for hyperlinks and images."""
+    try:
+        root = etree.fromstring(z.read("word/_rels/document.xml.rels"))
+    except KeyError:
+        return {}
+    return {r.get("Id"): r.get("Target") for r in root.findall(RELS_NS + "Relationship")}
+
+
+def _mark(rpr, name):
+    """True when run property `name` is present and not switched off."""
+    if rpr is None:
+        return False
+    el = rpr.find(W + name)
+    if el is None:
+        return False
+    return (el.get(W + "val") or "").lower() not in MARK_OFF
+
+
+def _run(r, link):
+    text = "".join(t.text or "" for t in r.iter(W + "t"))
+    rpr = r.find(W + "rPr")
+    return Run(
+        text=text,
+        bold=_mark(rpr, "b"),
+        italic=_mark(rpr, "i"),
+        underline=_mark(rpr, "u"),
+        link=link,
+    )
+
+
+def _runs(p, rels):
+    """Direct-child runs plus runs inside hyperlinks, merged where marks match."""
     out = []
-    for r in p.iter(W + "r"):
-        text = "".join(t.text or "" for t in r.iter(W + "t"))
-        if not text:
+    for child in p:
+        if child.tag == W + "r":
+            out.append(_run(child, ""))
+        elif child.tag == W + "hyperlink":
+            target = rels.get(child.get(REL + "id"), "")
+            for r in child.findall(W + "r"):
+                out.append(_run(r, target))
+    merged = []
+    for run in out:
+        if not run.text:
             continue
-        rpr = r.find(W + "rPr")
-        out.append(
-            Run(
-                text=text,
-                bold=rpr is not None and rpr.find(W + "b") is not None,
-                italic=rpr is not None and rpr.find(W + "i") is not None,
-                underline=rpr is not None and rpr.find(W + "u") is not None,
-            )
-        )
-    return out
+        if merged and (
+            merged[-1].bold == run.bold
+            and merged[-1].italic == run.italic
+            and merged[-1].underline == run.underline
+            and merged[-1].link == run.link
+        ):
+            merged[-1].text += run.text
+        else:
+            merged.append(run)
+    return merged
 
 
-def _para(p):
+def _para(p, rels):
     ppr = p.find(W + "pPr")
     style = ""
     align = "AUTO"
@@ -52,12 +99,13 @@ def _para(p):
         j = ppr.find(W + "jc")
         if j is not None:
             align = ALIGN.get(j.get(W + "val") or "", "AUTO")
-    return Para(runs=_runs(p), style=style, align=align)
+    return Para(runs=_runs(p, rels), style=style, align=align)
 
 
 def read_blocks(path_or_bytes):
     """Return the document as a flat list of blocks, in reading order."""
     with _open(path_or_bytes) as z:
+        rels = _read_rels(z)
         root = etree.fromstring(z.read("word/document.xml"))
     body = root.find(W + "body")
-    return [_para(p) for p in body.findall(W + "p")]
+    return [_para(p, rels) for p in body.findall(W + "p")]

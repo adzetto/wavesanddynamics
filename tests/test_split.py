@@ -5,9 +5,11 @@ is not something a record limit can be checked against. These tests pin the two
 operations that turn it into a measurement: the seam, which is the author's own
 top-level headings, and the count, which has to be the byte count Wix charges -
 UTF-8 of the stored JSON, not the escaped ASCII `json.dumps` writes by default.
-The two differ by thousands of bytes on a document full of Turkish names, em
-dashes and Greek letters, and they differ in the direction that matters, so the
-wrong one would report a document as too big for a record it fits in.
+One `ş` costs 1 byte stored and 5 escaped, which over this corpus comes to 670
+bytes and over the guide to 323. The escaped count only ever errs high, so it
+never lets an oversized document through and instead reports one as too big for
+a record it fits in - which is how it went three tasks without being noticed,
+and why the test below has to subtract the two rather than compare them.
 
 `pack` is the safety net under that measurement, not the editorial decision. It
 groups consecutive sections while they fit, which means a document that fits
@@ -29,8 +31,14 @@ def _p(text):
 
 
 def test_doc_bytes_counts_utf8():
-    assert doc_bytes(emit([_p("iş")])) > 0
-    assert doc_bytes(emit([_p("is")])) < doc_bytes(emit([_p("işşşşşşşşşş")]))
+    """The one byte `ş` costs stored, against the five it costs escaped.
+
+    Subtracting two documents that differ by a single character is the only
+    assertion that can tell the conventions apart. Anything comparative passes
+    under both, because escaping makes a non-ASCII character bigger too - just
+    six times too big.
+    """
+    assert doc_bytes(emit([_p("ş")])) - doc_bytes(emit([_p("s")])) == 1
 
 
 def test_split_at_headings_groups_body_under_its_heading():
@@ -60,11 +68,24 @@ def test_split_with_no_headings_returns_one_part():
 
 
 def test_pack_keeps_every_record_under_the_limit():
+    """Six sections of 261 bytes at a limit that takes two of them, not one.
+
+    A limit no two sections fit under makes this test say nothing: every record
+    holds a single section, so `len(titles) == 1` is true throughout and the
+    size is never looked at. At 600 two fit and three do not, so the records
+    are grouped and every assertion below is answered by the packing rather
+    than by the shape of the input.
+
+    The titles are checked against the sections they came from because that is
+    what a mis-ordered reset inside `pack` destroys: a record dropped there
+    takes its sections with it and leaves every remaining record legal.
+    """
     sections = split_at_headings([_h(f"H{i}") for i in range(6)])
-    out = pack(sections, limit=400)
-    assert out
+    out = pack(sections, limit=600)
+    assert 0 < len(out) < len(sections)
+    assert [t for rec in out for t in rec["titles"]] == [t for t, _ in sections]
     for rec in out:
-        assert rec["bytes"] <= 400 or len(rec["titles"]) == 1
+        assert rec["bytes"] <= 600 or len(rec["titles"]) == 1
 
 
 def test_pack_reports_an_oversize_single_section():

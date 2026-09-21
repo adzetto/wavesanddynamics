@@ -93,11 +93,28 @@ def split_at_headings(blocks, level=1):
 def pack(sections, limit=LIMIT, media_ids=None):
     """Group consecutive sections into records, none larger than `limit`.
 
+    Each record is a dict of four keys, and they are the whole interface the
+    CLI above this has to know:
+
+        titles      : [str] - the sections in this record, in order. A list
+                      because one record may span several; `titles[0] == ""`
+                      is the untitled preamble, and only the first record can
+                      carry one.
+        doc         : the Ricos document, ready to store
+        bytes       : `doc_bytes(doc)`
+        over_limit  : `bytes > limit`, when the record is one section that was
+                      already too big on its own
+
     This is the safety net, not the editorial split: it cuts only where the
     bytes force it, so a whole document that fits comes back as one record.
 
     A single section that is already too big is emitted alone and flagged
     rather than silently cut, because where to cut it is an editorial decision.
+
+    A section with no blocks in it produces no record and its title goes with
+    it: `pack([("A", [])])` is `[]`. Nothing here makes one - a section from
+    `split_at_headings` always holds at least its own heading - so this is a
+    statement about hand-built input rather than a case to guard.
 
     Each record is measured on its own emitted document rather than by adding
     up its sections, because it is not additive - the wrapper is paid once per
@@ -105,9 +122,14 @@ def pack(sections, limit=LIMIT, media_ids=None):
 
     That measurement is why this is quadratic in the number of sections: every
     section re-emits the record accumulated so far to ask whether it still
-    fits. The whole corpus reads and measures in 0.36 s at 47 sections, so it
-    is left simple; a document of several hundred sections would want the trial
-    emit replaced by measuring the increment.
+    fits. At 47 sections that is the whole corpus in a fraction of a second, so
+    it is left simple. The way to make it cheap is not to add section sizes up
+    instead - the paragraph above is why that is not a sound count, and it is
+    wrong in both directions: the ML guide's twelve sections come to 712 bytes
+    *less* than the one record they partition, while Dynamical's eleven come to
+    399 more. Use the sum as a cheap screen and re-emit only once it comes
+    within a margin of the limit; the answer stays exact where it decides
+    anything.
     """
     out = []
     cur_titles, cur_blocks = [], []

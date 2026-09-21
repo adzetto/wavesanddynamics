@@ -8,8 +8,11 @@ the line beneath it are one figure to a reader and two paragraphs in the file,
 and nothing but their order says so. Even a tab is an empty element:
 invisible until it is gone and the words on either side have fused.
 
-Only body-level paragraphs are read so far, so the pictures and text that live
-inside table cells are still missing.
+Tables are the same argument one level down. Word gave the author no aside, so
+the boxes he highlights with are tables of a single cell, and nothing but their
+shape says they are not data. A cell is otherwise a document in miniature, with
+its own paragraphs, pictures and captions, so the rules the body has must reach
+inside one.
 """
 import io
 import os
@@ -19,7 +22,7 @@ import zipfile
 from lxml import etree
 from PIL import Image
 
-from tools.ricos.blocks import Figure, Para, Run
+from tools.ricos.blocks import Callout, Figure, Para, Run, Table
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 DRAW = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
@@ -171,13 +174,104 @@ def _is_caption(block):
     return bool(CAPTION_RE.match("".join(r.text for r in block.runs)))
 
 
-def read_blocks(path_or_bytes):
-    """Return the document as a flat list of blocks, in reading order.
+def _para_blocks(p, rels, z):
+    """The blocks one paragraph contributes: its pictures, then the paragraph.
 
-    Pictures become Figure blocks. The "Figure N." line Word leaves under a
-    picture is folded into that Figure and removed from the flow, so it is never
-    rendered twice. Only the first such line is taken: the second one belongs to
-    the next picture, or to the text.
+    A picture can sit inside the paragraph that describes it. Ricos has no
+    inline image, so the picture is hoisted above the sentences it sat in rather
+    than taking them down with it. A paragraph carrying no picture is kept even
+    when it has no runs, since an empty paragraph is still a line on the page.
+    """
+    out = [_figure(rel_id, rels, z) for rel_id in _blip_ids(p)]
+    para = _para(p, rels)
+    if para.runs or not out:
+        out.append(para)
+    return out
+
+
+def _cell_blocks(tc, rels, z):
+    """One cell, read the way the body is read.
+
+    Never empty, so a row keeps its cell count and the grid stays rectangular.
+    """
+    out = []
+    for child in tc:
+        if child.tag == W + "p":
+            out.extend(_para_blocks(child, rels, z))
+        elif child.tag == W + "tbl":
+            # Ricos forbids a table inside a cell, so the inner grid cannot
+            # survive either way. Flattening it to its paragraphs keeps the words.
+            for row in child.findall(W + "tr"):
+                for cell in row.findall(W + "tc"):
+                    out.extend(_cell_blocks(cell, rels, z))
+    return out or [Para()]
+
+
+def _table(tbl, rels, z):
+    """A Table, or a Callout when the table is the one-cell kind he asides with."""
+    rows = [[_cell_blocks(tc, rels, z) for tc in tr.findall(W + "tc")]
+            for tr in tbl.findall(W + "tr")]
+    if len(rows) == 1 and len(rows[0]) == 1:
+        return Callout(blocks=rows[0][0])
+    header = bool(rows and rows[0]) and all(
+        any(r.bold for b in cell if isinstance(b, Para) for r in b.runs)
+        for cell in rows[0]
+    )
+    return Table(rows=rows, header_row=header)
+
+
+def _fold_captions(blocks):
+    """Fold the line under each picture into it, within one flow of blocks.
+
+    Only the first such line is taken: a second one belongs to the next picture,
+    or to the text. A cell is a flow of its own, so a caption never reaches back
+    past the edge of the cell it was typed in, and a line after a table is not
+    the caption of the last picture inside it.
+    """
+    out = []
+    for block in blocks:
+        if isinstance(block, Table):
+            block.rows = [[_fold_captions(c) for c in row] for row in block.rows]
+        elif isinstance(block, Callout):
+            block.blocks = _fold_captions(block.blocks)
+        prev = out[-1] if out else None
+        if isinstance(prev, Figure) and not prev.caption and _is_caption(block):
+            prev.caption = "".join(r.text for r in block.runs).strip()
+            continue
+        out.append(block)
+    return out
+
+
+def _number_figures(blocks, n=0):
+    """Number the pictures in reading order, cells included, and return the count.
+
+    One sequence over the whole document, because a picture in a cell is a
+    picture: numbering only the top level would leave every one of them at zero
+    while the body counted on around it, and nothing would report the collision.
+    """
+    for block in blocks:
+        if isinstance(block, Figure):
+            n += 1
+            block.number = n
+        elif isinstance(block, Table):
+            for row in block.rows:
+                for cell in row:
+                    n = _number_figures(cell, n)
+        elif isinstance(block, Callout):
+            n = _number_figures(block.blocks, n)
+    return n
+
+
+def read_blocks(path_or_bytes):
+    """Return the document as a list of blocks, in reading order.
+
+    Paragraphs and tables are read and every other body child is skipped. The
+    only one of those carrying text is the w:sdt holding Word's generated table
+    of contents, which the page rebuilds from the headings anyway.
+
+    Pictures become Figure blocks, in a cell as much as in the body, each with
+    the "Figure N." line Word left under it folded in and numbered over the
+    whole document.
     """
     with _open(path_or_bytes) as z:
         rels = _read_rels(z)
@@ -185,30 +279,12 @@ def read_blocks(path_or_bytes):
         body = root.find(W + "body")
 
         out = []
-        for p in body.findall(W + "p"):
-            ids = _blip_ids(p)
-            if not ids:
-                out.append(_para(p, rels))
-                continue
-            out.extend(_figure(rel_id, rels, z) for rel_id in ids)
-            # A picture can sit inside the paragraph that describes it. Ricos
-            # has no inline image, so the picture is hoisted above the sentences
-            # it sat in rather than taking them down with it.
-            para = _para(p, rels)
-            if para.runs:
-                out.append(para)
+        for child in body:
+            if child.tag == W + "p":
+                out.extend(_para_blocks(child, rels, z))
+            elif child.tag == W + "tbl":
+                out.append(_table(child, rels, z))
 
-    merged = []
-    for block in out:
-        prev = merged[-1] if merged else None
-        if isinstance(prev, Figure) and not prev.caption and _is_caption(block):
-            prev.caption = "".join(r.text for r in block.runs).strip()
-            continue
-        merged.append(block)
-
-    n = 0
-    for block in merged:
-        if isinstance(block, Figure):
-            n += 1
-            block.number = n
-    return merged
+    blocks = _fold_captions(out)
+    _number_figures(blocks)
+    return blocks

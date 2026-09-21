@@ -438,8 +438,9 @@ Sıra, dış bağımlılığı en aza indirecek şekilde kuruldu. API anahtarı 
 Girdi `content/source/` altındaki yedi .docx, çıktı bölüm bölüm Ricos JSON ve şekil manifesti.
 Hedef yapı hocanın canlı verisinden birebir bilindiği için doğruluk yerelde denetlenebiliyor.
 Buranın en kritik çıktısı **gerçek boyut ölçümü**: §3'teki "ML rehberi 12 bölüm" ifadesi bir
-tahmin, ölçüm değil. Gerçek bölünme sayısı `JSON.stringify(ricos).length` ile belirlenecek ve
-spec bu ölçüme göre güncellenecek.
+tahmindi. Ölçüldü (22 Eylül 2026): `python tools/docx2ricos.py` yedi belgeyi çeviriyor ve
+her biri tek kayda sığıyor — en büyüğü 362.379 bayt, korpus 684.985. §3 bu ölçüme göre
+güncellendi; bölüm başına bir kayıt kararı teknik zorunluluk değil, SEO gerekçeli.
 
 **Aşama 2 — canlı doğrulama.** §9'daki deneme. `Sections` koleksiyonu kurulur ve tek test
 kaydı yazılır; bunlar Wix MCP oturumunun mevcut yetkisiyle yapılabiliyor, API anahtarı

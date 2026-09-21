@@ -1,0 +1,263 @@
+"""The command line: what it writes down, and what it reports back.
+
+Two things are pinned here.
+
+The first is that the manifest counts every figure. Sixteen of this corpus's 101
+pictures sit inside table cells - six in the Brochure, ten in Dynamical Behavior
+- which is where the author puts the ones he wants laid out side by side. A flat
+scan of the body sees 85 of them and says so without complaint, and because the
+reader numbers figures over the whole document the undercount shows up only as
+numbers running past the count.
+
+The second is the difference between a warning and a failure. A run that
+converts all seven documents and reports on them still exits non-zero, because
+these documents have findings in them: pictures with no caption under them,
+drawings with no picture in them, text the author left under no heading. None of
+that is the conversion going wrong, and the status that means it did is another
+one. A test that only asserted "non-zero" would not know the difference either.
+"""
+import json
+
+from conftest import picture, shape
+
+from tools import docx2ricos
+from tools.docx2ricos import (
+    FAILED,
+    OK,
+    WARNINGS,
+    convert,
+    drawing_counts,
+    figures_in,
+    main,
+    preamble_bytes,
+    save_media,
+    slugify,
+    title_candidates,
+    warnings_for,
+)
+from tools.ricos.blocks import Callout, Figure, Para, Run, Table
+from tools.ricos.split import pack, split_at_headings
+
+
+def _docx(tmp_path, docx_factory, body, rels=None, media=None):
+    """The synthetic document on disk, because the CLI opens files by name."""
+    path = tmp_path / "doc.docx"
+    path.write_bytes(docx_factory(body, rels=rels, media=media))
+    return str(path)
+
+
+def _fig(number, filename):
+    return Figure(rel_id=f"rId{number}", filename=filename, number=number)
+
+
+def _manifest(**counts):
+    """A manifest with everything quiet, so a test says what it is about."""
+    base = {"blocks": 0, "figures": 0, "figures_without_caption": 0,
+            "figures_without_file": 0, "tables": 0, "callouts": 0,
+            "media_in_zip": 0, "drawings": 0, "drawings_without_picture": 0,
+            "headings": 1, "untitled_preamble_bytes": 0}
+    base.update(counts)
+    if "drawings" not in counts:
+        base["drawings"] = base["figures"] + base["drawings_without_picture"]
+    return {"source": "D.docx", "slug": "d", "unreferenced_media": [],
+            "records": [], "counts": base}
+
+
+def test_slugify_reduces_a_filename_to_a_folder_name():
+    assert (slugify("content/source/Brochure - SHM and NDT - 2 pages.docx")
+            == "brochure-shm-and-ndt-2-pages")
+    assert slugify("/x/From_Bridges_to_Photons.docx") == "from-bridges-to-photons"
+
+
+def test_figures_in_finds_the_pictures_inside_tables_and_asides():
+    """The 16 a flat scan of the body misses, and the reader numbers anyway."""
+    blocks = [_fig(1, "a.png"),
+              Table(rows=[[[_fig(2, "b.png")], [Para()]]]),
+              Callout(blocks=[_fig(3, "c.png")]),
+              _fig(4, "d.png")]
+    assert [f.number for f in figures_in(blocks)] == [1, 2, 3, 4]
+
+
+def test_figures_in_counts_one_picture_used_twice_as_two_figures():
+    """Dynamical Behavior embeds one image relationship at two places in the
+    text. Both are real pictures on the page; that they are the same file is
+    not a collision to be resolved away."""
+    blocks = [_fig(1, "image16.png"), _fig(2, "image16.png")]
+    assert [f.number for f in figures_in(blocks)] == [1, 2]
+
+
+def test_title_candidates_takes_the_title_style_and_nothing_else():
+    """Candidates, not a title: Sound Detection styles its byline this way too."""
+    blocks = [Para(runs=[Run(text="Understanding Sound Classification")], style="Title"),
+              Para(runs=[Run(text="Dr. Korkut Kaynardag")], style="Title"),
+              Para(runs=[Run(text="   ")], style="Title"),
+              Para(runs=[Run(text="Three Main Stages")], style="Heading1"),
+              Para(runs=[Run(text="body")])]
+    assert title_candidates(blocks) == ["Understanding Sound Classification",
+                                        "Dr. Korkut Kaynardag"]
+
+
+def test_drawing_counts_separates_a_drawing_with_a_picture_from_one_without(
+        tmp_path, docx_factory):
+    path = _docx(tmp_path, docx_factory,
+                 f"<w:p>{picture('rId5')}</w:p><w:p>{shape()}</w:p>",
+                 rels={"rId5": "media/image1.png"})
+    assert drawing_counts(path) == (2, 1)
+
+
+def test_save_media_copies_the_pictures_and_skips_the_directory_entry(
+        tmp_path, docx_factory):
+    """From_Bridges_to_Photons stores a `word/media/` entry of its own. Its
+    basename is the empty string, so copying it as though it were a file opens
+    the output directory for writing and the whole run dies on one document."""
+    path = _docx(tmp_path, docx_factory, "<w:p/>",
+                 media={"word/media/": b"", "word/media/image1.png": b"PNG"})
+    out = tmp_path / "figures"
+    assert save_media(path, str(out)) == ["image1.png"]
+    assert (out / "image1.png").read_bytes() == b"PNG"
+
+
+def test_preamble_bytes_measures_the_preamble_and_not_the_record_holding_it():
+    """`pack` puts every document in this corpus into one record, so the
+    record's size is the whole document and says nothing about the preamble."""
+    sections = split_at_headings([Para(runs=[Run(text="opening line")]),
+                                  Para(runs=[Run(text="One")], style="Heading1"),
+                                  Para(runs=[Run(text="x" * 2000)])])
+    assert 0 < preamble_bytes(sections) < pack(sections)[0]["bytes"] - 2000
+
+
+def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
+    sections = split_at_headings([Para(runs=[Run(text="One")], style="Heading1")])
+    assert preamble_bytes(sections) == 0
+
+
+def test_a_drawing_with_no_picture_is_reported_as_dropped_on_purpose():
+    """Four of the 105: connector lines, with no image to carry over."""
+    (line,) = warnings_for(_manifest(drawings=4, drawings_without_picture=1, figures=3))
+    assert "correctly dropped" in line
+    assert "defect" not in line
+
+
+def test_a_picture_that_reaches_no_figure_is_reported_as_a_defect_here():
+    """The one warning in the set that is not about the document. It does not
+    fire on this corpus - 105 drawings, 4 blind, 101 figures - and if it ever
+    does, the fix belongs in the reader."""
+    lines = warnings_for(_manifest(drawings=4, drawings_without_picture=1, figures=2))
+    assert any("defect in the reader, not in the document" in ln for ln in lines)
+
+
+def test_an_uncaptioned_figure_is_reported_as_the_authors_gap():
+    """23 of Signal Processing's 26 have none, because he wrote no caption line
+    under them. Editorial, and not the converter dropping captions."""
+    (line,) = warnings_for(_manifest(figures=26, figures_without_caption=23))
+    assert "the author wrote no caption line under them" in line
+    assert "defect" not in line
+
+
+def test_a_stored_picture_nothing_anchors_is_reported_by_name():
+    m = _manifest(media_in_zip=2, figures=1)
+    m["unreferenced_media"] = ["image2.png"]
+    (line,) = warnings_for(m)
+    assert "image2.png" in line and "used by no part" in line
+
+
+def test_a_figure_pointing_at_no_relationship_is_reported():
+    (line,) = warnings_for(_manifest(figures=1, figures_without_file=1))
+    assert "no file to publish" in line
+
+
+def test_a_document_with_no_heading_at_all_is_one_untitled_section():
+    """The Brochure and From Bridges to Photons: no Heading1 anywhere."""
+    (line,) = warnings_for(_manifest(headings=0, untitled_preamble_bytes=18_627))
+    assert "no heading anywhere" in line and "18,627" in line
+
+
+def test_a_preamble_beneath_headings_is_reported_at_its_own_size():
+    """The Machine Learning guide: 11 headings in the body, and 43,751 bytes in
+    front of the first of them that were never given one."""
+    (line,) = warnings_for(_manifest(headings=11, untitled_preamble_bytes=43_751))
+    assert "43,751 bytes stand before the first of its 11 headings" in line
+
+
+def test_an_over_limit_record_is_reported_by_part_number():
+    m = _manifest()
+    m["records"] = [{"part": 1, "titles": ["A"], "bytes": 600_000, "over_limit": True}]
+    (line,) = warnings_for(m)
+    assert "part 01" in line and "600,000" in line
+
+
+def test_convert_writes_the_parts_the_figures_and_the_manifest(
+        tmp_path, monkeypatch, docx_factory, para_factory):
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    body = (para_factory("Opening", style="Title")
+            + f"<w:p>{picture('rId5')}</w:p>"
+            + para_factory("Figure 1. A caption.")
+            + para_factory("One", style="Heading1")
+            + para_factory("body")
+            + f"<w:p>{shape()}</w:p>")
+    path = _docx(tmp_path, docx_factory, body, rels={"rId5": "media/image1.png"},
+                 media={"word/media/image1.png": b"not a picture Pillow can open"})
+
+    manifest = convert(path)
+    out = tmp_path / "ricos" / "doc"
+
+    assert json.loads((out / "part-01.json").read_text(encoding="utf-8"))["nodes"]
+    assert (out / "figures" / "image1.png").read_bytes().startswith(b"not a picture")
+    assert json.loads((out / "manifest.json").read_text(encoding="utf-8")) == manifest
+    assert manifest["title_candidates"] == ["Opening"]
+    assert manifest["figures"] == [{"number": 1, "filename": "image1.png",
+                                    "width": 0, "height": 0,
+                                    "caption": "Figure 1. A caption."}]
+    assert manifest["counts"]["drawings"] == 2
+    assert manifest["counts"]["drawings_without_picture"] == 1
+    assert manifest["counts"]["headings"] == 1
+    assert manifest["records"][0]["titles"] == ["", "One"]
+
+
+def test_a_run_with_nothing_to_report_exits_clean(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    path = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1") + para_factory("body"))
+    assert main([path]) == OK
+    assert "!" not in capsys.readouterr().out
+
+
+def test_a_run_that_converted_everything_and_found_something_is_not_a_failure(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    """This is what all seven documents do, and it is the report working."""
+    path = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
+                 rels={"rId5": "media/image1.png"},
+                 media={"word/media/image1.png": b"PNG"})
+    assert main([path]) == WARNINGS
+    out = capsys.readouterr().out
+    assert "findings about the documents, not errors in the conversion" in out
+    assert "errors in the conversion:" not in out.split("warnings -")[0]
+
+
+def test_a_document_that_cannot_be_converted_exits_differently(
+        tmp_path, monkeypatch, capsys):
+    bad = tmp_path / "broken.docx"
+    bad.write_bytes(b"not a zip at all")
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    assert main([str(bad)]) == FAILED
+    out = capsys.readouterr().out
+    assert "not converted - these are errors in the conversion:" in out
+    assert "BadZipFile" in out
+
+
+def test_one_document_failing_does_not_stop_the_others(
+        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    bad = tmp_path / "broken.docx"
+    bad.write_bytes(b"not a zip at all")
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    good = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1") + para_factory("body"))
+    assert main([str(bad), good]) == FAILED
+    assert "doc.docx" in capsys.readouterr().out
+
+
+def test_help_says_what_a_non_zero_exit_means(capsys):
+    assert main(["--help"]) == OK
+    assert "not a fault in the\n       conversion" in capsys.readouterr().out

@@ -122,6 +122,25 @@ def picture(rel_id="rId5"):
     )
 
 
+def shape(name="Straight Connector 1"):
+    """One run holding a drawing that has no picture in it.
+
+    Word writes a connector line, or a shape the author drew, as a `w:drawing`
+    like any other - but with no `a:blip` under it, so there is no image part to
+    carry over to Wix. Four of this corpus's 105 drawings are this, and telling
+    them apart from a picture that went missing is why both are counted.
+
+    Here beside `picture` for the same reason: the prefixes are declared once,
+    on the document element, and a second copy would go stale against them.
+    """
+    return (
+        '<w:r><w:drawing><wp:inline>'
+        f'<wp:docPr id="1" name="{escape_attr(name)}"/>'
+        "<a:graphic><a:graphicData/></a:graphic>"
+        "</wp:inline></w:drawing></w:r>"
+    )
+
+
 @pytest.fixture
 def docx_factory():
     return make_docx

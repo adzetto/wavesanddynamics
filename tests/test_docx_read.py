@@ -60,6 +60,38 @@ def test_reads_marks_and_their_off_toggles(docx_factory, rpr, marks):
     assert (run.bold, run.italic, run.underline) == marks
 
 
+@pytest.mark.parametrize(
+    ("val", "align"),
+    [
+        ("both", "JUSTIFY"),
+        ("center", "CENTER"),
+        ("right", "RIGHT"),
+        ("left", "LEFT"),
+        ("distribute", "AUTO"),
+    ],
+)
+def test_reads_paragraph_alignment(docx_factory, val, align):
+    """Word's four names for alignment, and what an unknown fifth falls back to.
+
+    Nothing covered this path: emptying `ALIGN` altogether left all 132 tests
+    green, over a corpus carrying 1,376 paragraph-level `w:jc` elements and 548
+    non-AUTO alignments on top-level paragraphs. It reaches the page twice
+    over - as `textAlignment` on every paragraph and heading, and through the
+    first paragraph of an aside, whose alignment now speaks for the whole
+    BLOCKQUOTE.
+
+    `distribute` is Word's fifth value and stands for every value we do not
+    translate: AUTO is the renderer's own default, which is the right answer
+    for an alignment we cannot express.
+    """
+    body = f'<w:p><w:pPr><w:jc w:val="{val}"/></w:pPr><w:r><w:t>x</w:t></w:r></w:p>'
+    assert read_blocks(docx_factory(body))[0].align == align
+
+
+def test_a_paragraph_with_no_jc_is_auto(docx_factory, para_factory):
+    assert read_blocks(docx_factory(para_factory("x")))[0].align == "AUTO"
+
+
 def test_merges_adjacent_runs_with_same_marks(docx_factory):
     body = (
         "<w:p>"

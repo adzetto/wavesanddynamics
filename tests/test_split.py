@@ -19,7 +19,7 @@ because where to cut inside a section is the author's call, not a program's.
 """
 from tools.ricos.blocks import Para, Run
 from tools.ricos.emit import emit
-from tools.ricos.split import doc_bytes, pack, split_at_headings
+from tools.ricos.split import LIMIT, doc_bytes, pack, split_at_headings
 
 
 def _h(text):
@@ -28,6 +28,16 @@ def _h(text):
 
 def _p(text):
     return Para(runs=[Run(text=text)])
+
+
+def test_the_record_limit_is_the_number_everything_here_is_measured_against():
+    """500,000 bytes: what one Wix CMS item holds across all of its fields.
+
+    The headline constant of this phase, and nothing asserted it - raising it
+    to 5,000,000 left all 132 tests green. Every "fits in one record" in the
+    report is relative to it, and the guide at 362,379 bytes is 72.5% of it.
+    """
+    assert LIMIT == 500_000
 
 
 def test_doc_bytes_counts_utf8():

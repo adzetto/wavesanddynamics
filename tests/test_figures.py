@@ -6,29 +6,13 @@ caption would arrive as an ordinary italic line, the picture as a bare image, an
 the reader would have to guess which line belongs to which picture. The number
 comes from the same reading order, so it is settled here too.
 """
-import struct
-import zlib
-
-from conftest import picture
+from conftest import picture, png
 
 from tools.ricos.blocks import Figure, Para
 from tools.ricos.docx_read import read_blocks
 
 PICTURE = picture()
 DRAWING = f"<w:p>{PICTURE}</w:p>"
-
-
-def _png(width, height):
-    """Smallest valid PNG with the given dimensions."""
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-
-    def chunk(tag, data):
-        return (struct.pack(">I", len(data)) + tag + data
-                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
-
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-            + chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
-            + chunk(b"IEND", b""))
 
 
 def test_reads_figure_and_pairs_caption(docx_factory):
@@ -38,7 +22,7 @@ def test_reads_figure_and_pairs_caption(docx_factory):
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(640, 480)})
+                     media={"word/media/image1.png": png(640, 480)})
     )
     figs = [b for b in blocks if isinstance(b, Figure)]
     assert len(figs) == 1
@@ -56,7 +40,7 @@ def test_numbers_figures_in_order(docx_factory):
     body = DRAWING + DRAWING
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     figs = [b for b in blocks if isinstance(b, Figure)]
     assert [f.number for f in figs] == [1, 2]
@@ -75,7 +59,7 @@ def test_keeps_prose_written_around_a_picture(docx_factory):
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     assert [type(b) for b in blocks] == [Figure, Para]
     assert blocks[1].runs[0].text == (
@@ -92,7 +76,7 @@ def test_pairs_a_caption_sharing_the_picture_paragraph(docx_factory):
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     assert [type(b) for b in blocks] == [Figure]
     assert blocks[0].caption == "Figure 5. Two ways of obtaining the equation."
@@ -115,7 +99,7 @@ def test_a_cross_reference_under_a_picture_is_taken_as_its_caption(docx_factory)
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     assert [type(b) for b in blocks] == [Figure]
     assert blocks[0].caption.startswith("Figure 6 (d) shows the dispersion")
@@ -135,7 +119,7 @@ def test_keeps_the_first_caption_when_two_lines_follow_one_picture(docx_factory)
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     assert [type(b) for b in blocks] == [Figure, Para]
     assert blocks[0].caption == "Figure 1. Dispersion curves."
@@ -149,7 +133,7 @@ def test_leaves_an_italic_line_that_is_not_a_caption_alone(docx_factory):
     )
     blocks = read_blocks(
         docx_factory(body, rels={"rId5": "media/image1.png"},
-                     media={"word/media/image1.png": _png(10, 10)})
+                     media={"word/media/image1.png": png(10, 10)})
     )
     assert [type(b) for b in blocks] == [Figure, Para]
     assert blocks[0].caption == ""
@@ -162,8 +146,8 @@ def test_reads_every_picture_in_one_paragraph(docx_factory):
         docx_factory(
             body,
             rels={"rId5": "media/image1.png", "rId6": "media/image2.png"},
-            media={"word/media/image1.png": _png(10, 10),
-                   "word/media/image2.png": _png(20, 30)},
+            media={"word/media/image1.png": png(10, 10),
+                   "word/media/image2.png": png(20, 30)},
         )
     )
     assert [type(b) for b in blocks] == [Figure, Figure]

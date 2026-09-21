@@ -28,6 +28,19 @@ def test_heading_becomes_heading_node():
     assert node["headingData"]["level"] == 1
 
 
+def test_a_heading_carries_its_level_and_its_own_alignment():
+    """`headingData` whole, because the alignment in it was asserted nowhere.
+
+    Replacing `block.align` with a constant here left every test green, and the
+    corpus has 548 non-AUTO alignments on top-level paragraphs to lose that
+    way. Centring is how the author opens most of these documents.
+    """
+    doc = emit([Para(runs=[Run(text="Closing Thoughts")], style="Heading2",
+                     align="CENTER")])
+    assert doc["nodes"][0]["headingData"] == {
+        "level": 2, "textStyle": {"textAlignment": "CENTER"}}
+
+
 def test_bold_run_carries_decoration():
     doc = emit([Para(runs=[Run(text="x", bold=True)])])
     decs = doc["nodes"][0]["nodes"][0]["textData"]["decorations"]
@@ -120,6 +133,50 @@ def test_image_node_uses_bare_id_and_dimensions():
     assert node["imageData"]["image"]["height"] == 480
 
 
+def test_the_whole_image_node_is_the_shape_the_validator_accepted():
+    """Whole dict, because the fields nothing asserts are the ones that go.
+
+    Three of this node's shapes were settled by `POST /ricos/v1/ricos-document
+    /validate` and then left unpinned, so removing `nodes: []` or rewriting
+    `containerData` changed nothing any test could see - and this module's own
+    docstring says why that is the failure mode: Ricos stores a wrong field
+    without complaint and renders it as a blank space on the published page.
+    `ImageNode.nodes?: never[]` in the typings makes the empty list look
+    optional; the validator took it, the live post carries it, and a caption
+    goes in it. The ids are what the allocator hands out in order, nothing more.
+    """
+    doc = emit([Figure(filename="image1.png", width=640, height=480)])
+    assert doc["nodes"][0] == {
+        "type": "IMAGE", "id": "n1", "nodes": [],
+        "imageData": {
+            "containerData": {"width": {"size": "CONTENT"},
+                              "alignment": "CENTER", "textWrap": True},
+            "image": {"src": {"id": "image1.png"}, "width": 640, "height": 480},
+        },
+    }
+
+
+def test_the_whole_table_cell_is_the_shape_the_validator_accepted():
+    """Whole dict, for the same reason and the other two unpinned shapes.
+
+    `tableCellData: {}` is empty and looks droppable - the validator took it
+    and the live document carries it - and `paragraphData.indentation` is the
+    field the live post writes on every paragraph. Both survived being deleted
+    with 132 tests green. The cell takes its id after its children, which is
+    the one container here that does; that is observed, not required.
+    """
+    doc = emit([Table(rows=[[[Para(runs=[Run(text="x")])]]])])
+    assert doc["nodes"][0]["nodes"][0]["nodes"][0] == {
+        "type": "TABLE_CELL", "id": "n3", "nodes": [
+            {"type": "PARAGRAPH", "id": "n2", "nodes": [
+                {"type": "TEXT", "id": "", "nodes": [],
+                 "textData": {"text": "x", "decorations": []}}],
+             "paragraphData": {"textStyle": {"textAlignment": "AUTO"},
+                               "indentation": 0}}],
+        "tableCellData": {},
+    }
+
+
 def test_media_id_falls_back_to_the_filename():
     """Phase 1 has no Wix ids yet, so the name stands in and the upload fills
     it in later. Without this the id would be `None` and the node would be
@@ -182,12 +239,22 @@ def test_the_body_filter_does_not_reach_inside_a_cell():
     a cell it is the placeholder that keeps the row's cell count, so the filter
     must not be reachable from `_cell`. Drop it there and the row loses a cell
     and the table stops being rectangular.
+
+    The first cell is the one that can tell. It holds a paragraph that is kept
+    and one that the body would drop, so the number of children it ends up with
+    answers the question. A cell holding nothing but droppable content cannot
+    answer it: `_cell`'s fallback puts a placeholder PARAGRAPH back either way,
+    which is how this test went on passing with `_drop_from_body` wired into
+    `_cell` - every assertion it made held under the mutation it exists to
+    catch.
     """
-    t = Table(rows=[[[Para(runs=[])], [Para(runs=[Run(text="  ")])],
-                     [Para(runs=[Run(text="x")], style="TOC1")]]])
+    t = Table(rows=[[[Para(runs=[Run(text="x")]), Para(runs=[])],
+                     [Para(runs=[Run(text="  ")])],
+                     [Para(runs=[Run(text="y")], style="TOC1")]]])
     row = emit([t])["nodes"][0]["nodes"][0]
     assert [c["type"] for c in row["nodes"]] == ["TABLE_CELL"] * 3
     assert all(c["nodes"][0]["type"] == "PARAGRAPH" for c in row["nodes"])
+    assert len(row["nodes"][0]["nodes"]) == 2
 
 
 def test_a_one_paragraph_callout_becomes_a_one_paragraph_blockquote():

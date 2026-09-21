@@ -5,7 +5,9 @@ Tests hand this helper a body fragment and get real bytes back, so the reader is
 exercised against the same XML Word actually writes.
 """
 import io
+import struct
 import zipfile
+import zlib
 from xml.sax.saxutils import escape
 
 import pytest
@@ -146,6 +148,27 @@ def shape(name="Straight Connector 1"):
         f'<a:graphic><a:graphicData uri="{SHAPE_URI}"/></a:graphic>'
         "</wp:inline></w:drawing></w:r>"
     )
+
+
+def png(width, height):
+    """The smallest valid PNG of the given dimensions.
+
+    Here rather than in one test module because two of them need it and they
+    need it for different reasons: the reader measures a figure with Pillow,
+    and the CLI writes those measurements into the manifest for the next phase
+    to lay out with. A test that hands either of them bytes Pillow cannot open
+    measures 0 x 0, which is the value the code produces when it fails - so it
+    passes whatever the code does, and pinning it proves nothing.
+    """
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
+            + chunk(b"IEND", b""))
 
 
 @pytest.fixture

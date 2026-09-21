@@ -19,7 +19,7 @@ one. A test that only asserted "non-zero" would not know the difference either.
 import json
 
 import pytest
-from conftest import picture, shape
+from conftest import picture, png, shape
 
 from tools import docx2ricos
 from tools.docx2ricos import (
@@ -291,22 +291,73 @@ def test_convert_writes_the_parts_the_figures_and_the_manifest(
             + para_factory("body")
             + f"<w:p>{shape()}</w:p>")
     path = _docx(tmp_path, docx_factory, body, rels={"rId5": "media/image1.png"},
-                 media={"word/media/image1.png": b"not a picture Pillow can open"})
+                 media={"word/media/image1.png": png(640, 480)})
 
     manifest = convert(path)
     out = tmp_path / "ricos" / "doc"
 
     assert json.loads((out / "part-01.json").read_text(encoding="utf-8"))["nodes"]
-    assert (out / "figures" / "image1.png").read_bytes().startswith(b"not a picture")
+    assert (out / "figures" / "image1.png").read_bytes() == png(640, 480)
     assert json.loads((out / "manifest.json").read_text(encoding="utf-8")) == manifest
     assert manifest["title_candidates"] == ["Opening"]
+    # A real picture, because the next phase lays the page out from these two
+    # numbers. The fixture used to be bytes Pillow cannot open, so `width` and
+    # `height` were 0 - the same value a failure produces, which made the
+    # assertion agree with the code whatever the code did.
     assert manifest["figures"] == [{"number": 1, "filename": "image1.png",
-                                    "width": 0, "height": 0,
+                                    "width": 640, "height": 480,
                                     "caption": "Figure 1. A caption."}]
     assert manifest["counts"]["drawings"] == 2
     assert manifest["counts"]["drawings_without_picture"] == 1
     assert manifest["counts"]["headings"] == 1
     assert manifest["records"][0]["titles"] == ["", "One"]
+
+
+def test_a_stored_picture_no_paragraph_anchors_reaches_the_manifest(
+        tmp_path, monkeypatch, docx_factory, para_factory):
+    """Both media lists, measured through `convert` rather than built by hand.
+
+    Hard-coding `unreferenced_media` to `[]` left every test green: the only
+    assertion on it handed `warnings_for` a manifest a test had written, so
+    nothing checked that `convert` ever puts a name in it. The other direction
+    is asserted here too, empty, which is what this corpus produces.
+    """
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    path = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1")
+                 + f"<w:p>{picture('rId5')}</w:p>",
+                 rels={"rId5": "media/image1.png"},
+                 media={"word/media/image1.png": png(4, 4),
+                        "word/media/image9.png": png(5, 5)})
+
+    manifest = convert(path)
+    assert manifest["media_files"] == ["image1.png", "image9.png"]
+    assert manifest["unreferenced_media"] == ["image9.png"]
+    assert manifest["missing_media"] == []
+
+
+def test_a_figure_pointing_outside_word_media_is_in_the_manifest_as_missing(
+        tmp_path, monkeypatch, docx_factory, para_factory):
+    """The direction that breaks Phase 2's upload, end to end.
+
+    `_figure` resolves whatever the relationship names, so a target outside
+    `word/media/` still yields a basename and that name goes into `src.id`.
+    `save_media` copies only what is under `word/media/`, so the part names a
+    picture `figures/` does not hold. Empty on today's corpus and reachable the
+    first time a picture is linked rather than embedded.
+    """
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    path = _docx(tmp_path, docx_factory,
+                 para_factory("One", style="Heading1")
+                 + f"<w:p>{picture('rId5')}</w:p>",
+                 rels={"rId5": "../customXml/elsewhere.png"},
+                 media={"word/customXml/elsewhere.png": png(4, 4)})
+
+    manifest = convert(path)
+    assert manifest["figures"][0]["filename"] == "elsewhere.png"
+    assert manifest["media_files"] == []
+    assert manifest["missing_media"] == ["elsewhere.png"]
+    assert any("figures/ does not hold" in line for line in warnings_for(manifest))
 
 
 def test_convert_clears_what_an_earlier_run_left_behind(

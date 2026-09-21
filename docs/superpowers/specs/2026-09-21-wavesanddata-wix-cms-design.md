@@ -213,7 +213,8 @@ kutu, ve bölüm sayfalarının gövdesi. **Yeni bölüm eklemek = koleksiyona s
 | Sound Wave Tracking | Sound Detection and Tracking.docx | 2.531 kelime, 3 şekil |
 | Extensive MSc/PhD ppt | PhD_MsC_entire_Review_ppt.pptx | 177 slayt, 196 MB |
 
-Machine Learning rehberi 500 KB sınırı yüzünden 12 ayrı `kind = "chapter"` kaydına bölünecek,
+Machine Learning rehberi 12 ayrı `kind = "chapter"` kaydına bölünecek — 500 KB sınırı yüzünden
+değil (§3: tek kayıt olarak %72,5'te kalıyor), arama görünürlüğü ve büyüme payı için,
 her birinde `parentSlug = "machine-learning"`. Üstteki `machine-learning` satırı `topic` olarak
 kalıyor; gövdesinde yalnız giriş metni ve bölüm listesi bulunuyor, asıl içerik alt kayıtlarda.
 Diğer iki eğitim belgesi ölçülüp gerekirse aynı şekilde bölünecek.

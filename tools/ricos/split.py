@@ -43,20 +43,25 @@ def doc_bytes(doc):
 
 
 def _heading_text(block, level):
-    """The heading's text, or None when this block is not a heading of `level`.
+    """The heading's text, or None when this block is not a seam of `level`.
 
-    None and "" mean different things to the caller: None is "not a seam", ""
-    is "a seam with nothing written on it". A heading paragraph with no text in
-    it is the second - there are two, both in Sound Detection and Tracking -
-    and the emitter drops it, so splitting the reader's blocks untouched gives
-    six sections where the page shows four, two of them untitled and headed by
-    nothing. Filter the blocks the way `emit` does before splitting.
+    A heading with nothing written on it is not a seam. There are two of them,
+    both in Sound Detection and Tracking, and they are a blank line the author
+    left with the heading style still switched on: `emit` drops them, so a cut
+    there opens a record whose first line is missing. Answering None keeps the
+    blank paragraph in the flow, where the emitter deletes it as it deletes
+    every other one.
+
+    Guarding it here rather than asking callers to filter first is deliberate.
+    The precondition would be invisible and the failure silent - two extra
+    untitled records - and a precondition nobody can see is how these two empty
+    headings survived as far as the emitter in the first place.
     """
     if not isinstance(block, Para):
         return None
     if block.style != f"Heading{level}":
         return None
-    return "".join(r.text for r in block.runs).strip()
+    return "".join(r.text for r in block.runs).strip() or None
 
 
 def split_at_headings(blocks, level=1):
@@ -64,6 +69,9 @@ def split_at_headings(blocks, level=1):
 
     The heading stays inside its own section. It is the section's own title on
     the page, and dropping it here would cost the record its opening line.
+
+    An empty title therefore means the preamble and nothing else: every other
+    part is named, because a nameless heading is not treated as a seam.
 
     An untitled first part is not a defect to be papered over. The ML guide's
     contents list names twelve sections and its body carries eleven headings:
@@ -94,6 +102,12 @@ def pack(sections, limit=LIMIT, media_ids=None):
     Each record is measured on its own emitted document rather than by adding
     up its sections, because it is not additive - the wrapper is paid once per
     record, and `emit` numbers nodes from `n1` in each one.
+
+    That measurement is why this is quadratic in the number of sections: every
+    section re-emits the record accumulated so far to ask whether it still
+    fits. The whole corpus reads and measures in 0.36 s at 47 sections, so it
+    is left simple; a document of several hundred sections would want the trial
+    emit replaced by measuring the increment.
     """
     out = []
     cur_titles, cur_blocks = [], []

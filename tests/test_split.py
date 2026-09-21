@@ -41,6 +41,18 @@ def test_split_at_headings_groups_body_under_its_heading():
     assert len(parts[1][1]) == 2      # heading + body
 
 
+def test_an_empty_heading_is_not_a_section_boundary():
+    """Two of these sit in Sound Detection and Tracking, and the emitter drops
+    both: a heading with nothing written on it is a blank line the author left
+    with the style still switched on, and cutting there would open a record
+    with no heading at the top of it."""
+    blocks = [_h("One"), _p("a"), Para(style="Heading1"),
+              Para(runs=[Run(text="  ")], style="Heading1"), _p("b")]
+    parts = split_at_headings(blocks)
+    assert [t for t, _ in parts] == ["One"]
+    assert len(parts[0][1]) == 5      # they stay in the flow for `emit` to drop
+
+
 def test_split_with_no_headings_returns_one_part():
     parts = split_at_headings([_p("a"), _p("b")])
     assert len(parts) == 1

@@ -83,11 +83,13 @@ def _numbering_kinds(z):
     on, so reading per level could only split a list Word drew as one - and all
     107 list paragraphs in this corpus sit at level 0.
 
-    `bullet` is the only Word format that is not a counter, so every other
-    value - and a `w:lvl` declaring none - reads as ordered. A `w:num` pointing
-    at an abstract definition the part never declares reads as a bullet
-    instead: there is no format to go on at all, and a bullet is the marker
-    that assumes least. Neither fallback fires on this corpus.
+    `bullet` is the only Word format that is not a counter, so a format we can
+    read and that is not `bullet` reads as ordered. Everything else reads as a
+    bullet, and the two ways of knowing nothing agree: a `w:lvl` that declares
+    no `w:numFmt`, and a `w:num` pointing at an abstract definition the part
+    never declares. A wrongly bulleted list is the smaller defect - a wrongly
+    numbered one invents an order the author never wrote. Neither fallback
+    fires on this corpus.
     """
     try:
         root = etree.fromstring(z.read("word/numbering.xml"))
@@ -97,8 +99,9 @@ def _numbering_kinds(z):
     for a in root.findall(W + "abstractNum"):
         lvl = a.find(W + "lvl")
         fmt = None if lvl is None else lvl.find(W + "numFmt")
-        val = "" if fmt is None else fmt.get(W + "val")
-        abstract[a.get(W + "abstractNumId")] = "bullet" if val == "bullet" else "ordered"
+        val = None if fmt is None else fmt.get(W + "val")
+        abstract[a.get(W + "abstractNumId")] = (
+            "ordered" if val and val != "bullet" else "bullet")
     out = {}
     for n in root.findall(W + "num"):
         ref = n.find(W + "abstractNumId")
@@ -163,7 +166,11 @@ def _runs(p, rels):
 
 
 def _list_of(ppr, kinds):
-    """The list this paragraph belongs to, as (kind, level); ("", 0) for none.
+    """The list this paragraph is in, as (kind, numId, level); ("", "", 0) for none.
+
+    The `numId` travels with the paragraph because Word's own boundary between
+    two lists is nothing but a change of it. Two lists typed back to back share
+    a marker and are still two lists, and the ML guide has exactly that.
 
     Membership is `w:numPr` and never the style name. Word styles the indented
     continuation of an item `ListParagraph` as well, and twelve paragraphs in
@@ -176,20 +183,20 @@ def _list_of(ppr, kinds):
     is an item of a list either way.
     """
     if ppr is None:
-        return "", 0
+        return "", "", 0
     numpr = ppr.find(W + "numPr")
     if numpr is None:
-        return "", 0
+        return "", "", 0
     num_id = numpr.find(W + "numId")
     ilvl = numpr.find(W + "ilvl")
-    kind = kinds.get(num_id.get(W + "val") if num_id is not None else "", "bullet")
+    num = (num_id.get(W + "val") or "") if num_id is not None else ""
     level = 0
     if ilvl is not None:
         try:
             level = max(0, int(ilvl.get(W + "val") or 0))
         except ValueError:
             pass
-    return kind, level
+    return kinds.get(num, "bullet"), num, level
 
 
 def _para(p, rels, kinds):
@@ -203,9 +210,9 @@ def _para(p, rels, kinds):
         j = ppr.find(W + "jc")
         if j is not None:
             align = ALIGN.get(j.get(W + "val") or "", "AUTO")
-    kind, level = _list_of(ppr, kinds)
+    kind, num, level = _list_of(ppr, kinds)
     return Para(runs=_runs(p, rels), style=style, align=align,
-                list_kind=kind, list_level=level)
+                list_kind=kind, list_id=num, list_level=level)
 
 
 def _blip_ids(p):

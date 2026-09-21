@@ -198,38 +198,51 @@ def test_a_one_paragraph_callout_becomes_a_one_paragraph_blockquote():
     assert node["nodes"][0]["type"] == "PARAGRAPH"
 
 
-def test_callout_keeps_one_paragraph_per_source_paragraph():
-    """`BlockquoteNode.nodes` is declared `ParagraphNode[]` in the published
-    typings (ricos_document.d.ts v10.102.0, l.346), so the quote holds as many
-    paragraphs as the aside had. Folding them into one would need a separator
-    and would throw away each paragraph's own properties.
+def test_a_blockquote_holds_exactly_one_paragraph():
+    """Wix's own validator settles this, against the generated typings.
+
+    `POST /ricos/v1/ricos-document/validate` on a BLOCKQUOTE with two
+    PARAGRAPH children returns `{"path":["nodes","3","nodes"],"message":
+    "Expected to have size less than 1, but got 2"}`. The `.d.ts` says
+    `nodes: ParagraphNode[]`, but a generated array type cannot express a
+    maximum, so it is not evidence against the limit. One child it is.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
                                 Para(runs=[Run(text="It has four parts.")])])])
     quote = doc["nodes"][0]
-    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
-    texts = ["".join(t["textData"]["text"] for t in n["nodes"])
-             for n in quote["nodes"]]
-    assert texts == ["The core idea", "It has four parts."]
+    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH"]
 
 
-def test_callout_paragraphs_keep_their_own_alignment():
-    """Every multi-paragraph aside in the corpus is justified or centred in
-    Word. Rebuilding the quote's paragraph from its runs alone silently reset
-    all of them to AUTO, which no test caught because none looked at this
-    field.
+def test_the_quote_joins_its_source_paragraphs_with_a_line_break():
+    """The separator is a TEXT run of "\\n", which is what `fixDocument` emits.
+
+    Word's boundary between two paragraphs is the only thing saying where one
+    ends, and running them together glued "How to use this guide" to the
+    sentence after it in the ML guide's opening aside.
+    """
+    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
+                                Para(runs=[Run(text="It has four parts.")])])])
+    texts = [t["textData"]["text"] for t in doc["nodes"][0]["nodes"][0]["nodes"]]
+    assert texts == ["The core idea", "\n", "It has four parts."]
+
+
+def test_the_quote_paragraph_takes_the_first_source_paragraph_s_properties():
+    """`fixDocument` carries `paragraphData` from the first source paragraph.
+
+    Every multi-paragraph aside in the corpus is justified or centred in Word.
+    Rebuilding the quote's paragraph from its runs alone silently reset all of
+    them to AUTO, which no test caught because none looked at this field.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="a")], align="JUSTIFY"),
                                 Para(runs=[Run(text="b")], align="CENTER")])])
-    aligns = [n["paragraphData"]["textStyle"]["textAlignment"]
-              for n in doc["nodes"][0]["nodes"]]
-    assert aligns == ["JUSTIFY", "CENTER"]
+    inner = doc["nodes"][0]["nodes"][0]
+    assert inner["paragraphData"]["textStyle"]["textAlignment"] == "JUSTIFY"
 
 
 def test_a_heading_inside_a_callout_stays_a_paragraph():
-    """`ParagraphNode[]` is exact: a HEADING node in that array is stored
-    without complaint and renders as nothing. The words are worth more than the
-    weight, so the style goes and the paragraph stays - alignment included.
+    """A HEADING node in a quote is stored without complaint and renders as
+    nothing. The words are worth more than the weight, so the style goes and
+    the paragraph stays - alignment included.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")],
                                      style="Heading2", align="CENTER")])])
@@ -256,7 +269,7 @@ def test_the_body_filter_still_applies_beside_the_new_block_types():
 
 
 def test_a_picture_in_a_callout_survives_as_a_sibling():
-    """A BLOCKQUOTE holds `ParagraphNode[]` and nothing else - there is no
+    """A BLOCKQUOTE holds one paragraph and nothing else - there is no
     BlockquoteChildNode union in the typings - so a picture inside the aside
     has nowhere to go. It follows the quote instead of being dropped: the aside
     loses where the picture sat inside it and keeps the picture, which is the
@@ -268,7 +281,7 @@ def test_a_picture_in_a_callout_survives_as_a_sibling():
                                 Para(runs=[Run(text="It has four parts.")])])])
     assert [n["type"] for n in doc["nodes"]] == ["BLOCKQUOTE", "IMAGE"]
     quote = doc["nodes"][0]
-    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
+    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH"]
 
 
 def test_a_callout_holding_no_paragraphs_is_not_wrapped_in_an_empty_quote():

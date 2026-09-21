@@ -70,6 +70,27 @@ def test_the_marker_comes_from_numbering_xml(docx_factory):
     assert read_blocks(bulleted)[0].list_kind == "bullet"
 
 
+def test_a_definition_with_no_readable_format_reads_as_a_bullet(docx_factory):
+    """Both "no format information" paths agree, and both say bullet.
+
+    A `w:num` pointing at an abstract definition that is not there, and an
+    abstract definition whose level declares no `w:numFmt`, mean the same
+    thing. A wrongly bulleted list is a smaller defect than a wrongly numbered
+    one, which invents an order the author never wrote.
+    """
+    no_fmt = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f"<w:numbering {W}>"
+        '<w:abstractNum w:abstractNumId="7"><w:lvl w:ilvl="0"/></w:abstractNum>'
+        '<w:num w:numId="1"><w:abstractNumId w:val="7"/></w:num>'
+        '<w:num w:numId="2"><w:abstractNumId w:val="404"/></w:num>'
+        "</w:numbering>"
+    ).encode()
+    body = _li("a", num_id="1") + _li("b", num_id="2")
+    blocks = read_blocks(docx_factory(body, media={"word/numbering.xml": no_fmt}))
+    assert [b.list_kind for b in blocks] == ["bullet", "bullet"]
+
+
 def test_a_malformed_nesting_level_costs_one_paragraph_not_the_document(docx_factory):
     """`_span` guards its own integer; reading a depth must degrade the same way.
 
@@ -114,6 +135,19 @@ def test_emit_splits_when_kind_changes():
         Para(runs=[Run(text="1")], list_kind="ordered"),
     ])
     assert [n["type"] for n in doc["nodes"]] == ["BULLETED_LIST", "ORDERED_LIST"]
+
+
+def test_a_new_numbering_definition_starts_a_new_list(docx_factory):
+    """Two Word lists back to back are two lists, even with the same marker.
+
+    The ML guide already does this: `numId` 3 ends and `numId` 1 begins with no
+    prose between them. Merging them is invisible while both are bulleted, but
+    an ordered second list would carry on 4, 5, 6 instead of restarting at 1.
+    """
+    blocks = read_blocks(docx_factory(_li("a", num_id="1") + _li("b", num_id="3")))
+    assert [b.list_id for b in blocks] == ["1", "3"]
+    doc = emit(blocks)
+    assert [n["type"] for n in doc["nodes"]] == ["BULLETED_LIST", "BULLETED_LIST"]
 
 
 def test_plain_paragraph_ends_a_list():
@@ -168,21 +202,26 @@ def test_a_list_inside_a_table_cell_is_read_and_grouped(docx_factory):
 
 
 def test_a_list_paragraph_in_an_aside_stays_a_flat_paragraph(docx_factory):
-    """`BlockquoteNode.nodes` is `ParagraphNode[]`, so a list there is off-type."""
+    """A quote holds one PARAGRAPH, so a list node there is doubly off-type."""
     blocks = read_blocks(docx_factory(_table([[_li("a") + _li("b")]])))
     assert [b.list_kind for b in blocks[0].blocks] == ["bullet", "bullet"]
     quote = emit(blocks)["nodes"][0]
     assert quote["type"] == "BLOCKQUOTE"
-    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
+    assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH"]
+    texts = [t["textData"]["text"] for t in quote["nodes"][0]["nodes"]]
+    assert texts == ["a", "\n", "b"]
 
 
 # --- the aside's own two defects -----------------------------------------
 
 def test_an_aside_paragraph_with_no_text_is_dropped():
+    """Dropped before the join, so it does not leave a separator behind either."""
     doc = emit([Callout(blocks=[Para(runs=[Run(text="kept")]),
                                 Para(),
                                 Para(runs=[Run(text="   ")])])])
-    assert [n["type"] for n in doc["nodes"][0]["nodes"]] == ["PARAGRAPH"]
+    inner = doc["nodes"][0]["nodes"]
+    assert [n["type"] for n in inner] == ["PARAGRAPH"]
+    assert [t["textData"]["text"] for t in inner[0]["nodes"]] == ["kept"]
 
 
 def test_a_quote_takes_its_id_before_its_children():

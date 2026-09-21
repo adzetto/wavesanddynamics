@@ -5,7 +5,7 @@ Ricos validates nothing on the way in: a node with a misspelled field is stored
 happily and then renders as a blank space on the published page, so the only
 place a mistake shows up is the live site.
 
-Two sources fix them. The wrapper, PARAGRAPH, TEXT and IMAGE were read off Dr.
+Three sources fix them. The wrapper, PARAGRAPH, TEXT and IMAGE were read off Dr.
 Kaynardag's own live Wix site: one of his blog posts was fetched through the
 Data API and its richContent field is the template those nodes follow, down to
 the empty id a TEXT node carries and the bare media id an image's `src` holds.
@@ -16,6 +16,16 @@ Link.url l.73. The containers come from the same file: BlockquoteNode l.340,
 OrderedListNode l.416, BulletedListNode l.440, ListItemNode l.457 with
 ListItemChildNode l.467.
 
+The third source outranks the typings where they disagree: Wix's own validator,
+`POST /ricos/v1/ricos-document/validate`, which is read-only and answers about
+the document Wix will actually accept. It rejected a BLOCKQUOTE with two
+children although `l.346` declares an array, because a generated array type
+cannot express a maximum - see `_callout`. With the plugins these documents use
+it passes the whole corpus with no violations, which is what settles three
+shapes the typings leave looking wrong: the CAPTION child of an IMAGE (the
+typings declare no CAPTION type and give `ImageNode.nodes?: never[]`), the
+empty `tableCellData: {}`, and `imageData.caption` beside `altText`.
+
 Bytes are the standing constraint. A CMS item holds 500,000 bytes across all of
 its fields and the rich content counts against that, so nothing optional is
 emitted and node ids stay as short as uniqueness allows.
@@ -23,7 +33,7 @@ emitted and node ids stay as short as uniqueness allows.
 import re
 from dataclasses import replace
 
-from tools.ricos.blocks import Callout, Figure, Para, Table
+from tools.ricos.blocks import Callout, Figure, Para, Run, Table
 
 HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
 
@@ -84,9 +94,9 @@ def _para(block, ids):
     `emit` applies it before dispatching.
 
     `_callout` is the exception and calls it directly, past `_nodes`. That is
-    deliberate and schema-forced, not an oversight: `_nodes` folds a run of
-    list paragraphs into a BULLETED_LIST, and `BlockquoteNode.nodes` is
-    `ParagraphNode[]`, which admits no list. See `_callout`.
+    deliberate and forced by what Wix's validator accepts, not an oversight:
+    `_nodes` folds a run of list paragraphs into a BULLETED_LIST, and a
+    BLOCKQUOTE takes one PARAGRAPH and nothing else. See `_callout`.
     """
     level = HEADING_LEVEL.get(block.style)
     if level:
@@ -198,37 +208,59 @@ def _table(block, ids, media_ids):
             "tableData": {"rowHeader": block.header_row}}
 
 
+def _joined(paras):
+    """The aside's paragraphs as the runs of a single paragraph.
+
+    Word's paragraph boundary is the only thing saying where one ends, so it
+    becomes a run of "\\n" and the words on either side keep their gap. Without
+    it the ML guide's opening aside reads "How to use this guideRead the
+    document step by step..." - glued at every boundary, in the flagship
+    document's first box.
+    """
+    runs = []
+    for para in paras:
+        if runs:
+            runs.append(Run(text="\n"))
+        runs.extend(para.runs)
+    return runs
+
+
 def _callout(block, ids, media_ids):
-    """A BLOCKQUOTE holding the aside's paragraphs, then whatever else it held.
+    """A BLOCKQUOTE over the aside's paragraphs, then whatever else it held.
 
-    `BlockquoteNode.nodes` is declared `ParagraphNode[]` in the published
-    ricos-schema typings (ricos_document.d.ts, v10.102.0, l.346), so the quote
-    takes as many paragraphs as the aside had and each keeps its own
-    properties. Folding them into one would need a separator between them and
-    would flatten every paragraph's alignment to the default - the asides in
-    this corpus are justified, thirty-four paragraphs of them.
+    **A BLOCKQUOTE takes exactly one child**, and that is measured, not read
+    off the typings. `POST /ricos/v1/ricos-document/validate` rejects a quote
+    with two PARAGRAPH children: `{"path":["nodes","3","nodes"],"message":
+    "Expected to have size less than 1, but got 2"}`. The generated
+    `ricos_document.d.ts` says `nodes: ParagraphNode[]` (l.346), but a
+    generated array type has no way to express a maximum, so it is not
+    evidence against one. The shape below is `fixDocument`'s own output: one
+    PARAGRAPH, the source paragraphs joined by "\\n" TEXT runs, and
+    `paragraphData` carried from the **first** source paragraph. The asides in
+    this corpus are justified, thirty-four paragraphs of them, and the first
+    paragraph's alignment is the one that speaks for the box.
 
-    `ParagraphNode[]` is exact, and that decides the two things the quote
-    cannot hold. A heading loses its style and stays a paragraph, because a
-    HEADING node in that array is stored without complaint and renders as
-    nothing; the words are worth more than the weight, and the alignment
-    survives either way. A picture cannot be represented at all - the typings
-    declare no BlockquoteChildNode union - so it follows the quote as a
+    One PARAGRAPH decides the three things the quote cannot hold. A heading
+    loses its style, because a HEADING node here is stored without complaint
+    and renders as nothing; the words are worth more than the weight, and the
+    alignment survives either way. A picture cannot be represented at all -
+    there is no BlockquoteChildNode union - so it follows the quote as a
     sibling. The aside loses the picture's position inside itself and keeps the
     picture, which is the right way round.
 
-    A list is the third thing `ParagraphNode[]` shuts out, and it is why the
-    paragraphs below go to `_para` directly instead of through `_nodes`: that
-    helper folds a run of list paragraphs into a BULLETED_LIST, which would be
-    off-type here. Inside an aside a list item stays a flat paragraph and loses
-    its marker. No aside in this corpus holds one - this is the reason written
-    down, so that routing the quote through `_nodes` does not look like a tidy-
-    up waiting to happen.
+    A list is the third, and it is why the paragraphs below go to `_para`
+    directly instead of through `_nodes`: that helper folds a run of list
+    paragraphs into a BULLETED_LIST, which is off-type here twice over - wrong
+    node type, and a second child. Inside an aside a list item stays part of
+    the one paragraph and loses its marker. No aside in this corpus holds one -
+    this is the reason written down, so that routing the quote through `_nodes`
+    does not look like a tidy-up waiting to happen.
 
-    A paragraph with nothing in it is dropped. It is the same stray gap
+    A paragraph with nothing in it is dropped, before the join so that it
+    leaves no separator behind either. It is the same stray gap
     `_drop_from_body` removes from the body, and the reason a cell keeps its
     blanks - a rectangular grid - does not transfer to a box with no grid in
-    it. Latent: no aside in this corpus has one either.
+    it. Latent: no aside in this corpus has one.
 
     An aside holding no paragraphs is just its contents: an empty quote box
     around them would be a stray frame on the page.
@@ -243,8 +275,8 @@ def _callout(block, ids, media_ids):
         quote = {"type": "BLOCKQUOTE", "id": ids.next(), "nodes": [],
                  "blockquoteData": {"indentation": 0}}
         # Filled after the dict is made so the quote takes its id before its
-        # children take theirs, the way every other container here does.
-        quote["nodes"] = [_para(replace(b, style=""), ids) for b in said]
+        # child takes its own, the way every other container here does.
+        quote["nodes"] = [_para(replace(said[0], runs=_joined(said), style=""), ids)]
         out.append(quote)
     out.extend(n for b in block.blocks if not isinstance(b, Para)
                for n in _node(b, ids, media_ids))
@@ -313,39 +345,51 @@ def _nodes(blocks, ids, media_ids):
 
     The folding belongs to the flow and not to any block in it, because Word
     has no list node at all: a list is only a stretch of paragraphs naming the
-    same numbering definition, and it ends wherever the next block stops being
-    one - a different marker, a picture hoisted out of an item, a table, or
-    plain prose.
+    same numbering definition. So the run is keyed on that definition - its
+    `w:numId`, carried on the block - and on the marker kind, and it ends at
+    the first block that does not match: a new definition, a new marker, or
+    anything that is not a list paragraph.
 
-    A picture is the one of those that is not the author's own doing, and it
-    carries a cost that is currently invisible. `_para_blocks` hoists a picture
-    out of the paragraph it was anchored in, because Ricos has no inline image,
-    so a list broken by one continues as a second list node. This happens once
-    in the corpus, in the ML guide, and cannot be seen: every list there is
-    bulleted, and bullets do not count. In an **ordered** list the second half
-    would restart at `1`. If an ordered list ever gains a picture, the fix is
-    either to keep the image inside its LIST_ITEM - `ListItemChildNode` (l.467)
-    admits one - or to set `orderedListData.start` (l.437) on the continuation.
+    **A new definition matters even when the marker does not change.** Two
+    lists typed back to back share a bullet and are still two lists; the ML
+    guide has exactly that, `numId` 3 ending and `numId` 1 beginning with no
+    prose between them. Merged, bullets hide it. An ordered second list would
+    carry on 4, 5, 6 where the author restarted at 1.
 
+    A picture breaks a run the same way and for a worse reason: it is not the
+    author's doing. `_para_blocks` hoists a picture out of the paragraph it was
+    anchored in, because Ricos has no inline image, so a list interrupted by
+    one continues as a second list node. This happens once in the corpus, in
+    the ML guide, and cannot be seen - every list there is bulleted, and
+    bullets do not count. An **ordered** list would restart at `1`. Either
+    break, met in an ordered list, is fixed the same two ways: keep the image
+    inside its LIST_ITEM (`ListItemChildNode` l.467 admits one), or set
+    `orderedListData.start` (l.437) on the continuation.
 
     The body and a table cell both come through here, so a list in a cell is a
     list. An aside does not and must not; the reason is in `_callout`.
+
+    What differs between the two flows is upstream of here, and stays there:
+    `emit` drops a paragraph with no text and `_cell` keeps one, because an
+    empty cell needs a placeholder to keep the grid rectangular and the body
+    only needs the gap gone. This helper filters nothing either way.
     """
     out = []
-    run_kind, run_items = "", []
+    run_key, run_items = None, []
 
     def flush():
-        nonlocal run_kind, run_items
+        nonlocal run_key, run_items
         if run_items:
-            out.append(_list(run_kind, run_items, ids))
-        run_kind, run_items = "", []
+            out.append(_list(run_key[0], run_items, ids))
+        run_key, run_items = None, []
 
     for block in blocks:
         kind = block.list_kind if isinstance(block, Para) else ""
         if kind:
-            if kind != run_kind:
+            key = (kind, block.list_id)
+            if key != run_key:
                 flush()
-                run_kind = kind
+                run_key = key
             run_items.append(block)
             continue
         flush()

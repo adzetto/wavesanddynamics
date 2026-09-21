@@ -22,6 +22,7 @@ class Para:
     runs: list[Run] = field(default_factory=list)
     style: str = ""        # "", "Heading1", "Heading2", ...
     list_kind: str = ""    # "", "bullet", "ordered"
+    list_id: str = ""      # Word's w:numId: which list this item belongs to
     list_level: int = 0
     align: str = "AUTO"    # AUTO | LEFT | RIGHT | CENTER | JUSTIFY
 

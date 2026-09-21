@@ -17,9 +17,14 @@ Bytes are the standing constraint. A CMS item holds 500,000 bytes across all of
 its fields and the rich content counts against that, so nothing optional is
 emitted and node ids stay as short as uniqueness allows.
 """
+import re
+
 from tools.ricos.blocks import Para
 
 HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
+
+# Word's own styles for the lines of a contents list, TOC1 down to TOC9.
+TOC_STYLE = re.compile(r"TOC[1-9]$")
 
 
 class Ids:
@@ -64,6 +69,12 @@ def _text_nodes(runs):
 
 
 def _para(block, ids):
+    """One paragraph or heading node. Nothing is filtered here.
+
+    Cell emission calls this directly, so that an empty paragraph standing in
+    an empty table cell still produces its placeholder node; the body's filter
+    is `_drop_from_body`, one level up.
+    """
     level = HEADING_LEVEL.get(block.style)
     if level:
         return {"type": "HEADING", "id": ids.next(),
@@ -76,6 +87,35 @@ def _para(block, ids):
                               "indentation": 0}}
 
 
+def _drop_from_body(block):
+    r"""Whether a body paragraph is an artefact rather than content.
+
+    This decision lives in the emitter and not in the reader on purpose. The
+    reader's job is to extract the document faithfully, whatever is in it;
+    deciding what earns a place on the page is this side's call.
+
+    Two kinds never reach the page:
+
+    A paragraph styled TOC1-TOC9 is a contents list the author typed by hand.
+    Word's generated one is an SDT and is already dropped upstream, and this is
+    the same artefact by another route: the site builds its navigation from the
+    headings, so a second list is redundant, and the typed one arrives broken
+    anyway - "1. What is Machine Learning?\t2", the heading fused to a page
+    number that means nothing on a web page.
+
+    A paragraph with no text is how Word leaves vertical space. In Ricos
+    spacing is styling, not content, so an empty block would render as a stray
+    gap and cost about 100 bytes of the item's budget to do it.
+
+    **Body only.** An empty paragraph inside a table cell is a placeholder that
+    keeps the grid rectangular, and it has to survive - see `_para`, which
+    drops nothing and is what cell emission calls.
+    """
+    if TOC_STYLE.match(block.style):
+        return True
+    return not any(r.text for r in block.runs)
+
+
 def emit(blocks):
     """Return a complete Ricos document for these blocks.
 
@@ -85,8 +125,9 @@ def emit(blocks):
     ids = Ids()
     nodes = []
     for block in blocks:
-        if isinstance(block, Para):
-            nodes.append(_para(block, ids))
+        if not isinstance(block, Para) or _drop_from_body(block):
+            continue
+        nodes.append(_para(block, ids))
     return {"nodes": nodes,
             "metadata": {"version": 1},
             "documentStyle": {}}

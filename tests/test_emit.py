@@ -9,7 +9,7 @@ ricos-schema typings declare.
 import json
 
 from tools.ricos.blocks import Para, Run
-from tools.ricos.emit import emit
+from tools.ricos.emit import Ids, _para, emit
 
 
 def test_paragraph_wraps_text_node():
@@ -35,8 +35,28 @@ def test_bold_run_carries_decoration():
 
 
 def test_empty_paragraph_has_no_text_child():
-    doc = emit([Para(runs=[])])
-    assert doc["nodes"][0]["nodes"] == []
+    """The body drops these, but a table cell's placeholder keeps the grid
+    rectangular and has to survive, so the node it gets still matters: an empty
+    paragraph is a node with no children, never a TEXT holding "". That is the
+    shape cell emission will take from `_para`, which filters nothing.
+    """
+    node = _para(Para(runs=[]), Ids())
+    assert node["nodes"] == []
+
+
+def test_empty_paragraph_is_not_emitted_in_the_body():
+    doc = emit([Para(runs=[Run(text="a")]), Para(runs=[]), Para(runs=[Run(text="b")])])
+    assert [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]] == ["a", "b"]
+
+
+def test_contents_list_paragraph_is_not_emitted():
+    """TOC1-TOC9 is a hand-typed contents list: redundant, and glued to the page
+    numbers it was typed with."""
+    blocks = [Para(runs=[Run(text="1. What is Machine Learning?\t2")], style="TOC1"),
+              Para(runs=[Run(text="body")], style="TOC9"),
+              Para(runs=[Run(text="kept")])]
+    doc = emit(blocks)
+    assert [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]] == ["kept"]
 
 
 def test_every_block_node_has_a_unique_id():

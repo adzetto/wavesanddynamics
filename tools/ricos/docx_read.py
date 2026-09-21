@@ -207,6 +207,16 @@ def _cell_blocks(tc, rels, z):
     return out or [Para()]
 
 
+def _cell_has_text(cell):
+    """True when the cell carries any text of its own."""
+    return any(r.text.strip() for b in cell if isinstance(b, Para) for r in b.runs)
+
+
+def _cell_is_bold(cell):
+    """True when any of the cell's text is bold."""
+    return any(r.bold for b in cell if isinstance(b, Para) for r in b.runs)
+
+
 def _span(tc):
     """How many grid columns this cell covers."""
     pr = tc.find(W + "tcPr")
@@ -245,6 +255,12 @@ def _table(tbl, rels, z):
     what Ricos renders as a broken table. The widest row is the target rather
     than w:tblGrid because the grid outlives the edits that shrank a table and
     can declare a column no row still uses.
+
+    The first row is a header when every cell in it that says anything says it
+    in bold. An empty cell is not evidence against a header row: a confusion
+    matrix leaves its top-left corner blank and is a header row all the same,
+    and flattening a merged cell leaves blanks of our own making that must not
+    vote either.
     """
     trs = tbl.findall(W + "tr")
     drawn = trs[0].findall(W + "tc") if len(trs) == 1 else []
@@ -254,10 +270,8 @@ def _table(tbl, rels, z):
     width = max((len(row) for row in rows), default=0)
     for row in rows:
         row.extend([Para()] for _ in range(width - len(row)))
-    header = bool(rows and rows[0]) and all(
-        any(r.bold for b in cell if isinstance(b, Para) for r in b.runs)
-        for cell in rows[0]
-    )
+    spoken = [cell for cell in (rows[0] if rows else []) if _cell_has_text(cell)]
+    header = bool(spoken) and all(_cell_is_bold(cell) for cell in spoken)
     return Table(rows=rows, header_row=header)
 
 

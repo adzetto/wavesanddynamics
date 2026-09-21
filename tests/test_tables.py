@@ -97,6 +97,24 @@ def test_no_header_row_when_one_cell_of_the_first_row_is_plain(docx_factory):
     assert blocks[0].header_row is False
 
 
+def test_an_empty_cell_does_not_veto_a_header_row(docx_factory):
+    """A confusion matrix leaves its corner blank and is a header row all the same.
+
+    An empty cell carries no evidence either way, whether the author left it
+    empty or flattening a merged cell put it there.
+    """
+    body = _table([["", _p("Predicted Positive", bold=True),
+                    _p("Predicted Negative", bold=True)],
+                   [_p("Actual Positive", bold=True), "5", "2"]])
+    assert read_blocks(docx_factory(body))[0].header_row is True
+
+
+def test_a_first_row_of_nothing_but_empty_cells_is_not_a_header_row(docx_factory):
+    """"Every cell that speaks is bold" must not pass a row that says nothing."""
+    body = _table([["", ""], ["Ada", "Eng"]])
+    assert read_blocks(docx_factory(body))[0].header_row is False
+
+
 def test_bold_switched_off_does_not_make_a_header_row(docx_factory):
     """Word cancels an inherited bold with a value, not by leaving the tag out."""
     off = '<w:p><w:r><w:rPr><w:b w:val="0"/></w:rPr><w:t>Category</w:t></w:r></w:p>'

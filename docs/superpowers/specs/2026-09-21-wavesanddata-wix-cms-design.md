@@ -110,18 +110,35 @@ Aşıldığında `WDE0009: Document is too large` ile başarısız oluyor.
 Önemli olan şu: medya alanları (image, document, video, audio, gallery) bu sınıra **dahil
 değil**, ama **Rich Content dahil**. Yani Ricos JSON'unun tamamı 500 KB'a sığmak zorunda.
 
-Ricos tablo JSON'u çok konuşkan: her hücre `TABLE_CELL` + `PARAGRAPH` + `TEXT` sarmalı,
-metin girmeden yaklaşık 150-200 bayt. 28 tablolu Machine Learning rehberi (18.192 kelime,
-44 sayfa, 30 şekil) tek kayda büyük ihtimalle sığmaz.
+**Ölçüldü (22 Eylül 2026).** Dönüştürücü yazıldı ve yedi belgenin tamamı gerçek Ricos'a
+çevrildi. Bu paragrafın ilk hali "ML rehberi tek kayda büyük ihtimalle sığmaz" diyordu;
+ölçüm aksini söylüyor:
 
-**Sonuç: belge başına bir kayıt değil, bölüm başına bir kayıt.**
+| belge | bayt | sınıra oranı |
+|---|---:|---|
+| Machine Learning - The Complete Picture and Guide_5 | **358.913** | **%72** |
+| Signal Processing, System Identification… | 121.268 | %24 |
+| Dynamical_Behavior_of_Engineering_Structures… | 97.969 | %20 |
+| Understanding_SHM_and_NDT | 44.973 | %9 |
+| Sound Detection and Tracking | 26.014 | %5 |
+| Brochure - SHM and NDT - 2 pages | 18.248 | %4 |
+| From_Bridges_to_Photons | 12.353 | %2 |
 
-Bu zorlama bir çözüm değil, üç şeyi birden düzeltiyor:
+Ricos tablo JSON'u gerçekten konuşkan — büyüme hücre sayısını takip ediyor: ML ×2,35,
+Signal Processing ×1,88, tablosuz Sound Detection yalnızca ×1,25. Ama en büyük belge bile
+sınırın altında.
 
-- ML rehberinin zaten 12 numaralı bölümü var, kırılma noktaları hazır.
-- 44 sayfalık tek dev sayfa yerine 12 ayrı indekslenebilir sayfa çıkıyor. Sitenin amacı arama
-  görünürlüğü olduğuna göre bu kayıp değil kazanç.
-- Hocanın "bölüm ekleme" modeline zaten bu uyuyor.
+**Sonuç: belge başına bir kayıt değil, bölüm başına bir kayıt — ama gerekçesi değişti.**
+
+Artık teknik zorunluluk değil. Bölme kararı iki sebeple ayakta:
+
+- **SEO ve okunabilirlik.** 44 sayfalık tek dev sayfa yerine 12 indekslenebilir sayfa.
+  Sitenin varlık sebebi arama görünürlüğü olduğuna göre bu kayıp değil kazanç.
+- **Büyüme payı.** Belge 15-21 Eylül arasında 9.246'dan 18.192 kelimeye çıktı. Kelime başına
+  ~19,7 bayttan, kalan %28 boşluk yaklaşık 7.000 kelime demek. Altı günde 9.000 kelime ekleyen
+  biri için ince bir pay; tek kayıtta tutmak birkaç ay sonra duvara çarpmak olur.
+
+Kırılma noktaları hazır: ML rehberinin zaten 12 numaralı bölümü var.
 
 Her yazımdan önce `JSON.stringify(ricos).length` ölçülecek ve 500 KB'ın altında olduğu
 doğrulanacak; aşarsa bölüm daha küçük parçalara ayrılacak.

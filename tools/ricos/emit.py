@@ -114,7 +114,7 @@ def _drop_from_body(block):
     **Body only.** This is called from `emit`'s own loop and from nowhere else.
     An empty paragraph inside a table cell is a placeholder that keeps the grid
     rectangular, and it has to survive - see `_cell`, which reaches `_para`
-    through `_node` and drops nothing on the way.
+    through `_nodes` and drops nothing on the way.
     """
     if TOC_STYLE.match(block.style):
         return True
@@ -156,9 +156,10 @@ def _cell(blocks, ids, media_ids):
 
     Nothing is filtered here. A cell whose only paragraph is empty still emits
     that paragraph, because dropping it would cost the row a cell and leave the
-    table ragged.
+    table ragged. The placeholder also catches a cell whose only content was a
+    picture with no source, which `_nodes` skips.
     """
-    nodes = [n for n in (_node(b, ids, media_ids) for b in blocks) if n]
+    nodes = [n for b in blocks for n in _nodes(b, ids, media_ids)]
     if not nodes:
         nodes = [{"type": "PARAGRAPH", "id": ids.next(), "nodes": [],
                   "paragraphData": {"textStyle": {"textAlignment": "AUTO"},
@@ -186,9 +187,13 @@ def _joined_runs(blocks):
     honours it breaks the line, and one that does not collapses it to a space,
     which is still a word gap.
 
-    Only paragraphs survive the flattening. A picture cannot, because the one
-    child a BLOCKQUOTE takes is already spoken for; no aside in the corpus
-    holds one.
+    **Unverified against a live Ricos viewer.** Whether a newline inside a TEXT
+    node renders as a line break or collapses has not been checked on a real
+    page. If it collapses and the title still reads as glued to the sentence
+    after it, the fallback is one BLOCKQUOTE per source paragraph instead of
+    one carrying them all - several boxes where Word drew one, which is why it
+    is not the first choice. That decision belongs to the phase that renders a
+    real page; it is written down here so it need not be rediscovered.
     """
     out = []
     for para in (b for b in blocks if isinstance(b, Para)):
@@ -199,30 +204,50 @@ def _joined_runs(blocks):
 
 
 def _callout(block, ids, media_ids):
-    """One BLOCKQUOTE, which takes exactly one child - see `_joined_runs`."""
-    inner = [n for n in (_node(b, ids, media_ids) for b in block.blocks) if n]
-    if len(inner) != 1:
-        inner = [_para(Para(runs=_joined_runs(block.blocks)), ids)]
-    return {"type": "BLOCKQUOTE", "id": ids.next(), "nodes": inner,
-            "blockquoteData": {"indentation": 0}}
+    """A BLOCKQUOTE for the aside's words, then whatever else it held.
+
+    The BLOCKQUOTE takes exactly one child - see `_joined_runs` - so the
+    paragraphs become one and anything that is not a paragraph follows the
+    quote as a sibling instead of being dropped. The aside loses the picture's
+    position inside itself and keeps the picture, which is the right way round.
+    An aside holding no paragraphs at all is just its contents: an empty quote
+    box around them would be a stray frame on the page.
+    """
+    paras = [b for b in block.blocks if isinstance(b, Para)]
+    out = []
+    if paras:
+        one = paras[0] if len(paras) == 1 else Para(runs=_joined_runs(paras))
+        out.append({"type": "BLOCKQUOTE", "id": ids.next(),
+                    "nodes": [_para(one, ids)],
+                    "blockquoteData": {"indentation": 0}})
+    out.extend(n for b in block.blocks if not isinstance(b, Para)
+               for n in _nodes(b, ids, media_ids))
+    return out
 
 
-def _node(block, ids, media_ids):
-    """The node for one block, or None for a kind not handled yet.
+def _nodes(block, ids, media_ids):
+    """The nodes for one block: none, one, or - for an aside - several.
 
-    Reached from the body and from inside a cell alike, so it filters nothing.
+    Reached from the body and from inside a cell alike, so it filters nothing
+    that is content. A picture with no filename is not content: the empty
+    filename means Word never declared the relationship it pointed at, and the
+    node it would make carries `src: {"id": ""}`, which Ricos stores without
+    complaint and renders as a hole. A picture that has a filename but no
+    measured size is kept - the file exists, and the upload step can repair the
+    dimensions. Neither state occurs in the present corpus.
+
     `_cell` and `_callout` are defined above it and call it; that is fine,
     because the name is resolved when the call runs, not when it is compiled.
     """
     if isinstance(block, Para):
-        return _para(block, ids)
+        return [_para(block, ids)]
     if isinstance(block, Figure):
-        return _image(block, ids, media_ids)
+        return [_image(block, ids, media_ids)] if block.filename else []
     if isinstance(block, Table):
-        return _table(block, ids, media_ids)
+        return [_table(block, ids, media_ids)]
     if isinstance(block, Callout):
         return _callout(block, ids, media_ids)
-    return None
+    return []
 
 
 def emit(blocks, media_ids=None):
@@ -233,7 +258,7 @@ def emit(blocks, media_ids=None):
 
     The body filter is applied here and only here. `_drop_from_body` reads
     `block.style`, which only a Para has, so the test for it is asked first and
-    every other kind of block goes straight to `_node`.
+    every other kind of block goes straight to `_nodes`.
 
     Lists are not handled yet and pass through silently; they arrive later.
     """
@@ -243,9 +268,7 @@ def emit(blocks, media_ids=None):
     for block in blocks:
         if isinstance(block, Para) and _drop_from_body(block):
             continue
-        node = _node(block, ids, media_ids)
-        if node:
-            nodes.append(node)
+        nodes.extend(_nodes(block, ids, media_ids))
     return {"nodes": nodes,
             "metadata": {"version": 1},
             "documentStyle": {}}

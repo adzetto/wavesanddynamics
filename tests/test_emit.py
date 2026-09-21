@@ -217,3 +217,45 @@ def test_the_body_filter_still_applies_beside_the_new_block_types():
               Para(runs=[Run(text="kept")])]
     types = [n["type"] for n in emit(blocks)["nodes"]]
     assert types == ["IMAGE", "TABLE", "BLOCKQUOTE", "PARAGRAPH"]
+
+
+def test_a_picture_in_a_callout_survives_as_a_sibling():
+    """A BLOCKQUOTE takes one child and the aside's words have it, so a picture
+    inside the aside has nowhere to go. It follows the quote instead of being
+    dropped: the aside loses where the picture sat inside it and keeps the
+    picture, which is the right way round. No aside in the corpus holds one, so
+    this is the latent case, pinned before it can happen quietly.
+    """
+    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
+                                Figure(filename="i.png", width=1, height=1),
+                                Para(runs=[Run(text="It has four parts.")])])])
+    assert [n["type"] for n in doc["nodes"]] == ["BLOCKQUOTE", "IMAGE"]
+    quote = doc["nodes"][0]
+    text = "".join(t["textData"]["text"] for t in quote["nodes"][0]["nodes"])
+    assert text == "The core idea\nIt has four parts."
+
+
+def test_a_callout_holding_no_paragraphs_is_not_wrapped_in_an_empty_quote():
+    doc = emit([Callout(blocks=[Figure(filename="i.png", width=1, height=1)])])
+    assert [n["type"] for n in doc["nodes"]] == ["IMAGE"]
+
+
+def test_figure_with_no_source_is_skipped_but_an_unmeasured_one_is_kept():
+    """An empty filename means Word never declared the relationship the picture
+    pointed at, so `src` would be `{"id": ""}` - stored without complaint and
+    rendered as a hole. A figure that has a file but no measured size is the
+    other case and is kept: the file is real and the upload step can repair the
+    dimensions. Neither state occurs in the present corpus.
+    """
+    doc = emit([Figure(filename="", width=640, height=480),
+                Figure(filename="real.png", width=0, height=0)])
+    assert [n["type"] for n in doc["nodes"]] == ["IMAGE"]
+    assert doc["nodes"][0]["imageData"]["image"]["src"] == {"id": "real.png"}
+
+
+def test_a_cell_emptied_by_a_skipped_figure_keeps_its_placeholder():
+    """Skipping a picture must not cost the row a cell."""
+    t = Table(rows=[[[Figure(filename="")], [Para(runs=[Run(text="x")])]]])
+    row = emit([t])["nodes"][0]["nodes"][0]
+    assert [c["type"] for c in row["nodes"]] == ["TABLE_CELL", "TABLE_CELL"]
+    assert row["nodes"][0]["nodes"][0]["type"] == "PARAGRAPH"

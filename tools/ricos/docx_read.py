@@ -169,6 +169,11 @@ def _list_of(ppr, kinds):
     continuation of an item `ListParagraph` as well, and twelve paragraphs in
     this corpus are exactly that - prose carrying no `w:numPr`, which a
     style-based test would turn into bullets.
+
+    A depth that will not read falls back to the top level, the way `_span`
+    falls back to one column. An unreadable `w:ilvl` costs one paragraph its
+    indent; raising would cost the whole document its read, and the paragraph
+    is an item of a list either way.
     """
     if ppr is None:
         return "", 0
@@ -178,7 +183,12 @@ def _list_of(ppr, kinds):
     num_id = numpr.find(W + "numId")
     ilvl = numpr.find(W + "ilvl")
     kind = kinds.get(num_id.get(W + "val") if num_id is not None else "", "bullet")
-    level = int(ilvl.get(W + "val")) if ilvl is not None else 0
+    level = 0
+    if ilvl is not None:
+        try:
+            level = max(0, int(ilvl.get(W + "val") or 0))
+        except ValueError:
+            pass
     return kind, level
 
 

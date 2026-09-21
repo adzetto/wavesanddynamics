@@ -27,10 +27,8 @@ from tools.ricos.blocks import Callout, Figure, Para, Table
 
 HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
 
-# A list kind, as the reader names it, to its node type and the key its own
-# options live under. Paired here so the two can never drift apart.
-LIST_NODE = {"bullet": ("BULLETED_LIST", "bulletedListData"),
-             "ordered": ("ORDERED_LIST", "orderedListData")}
+# A list kind, as the reader names it, to its Ricos node type.
+LIST_NODE = {"bullet": "BULLETED_LIST", "ordered": "ORDERED_LIST"}
 
 # Word's own styles for the lines of a contents list, TOC1 down to TOC9.
 TOC_STYLE = re.compile(r"TOC[1-9]$")
@@ -294,12 +292,20 @@ def _list(kind, items, ids):
     admit a list inside an item, but all 107 list paragraphs in this corpus sit
     at level 0, so a nesting rule here would be a guess with nothing to check
     it against. A deeper item joins its list as a sibling and loses its indent.
+
+    No `bulletedListData`/`orderedListData` is emitted. Both are optional
+    (l.450, l.426) and the only field either one could carry here is
+    `indentation`, declared as a left margin whose "possible values are from
+    `1` to `4`" (l.430, l.433, l.453). These lists have no margin of their own,
+    and `0` is outside that range - it is `offset`, not `indentation`, that
+    documents `0` as "the default nesting level" (l.434, l.454). Ricos
+    validates nothing on the way in, so an out-of-range value would be stored
+    and then rendered however the viewer felt; leaving the object out asks for
+    the default instead, and saves ~35 bytes a list.
     """
-    node_type, data_key = LIST_NODE[kind]
-    return {"type": node_type, "id": ids.next(),
+    return {"type": LIST_NODE[kind], "id": ids.next(),
             "nodes": [{"type": "LIST_ITEM", "id": ids.next(),
-                       "nodes": [_para(item, ids)]} for item in items],
-            data_key: {"indentation": 0}}
+                       "nodes": [_para(item, ids)]} for item in items]}
 
 
 def _nodes(blocks, ids, media_ids):
@@ -310,6 +316,17 @@ def _nodes(blocks, ids, media_ids):
     same numbering definition, and it ends wherever the next block stops being
     one - a different marker, a picture hoisted out of an item, a table, or
     plain prose.
+
+    A picture is the one of those that is not the author's own doing, and it
+    carries a cost that is currently invisible. `_para_blocks` hoists a picture
+    out of the paragraph it was anchored in, because Ricos has no inline image,
+    so a list broken by one continues as a second list node. This happens once
+    in the corpus, in the ML guide, and cannot be seen: every list there is
+    bulleted, and bullets do not count. In an **ordered** list the second half
+    would restart at `1`. If an ordered list ever gains a picture, the fix is
+    either to keep the image inside its LIST_ITEM - `ListItemChildNode` (l.467)
+    admits one - or to set `orderedListData.start` (l.437) on the continuation.
+
 
     The body and a table cell both come through here, so a list in a cell is a
     list. An aside does not and must not; the reason is in `_callout`.

@@ -70,6 +70,18 @@ def test_the_marker_comes_from_numbering_xml(docx_factory):
     assert read_blocks(bulleted)[0].list_kind == "bullet"
 
 
+def test_a_malformed_nesting_level_costs_one_paragraph_not_the_document(docx_factory):
+    """`_span` guards its own integer; reading a depth must degrade the same way.
+
+    An unreadable `w:ilvl` is one paragraph's indent, and the paragraph is
+    still an item of a list. Letting it raise would take the whole document
+    read down with it.
+    """
+    blocks = read_blocks(docx_factory(_li("a", ilvl="deep") + _li("b")))
+    assert [b.list_kind for b in blocks] == ["bullet", "bullet"]
+    assert [b.list_level for b in blocks] == [0, 0]
+
+
 def test_a_list_styled_paragraph_without_numbering_is_not_a_list(docx_factory, para_factory):
     """Word styles the indented continuation of an item ListParagraph as well.
 
@@ -114,11 +126,19 @@ def test_plain_paragraph_ends_a_list():
         "BULLETED_LIST", "PARAGRAPH", "BULLETED_LIST"]
 
 
-def test_each_list_kind_carries_its_own_data_key():
+def test_a_list_carries_no_indentation_it_cannot_express():
+    """`indentation` is documented `1` to `4`, and these lists have none.
+
+    Both data objects are optional (l.426, l.450) and `indentation` holds a
+    margin, not a nesting depth - `offset` is the field where `0` means "the
+    default" (l.434, l.454). Writing `0` into `indentation` would be a value
+    outside its declared range, which Ricos stores happily and renders however
+    it likes. Leaving the field out asks for the default instead.
+    """
     doc = emit([Para(runs=[Run(text="a")], list_kind="bullet"),
                 Para(runs=[Run(text="b")], list_kind="ordered")])
-    assert doc["nodes"][0]["bulletedListData"] == {"indentation": 0}
-    assert doc["nodes"][1]["orderedListData"] == {"indentation": 0}
+    assert "bulletedListData" not in doc["nodes"][0]
+    assert "orderedListData" not in doc["nodes"][1]
 
 
 def test_an_empty_paragraph_between_items_does_not_split_the_list():

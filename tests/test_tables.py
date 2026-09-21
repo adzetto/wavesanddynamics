@@ -33,8 +33,16 @@ def _p(text, bold=False):
 
 
 def _cell(content):
-    """One <w:tc>; plain text becomes a single paragraph, XML is taken as is."""
+    """One <w:tc>; a whole <w:tc> passes through, text becomes a paragraph."""
+    if content.startswith("<w:tc"):
+        return content
     return f"<w:tc>{content if content.startswith('<w:') else _p(content)}</w:tc>"
+
+
+def _span_cell(content, n):
+    """One <w:tc> covering `n` grid columns, the way Word stores a merged cell."""
+    inner = content if content.startswith("<w:") else _p(content)
+    return f'<w:tc><w:tcPr><w:gridSpan w:val="{n}"/></w:tcPr>{inner}</w:tc>'
 
 
 def _table(rows):
@@ -94,6 +102,53 @@ def test_bold_switched_off_does_not_make_a_header_row(docx_factory):
     off = '<w:p><w:r><w:rPr><w:b w:val="0"/></w:rPr><w:t>Category</w:t></w:r></w:p>'
     blocks = read_blocks(docx_factory(_table([[off], ["Ada"]])))
     assert blocks[0].header_row is False
+
+
+# --- every row the same length ---------------------------------------------
+
+def test_a_merged_cell_becomes_the_columns_it_covers(docx_factory):
+    """Ricos has rows of cells and no reliable colspan, so a span is flattened."""
+    body = _table([[_span_cell("Feature Engineering", 3)], ["a", "b", "c"]])
+    blocks = read_blocks(docx_factory(body))
+    rows = blocks[0].rows
+    assert [len(r) for r in rows] == [3, 3]
+    assert rows[0][0][0].runs[0].text == "Feature Engineering"
+    assert rows[0][1] == [Para()]
+    assert rows[0][2] == [Para()]
+
+
+def test_a_cell_without_a_span_stays_one_cell(docx_factory):
+    body = _table([["Name", "Role"], ["Ada", "Eng"]])
+    assert [len(r) for r in read_blocks(docx_factory(body))[0].rows] == [2, 2]
+
+
+def test_a_row_that_stops_short_of_the_grid_is_padded(docx_factory):
+    """Word lets a row hold fewer cells than the table is wide.
+
+    Two of the three corpus tables that merge cells also do this, so expanding
+    the span is not on its own enough to leave every row the same length.
+    """
+    body = _table([["TYPES OF MONITORING"], ["a", "b", "c"]])
+    rows = read_blocks(docx_factory(body))[0].rows
+    assert [len(r) for r in rows] == [3, 3]
+    assert rows[0][0][0].runs[0].text == "TYPES OF MONITORING"
+    assert rows[0][2] == [Para()]
+
+
+def test_padding_cells_are_not_shared_between_rows(docx_factory):
+    """Each empty cell is its own list: later stages set ids on these blocks."""
+    body = _table([["one"], ["a", "b"], ["two"]])
+    rows = read_blocks(docx_factory(body))[0].rows
+    assert rows[0][1] is not rows[2][1]
+    assert rows[0][1][0] is not rows[2][1][0]
+
+
+def test_a_one_cell_table_is_a_callout_even_when_it_spans_columns(docx_factory):
+    """The aside test counts the cells he drew, not the columns Word gave them."""
+    body = f"<w:tbl><w:tr>{_span_cell('How to use this guide', 3)}</w:tr></w:tbl>"
+    blocks = read_blocks(docx_factory(body))
+    assert isinstance(blocks[0], Callout)
+    assert blocks[0].blocks[0].runs[0].text == "How to use this guide"
 
 
 def test_empty_cell_still_contributes_a_block(docx_factory):

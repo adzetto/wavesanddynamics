@@ -207,12 +207,53 @@ def _cell_blocks(tc, rels, z):
     return out or [Para()]
 
 
+def _span(tc):
+    """How many grid columns this cell covers."""
+    pr = tc.find(W + "tcPr")
+    el = None if pr is None else pr.find(W + "gridSpan")
+    if el is None:
+        return 1
+    try:
+        return max(1, int(el.get(W + "val") or 1))
+    except ValueError:
+        return 1
+
+
+def _row_cells(tr, rels, z):
+    """One row's cells, with a merged cell expanded to the columns it covers.
+
+    Ricos builds a table strictly as rows of cells and has no reliable colspan,
+    so a merged cell is flattened rather than spanned: its content stays in the
+    first column it covered and the columns after it arrive empty.
+    """
+    out = []
+    for tc in tr.findall(W + "tc"):
+        out.append(_cell_blocks(tc, rels, z))
+        out.extend([Para()] for _ in range(_span(tc) - 1))
+    return out
+
+
 def _table(tbl, rels, z):
-    """A Table, or a Callout when the table is the one-cell kind he asides with."""
-    rows = [[_cell_blocks(tc, rels, z) for tc in tr.findall(W + "tc")]
-            for tr in tbl.findall(W + "tr")]
-    if len(rows) == 1 and len(rows[0]) == 1:
-        return Callout(blocks=rows[0][0])
+    """A Table, or a Callout when the table is the one-cell kind he asides with.
+
+    The aside test counts the cells the author drew, before any span is
+    expanded: one box is one box whatever grid columns it was told to cover.
+
+    Rows are then padded out to the width of the widest one. Word lets a row
+    stop short of the grid, so expanding a span is not on its own enough to
+    leave every row the same length, and a row shorter than its neighbours is
+    what Ricos renders as a broken table. The widest row is the target rather
+    than w:tblGrid because the grid outlives the edits that shrank a table and
+    can declare a column no row still uses.
+    """
+    trs = tbl.findall(W + "tr")
+    drawn = trs[0].findall(W + "tc") if len(trs) == 1 else []
+    if len(drawn) == 1:
+        return Callout(blocks=_cell_blocks(drawn[0], rels, z))
+    rows = [_row_cells(tr, rels, z) for tr in trs]
+    width = max((len(row) for row in rows), default=0)
+    for row in rows:
+        row.extend([Para()] for _ in range(width - len(row)))
     header = bool(rows and rows[0]) and all(
         any(r.bold for b in cell if isinstance(b, Para) for r in b.runs)
         for cell in rows[0]

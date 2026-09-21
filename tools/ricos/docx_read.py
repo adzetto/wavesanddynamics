@@ -213,8 +213,9 @@ def _cell_has_text(cell):
 
 
 def _cell_is_bold(cell):
-    """True when any of the cell's text is bold."""
-    return any(r.bold for b in cell if isinstance(b, Para) for r in b.runs)
+    """True when any of the cell's text is bold. A bold blank is not text."""
+    return any(r.bold and r.text.strip()
+               for b in cell if isinstance(b, Para) for r in b.runs)
 
 
 def _span(tc):

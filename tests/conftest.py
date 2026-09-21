@@ -106,6 +106,22 @@ def para(text, style=None, bold=False):
     return f"<w:p>{ppr}<w:r>{rpr}<w:t>{escape(text)}</w:t></w:r></w:p>"
 
 
+def picture(rel_id="rId5"):
+    """One run holding an inline picture that points at `rel_id`.
+
+    It lives here with NAMESPACES because it is only well-formed inside them:
+    the prefixes it uses are declared once, on the document element above, and a
+    second copy of this XML would go stale against them unnoticed.
+    """
+    return (
+        '<w:r><w:drawing><wp:inline>'
+        '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
+        f'<a:blip r:embed="{rel_id}"/>'
+        "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
+        "</wp:inline></w:drawing></w:r>"
+    )
+
+
 @pytest.fixture
 def docx_factory():
     return make_docx

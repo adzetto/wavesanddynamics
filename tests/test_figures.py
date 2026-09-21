@@ -9,19 +9,10 @@ comes from the same reading order, so it is settled here too.
 import struct
 import zlib
 
+from conftest import picture
+
 from tools.ricos.blocks import Figure, Para
 from tools.ricos.docx_read import read_blocks
-
-def picture(rel_id="rId5"):
-    """One run holding an inline picture that points at `rel_id`."""
-    return (
-        '<w:r><w:drawing><wp:inline>'
-        '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
-        f'<a:blip r:embed="{rel_id}"/>'
-        "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
-        "</wp:inline></w:drawing></w:r>"
-    )
-
 
 PICTURE = picture()
 DRAWING = f"<w:p>{PICTURE}</w:p>"

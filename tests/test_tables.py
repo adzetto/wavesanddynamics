@@ -12,36 +12,22 @@ same caption underneath. Sixteen of the corpus's pictures live in cells and were
 unreachable until this task, so every rule the body already had has to reach
 them too.
 """
+from conftest import para, picture
+
 from tools.ricos.blocks import Callout, Figure, Para, Table
 from tools.ricos.docx_read import read_blocks
-
-
-def picture(rel_id="rId5"):
-    """One run holding an inline picture that points at `rel_id`."""
-    return (
-        '<w:r><w:drawing><wp:inline>'
-        '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
-        f'<a:blip r:embed="{rel_id}"/>'
-        "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
-        "</wp:inline></w:drawing></w:r>"
-    )
-
-
-def _p(text, bold=False):
-    rpr = "<w:rPr><w:b/></w:rPr>" if bold else ""
-    return f"<w:p><w:r>{rpr}<w:t>{text}</w:t></w:r></w:p>"
 
 
 def _cell(content):
     """One <w:tc>; a whole <w:tc> passes through, text becomes a paragraph."""
     if content.startswith("<w:tc"):
         return content
-    return f"<w:tc>{content if content.startswith('<w:') else _p(content)}</w:tc>"
+    return f"<w:tc>{content if content.startswith('<w:') else para(content)}</w:tc>"
 
 
 def _span_cell(content, n):
     """One <w:tc> covering `n` grid columns, the way Word stores a merged cell."""
-    inner = content if content.startswith("<w:") else _p(content)
+    inner = content if content.startswith("<w:") else para(content)
     return f'<w:tc><w:tcPr><w:gridSpan w:val="{n}"/></w:tcPr>{inner}</w:tc>'
 
 
@@ -84,14 +70,14 @@ def test_a_single_row_of_many_cells_is_a_table_not_a_callout(docx_factory):
 
 
 def test_header_row_when_every_cell_of_the_first_row_is_bold(docx_factory):
-    body = _table([[_p("Category", bold=True), _p("Schematic figure", bold=True)],
+    body = _table([[para("Category", bold=True), para("Schematic figure", bold=True)],
                    ["Structural dynamics", "Bridge vibration"]])
     blocks = read_blocks(docx_factory(body))
     assert blocks[0].header_row is True
 
 
 def test_no_header_row_when_one_cell_of_the_first_row_is_plain(docx_factory):
-    body = _table([[_p("Category", bold=True), "Schematic figure"],
+    body = _table([[para("Category", bold=True), "Schematic figure"],
                    ["Structural dynamics", "Bridge vibration"]])
     blocks = read_blocks(docx_factory(body))
     assert blocks[0].header_row is False
@@ -103,9 +89,9 @@ def test_an_empty_cell_does_not_veto_a_header_row(docx_factory):
     An empty cell carries no evidence either way, whether the author left it
     empty or flattening a merged cell put it there.
     """
-    body = _table([["", _p("Predicted Positive", bold=True),
-                    _p("Predicted Negative", bold=True)],
-                   [_p("Actual Positive", bold=True), "5", "2"]])
+    body = _table([["", para("Predicted Positive", bold=True),
+                    para("Predicted Negative", bold=True)],
+                   [para("Actual Positive", bold=True), "5", "2"]])
     assert read_blocks(docx_factory(body))[0].header_row is True
 
 
@@ -113,6 +99,17 @@ def test_a_first_row_of_nothing_but_empty_cells_is_not_a_header_row(docx_factory
     """"Every cell that speaks is bold" must not pass a row that says nothing."""
     body = _table([["", ""], ["Ada", "Eng"]])
     assert read_blocks(docx_factory(body))[0].header_row is False
+
+
+def test_a_bold_blank_does_not_make_a_cell_count_as_bold(docx_factory):
+    """Word leaves bold whitespace behind between words; it is not a label.
+
+    The cell speaks, so it is consulted, and what it says is not bold.
+    """
+    cell = ('<w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve"> </w:t></w:r>'
+            "<w:r><w:t>Category</w:t></w:r></w:p>")
+    blocks = read_blocks(docx_factory(_table([[cell], ["Ada"]])))
+    assert blocks[0].header_row is False
 
 
 def test_bold_switched_off_does_not_make_a_header_row(docx_factory):
@@ -211,7 +208,7 @@ def test_keeps_prose_written_around_a_picture_in_a_cell(docx_factory):
 
     Ricos has no inline image, so the picture is hoisted out of the sentence it
     was anchored in; emitting the picture *instead of* the paragraph would drop
-    the sentence, and in this cell that is 361 characters of real prose.
+    the sentence, and in this cell that is 541 characters of real prose.
     """
     cell = ("<w:p><w:r><w:t>Acoustic emission-based monitoring: </w:t></w:r>"
             + picture()
@@ -226,7 +223,7 @@ def test_keeps_prose_written_around_a_picture_in_a_cell(docx_factory):
 
 def test_pairs_a_caption_with_the_picture_above_it_inside_a_cell(docx_factory):
     """Caption folding walks the top level; a cell is a flow of its own too."""
-    cell = f"<w:p>{picture()}</w:p>" + _p("Figure 3. Bridge vibration.")
+    cell = f"<w:p>{picture()}</w:p>" + para("Figure 3. Bridge vibration.")
     blocks = read_blocks(docx_factory(_table([[cell, "other"]])))
     cell_blocks = blocks[0].rows[0][0]
     assert [type(b) for b in cell_blocks] == [Figure]
@@ -246,7 +243,7 @@ def test_a_caption_after_a_table_is_not_the_caption_of_a_picture_before_it(
         docx_factory):
     """A table between the two breaks the adjacency the pairing rule relies on."""
     body = (f"<w:p>{picture()}</w:p>" + _table([["a", "b"]])
-            + _p("Figure 3. Bridge vibration."))
+            + para("Figure 3. Bridge vibration."))
     blocks = read_blocks(docx_factory(body))
     assert [type(b) for b in blocks] == [Figure, Table, Para]
     assert blocks[0].caption == ""
@@ -278,7 +275,7 @@ def test_nested_table_is_flattened_into_the_cell(docx_factory):
     does, written down rather than left to be discovered.
     """
     inner = _table([["inner a", "inner b"]])
-    body = _table([[f"{_p('outer')}{inner}", "right"]])
+    body = _table([[f"{para('outer')}{inner}", "right"]])
     blocks = read_blocks(docx_factory(body))
     cell_blocks = blocks[0].rows[0][0]
     assert all(isinstance(b, Para) for b in cell_blocks)

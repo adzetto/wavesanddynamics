@@ -12,7 +12,11 @@ from xml.sax.saxutils import escape
 
 import pytest
 
-W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+# A namespace *declaration*, to paste into a document element - not the Clark
+# notation `W` that `docx_read` and `docx2ricos` use to name an element. The two
+# are opposite halves of the same namespace and one module imports from the
+# other, so they must not share a name.
+XMLNS_W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
 R = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
 A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
 PIC = 'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
@@ -26,7 +30,7 @@ MATH = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
 # Word wraps drawings in mc:AlternateContent and marks its 2010 namespaces
 # ignorable, so a snippet pasted out of a real file needs these declarations.
 NAMESPACES = (
-    f"{W} {R} {A} {PIC} {WP} {MC} {WP14} {W14} {VML} {OFFICE} {MATH} "
+    f"{XMLNS_W} {R} {A} {PIC} {WP} {MC} {WP14} {W14} {VML} {OFFICE} {MATH} "
     'mc:Ignorable="w14 wp14"'
 )
 
@@ -150,6 +154,12 @@ def shape(name="Straight Connector 1"):
     )
 
 
+def _chunk(tag, data):
+    """One PNG chunk: length, tag, payload, CRC."""
+    return (struct.pack(">I", len(data)) + tag + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+
 def png(width, height):
     """The smallest valid PNG of the given dimensions.
 
@@ -161,14 +171,22 @@ def png(width, height):
     passes whatever the code does, and pinning it proves nothing.
     """
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr)
+            + _chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
+            + _chunk(b"IEND", b""))
 
-    def chunk(tag, data):
-        return (struct.pack(">I", len(data)) + tag + data
-                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
 
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-            + chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
-            + chunk(b"IEND", b""))
+def oversized_png():
+    """A PNG declaring more pixels than Pillow is willing to decode.
+
+    Pillow compares the declared size with MAX_IMAGE_PIXELS as soon as it has
+    read the header and raises `Image.DecompressionBombError`, which derives
+    from Exception and not from OSError. Nothing is decoded, so the file stays
+    a few dozen bytes however many pixels it claims.
+    """
+    ihdr = struct.pack(">IIBBBBB", 30_000, 30_000, 8, 2, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr)
+            + _chunk(b"IDAT", zlib.compress(b"\x00" * 16)) + _chunk(b"IEND", b""))
 
 
 @pytest.fixture

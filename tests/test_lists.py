@@ -15,7 +15,7 @@ lives in one helper the body and a table cell both pass through, and why the
 aside deliberately does not use it: `BlockquoteNode.nodes` is declared
 `ParagraphNode[]`, so a list inside a quote would be off-type.
 """
-from conftest import W, para
+from conftest import XMLNS_W, para
 
 from tools.ricos.blocks import Callout, Para, Run
 from tools.ricos.docx_read import read_blocks
@@ -35,7 +35,7 @@ def _numbering(fmt, num_id="1"):
     """A word/numbering.xml declaring one list whose level 0 uses `fmt`."""
     return (
         '<?xml version="1.0" encoding="UTF-8"?>'
-        f"<w:numbering {W}>"
+        f"<w:numbering {XMLNS_W}>"
         '<w:abstractNum w:abstractNumId="7">'
         f'<w:lvl w:ilvl="0"><w:numFmt w:val="{fmt}"/></w:lvl>'
         "</w:abstractNum>"
@@ -80,7 +80,7 @@ def test_a_definition_with_no_readable_format_reads_as_a_bullet(docx_factory):
     """
     no_fmt = (
         '<?xml version="1.0" encoding="UTF-8"?>'
-        f"<w:numbering {W}>"
+        f"<w:numbering {XMLNS_W}>"
         '<w:abstractNum w:abstractNumId="7"><w:lvl w:ilvl="0"/></w:abstractNum>'
         '<w:num w:numId="1"><w:abstractNumId w:val="7"/></w:num>'
         '<w:num w:numId="2"><w:abstractNumId w:val="404"/></w:num>'
@@ -89,6 +89,45 @@ def test_a_definition_with_no_readable_format_reads_as_a_bullet(docx_factory):
     body = _li("a", num_id="1") + _li("b", num_id="2")
     blocks = read_blocks(docx_factory(body, media={"word/numbering.xml": no_fmt}))
     assert [b.list_kind for b in blocks] == ["bullet", "bullet"]
+
+
+def test_the_marker_comes_from_the_level_ilvl_names_not_the_first_one_written(
+        docx_factory):
+    """`w:ilvl` says which depth a level is; the order they are written does not.
+
+    Level 0's format stands for the whole definition, and reading the first
+    `w:lvl` instead reads whatever depth Word happened to write first. All 15
+    abstract definitions in this corpus write level 0 first, so the defect is
+    invisible here and would arrive with the next document.
+    """
+    out_of_order = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f"<w:numbering {XMLNS_W}>"
+        '<w:abstractNum w:abstractNumId="7">'
+        '<w:lvl w:ilvl="1"><w:numFmt w:val="decimal"/></w:lvl>'
+        '<w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl>'
+        "</w:abstractNum>"
+        '<w:num w:numId="1"><w:abstractNumId w:val="7"/></w:num>'
+        "</w:numbering>"
+    ).encode()
+    blocks = read_blocks(docx_factory(_li("a"),
+                                      media={"word/numbering.xml": out_of_order}))
+    assert blocks[0].list_kind == "bullet"
+
+
+def test_numbering_removed_is_not_a_list(docx_factory):
+    """`w:numId w:val="0"` means numbering was taken off this paragraph.
+
+    ECMA-376 §17.9.18: the value 0 never points at a numbering definition and
+    is only ever the removal of one. It is what Word writes when the author
+    lifts a single line out of a list, so reading it as membership turns
+    exactly the paragraph he de-listed into a bullet. No paragraph in this
+    corpus carries it; the first edit to a list produces one.
+    """
+    blocks = read_blocks(docx_factory(_li("in the list") + _li("taken out", num_id="0")))
+    assert [b.list_kind for b in blocks] == ["bullet", ""]
+    assert [b.list_id for b in blocks] == ["1", ""]
+    assert [n["type"] for n in emit(blocks)["nodes"]] == ["BULLETED_LIST", "PARAGRAPH"]
 
 
 def test_a_malformed_nesting_level_costs_one_paragraph_not_the_document(docx_factory):

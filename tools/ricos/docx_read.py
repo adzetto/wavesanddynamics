@@ -83,6 +83,15 @@ def _numbering_kinds(z):
     on, so reading per level could only split a list Word drew as one - and all
     107 list paragraphs in this corpus sit at level 0.
 
+    Level 0 is the one whose `w:ilvl` says so, not the one written first. All
+    15 abstract definitions here write it first, which makes reading the first
+    one right on this corpus and wrong in general: nothing in the format fixes
+    the order, and a definition written the other way round would give the
+    whole list the marker of whatever depth happened to come first. `w:ilvl` is
+    required on a `w:lvl`, so one without it is malformed; it is read as level
+    0 rather than skipped, because losing a definition's format over an
+    attribute Word always writes would cost more than it saves.
+
     `bullet` is the only Word format that is not a counter, so a format we can
     read and that is not `bullet` reads as ordered. Everything else reads as a
     bullet, and the two ways of knowing nothing agree: a `w:lvl` that declares
@@ -97,7 +106,8 @@ def _numbering_kinds(z):
         return {}
     abstract = {}
     for a in root.findall(W + "abstractNum"):
-        lvl = a.find(W + "lvl")
+        lvl = next((x for x in a.findall(W + "lvl")
+                    if (x.get(W + "ilvl") or "0") == "0"), None)
         fmt = None if lvl is None else lvl.find(W + "numFmt")
         val = None if fmt is None else fmt.get(W + "val")
         abstract[a.get(W + "abstractNumId")] = (
@@ -181,6 +191,13 @@ def _list_of(ppr, kinds):
     falls back to one column. An unreadable `w:ilvl` costs one paragraph its
     indent; raising would cost the whole document its read, and the paragraph
     is an item of a list either way.
+
+    `w:numId w:val="0"` is not a numbering definition and never points at one.
+    It is how the format says numbering has been *removed* here (ECMA-376
+    §17.9.18), which is what Word writes when the author takes one paragraph
+    out of a list, and reading it as membership turns exactly that paragraph
+    into a bullet. No paragraph in this corpus carries it; the first edit that
+    de-lists a line does.
     """
     if ppr is None:
         return "", "", 0
@@ -190,6 +207,8 @@ def _list_of(ppr, kinds):
     num_id = numpr.find(W + "numId")
     ilvl = numpr.find(W + "ilvl")
     num = (num_id.get(W + "val") or "") if num_id is not None else ""
+    if num == "0":
+        return "", "", 0
     level = 0
     if ilvl is not None:
         try:
@@ -238,6 +257,12 @@ def _figure(rel_id, rels, z):
     no reason to stop reading the document — and what separates them is whether
     the name is among the files copied out of the package, which only the CLI
     knows; `missing_media` in the manifest is where it says so.
+
+    `Image.DecompressionBombError` is caught with the rest because it is the
+    one Pillow raises that is not an `OSError`: a picture declaring more pixels
+    than Pillow will decode is exactly a picture that cannot be measured, and
+    letting it out would stop the whole document over one image - which is the
+    opposite of what the paragraph above promises.
     """
     target = rels.get(rel_id, "")
     if not target:
@@ -246,15 +271,27 @@ def _figure(rel_id, rels, z):
     try:
         with Image.open(io.BytesIO(z.read("word/" + target.lstrip("/")))) as im:
             width, height = im.size
-    except (KeyError, OSError, ValueError):
+    except (KeyError, OSError, ValueError, Image.DecompressionBombError):
         pass
     return Figure(rel_id=rel_id, filename=os.path.basename(target),
                   width=width, height=height)
 
 
 def _is_caption(block):
+    """Whether this block is the line Word left under a picture.
+
+    Word's own `Caption` style is asked first, because it is the author saying
+    so rather than us inferring it. Three paragraphs in this corpus carry it
+    and all three are captions the regex already catches, so it changes
+    nothing here - what it buys is the case the regex is known to get wrong. A
+    body sentence opening "Figure 13 puts the coverage difference ..." reads as
+    a caption to a rule that can only look at the first two words, and the
+    style is what tells the two apart for nothing.
+    """
     if not isinstance(block, Para) or not block.runs:
         return False
+    if block.style == "Caption":
+        return True
     return bool(CAPTION_RE.match("".join(r.text for r in block.runs)))
 
 

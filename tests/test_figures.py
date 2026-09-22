@@ -6,7 +6,7 @@ caption would arrive as an ordinary italic line, the picture as a bare image, an
 the reader would have to guess which line belongs to which picture. The number
 comes from the same reading order, so it is settled here too.
 """
-from conftest import picture, png
+from conftest import oversized_png, para, picture, png
 
 from tools.ricos.blocks import Figure, Para
 from tools.ricos.docx_read import read_blocks
@@ -164,6 +164,43 @@ def test_figure_survives_an_image_that_cannot_be_measured(docx_factory):
     )
     assert blocks[0].filename == "image1.png"
     assert (blocks[0].width, blocks[0].height) == (0, 0)
+
+
+def test_an_oversized_picture_costs_its_measurements_and_not_the_document(
+        docx_factory):
+    """`Image.DecompressionBombError` derives from Exception, not from OSError.
+
+    The narrowed catch beside this one lists the OSError family, so one picture
+    declaring more pixels than Pillow will decode used to take the whole
+    document's read down with it - the opposite of what `_figure` promises one
+    line above. Not in this corpus; a photograph straight off a modern camera
+    is not far off the limit.
+    """
+    blocks = read_blocks(
+        docx_factory(DRAWING, rels={"rId5": "media/image1.png"},
+                     media={"word/media/image1.png": oversized_png()})
+    )
+    assert [type(b) for b in blocks] == [Figure]
+    assert blocks[0].filename == "image1.png"
+    assert (blocks[0].width, blocks[0].height) == (0, 0)
+
+
+def test_words_own_caption_style_says_caption_whatever_the_line_says(docx_factory):
+    """The clause the regex cannot supply for itself.
+
+    Three paragraphs in this corpus carry Word's `Caption` style and all three
+    are captions `CAPTION_RE` already catches, so this changes nothing here.
+    What it buys is the case the regex is known to get wrong in both
+    directions: it can only read the first two words, and the style is the
+    author saying outright which lines are captions.
+    """
+    body = DRAWING + para("A rail section, measured on the west span.", style="Caption")
+    blocks = read_blocks(
+        docx_factory(body, rels={"rId5": "media/image1.png"},
+                     media={"word/media/image1.png": png(10, 10)})
+    )
+    assert [type(b) for b in blocks] == [Figure]
+    assert blocks[0].caption == "A rail section, measured on the west span."
 
 
 def test_figure_whose_relationship_is_missing_has_no_filename(docx_factory):

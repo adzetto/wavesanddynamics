@@ -190,6 +190,18 @@ def test_preamble_bytes_measures_the_preamble_and_not_the_record_holding_it():
     assert 0 < preamble_bytes(sections) < pack(sections)[0]["bytes"] - 2000
 
 
+def test_preamble_bytes_measures_against_the_media_ids_it_is_given():
+    """`pack` takes the mapping and this did not, so once Phase 2 has real ids
+    the preamble would be measured against filenames while the records it is
+    compared with were measured against Wix ids - and a media id is not the
+    length of the name it stands in for.
+    """
+    sections = [("", [Para(runs=[Run(text="opening line")]),
+                      Figure(filename="i.png", width=1, height=1)])]
+    assert (preamble_bytes(sections, media_ids={"i.png": "ce0a40_9f3b21~mv2.png"})
+            == preamble_bytes(sections) + len("ce0a40_9f3b21~mv2.png") - len("i.png"))
+
+
 def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
     sections = split_at_headings([Para(runs=[Run(text="One")], style="Heading1")])
     assert preamble_bytes(sections) == 0
@@ -211,6 +223,26 @@ def test_a_picture_that_reaches_no_figure_is_reported_as_a_defect_here():
     does, the fix belongs in the reader."""
     lines = warnings_for(_manifest(drawings=4, drawings_without_picture=1, figures=2))
     assert any("defect in the reader, not in the document" in ln for ln in lines)
+
+
+def test_the_kinds_in_the_parenthetical_are_plural_when_there_are_several():
+    """Today's real output prints "(2 shape)", in the report a person reads.
+
+    The plural sits beside the name rather than being guessed, because the
+    guess - add an "s" - gets two of the five kinds wrong: "2 SmartArts" and
+    "1 others" are not what anyone writes.
+    """
+    (one,) = warnings_for(_manifest(drawings_without_picture=1,
+                                    drawings_without_picture_kinds={"shape": 1}))
+    assert "(1 shape)" in one
+    (many,) = warnings_for(_manifest(drawings_without_picture=2,
+                                     drawings_without_picture_kinds={"shape": 2}))
+    assert "(2 shapes)" in many
+    (mixed,) = warnings_for(
+        _manifest(drawings_without_picture=4,
+                  drawings_without_picture_kinds={"SmartArt": 2, "chart": 1,
+                                                  "other": 1}))
+    assert "(2 SmartArt graphics, 1 chart, 1 other)" in mixed
 
 
 def test_an_uncaptioned_figure_is_reported_as_the_authors_gap():

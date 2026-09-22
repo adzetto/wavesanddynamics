@@ -57,15 +57,23 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 DRAW = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
-# What a drawing holds, read off a:graphicData/@uri. Only the first of these
-# carries an image part; the rest are drawn in Word and have nothing to publish.
+# What a drawing holds, read off a:graphicData/@uri, as (one, many). Only the
+# first of these carries an image part; the rest are drawn in Word and have
+# nothing to publish. Both forms are stored because the rule `_n` applies -
+# add an "s" - writes "2 SmartArts" and "1 others", and this report is read by
+# a person. The manifest is keyed on the singular.
 GRAPHIC_KIND = {
-    "http://schemas.openxmlformats.org/drawingml/2006/picture": "picture",
-    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape": "shape",
-    "http://schemas.openxmlformats.org/drawingml/2006/chart": "chart",
-    "http://schemas.openxmlformats.org/drawingml/2006/diagram": "SmartArt",
-    "http://schemas.openxmlformats.org/drawingml/2006/table": "drawing table",
+    "http://schemas.openxmlformats.org/drawingml/2006/picture": ("picture", "pictures"),
+    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape":
+        ("shape", "shapes"),
+    "http://schemas.openxmlformats.org/drawingml/2006/chart": ("chart", "charts"),
+    "http://schemas.openxmlformats.org/drawingml/2006/diagram":
+        ("SmartArt", "SmartArt graphics"),
+    "http://schemas.openxmlformats.org/drawingml/2006/table":
+        ("drawing table", "drawing tables"),
 }
+UNNAMED_KIND = ("other", "of other kinds")
+KIND_PLURAL = dict([*GRAPHIC_KIND.values(), UNNAMED_KIND])
 
 OK, WARNINGS, FAILED = 0, 1, 2
 
@@ -113,9 +121,14 @@ def colliding_slugs(paths):
     return {slug: names for slug, names in by_slug.items() if len(names) > 1}
 
 
-def _n(count, noun):
-    """"1 drawing" or "2 drawings". The report is read by a person."""
-    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+def _n(count, noun, plural=None):
+    """"1 drawing" or "2 drawings". The report is read by a person.
+
+    `plural` is for the nouns the "s" rule gets wrong. The kinds of drawing are
+    where that happens: "SmartArt" and "other" both come out of it as something
+    nobody writes.
+    """
+    return f"{count} {noun}" if count == 1 else f"{count} {plural or noun + 's'}"
 
 
 def figures_in(blocks):
@@ -183,7 +196,7 @@ def drawing_counts(path):
             continue
         data = next(drawing.iter(DRAW + "graphicData"), None)
         uri = data.get("uri") if data is not None else ""
-        kind = GRAPHIC_KIND.get(uri, "other")
+        kind = GRAPHIC_KIND.get(uri, UNNAMED_KIND)[0]
         kinds[kind] = kinds.get(kind, 0) + 1
     return len(drawings), kinds
 
@@ -209,8 +222,14 @@ def save_media(path, out_dir):
     return names
 
 
-def preamble_bytes(sections):
+def preamble_bytes(sections, media_ids=None):
     """What the text before the first heading costs, or 0 when there is none.
+
+    `media_ids` is the same mapping `pack` takes, and it is here for the same
+    reason: a Wix media id is not the length of the filename it replaces, so
+    measuring the preamble without it would measure a document nobody stores.
+    Phase 1 has no ids yet and passes nothing, and the two measurements have to
+    stay comparable once Phase 2 does.
 
     `split_at_headings` gives an untitled first section to any document that
     says anything before its first heading, and every document here does. The
@@ -226,7 +245,7 @@ def preamble_bytes(sections):
     """
     if not sections or sections[0][0] or not sections[0][1]:
         return 0
-    return doc_bytes(emit(sections[0][1]))
+    return doc_bytes(emit(sections[0][1], media_ids))
 
 
 def convert(path):
@@ -329,7 +348,7 @@ def warnings_for(manifest):
             f"into the part and no file went with it. There is nothing for the "
             f"upload to send and the picture would be a hole on the page")
     if c["drawings_without_picture"]:
-        kinds = ", ".join(f"{n} {kind}" for kind, n
+        kinds = ", ".join(_n(n, kind, KIND_PLURAL.get(kind)) for kind, n
                           in sorted(c["drawings_without_picture_kinds"].items()))
         out.append(
             f"{src}: {_n(c['drawings_without_picture'], 'drawing')} with no picture file "

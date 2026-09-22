@@ -25,6 +25,51 @@ def test_reads_heading_style(docx_factory, para_factory):
     data = docx_factory(para_factory("Closing Thoughts", style="Heading1"))
     blocks = read_blocks(data)
     assert blocks[0].style == "Heading1"
+    assert blocks[0].heading == 1
+
+
+@pytest.mark.parametrize(
+    ("style", "heading", "role"),
+    [
+        ("Heading1", 1, ""),
+        ("Heading4", 4, ""),
+        # The same style, spelled the three ways a document can arrive
+        # spelling it. Word's own UI calls it "Heading 1", and an export out of
+        # Pages or Docs writes what the UI says.
+        ("Heading 1", 1, ""),
+        ("heading 2", 2, ""),
+        ("HEADING3", 3, ""),
+        # Not a heading we make a HEADING node out of, and it was not one
+        # before this vocabulary was written down either.
+        ("Heading5", 0, ""),
+        ("HeadingChar", 0, ""),
+        ("TOC1", 0, "TOC"),
+        ("toc 9", 0, "TOC"),
+        # The word "Contents" above the list, which is a real heading and stays.
+        ("TOCHeading", 0, ""),
+        ("Title", 0, "TITLE"),
+        ("Caption", 0, "CAPTION"),
+        ("ListParagraph", 0, ""),
+        ("", 0, ""),
+    ],
+)
+def test_the_style_vocabulary_is_decoded_once_and_tolerantly(
+        docx_factory, para_factory, style, heading, role):
+    """Word's style ids, turned into what the rest of the code actually asks.
+
+    Four modules used to decode the raw id, each its own way and each exactly
+    strict: `Heading1` was a heading and `Heading 1` was not, anywhere. A
+    document that spells it the second way - a localized Word, an export out of
+    Pages or Docs - emitted every heading as a plain paragraph and produced no
+    section seam, and the only sign of it was the same "no heading anywhere"
+    warning two documents in this corpus give legitimately.
+
+    The raw id is kept beside the translation, because it is what was read.
+    """
+    body = para_factory("x", style=style) if style else para_factory("x")
+    block = read_blocks(docx_factory(body))[0]
+    assert (block.heading, block.role) == (heading, role)
+    assert block.style == style
 
 
 def test_keeps_paragraph_with_no_runs(docx_factory):

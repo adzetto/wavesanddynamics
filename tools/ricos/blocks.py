@@ -19,8 +19,26 @@ class Run:
 
 @dataclass
 class Para:
+    """A paragraph, with what Word said about it translated once.
+
+    `heading` and `role` are that translation, and they exist because `style`
+    is Word's vocabulary and this side of the boundary is supposed not to speak
+    it. Four modules used to decode the raw style id, each in its own way - a
+    dict of four names, a regex, an f-string and an equality test - so a
+    document whose heading style is not spelled exactly `Heading1` emitted
+    every heading as a plain paragraph, produced no section seam, and said
+    nothing about it. A localized Word, an export out of Pages or Docs, or
+    `Heading 1` with a space is all it takes.
+
+    `style` stays because it is what the reader actually read, and it is the
+    only record of the styles nothing here has a name for yet. Nothing outside
+    `docx_read` parses it.
+    """
+
     runs: list[Run] = field(default_factory=list)
-    style: str = ""        # "", "Heading1", "Heading2", ...
+    style: str = ""        # Word's own style id, as written: "Heading1", "TOC1"
+    heading: int = 0       # 1-4 for a heading, 0 for everything else
+    role: str = ""         # "", "TITLE", "TOC", "CAPTION"
     list_kind: str = ""    # "", "bullet", "ordered"
     list_id: str = ""      # Word's w:numId: which list this item belongs to
     list_level: int = 0

@@ -30,18 +30,12 @@ Bytes are the standing constraint. A CMS item holds 500,000 bytes across all of
 its fields and the rich content counts against that, so nothing optional is
 emitted and node ids stay as short as uniqueness allows.
 """
-import re
 from dataclasses import replace
 
 from tools.ricos.blocks import Callout, Figure, Para, Run, Table
 
-HEADING_LEVEL = {"Heading1": 1, "Heading2": 2, "Heading3": 3, "Heading4": 4}
-
 # A list kind, as the reader names it, to its Ricos node type.
 LIST_NODE = {"bullet": "BULLETED_LIST", "ordered": "ORDERED_LIST"}
-
-# Word's own styles for the lines of a contents list, TOC1 down to TOC9.
-TOC_STYLE = re.compile(r"TOC[1-9]$")
 
 
 class Ids:
@@ -98,7 +92,7 @@ def _para(block, ids):
     `_nodes` folds a run of list paragraphs into a BULLETED_LIST, and a
     BLOCKQUOTE takes one PARAGRAPH and nothing else. See `_callout`.
     """
-    level = HEADING_LEVEL.get(block.style)
+    level = block.heading
     if level:
         return {"type": "HEADING", "id": ids.next(),
                 "nodes": _text_nodes(block.runs),
@@ -129,7 +123,7 @@ def _drop_from_body(block):
 
     Two kinds never reach the page:
 
-    A paragraph styled TOC1-TOC9 is a contents list the author typed by hand.
+    A paragraph the reader marked `TOC` is a contents list typed by hand.
     Word's generated one is an SDT and is already dropped upstream, and this is
     the same artefact by another route: the site builds its navigation from the
     headings, so a second list is redundant, and the typed one arrives broken
@@ -146,8 +140,12 @@ def _drop_from_body(block):
     through `_nodes` and drops nothing on the way. An aside has no grid to keep
     square, so `_callout` drops its blank paragraphs; it asks `_has_text`
     directly, because the TOC half of this test has no meaning inside a quote.
+
+    Which styles count as a contents list is the reader's answer, not one made
+    here: this side of the boundary is not supposed to know that Word spells
+    them TOC1 to TOC9.
     """
-    if TOC_STYLE.match(block.style):
+    if block.role == "TOC":
         return True
     return not _has_text(block)
 
@@ -276,7 +274,8 @@ def _callout(block, ids, media_ids):
                  "blockquoteData": {"indentation": 0}}
         # Filled after the dict is made so the quote takes its id before its
         # child takes its own, the way every other container here does.
-        quote["nodes"] = [_para(replace(said[0], runs=_joined(said), style=""), ids)]
+        quote["nodes"] = [_para(replace(said[0], runs=_joined(said),
+                                        style="", heading=0), ids)]
         out.append(quote)
     out.extend(n for b in block.blocks if not isinstance(b, Para)
                for n in _node(b, ids, media_ids))
@@ -405,7 +404,7 @@ def emit(blocks, media_ids=None):
     has not uploaded anything yet, so without it the filename stands in.
 
     The body filter is applied here and only here, and before `_nodes` rather
-    than inside it. `_drop_from_body` reads `block.style`, which only a Para
+    than inside it. `_drop_from_body` reads `block.role`, which only a Para
     has, so the test for it is asked first and every other kind of block goes
     through untouched. Filtering first also settles a case the folding would
     otherwise get wrong: an empty paragraph typed between two bullets is a

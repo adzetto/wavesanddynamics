@@ -148,7 +148,7 @@ def figures_in(blocks):
 
 
 def title_candidates(blocks):
-    """Text of the body's Title-styled paragraphs, for the next phase to pick from.
+    """Text of the body's title paragraphs, for the next phase to pick from.
 
     A CMS record needs a title and these documents do not agree on where it is:
     two carry a Title style, the rest open straight into a heading. Reading it
@@ -158,10 +158,13 @@ def title_candidates(blocks):
     "Dr. Korkut Kaynardag" arrives as one too, and choosing between them is a
     decision for the phase that writes the record. Recording them changes
     nothing about the page: `emit` still writes these paragraphs into the body.
+
+    Which style means a title is the reader's answer. This module knows nothing
+    about Word and had no business comparing a style id to the string "Title".
     """
     out = []
     for block in blocks:
-        if isinstance(block, Para) and block.style == "Title":
+        if isinstance(block, Para) and block.role == "TITLE":
             text = "".join(r.text for r in block.runs).strip()
             if text:
                 out.append(text)

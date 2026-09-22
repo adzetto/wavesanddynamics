@@ -52,6 +52,11 @@ def _heading_text(block, level):
     blank paragraph in the flow, where the emitter deletes it as it deletes
     every other one.
 
+    The level is the one the reader put on the paragraph, not a style id built
+    back up as `f"Heading{level}"`. That spelling is Word's and only Word's,
+    and a document that writes it any other way used to come through here as
+    one seamless section with nothing said about it.
+
     Guarding it here rather than asking callers to filter first is deliberate.
     The precondition would be invisible and the failure silent - two extra
     untitled records - and a precondition nobody can see is how these two empty
@@ -59,7 +64,7 @@ def _heading_text(block, level):
     """
     if not isinstance(block, Para):
         return None
-    if block.style != f"Heading{level}":
+    if block.heading != level:
         return None
     return "".join(r.text for r in block.runs).strip() or None
 

@@ -39,6 +39,7 @@ from tools.docx2ricos import (
 )
 from tools.ricos.blocks import Callout, Figure, Para, Run, Table
 from tools.ricos.docx_read import read_blocks
+from tools.ricos.emit import emit
 from tools.ricos.split import pack, split_at_headings
 
 
@@ -142,13 +143,37 @@ def test_figures_in_counts_one_picture_used_twice_as_two_figures():
 
 def test_title_candidates_takes_the_title_style_and_nothing_else():
     """Candidates, not a title: Sound Detection styles its byline this way too."""
-    blocks = [Para(runs=[Run(text="Understanding Sound Classification")], style="Title"),
-              Para(runs=[Run(text="Dr. Korkut Kaynardag")], style="Title"),
-              Para(runs=[Run(text="   ")], style="Title"),
-              Para(runs=[Run(text="Three Main Stages")], style="Heading1"),
+    blocks = [Para(runs=[Run(text="Understanding Sound Classification")], role="TITLE"),
+              Para(runs=[Run(text="Dr. Korkut Kaynardag")], role="TITLE"),
+              Para(runs=[Run(text="   ")], role="TITLE"),
+              Para(runs=[Run(text="Three Main Stages")], heading=1),
               Para(runs=[Run(text="body")])]
     assert title_candidates(blocks) == ["Understanding Sound Classification",
                                         "Dr. Korkut Kaynardag"]
+
+
+def test_a_document_that_spells_heading_with_a_space_still_has_sections(
+        docx_factory, para_factory):
+    """What the normalised fields buy, across all four modules that used to
+    decode the raw style id themselves.
+
+    `Heading 1` is what Word's own interface calls the style, and an export out
+    of Pages or Docs writes what the interface says. Against a dict of four
+    exact names, a regex, an f-string and an equality test, such a document
+    emitted every heading as a plain paragraph, produced no section seam and no
+    title candidate, and said nothing about any of it.
+    """
+    body = (para_factory("Opening", style="title")
+            + para_factory("One", style="Heading 1")
+            + para_factory("body")
+            + para_factory("Two", style="heading 1")
+            + para_factory("1. Contents\t2", style="toc 1"))
+    blocks = read_blocks(docx_factory(body))
+
+    assert [title for title, _ in split_at_headings(blocks)] == ["", "One", "Two"]
+    assert title_candidates(blocks) == ["Opening"]
+    assert [n["type"] for n in emit(blocks)["nodes"]] == [
+        "PARAGRAPH", "HEADING", "PARAGRAPH", "HEADING"]
 
 
 def test_drawing_counts_separates_a_drawing_with_a_picture_from_one_without(
@@ -185,7 +210,7 @@ def test_preamble_bytes_measures_the_preamble_and_not_the_record_holding_it():
     """`pack` puts every document in this corpus into one record, so the
     record's size is the whole document and says nothing about the preamble."""
     sections = split_at_headings([Para(runs=[Run(text="opening line")]),
-                                  Para(runs=[Run(text="One")], style="Heading1"),
+                                  Para(runs=[Run(text="One")], heading=1),
                                   Para(runs=[Run(text="x" * 2000)])])
     assert 0 < preamble_bytes(sections) < pack(sections)[0]["bytes"] - 2000
 
@@ -203,7 +228,7 @@ def test_preamble_bytes_measures_against_the_media_ids_it_is_given():
 
 
 def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
-    sections = split_at_headings([Para(runs=[Run(text="One")], style="Heading1")])
+    sections = split_at_headings([Para(runs=[Run(text="One")], heading=1)])
     assert preamble_bytes(sections) == 0
 
 

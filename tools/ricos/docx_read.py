@@ -54,6 +54,25 @@ WHITESPACE = {W + "tab": "\t", W + "br": "\n"}
 # flow. The alternative, requiring italics, cost four real captions.
 CAPTION_RE = re.compile(r"^\s*(figure|table)\s+\d+", re.I)
 
+# Word's style vocabulary, and the only place that reads it. A style id is
+# matched against these with its spaces removed and in lower case, so
+# "Heading 1", "heading1" and "HEADING1" are one style - Word writes the first
+# of those, an export out of Pages or Docs writes another, and a style id that
+# is close but not exact is how a document loses every heading it has without
+# anything saying so.
+#
+# Levels stop at 4 because that is what the writer turns into a HEADING node.
+# A deeper heading stays an ordinary paragraph, which is what it did before
+# this vocabulary was written down; widening it is a decision for the first
+# document that has one.
+HEADING_RE = re.compile(r"heading([1-4])$")
+
+# TOC1 down to TOC9 are the lines of a contents list. TOCHeading is the word
+# "Contents" above it and is deliberately not one of them.
+TOC_RE = re.compile(r"toc[1-9]$")
+
+ROLE = {"title": "TITLE", "caption": "CAPTION"}
+
 
 def _open(path_or_bytes):
     if isinstance(path_or_bytes, (bytes, bytearray)):
@@ -218,6 +237,27 @@ def _list_of(ppr, kinds):
     return kinds.get(num, "bullet"), num, level
 
 
+def _style_means(style):
+    """A Word style id as (heading level, role): what the rest of the code asks.
+
+    The one place the style vocabulary is decoded. It used to be four - a dict
+    in the writer, a regex beside it, an f-string in the splitter and an
+    equality test in the CLI - which is three chances for them to disagree and
+    four to be stricter than Word is. `Heading 1`, with the space Word's own UI
+    shows, read as a heading in none of them.
+
+    A style this does not recognise is neither a heading nor a role, and the
+    paragraph keeps its raw `style` for whoever comes to name it later.
+    """
+    key = re.sub(r"\s+", "", style).lower()
+    level = HEADING_RE.match(key)
+    if level:
+        return int(level.group(1)), ""
+    if TOC_RE.match(key):
+        return 0, "TOC"
+    return 0, ROLE.get(key, "")
+
+
 def _para(p, rels, kinds):
     ppr = p.find(W + "pPr")
     style = ""
@@ -229,9 +269,10 @@ def _para(p, rels, kinds):
         j = ppr.find(W + "jc")
         if j is not None:
             align = ALIGN.get(j.get(W + "val") or "", "AUTO")
+    heading, role = _style_means(style)
     kind, num, level = _list_of(ppr, kinds)
-    return Para(runs=_runs(p, rels), style=style, align=align,
-                list_kind=kind, list_id=num, list_level=level)
+    return Para(runs=_runs(p, rels), style=style, heading=heading, role=role,
+                align=align, list_kind=kind, list_id=num, list_level=level)
 
 
 def _blip_ids(p):
@@ -280,8 +321,8 @@ def _figure(rel_id, rels, z):
 def _is_caption(block):
     """Whether this block is the line Word left under a picture.
 
-    Word's own `Caption` style is asked first, because it is the author saying
-    so rather than us inferring it. Three paragraphs in this corpus carry it
+    Word's own caption style is asked first, because it is the author saying so
+    rather than us inferring it. Three paragraphs in this corpus carry it
     and all three are captions the regex already catches, so it changes
     nothing here - what it buys is the case the regex is known to get wrong. A
     body sentence opening "Figure 13 puts the coverage difference ..." reads as
@@ -290,7 +331,7 @@ def _is_caption(block):
     """
     if not isinstance(block, Para) or not block.runs:
         return False
-    if block.style == "Caption":
+    if block.role == "CAPTION":
         return True
     return bool(CAPTION_RE.match("".join(r.text for r in block.runs)))
 

@@ -23,7 +23,7 @@ from tools.ricos.split import LIMIT, doc_bytes, pack, split_at_headings
 
 
 def _h(text):
-    return Para(runs=[Run(text=text)], style="Heading1")
+    return Para(runs=[Run(text=text)], heading=1)
 
 
 def _p(text):
@@ -64,8 +64,8 @@ def test_an_empty_heading_is_not_a_section_boundary():
     both: a heading with nothing written on it is a blank line the author left
     with the style still switched on, and cutting there would open a record
     with no heading at the top of it."""
-    blocks = [_h("One"), _p("a"), Para(style="Heading1"),
-              Para(runs=[Run(text="  ")], style="Heading1"), _p("b")]
+    blocks = [_h("One"), _p("a"), Para(heading=1),
+              Para(runs=[Run(text="  ")], heading=1), _p("b")]
     parts = split_at_headings(blocks)
     assert [t for t, _ in parts] == ["One"]
     assert len(parts[0][1]) == 5      # they stay in the flow for `emit` to drop

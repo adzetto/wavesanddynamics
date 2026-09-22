@@ -22,7 +22,7 @@ def test_paragraph_wraps_text_node():
 
 
 def test_heading_becomes_heading_node():
-    doc = emit([Para(runs=[Run(text="Closing Thoughts")], style="Heading1")])
+    doc = emit([Para(runs=[Run(text="Closing Thoughts")], heading=1)])
     node = doc["nodes"][0]
     assert node["type"] == "HEADING"
     assert node["headingData"]["level"] == 1
@@ -35,7 +35,7 @@ def test_a_heading_carries_its_level_and_its_own_alignment():
     corpus has 548 non-AUTO alignments on top-level paragraphs to lose that
     way. Centring is how the author opens most of these documents.
     """
-    doc = emit([Para(runs=[Run(text="Closing Thoughts")], style="Heading2",
+    doc = emit([Para(runs=[Run(text="Closing Thoughts")], heading=2,
                      align="CENTER")])
     assert doc["nodes"][0]["headingData"] == {
         "level": 2, "textStyle": {"textAlignment": "CENTER"}}
@@ -85,15 +85,16 @@ def test_whitespace_only_paragraph_is_not_emitted_in_the_body():
 
 
 def test_contents_list_paragraph_is_not_emitted():
-    """TOC1-TOC9 is a hand-typed contents list: redundant, and glued to the page
-    numbers it was typed with.
+    """A hand-typed contents list: redundant, and glued to the page numbers it
+    was typed with.
 
-    TOCHeading is the near-miss the `$` anchor in TOC_STYLE exists for: it is
-    the word "Contents" itself, a real heading, and it stays.
+    The role is what this side reads. Which of Word's styles carry it - TOC1 to
+    TOC9, and not the "Contents" heading above them - is the reader's answer
+    and is pinned there.
     """
-    blocks = [Para(runs=[Run(text="1. What is Machine Learning?\t2")], style="TOC1"),
-              Para(runs=[Run(text="body")], style="TOC9"),
-              Para(runs=[Run(text="Contents")], style="TOCHeading"),
+    blocks = [Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
+              Para(runs=[Run(text="body")], role="TOC"),
+              Para(runs=[Run(text="Contents")], heading=1),
               Para(runs=[Run(text="kept")])]
     doc = emit(blocks)
     texts = [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]]
@@ -250,7 +251,7 @@ def test_the_body_filter_does_not_reach_inside_a_cell():
     """
     t = Table(rows=[[[Para(runs=[Run(text="x")]), Para(runs=[])],
                      [Para(runs=[Run(text="  ")])],
-                     [Para(runs=[Run(text="y")], style="TOC1")]]])
+                     [Para(runs=[Run(text="y")], role="TOC")]]])
     row = emit([t])["nodes"][0]["nodes"][0]
     assert [c["type"] for c in row["nodes"]] == ["TABLE_CELL"] * 3
     assert all(c["nodes"][0]["type"] == "PARAGRAPH" for c in row["nodes"])
@@ -312,7 +313,7 @@ def test_a_heading_inside_a_callout_stays_a_paragraph():
     the paragraph stays - alignment included.
     """
     doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")],
-                                     style="Heading2", align="CENTER")])])
+                                     heading=2, align="CENTER")])])
     inner = doc["nodes"][0]["nodes"][0]
     assert inner["type"] == "PARAGRAPH"
     assert inner["paragraphData"]["textStyle"]["textAlignment"] == "CENTER"
@@ -321,11 +322,11 @@ def test_a_heading_inside_a_callout_stays_a_paragraph():
 def test_the_body_filter_still_applies_beside_the_new_block_types():
     """`emit` now handles four block types instead of one, and the empty and
     contents-list paragraphs still have to go. The guard that drops them reads
-    `block.style`, which only a Para has, so widening the loop is exactly where
+    `block.role`, which only a Para has, so widening the loop is exactly where
     the filter gets lost - or gets handed a Figure and raises AttributeError.
     """
     blocks = [Para(runs=[]),
-              Para(runs=[Run(text="1. What is Machine Learning?\t2")], style="TOC1"),
+              Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
               Figure(filename="i.png", width=1, height=1),
               Table(rows=[[[Para(runs=[Run(text="x")])]]]),
               Callout(blocks=[Para(runs=[Run(text="aside")])]),

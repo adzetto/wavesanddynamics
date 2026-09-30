@@ -95,7 +95,7 @@ def test_the_decks_are_his_titles_with_the_counts():
     for href, folder in (("probability-statistics.html", "deck-probstat"), ("presentation.html", "deck-phd")):
         web = os.path.join(ROOT, "content", folder, "web")
         if os.path.isdir(web):
-            n = len([f for f in os.listdir(web) if re.fullmatch(r"s\d{3}-1600\.webp", f)])
+            n = len([f for f in os.listdir(web) if re.fullmatch(r"s\d{3}[a-z]*-1600\.webp", f)])
             assert documents.DECKS[href][2] == n, href
     assert documents._slides("no-such-deck", 5) == 5
 

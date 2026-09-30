@@ -38,7 +38,9 @@ The checks (a slide that fails one is not written to content/ unless --force):
               is our σ with a superscript 2. Tick numbers are data, exempt.
               A slide of ours (his.OURS) has no words of his: its own keep the
               site's rules (no em dash, no spaced en dash) and its running
-              foot ends in its label.
+              foot ends in its label. Where his file cannot be read
+              (DECK_PPTX), the check says so, and the slide is written only
+              with --force.
   overflow    nothing leaves the page or its box, the body stays clear of the
               foot, no text sits on other text
   legible     text 24 px or larger on the 1920 slide (12 px in the 960 copy),
@@ -286,7 +288,16 @@ def check(label, info):
         if pic_words(label):
             probs.append(f"src/{his.stem(label)}.pic.txt lists his words, but slide {label} is ours")
     else:
-        theirs = [mathtype.norm(s) for s in his.strings(label) + pic_words(label)]
+        try:
+            strings = his.strings(label)
+        except (ImportError, OSError) as e:
+            # his PowerPoint is read, never published: on a machine without
+            # it (DECK_PPTX) his words cannot be held to it, and the slide is
+            # not written unless --force says so
+            probs.append(f"his words not checked: his PowerPoint cannot be read here ({type(e).__name__}: {e})")
+            strings = None
+    if his.his(label) is not None and strings is not None:
+        theirs = [mathtype.norm(s) for s in strings + pic_words(label)]
         flat = " ".join(words)
         for s in theirs:
             if s and s not in flat:
@@ -483,6 +494,22 @@ def server():
 
 
 INFO_JS = "() => deckInfo()"
+# The faces the slide's words are set in (each style and weight of each first
+# family a piece of text asks for), and any of them that is not loaded: a
+# photograph taken with a fallback face is refused. A face no text uses is not
+# asked for (an italic nothing on the slide is set in never loads).
+FACES_JS = """() => {
+  const used = new Set(), walk = document.createTreeWalker(document.querySelector('.slide'), NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = walk.nextNode())) {
+    if (!n.nodeValue.trim() || n.parentElement.closest('script,style')) continue;
+    const cs = getComputedStyle(n.parentElement);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const fam = cs.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '');
+    used.add((cs.fontStyle === 'italic' ? 'italic ' : '') + cs.fontWeight + ' 24px "' + fam + '"');
+  }
+  return [...used].filter(f => !document.fonts.check(f)).sort();
+}"""
 
 
 # ------------------------------------------------------------------ animation pages
@@ -657,9 +684,7 @@ def shoot(labels, look_only=False, force=False, with_anim=True):
             pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             pg.goto(f"{base}/build/r10-deck/slides/{stem}.html")
             pg.wait_for_function("window.DECK_READY === true", timeout=30000)
-            faces = pg.evaluate("""() => ['600 60px "Source Serif 4"', '400 30px "Source Serif 4"',
-                '600 22px "Source Sans 3"', '500 24px "CMU Serif"', 'italic 500 24px "CMU Serif"']
-                .filter(f => !document.fonts.check(f))""")
+            faces = pg.evaluate(FACES_JS)
             master = os.path.join(BUILD, "slides", f"{stem}@2x.png")
             pg.screenshot(path=master, clip={"x": 0, "y": 0, "width": 1920, "height": 1080})
             info = pg.evaluate(INFO_JS)

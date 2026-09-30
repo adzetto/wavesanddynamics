@@ -85,7 +85,7 @@ class Spec:
     def _span(self, i):
         t = self.times[i] if self.times is not None else self.t + i * self.dt
         if self.kind == "keys":
-            last = self.kw["t"][-1]
+            last = self.kw["ts"][-1]
             vd = self.kw.get("vd", 0.3) if self.kw.get("e", "settle") == "settle" else 0.0
             return last, last + vd, last + (spring_done(vd) if vd else 0.0)
         if self.kind in self.SPRING:
@@ -125,9 +125,10 @@ class Spec:
         return Spec(self.kind, t, **self.kw)
 
     def json(self):
+        # keys carry their keyframes' times as t (the runtime's name)
         d = {"k": self.kind, "t": _r(self.t)}
         for k, v in self.kw.items():
-            d[k] = v if isinstance(v, (str, list)) else _r(v)
+            d["t" if k == "ts" else k] = v if isinstance(v, (str, list)) else _r(v)
         return [d]
 
     def __add__(self, other):
@@ -228,7 +229,7 @@ def keys(times, values, prop="xy", ease="settle", visual=0.3, nd=None):
     times = [float(t) for t in times]
     if len(times) != len(values) or any(b < a for a, b in zip(times, times[1:])):
         raise ValueError("keys: one value a time, the times in order")
-    kw = {"p": prop, "t": [_r(t) for t in times], "v": list(values), "e": ease}
+    kw = {"p": prop, "ts": [_r(t) for t in times], "v": list(values), "e": ease}
     if ease == "settle":
         kw["vd"] = visual
     if nd is not None:
@@ -258,7 +259,45 @@ def _each(anim, n):
 
 
 def _ajson(anim):
-    return _json.dumps(anim.json(), separators=(",", ":"))
+    """A spec as the attribute's value (single-quoted in the markup)."""
+    return _json.dumps(anim.json(), separators=(",", ":")).replace("&", "&amp;").replace("'", "&#39;")
+
+
+def _parts(anim):
+    return [] if anim is None else anim.parts if isinstance(anim, Specs) else [anim]
+
+
+def _along(anim, pts, at=None):
+    """A seq on a single line: the line extends through its points, point i
+    reached at its moment (keys on how much of the stroke is drawn, linear
+    in its length between them). `at` gives the vertex each point is when
+    the line has more vertices than points (a step's corners). Every other
+    spec is left as it is."""
+    def one(p):
+        if p.kind == "keys" or (p.times is None and not p.dt):
+            return p
+        at_ = list(range(len(pts))) if at is None else list(at)
+        p.bind(len(at_))
+        times = [p.times[i] if p.times is not None else p.t + i * p.dt for i in range(len(at_))]
+        seglen = [math.hypot(x1 - x0, y1 - y0) for (x0, y0), (x1, y1) in zip(pts, pts[1:])]
+        cum = np.concatenate([[0.0], np.cumsum(seglen)])
+        total = float(cum[-1]) or 1.0
+        return keys(times, [_r(cum[j] / total, 4) for j in at_], prop="p", ease="linear")
+    parts = [one(p) for p in _parts(anim)]
+    return None if not parts else parts[0] if len(parts) == 1 else Specs(*parts)
+
+
+def _base(anim, b):
+    """The spec with the base line a mark grows from (px, down the figure):
+    a grow, or keys on a bar's height, scale the mark about it."""
+    if anim is None:
+        return None
+    out = []
+    for p in _parts(anim):
+        if p.kind == "grow" or (p.kind == "keys" and p.kw["p"] == "h"):
+            p = Spec(p.kind, p.t, dt=p.dt, times=p.times, n=p.n, **dict(p.kw, b=_r(b, 2)))
+        out.append(p)
+    return out[0] if len(out) == 1 else Specs(*out)
 
 
 def _svg_anim(anim, ghost=False):
@@ -278,6 +317,16 @@ def _html_anim(anim, ghost=False):
     if ghost:
         out += " data-ghost hidden"
     return out
+
+
+def _dot(anim):
+    """A stem's or an error bar's dot: where its line grows, it pops in with
+    it (a disc is not squashed); a line's changing height is its line's."""
+    if anim is None:
+        return None
+    out = [Spec("pop", p.t, v=p.kw["v"]) if p.kind == "grow" else p for p in _parts(anim)
+           if not (p.kind == "keys" and p.kw["p"] == "h")]
+    return None if not out else out[0] if len(out) == 1 else Specs(*out)
 
 
 def _mapkeys(anim, fn):
@@ -445,10 +494,15 @@ class Fig:
             opacity = None
         self._el(f'<path d="{d}" {_attrs(stroke=stroke, stroke_width=_f(width) if stroke != "none" else None, fill=fill, stroke_dasharray=dash, opacity=opacity, fill_opacity=fill_opacity, stroke_opacity=stroke_opacity, stroke_linecap=cap, stroke_linejoin=join)}{_svg_anim(_offsets(anim), ghost)}/>', clip)
 
-    def line(self, pts, **kw):
+    def line(self, pts, at=None, **kw):
+        """A polyline through pts. A seq for anim= extends it through its
+        points (point i reached at its moment); `at` names the vertex each
+        of those points is, where the line has more (a step's corners)."""
         pts = list(pts)
         if len(pts) < 2:
             return
+        if kw.get("anim") is not None:
+            kw["anim"] = _along(kw["anim"], pts, at)
         d = "M" + " L".join(f"{_f(x)} {_f(y)}" for x, y in pts)
         self.path(d, **kw)
 
@@ -564,24 +618,35 @@ class Fig:
                + self.marks() + "</svg>")
         st = f"width:{_f(self.w)}px;height:{_f(self.h)}px;{style}"
         klass = f"fig {cls}".strip()
-        return f'<div class="{klass}" style="{st}">' + svg + "".join(self.labels) + "</div>"
+        # its named moments (cue()), for the slide's blocks to start at
+        cues = (" data-cues='" + _json.dumps(self.cues, separators=(",", ":")).replace("'", "&#39;") + "'"
+                if self.cues else "")
+        return f'<div class="{klass}" style="{st}"{cues}>' + svg + "".join(self.labels) + "</div>"
 
 
 class Axes:
     """A pgfplots axis: the plot box at (x, y, w, h) in the figure, data
     limits xlim and ylim. frame() draws the box, ticks and labels; the data
-    methods draw inside the box, clipped to it."""
+    methods draw inside the box, clipped to it.
+
+    Every data method takes anim= (how its marks arrive while the slide
+    plays) and ghost= (marks only the playing slide shows). Keys of where a
+    mark is (xy, x, y) and of a bar's height (h) are in data coordinates
+    here; a call that draws several marks (scatter, bars, stem, errorbar)
+    gives each its own spec from a seq, a stagger, a list or a function of
+    the index; a seq on one line (plot, step) extends the line through its
+    points. anim= on the axes arrives its frame."""
 
     def __init__(self, fig, x, y, w, h, xlim=(0, 1), ylim=(0, 1), xlog=False, ylog=False,
                  xticks=None, yticks=None, xticklabels=None, yticklabels=None,
                  xlabel=None, ylabel=None, grid=False, box=True, ticks="both", frame=True,
-                 xtick_nd=None, ytick_nd=None, ylabel_gap=None):
+                 xtick_nd=None, ytick_nd=None, ylabel_gap=None, anim=None):
         self.f, self.x, self.y, self.w, self.h = fig, x, y, w, h
         self.xlim, self.ylim, self.xlog, self.ylog = xlim, ylim, xlog, ylog
         self.clip = fig.clip_rect(x, y, w, h)
         if frame:
             self.frame(xticks, yticks, xticklabels, yticklabels, xlabel, ylabel, grid, box, ticks,
-                       xtick_nd, ytick_nd, ylabel_gap)
+                       xtick_nd, ytick_nd, ylabel_gap, anim=anim)
 
     # ---------------------------------------------------------- maps
     def X(self, v):
@@ -599,22 +664,39 @@ class Axes:
     def P(self, x, y):
         return float(self.X(x)), float(self.Y(y))
 
+    def _px(self, anim, base=0.0):
+        """Keys in data coordinates as the figure's px: where a mark is (xy,
+        x, y) and a bar's height from `base` (h)."""
+        def fn(p, v):
+            if p == "xy":
+                return [list(self.P(x, y)) for x, y in v]
+            if p == "x":
+                return [float(self.X(x)) for x in v]
+            if p == "y":
+                return [float(self.Y(y)) for y in v]
+            if p == "h":
+                y0 = float(self.Y(base))
+                return [abs(float(self.Y(base + h)) - y0) for h in v]
+            return v
+        return _mapkeys(anim, fn)
+
     # ---------------------------------------------------------- frame
     def frame(self, xticks=None, yticks=None, xticklabels=None, yticklabels=None, xlabel=None,
               ylabel=None, grid=False, box=True, ticks="both", xtick_nd=None, ytick_nd=None,
-              ylabel_gap=None):
+              ylabel_gap=None, anim=None):
         f, x, y, w, h = self.f, self.x, self.y, self.w, self.h
+        a = dict(anim=anim)
         xt = list(xticks) if xticks is not None else []
         yt = list(yticks) if yticks is not None else []
         if grid:
             for v in xt:
                 X = float(self.X(v))
                 if x + 1 < X < x + w - 1:
-                    f.line([(X, y), (X, y + h)], stroke=C.grid, width=GRID_W, cap="butt")
+                    f.line([(X, y), (X, y + h)], stroke=C.grid, width=GRID_W, cap="butt", **a)
             for v in yt:
                 Y = float(self.Y(v))
                 if y + 1 < Y < y + h - 1:
-                    f.line([(x, Y), (x + w, Y)], stroke=C.grid, width=GRID_W, cap="butt")
+                    f.line([(x, Y), (x + w, Y)], stroke=C.grid, width=GRID_W, cap="butt", **a)
         # ticks: inward and mirrored on a box (pgfplots' default), or "in",
         # "out" (tick align=outside) or "none" on the bottom and left only
         both = box and ticks == "both"
@@ -622,88 +704,103 @@ class Axes:
         L = 0 if ticks == "none" else TICK_L
         for v in xt:
             X = float(self.X(v))
-            f.line([(X, y + h), (X, y + h - sgn * L)], stroke=C.ink, width=AXIS_W, cap="butt")
+            f.line([(X, y + h), (X, y + h - sgn * L)], stroke=C.ink, width=AXIS_W, cap="butt", **a)
             if both:
-                f.line([(X, y), (X, y + L)], stroke=C.ink, width=AXIS_W, cap="butt")
+                f.line([(X, y), (X, y + L)], stroke=C.ink, width=AXIS_W, cap="butt", **a)
         for v in yt:
             Y = float(self.Y(v))
-            f.line([(x, Y), (x + sgn * L, Y)], stroke=C.ink, width=AXIS_W, cap="butt")
+            f.line([(x, Y), (x + sgn * L, Y)], stroke=C.ink, width=AXIS_W, cap="butt", **a)
             if both:
-                f.line([(x + w, Y), (x + w - L, Y)], stroke=C.ink, width=AXIS_W, cap="butt")
+                f.line([(x + w, Y), (x + w - L, Y)], stroke=C.ink, width=AXIS_W, cap="butt", **a)
         if box:
-            f.rect(x, y, w, h, stroke=C.ink, width=AXIS_W)
+            f.rect(x, y, w, h, stroke=C.ink, width=AXIS_W, **a)
         else:
             f.line([(x, y), (x, y + h), (x + w, y + h)], stroke=C.ink, width=AXIS_W, cap="square",
-                   join="miter")
+                   join="miter", **a)
         # the numbers (class tk: data, exempt from the words check); a tick
         # labelled with his words (a, b; class tl) is his text and is checked
         off = 14 + (L if ticks == "out" else 0)
         for i, v in enumerate(xt):
             s = xticklabels[i] if xticklabels is not None else num(v, xtick_nd)
             if s != "":
-                f.text(float(self.X(v)), y + h + off, s, "north", cls="tk" if is_num(s) else "tl")
+                f.text(float(self.X(v)), y + h + off, s, "north", cls="tk" if is_num(s) else "tl", **a)
         widest = 0
         for i, v in enumerate(yt):
             s = yticklabels[i] if yticklabels is not None else num(v, ytick_nd)
             if s != "":
-                f.text(x - off, float(self.Y(v)), s, "east", cls="tk" if is_num(s) else "tl")
+                f.text(x - off, float(self.Y(v)), s, "east", cls="tk" if is_num(s) else "tl", **a)
                 widest = max(widest, len(_html.unescape(s)))
         if xlabel:
-            f.text(x + w / 2, y + h + off + (TICK_PX + 16 if xt else 0), xlabel, "north", cls="axl")
+            f.text(x + w / 2, y + h + off + (TICK_PX + 16 if xt else 0), xlabel, "north", cls="axl", **a)
         if ylabel:
             gap = ylabel_gap if ylabel_gap is not None else off + widest * 0.5 * TICK_PX + 22 + LABEL_PX / 2
-            f.text(x - gap, y + h / 2, ylabel, "center", cls="axl", rot=-90)
+            f.text(x - gap, y + h / 2, ylabel, "center", cls="axl", rot=-90, **a)
 
     # ---------------------------------------------------------- data
     def _pts(self, xs, ys):
         return list(zip(np.asarray(self.X(xs), float), np.asarray(self.Y(ys), float)))
 
-    def plot(self, xs, ys, color=C.navy, width=DATA_W, dash=None, clip=True, opacity=None):
+    def plot(self, xs, ys, color=C.navy, width=DATA_W, dash=None, clip=True, opacity=None,
+             anim=None, ghost=False, at=None):
+        """A curve through (xs, ys). `at`: the vertex each data point is, for
+        a seq on a line drawn with more vertices than points (step)."""
         self.f.line(self._pts(xs, ys), stroke=color, width=width, dash=dash,
-                    clip=self.clip if clip else None, opacity=opacity)
+                    clip=self.clip if clip else None, opacity=opacity, anim=anim, ghost=ghost, at=at)
 
-    def area(self, xs, y1, y0=0.0, color=C.mist, opacity=None, clip=True):
+    def area(self, xs, y1, y0=0.0, color=C.mist, opacity=None, clip=True, anim=None, ghost=False):
         xs = np.asarray(xs, float)
         y1 = np.broadcast_to(np.asarray(y1, float), xs.shape)
         y0 = np.broadcast_to(np.asarray(y0, float), xs.shape)
         pts = self._pts(xs, y1) + self._pts(xs[::-1], y0[::-1])
-        self.f.poly(pts, fill=color, fill_opacity=opacity, clip=self.clip if clip else None)
+        self.f.poly(pts, fill=color, fill_opacity=opacity, clip=self.clip if clip else None,
+                    anim=anim, ghost=ghost)
 
-    def bars(self, xs, hs, width=0.7, color=C.navy, base=0.0, opacity=None, stroke=None):
-        for xv, hv in zip(xs, hs):
+    def bars(self, xs, hs, width=0.7, color=C.navy, base=0.0, opacity=None, stroke=None,
+             anim=None, ghost=False):
+        """Bars from `base`; grow() (or keys on h) raises each from it."""
+        xs, hs = list(xs), list(hs)
+        for (xv, hv), a in zip(zip(xs, hs), _each(anim, len(xs))):
             X0, X1 = float(self.X(xv - width / 2)), float(self.X(xv + width / 2))
             Y0, Y1 = float(self.Y(base)), float(self.Y(base + hv))
             self.f.rect(X0, min(Y0, Y1), X1 - X0, abs(Y0 - Y1), fill=color, stroke=stroke,
-                        width=1.5, fill_opacity=opacity, clip=self.clip)
+                        width=1.5, fill_opacity=opacity, clip=self.clip,
+                        anim=_base(self._px(a, base), Y0), ghost=ghost)
 
-    def scatter(self, xs, ys, r=5.0, color=C.navy, opacity=None, stroke=None, clip=True):
-        for X, Y in self._pts(xs, ys):
+    def scatter(self, xs, ys, r=5.0, color=C.navy, opacity=None, stroke=None, clip=True,
+                anim=None, ghost=False):
+        pts = self._pts(xs, ys)
+        for (X, Y), a in zip(pts, _each(anim, len(pts))):
             self.f.circle(X, Y, r, fill=color, stroke=stroke, opacity=opacity,
-                          clip=self.clip if clip else None)
+                          clip=self.clip if clip else None, anim=self._px(a), ghost=ghost)
 
-    def mark(self, xv, yv, r=10.0, color=C.accent, ring=C.paper, ring_w=3.0):
+    def mark(self, xv, yv, r=10.0, color=C.accent, ring=C.paper, ring_w=3.0, anim=None, ghost=False):
         """The operating point: a filled disc with a paper ring."""
         X, Y = self.P(xv, yv)
-        self.f.circle(X, Y, r + ring_w, fill=ring)
-        self.f.circle(X, Y, r, fill=color)
+        a = self._px(anim)
+        self.f.circle(X, Y, r + ring_w, fill=ring, anim=a, ghost=ghost)
+        self.f.circle(X, Y, r, fill=color, anim=a, ghost=ghost)
 
-    def hline(self, yv, color=C.guide, width=GUIDE_W, dash=GUIDE_DASH, x0=None, x1=None):
+    def hline(self, yv, color=C.guide, width=GUIDE_W, dash=GUIDE_DASH, x0=None, x1=None,
+              anim=None, ghost=False):
         a = self.xlim[0] if x0 is None else x0
         b = self.xlim[1] if x1 is None else x1
         self.f.line(self._pts([a, b], [yv, yv]), stroke=color, width=width, dash=dash, cap=_cap(dash),
-                    clip=self.clip)
+                    clip=self.clip, anim=self._px(anim), ghost=ghost)
 
-    def vline(self, xv, color=C.guide, width=GUIDE_W, dash=GUIDE_DASH, y0=None, y1=None):
+    def vline(self, xv, color=C.guide, width=GUIDE_W, dash=GUIDE_DASH, y0=None, y1=None,
+              anim=None, ghost=False):
         a = self.ylim[0] if y0 is None else y0
         b = self.ylim[1] if y1 is None else y1
         self.f.line(self._pts([xv, xv], [a, b]), stroke=color, width=width, dash=dash, cap=_cap(dash),
-                    clip=self.clip)
+                    clip=self.clip, anim=self._px(anim), ghost=ghost)
 
     def text(self, xv, yv, s, anchor="center", **kw):
         X, Y = self.P(xv, yv)
+        if kw.get("anim") is not None:
+            kw["anim"] = self._px(kw["anim"])
         self.f.text(X, Y, s, anchor, **kw)
 
-    def leader(self, p_from, p_to, color=C.accent, width=2.0, gap=0.0):
+    def leader(self, p_from, p_to, color=C.accent, width=2.0, gap=0.0, anim=None, ghost=False):
         """A thin line from a label (figure px) to a data point (data
         coordinates), stopping `gap` px short of the point."""
         (x0, y0) = p_from
@@ -711,37 +808,39 @@ class Axes:
         if gap:
             L = math.hypot(x1 - x0, y1 - y0)
             x1, y1 = x1 - (x1 - x0) * gap / L, y1 - (y1 - y0) * gap / L
-        self.f.line([(x0, y0), (x1, y1)], stroke=color, width=width, cap="round")
+        self.f.line([(x0, y0), (x1, y1)], stroke=color, width=width, cap="round", anim=anim, ghost=ghost)
 
-    def legend(self, entries, at="north east", pad=16, row=38, sample=44, size=24, inset=14):
+    def legend(self, entries, at="north east", pad=16, row=38, sample=44, size=24, inset=14, anim=None):
         """pgfplots' legend: a 1 px ink box, white, inside the axis. entries
         are (label HTML, dict of the line's style: color, width, dash, or
-        kind='area'/'mark')."""
+        kind='area'/'mark'). anim= arrives the whole legend."""
         f = self.f
+        a = dict(anim=anim)
         est_w = max(len(_html.unescape(__import__("re").sub(r"<[^>]+>", "", t))) for t, _ in entries) * size * 0.5
         bw = pad + sample + 12 + est_w + pad
         bh = pad * 2 + row * len(entries) - (row - size)
         bx = self.x + self.w - inset - bw if "east" in at else self.x + inset
         by = self.y + inset if "north" in at else self.y + self.h - inset - bh
-        f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0)
+        f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0, **a)
         for i, (t, st) in enumerate(entries):
             cy = by + pad + size / 2 + i * row
             kind = st.get("kind", "line")
             if kind == "area":
                 f.rect(bx + pad, cy - 10, sample, 20, fill=st.get("color", C.mist),
-                       fill_opacity=st.get("opacity"))
+                       fill_opacity=st.get("opacity"), **a)
             elif kind == "mark":
-                f.circle(bx + pad + sample / 2, cy, st.get("r", 6), fill=st.get("color", C.navy))
+                f.circle(bx + pad + sample / 2, cy, st.get("r", 6), fill=st.get("color", C.navy), **a)
             else:
                 f.line([(bx + pad, cy), (bx + pad + sample, cy)], stroke=st.get("color", C.navy),
-                       width=st.get("width", DATA_W - 1), dash=st.get("dash"), cap=_cap(st.get("dash")))
-            f.text(bx + pad + sample + 12, cy, t, "west", size=size)
+                       width=st.get("width", DATA_W - 1), dash=st.get("dash"), cap=_cap(st.get("dash")), **a)
+            f.text(bx + pad + sample + 12, cy, t, "west", size=size, **a)
         return bx, by, bw, bh
 
 
     # ---------------------------------------------------------- more marks
     def step(self, xs, ys, where="post", **kw):
-        """A step function (a CDF, a counting process): level after each x."""
+        """A step function (a CDF, a counting process): level after each x.
+        A seq for anim= reaches data point i at its moment."""
         xs, ys = np.asarray(xs, float), np.asarray(ys, float)
         px, py = [xs[0]], [ys[0]]
         for i in range(1, len(xs)):
@@ -751,42 +850,56 @@ class Axes:
             else:
                 px += [xs[i - 1], xs[i]]
                 py += [ys[i], ys[i]]
-        self.plot(px, py, **kw)
+        # data point i is the line's vertex 2i, after its riser (or its tread)
+        self.plot(px, py, at=[2 * i for i in range(len(xs))], **kw)
 
-    def stem(self, xs, ys, color=C.navy, width=3.0, r=6.0, base=0.0):
+    def stem(self, xs, ys, color=C.navy, width=3.0, r=6.0, base=0.0, anim=None, ghost=False):
         """Stems from a base line with a dot on each (autocorrelations, a
-        probability mass function)."""
-        for xv, yv in zip(xs, ys):
+        probability mass function). A grow raises each stem from the base,
+        its dot arriving with it."""
+        xs, ys = list(xs), list(ys)
+        specs = _each(anim, len(xs))
+        Yb = float(self.Y(base))
+        for xv, yv, a in zip(xs, ys, specs):
             self.f.line(self._pts([xv, xv], [base, yv]), stroke=color, width=width, cap="butt",
-                        clip=self.clip)
-        self.scatter(xs, ys, r=r, color=color)
+                        clip=self.clip, anim=_base(self._px(a), Yb), ghost=ghost)
+        for (X, Y), a in zip(self._pts(xs, ys), specs):
+            self.f.circle(X, Y, r, fill=color, clip=self.clip, anim=_dot(self._px(a)), ghost=ghost)
 
-    def hist(self, values, edges, density=True, color=C.steel2, stroke=None, gap=0.08):
+    def hist(self, values, edges, density=True, color=C.steel2, stroke=None, gap=0.08,
+             anim=None, ghost=False):
         """A histogram of `values` on the bin `edges` (numpy's), bars touching
         but for a hairline gap. Returns the heights."""
         h, e = np.histogram(values, edges, density=density)
         w = np.diff(e)
         self.bars((e[:-1] + e[1:]) / 2, h, width=w * (1 - gap) if np.ndim(w) == 0 else float(w[0]) * (1 - gap),
-                  color=color, stroke=stroke)
+                  color=color, stroke=stroke, anim=anim, ghost=ghost)
         return h
 
-    def errorbar(self, xs, ys, lo, hi, color=C.navy, width=2.5, cap=8.0, r=6.0):
+    def errorbar(self, xs, ys, lo, hi, color=C.navy, width=2.5, cap=8.0, r=6.0, anim=None, ghost=False):
         """A vertical interval [lo, hi] at each x, with caps and the point."""
-        for xv, yv, a, b in zip(xs, ys, lo, hi):
+        xs, ys, lo, hi = list(xs), list(ys), list(lo), list(hi)
+        specs = _each(anim, len(xs))
+        for xv, yv, a, b, sp in zip(xs, ys, lo, hi, specs):
             X = float(self.X(xv))
             Ya, Yb = float(self.Y(a)), float(self.Y(b))
-            self.f.line([(X, Ya), (X, Yb)], stroke=color, width=width, cap="butt")
+            sp = self._px(sp)
+            self.f.line([(X, Ya), (X, Yb)], stroke=color, width=width, cap="butt", anim=sp, ghost=ghost)
             for Yc in (Ya, Yb):
-                self.f.line([(X - cap, Yc), (X + cap, Yc)], stroke=color, width=width, cap="butt")
-        self.scatter(xs, ys, r=r, color=color)
+                self.f.line([(X - cap, Yc), (X + cap, Yc)], stroke=color, width=width, cap="butt",
+                            anim=sp, ghost=ghost)
+        for (X, Y), sp in zip(self._pts(xs, ys), specs):
+            self.f.circle(X, Y, r, fill=color, clip=self.clip, anim=_dot(self._px(sp)), ghost=ghost)
 
-    def interval(self, a, b, y, color=C.navy, width=3.0, cap=12.0):
+    def interval(self, a, b, y, color=C.navy, width=3.0, cap=12.0, anim=None, ghost=False):
         """A horizontal interval [a, b] at height y, capped at both ends (a
         confidence interval)."""
         Xa, Xb, Y = float(self.X(a)), float(self.X(b)), float(self.Y(y))
-        self.f.line([(Xa, Y), (Xb, Y)], stroke=color, width=width, cap="butt")
+        sp = self._px(anim)
+        self.f.line([(Xa, Y), (Xb, Y)], stroke=color, width=width, cap="butt", anim=sp, ghost=ghost)
         for X in (Xa, Xb):
-            self.f.line([(X, Y - cap), (X, Y + cap)], stroke=color, width=width, cap="butt")
+            self.f.line([(X, Y - cap), (X, Y + cap)], stroke=color, width=width, cap="butt",
+                        anim=sp, ghost=ghost)
 
 
 # the order his series take their colours in (DECK_BRIEF.md, "Colour"): his

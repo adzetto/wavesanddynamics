@@ -113,12 +113,13 @@ RESEARCH = ("brochure-shm-and-ndt-2-pages", "understanding-shm-and-ndt",
 
 def _slides(folder, fallback):
     """How many slides a deck has, counted as build.py counts the ones it
-    writes: one sNNN-1600.webp each in content/<folder>/web. The number
-    given stands in where that folder is missing."""
+    writes: one <stem>-1600.webp each in content/<folder>/web (s004, and
+    s065a for a slide of ours lettered after his 65). The number given stands
+    in where that folder is missing."""
     web = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                        "content", folder, "web")
     try:
-        count = sum(1 for f in os.listdir(web) if re.fullmatch(r"s\d{3}-1600\.webp", f))
+        count = sum(1 for f in os.listdir(web) if re.fullmatch(r"s\d{3}[a-z]*-1600\.webp", f))
     except OSError:
         return fallback
     return count or fallback
@@ -128,7 +129,8 @@ def _slides(folder, fallback):
 # count). The titles are his: slide 1 of the probability deck, and his name
 # for the research one. The notes are ours. build.py passes the counts it
 # finds; these stand in for a render outside the build, read from the same
-# slides (the probability deck has 74 since its Kalman slide, 29 Sep 2026).
+# slides (the probability deck has 74: his 73 and our Kalman loop, 65a,
+# 29 Sep 2026).
 DECKS = {
     "probability-statistics.html": ("Probability, statistics and estimation",
                                     "Opens with a big-picture map of the subject.",

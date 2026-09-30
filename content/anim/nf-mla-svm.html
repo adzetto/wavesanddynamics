@@ -734,7 +734,7 @@ function camera(lam) {
   for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-HZ, 0, top]) {
     const a = x * ca - y * sa, b = (x * sa + y * ca) * se + z * ce;
     if (a > 1e-9) s = Math.min(s, (976 - cx) / a); else if (a < -1e-9) s = Math.min(s, (cx - left) / -a);
-    if (b > 1e-9) s = Math.min(s, (cy - 56) / b); else if (b < -1e-9) s = Math.min(s, (468 - cy) / -b);
+    if (b > 1e-9) s = Math.min(s, (cy - 56) / b); else if (b < -1e-9) s = Math.min(s, (460 - cy) / -b);
   }
   const P = (x, y, z) => {
     const xn = x / LIMX, yn = y / LIMX, zn = z / ZL * HZ, xr = xn * ca - yn * sa, yr = xn * sa + yn * ca;
@@ -1076,6 +1076,9 @@ function drawBp(sl) {
     yticks: [-4, -2, 0, 2, 4], xlabel: '\\rm{position along the line}', ylabel: 'f', ylabelGap: 34,
     progress: seg(.1, .35)});
   const ba = arrive(.55), ca = seg(.3, .45), za = arrive(.85), N = 97;
+  // the decision function the curves below add up, and the surface of the 3-D view is
+  math('f(x) = b + \\Sigma_{i}\\ \\alpha_{i} y_{i}\\ \\rm{exp}(-\\gamma\\, |x - x_{i}|^{2})', PD.x + PD.w / 2, PD.y - 14,
+       {size: 16, align: 'center', alpha: arrive(.8)});
   g.inside(() => {
     line([[PD.x, g.Y(0)], [PD.x + PD.w, g.Y(0)]], {color: C.ink, width: 1, alpha: arrive(.45)});
     line([[PD.x, g.Y(B0)], [PD.x + PD.w, g.Y(B0)]], {color: C.guide, width: 1, dash: [5, 4], alpha: arrive(.45)});

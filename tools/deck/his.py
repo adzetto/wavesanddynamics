@@ -105,6 +105,8 @@ SKIP = [
 
 @functools.lru_cache(maxsize=1)
 def deck():
+    if not os.path.isfile(PPTX):
+        raise FileNotFoundError(f"his PowerPoint is not at {PPTX} (set DECK_PPTX)")
     from pptx import Presentation
     p = Presentation(PPTX)
     assert len(p.slides) == HIS_COUNT, f"{PPTX} has {len(p.slides)} slides, not {HIS_COUNT}"

@@ -5,11 +5,21 @@ The decks. His MSc and PhD presentation (PhD_MsC_entire_Review_ppt.pptx, 177
 slides, exported from PowerPoint at 1600x900 into content/deck-phd/; the old
 UT Austin address on slides 1 and 56 was replaced by
 korkutkaynardag@iyte.edu.tr before export) and his Probability, statistics
-and estimation (Prob__stat__stoch__est.pptx, 73 slides, 74 since the Kalman loop slide joined as 66 on 29 Sep 2026, exported through
-PowerPoint's COM interface at 1920x1080 into content/deck-probstat/, with
-each slide's title, its first text shape, in titles.json). The second deck's
+and estimation (Prob__stat__stoch__est.pptx, 73 slides, recreated by
+tools/deck/ at 1920x1080 into content/deck-probstat/). The second deck's
 text and speaker notes were read for addresses and phone numbers before it
 went up; there are none, and the notes never ship. No .pptx is published.
+
+The deck's numbers (30 Sep 2026). His slides keep his numbers, and a slide of
+ours goes by the number of the one it follows and a letter: 65a, the Kalman
+loop (29 Sep 2026), between his 65 and 66. The deck's manifest, deck.json
+(tools/deck/render.py), lists its slides in order, each with its label, the
+stem its files are named by (s065a), its title and, for a slide that plays,
+its length; render(slides=) takes those rows. The page names a slide by its
+label everywhere a number stands: its alt text ("Slide 65a: ..."), the
+numbers under it, the capsule ("65a / 73", the deck's last number after the
+stroke) and the address (#65a). A deck without a manifest is numbered 1 to
+its count, as the PhD deck always was.
 
 The pictures. Each slide is written three times, into the deck's web/
 folder: sNNN-1600.webp (quality 70), sNNN-960.webp (60) and sNNN-320.webp
@@ -64,6 +74,15 @@ reader which slide it is on. The numbers are one stop for the Tab key: on
 them the arrows move the slide and the focus with it. A slide has no id of
 its own: #12 is read by the script, so the browser never scrolls the page
 down to a slide it has just shown.
+
+A slide that plays (tools/deck/anim.js, DECK_BRIEF.md "Animated slides")
+plays each time it comes on: its own page, anim/<stem>.html, opens in a
+frame over the picture, unseen and held at its first moment until that
+moment is drawn, then plays; its last moment is the picture, and the frame
+then goes. Leaving the slide takes the frame away with it. Presenting, a
+step on while it plays shows it complete first, as a clicker completes a
+build, and the next step goes on. Under reduced motion nothing plays: the
+picture is the slide.
 
 Present (the button, P or F) gives the deck the whole screen through the
 Fullscreen API, black round the slide as in a lecture hall, the capsule
@@ -184,6 +203,11 @@ CSS = """
 /* the slide as vectors, laid over its picture: the picture shows until the
    SVG has arrived and stays under it, so the swap is only a sharpening */
 .deck__list>li>img.deck__vec{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* a slide that plays: its page in a frame over the picture, unseen until it
+   has drawn its first moment; the swipe and the clicks stay the stage's */
+.deck__list>li>iframe.deck__anim{position:absolute;inset:0;z-index:1;width:100%;height:100%;border:0;
+  pointer-events:none;visibility:hidden}
+.deck__list>li>iframe.deck__anim.is-on{visibility:visible}
 /* With a script, one slide. The shell marks <html> "js" in <head>, so the
    first paint already shows the first slide alone: the list of every slide
    never flashes up and collapses. */
@@ -359,7 +383,7 @@ html.deck-show{overflow:hidden;scrollbar-gutter:auto}
   .deck.is-show .deck__bar{transition:none}
 }
 @media print{
-  .deck__acts,.deck__bar,.deck__nums,.deck__all{display:none!important}
+  .deck__acts,.deck__bar,.deck__nums,.deck__all,.deck__anim{display:none!important}
   .deck .deck__list>li{display:block!important;position:relative;break-inside:avoid}
   .deck .deck__list>li+li{margin-top:16px}
 }
@@ -379,8 +403,11 @@ var prev=d.querySelector('[data-go="-1"]'),next=d.querySelector('[data-go="1"]')
     sizes=li[0].querySelector('img').getAttribute('sizes'),fading=0;
 function pic(k){return li[k]&&li[k].querySelector('img')}
 /* a slide's title is its alt text after "Slide N: "; a deck without titles
-   says "Slide N of M", and its slides go by their numbers */
-function titled(k){return pic(k).alt.replace(/^Slide \d+(?:: | of \d+$)/,'')}
+   says "Slide N of M", and its slides go by their numbers. N is the slide's
+   label: his number, or ours after it with a letter (65a) */
+function titled(k){return pic(k).alt.replace(/^Slide \d+[a-z]*(?:: | of \d+[a-z]*$)/,'')}
+function lab(k){var m=/^Slide (\d+[a-z]*)/.exec(pic(k).alt);return m?m[1]:String(k+1)}
+var last=lab(n-1);
 function showing(){return d.classList.contains('is-show')}
 /* presenting, a slide asks for the copy the screen needs, not the page's */
 function fit(k){var im=pic(k),s=showing()?'100vw':sizes;if(im&&im.getAttribute('sizes')!==s)im.sizes=s}
@@ -420,14 +447,51 @@ function show(k,push,tell,fade){
   if(fade&&was!==li[i]&&!reduce.matches){
     was.classList.add('was');li[i].classList.add('in');fading=setTimeout(settle,240);
   }
-  load(i);load(i+1);load(i-1);sharpen();
+  load(i);load(i+1);load(i-1);sharpen();play(i);
   prev.setAttribute('aria-disabled',i===0);next.setAttribute('aria-disabled',i===n-1);
-  cur.textContent=i+1;number(i);
-  if(push)try{history.replaceState(null,'','#'+(i+1))}catch(e){}
-  if(tell)say.textContent='Slide '+(i+1)+' of '+n+(titled(i)?': '+titled(i):'');
+  cur.textContent=lab(i);number(i);
+  if(push)try{history.replaceState(null,'','#'+lab(i))}catch(e){}
+  if(tell)say.textContent='Slide '+lab(i)+' of '+last+(titled(i)?': '+titled(i):'');
 }
-function go(k){finish();k=Math.max(0,Math.min(n-1,k));if(k!==i)show(k,1,1,1)}
-function hashed(){var m=/^#(\d+)$/.exec(location.hash);return m?m[1]-1:0}
+/* presenting, a step on while the slide plays shows it complete first */
+function go(k){
+  finish();k=Math.max(0,Math.min(n-1,k));
+  if(k===i+1&&showing()&&playing&&playing.k===i&&!playing.done){complete();return}
+  if(k!==i)show(k,1,1,1);
+}
+/* #65a is the slide labelled 65a; a bare number no slide carries is its place */
+function hashed(){
+  var m=/^#(\d+[a-z]*)$/i.exec(location.hash);if(!m)return 0;
+  var h=m[1].toLowerCase();
+  for(var k=0;k<n;k++)if(lab(k)===h)return k;
+  return /^\d+$/.test(h)?Math.min(n,+h)-1:0;
+}
+
+/* ---- a slide that plays ----
+   Its page (tools/deck/anim.js) opens in a frame over the picture, held at
+   its first moment (?wait) and unseen until it says it has drawn it; then
+   it plays. At its end it is the picture, and the frame goes; leaving the
+   slide takes it away. Nothing plays under reduced motion. */
+var playing=null;
+function unplay(){if(playing){playing.f.remove();playing=null}}
+function play(k){
+  if(playing&&playing.k===k)return;
+  unplay();
+  var src=li[k]&&li[k].getAttribute('data-anim');
+  if(!src||reduce.matches)return;
+  var f=document.createElement('iframe');
+  f.className='deck__anim';f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');
+  f.src=src+'?wait';
+  playing={k:k,f:f,done:false};
+  li[k].appendChild(f);
+}
+function complete(){try{playing.f.contentWindow.postMessage({deckAnim:'finish'},'*')}catch(e){unplay()}}
+addEventListener('message',function(e){
+  var m=e.data&&e.data.deckAnim,p=playing;
+  if(!m||!p||e.source!==p.f.contentWindow)return;
+  if(m==='ready'&&!p.done){p.f.classList.add('is-on');e.source.postMessage({deckAnim:'play'},'*')}
+  else if(m==='done'){p.done=true;requestAnimationFrame(function(){if(playing===p)unplay()})}
+});
 d.classList.add('is-live');
 show(hashed(),0,0);
 addEventListener('hashchange',function(){finish();show(hashed(),0,1)});
@@ -563,7 +627,7 @@ function enter(){
   d.classList.add('is-show');root.classList.add('deck-show');
   fit(i);fit(i+1);fit(i-1);sharpen();wake();
   st.focus({preventScroll:true});
-  say.textContent='Presenting, slide '+(i+1)+' of '+n;
+  say.textContent='Presenting, slide '+lab(i)+' of '+last;
   if(fsOk){var p=fsOn.call(d);if(p&&p.catch)p.catch(function(){})}
 }
 function done(){
@@ -591,7 +655,7 @@ if(nums&&matchMedia('(hover:hover) and (pointer:fine)').matches){
     var a=e.target.closest('.deck__pg');if(!a||e.pointerType!=='mouse')return;
     var k=a.getAttribute('data-n')-1,t=titled(k);
     tip.firstChild.src=pic(k).getAttribute('src').replace(/-\d+\.webp$/,'-320.webp');
-    tip.lastChild.innerHTML='<b>'+(k+1)+'</b>'+esc(t);
+    tip.lastChild.innerHTML='<b>'+lab(k)+'</b>'+esc(t);
     var r=a.getBoundingClientRect(),w=wrap.getBoundingClientRect(),half=tip.offsetWidth/2;
     tip.style.left=Math.max(half,Math.min(w.width-half,r.left+r.width/2-w.left))+'px';
     tip.classList.add('is-on');
@@ -616,7 +680,7 @@ function build(){
     h+='<li><button type="button" class="deck__tile" data-n="'+(k+1)+'"><img src="'+u+'-320.webp" srcset="'+
       u+'-320.webp 320w, '+u+'-960.webp 960w" sizes="(max-width: 640px) 45vw, 250px" '+
       'width="320" height="180" alt="" loading="lazy" decoding="async"><span class="deck__cap">'+
-      '<span class="deck__tn"><span class="deck__vh">Slide </span>'+(k+1)+'</span>'+
+      '<span class="deck__tn"><span class="deck__vh">Slide </span>'+lab(k)+'</span>'+
       (t?'<span class="deck__tt">'+esc(t)+'</span>':'')+'</span></button></li>'}
   box=document.createElement('dialog');
   box.className='deck__all';box.setAttribute('aria-labelledby','deck-all-h');
@@ -663,10 +727,22 @@ addEventListener('beforeprint',function(){for(var k=0;k<n;k++)load(k)});
 """
 
 
-def _alt(k, count, titles):
-    """A slide's alt text: its number and its title, or its number of all."""
-    t = " ".join(str(titles[k - 1]).split()) if titles and k <= len(titles) and titles[k - 1] else ""
-    return f"Slide {k}: {t}" if t else f"Slide {k} of {count}"
+def _alt(label, title, last):
+    """A slide's alt text: its label and its title, or its label of the
+    deck's last."""
+    t = " ".join(str(title).split()) if title else ""
+    return f"Slide {label}: {t}" if t else f"Slide {label} of {last}"
+
+
+def _rows(count, titles=None, slides=None):
+    """The deck's slides in order, as deck.json lists them: label, stem and
+    title (and anim, its length, for one that plays). A deck without a
+    manifest is numbered 1 to count, its titles given in order."""
+    if slides is not None:
+        return [dict(r) for r in slides]
+    return [{"label": str(k), "stem": f"s{k:03d}",
+             "title": titles[k - 1] if titles and k <= len(titles) else None}
+            for k in range(1, count + 1)]
 
 
 def _mb(n):
@@ -675,7 +751,7 @@ def _mb(n):
 
 
 def render(count, up="", *, src=PHD_SRC, title=PHD_TITLE, lede=None, titles=None,
-           vector=False, pdf=None):
+           vector=False, pdf=None, slides=None):
     """A deck's page body: its <h1> and the line under it (by default the
     count), Present and All slides, the stage, the capsule, the numbers.
 
@@ -683,10 +759,17 @@ def render(count, up="", *, src=PHD_SRC, title=PHD_TITLE, lede=None, titles=None
     1600 copy when `vector`);
     `title` is the <h1>; `lede` the line under it, as text; `titles` the
     slides' titles in order, which name each slide in its alt text, in All
-    slides and over its number. `vector`: the folder also holds sNNN.svg,
-    drawn wherever the pictures would be enlarged. `pdf`: (its address from
-    the site's root, its size in bytes), offered under the title and saved
-    under the deck's title. The defaults are the PhD deck's page."""
+    slides and over its number. `slides`: the deck's manifest rows (deck.json:
+    label, stem, title, anim) in place of numbers 1 to count and `titles`;
+    a slide with anim plays its page, anim/<stem>.html. `vector`: the folder
+    also holds <stem>.svg, drawn wherever the pictures would be enlarged.
+    `pdf`: (its address from the site's root, its size in bytes), offered
+    under the title and saved under the deck's title. The defaults are the
+    PhD deck's page."""
+    rows = _rows(count, titles, slides)
+    if slides is not None and len(rows) != count:
+        raise ValueError(f"render(): {count} slides, but the manifest lists {len(rows)}")
+    last = rows[-1]["label"] if rows else "0"
     base = html.escape(up + src)
     meta = html.escape(lede, quote=False) if lede is not None else f"{count} slides"
     if pdf:
@@ -698,18 +781,19 @@ def render(count, up="", *, src=PHD_SRC, title=PHD_TITLE, lede=None, titles=None
     # a deck with vectors has no 1600 copy: past the 960 its SVG takes over
     big = "" if vector else ", {one}-1600.webp 1600w"
 
-    def slide(k):
-        one = f"{base}s{k:03d}"
+    def slide(k, r):
+        one = f"{base}{html.escape(r['stem'])}"
         first = ' loading="eager" fetchpriority="high"' if k == 1 else ' loading="lazy"'
-        return (f'<li><img src="{one}-960.webp" srcset="{one}-960.webp 960w{big.format(one=one)}" '
+        plays = f' data-anim="{base}anim/{html.escape(r["stem"])}.html"' if r.get("anim") else ""
+        return (f'<li{plays}><img src="{one}-960.webp" srcset="{one}-960.webp 960w{big.format(one=one)}" '
                 f'sizes="{SIZES}" width="1600" height="900"{first} decoding="async" '
-                f'alt="{html.escape(_alt(k, count, titles))}"></li>')
+                f'alt="{html.escape(_alt(r["label"], r["title"], last))}"></li>')
 
-    items = "".join(slide(k) for k in range(1, count + 1))
+    items = "".join(slide(k, r) for k, r in enumerate(rows, 1))
     numbers = "".join(
         f'<li><button class="deck__pg" type="button" data-n="{k}" tabindex="-1" '
-        f'aria-label="{html.escape(_alt(k, count, titles))}">{k}</button></li>'
-        for k in range(1, count + 1))
+        f'aria-label="{html.escape(_alt(r["label"], r["title"], last))}">{html.escape(r["label"])}</button></li>'
+        for k, r in enumerate(rows, 1))
     return f"""<div class="wrap deckpage">
  <div class="deck__top">
   <div><h1>{html.escape(title, quote=False)}</h1><p class="deck__meta">{meta}</p></div>
@@ -722,7 +806,7 @@ def render(count, up="", *, src=PHD_SRC, title=PHD_TITLE, lede=None, titles=None
   <div class="deck__stage" tabindex="-1"><ol class="deck__list">{items}</ol></div>
   <div class="deck__bar">
    <button class="deck__btn" type="button" data-go="-1" aria-label="Previous slide">{_PREV}</button>
-   <span class="deck__at"><span class="deck__cur">1</span> / {count}</span>
+   <span class="deck__at"><span class="deck__cur">{html.escape(rows[0]["label"]) if rows else 1}</span> / {html.escape(last)}</span>
    <button class="deck__btn" type="button" data-go="1" aria-label="Next slide">{_NEXT}</button>
    <button class="deck__btn deck__exit" type="button" data-exit aria-label="End the presentation" title="End (Esc)">{_CLOSE}</button>
   </div>

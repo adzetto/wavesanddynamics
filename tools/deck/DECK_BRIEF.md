@@ -1,13 +1,14 @@
 # The deck: how to recreate a slide of "Probability, statistics and estimation"
 
-Read `tools/ROUND10.md` first; it binds. This file says how to recreate his slides 9 to 74
-in the system that already made slides 1 to 8 (the deck's numbers: slide 66 is ours, section 13). Slides 1 to 8 are the reference: when this
-file and those slides seem to disagree, look at what the slides do.
+Read `tools/ROUND10.md` first; it binds. This file says how to recreate his slides 9 to 73
+in the system that already made slides 1 to 8 (the deck's numbers: his keep his, and slide 65a
+is ours, section 13). Slides 1 to 8 are the reference: when this file and those slides seem to
+disagree, look at what the slides do. A slide may also play (section 14).
 
 ## 1. The job
 
-- **The deck.** His 73 slides and one of ours (66, section 13), 74 in all, shown by the presenter on `probability-statistics.html`
-  (`site/parts/deck.py`). Today most of them are pictures exported from his PowerPoint.
+- **The deck.** His 73 slides and one of ours (65a, section 13), 74 in all, shown by the presenter
+  on `probability-statistics.html` (`site/parts/deck.py`).
 - **The client, 27 Sep 2026:** "buradaki her slideı da yine yeniden oluştur. yine slide halde
   olabilsin ama slide halinde de figureler sunum vs mükemmel olsun". Every slide is recreated;
   it stays a slide in the same presenter; the slides and their figures must be perfect.
@@ -38,11 +39,12 @@ file and those slides seem to disagree, look at what the slides do.
    (body text, bullets, notes, box text, the take-away) is set at 1.3 to 1.5. Only a title or a
    heading of 30 px and up may be tighter (1.06 to 1.2), and a one-line label (a stage name in
    capitals, an axis label).
-6. **Your files only.** You own `tools/deck/src/sNNN.*` and `content/deck-probstat/sNNN.png` and
-   `web/sNNN-{1600,960,320}.webp` for your slide numbers. Do not edit `deck.css`, `deck.js`,
-   `fig.py`, `mathtype.py`, `render.py`, `his.py`, `kit.*`, `titles.json` or anything in
-   `content/deck-probstat/_orig/` (his originals, the backup). If the shared system needs a
-   change, write your helper into your own `sNNN.py` and say so in your final message.
+6. **Your files only.** You own `tools/deck/src/sNNN.*` and `content/deck-probstat/sNNN.png`,
+   `web/sNNN-{1600,960,320}.webp` and `anim/sNNN.html` for your slides (a slide of ours by its
+   stem, `s065a`). Do not edit `deck.css`, `deck.js`, `anim.js`, `fig.py`, `mathtype.py`,
+   `render.py`, `his.py`, `vector.py`, `kit.*`, the manifest `deck.json` (render.py writes it) or
+   anything in `content/deck-probstat/_orig/` (his originals, the backup). If the shared system
+   needs a change, write your helper into your own `sNNN.py` and say so in your final message.
 
 ## 3. The workflow, slide by slide
 
@@ -65,7 +67,9 @@ file and those slides seem to disagree, look at what the slides do.
    by side) and `s023-960.png`; open `build/r10-deck/slides/s023@2x.png` for detail (crop it:
    the figures deserve a full-size look).
 6. **Write.** `python tools/deck/render.py 23` renders, checks and, only if every check passes,
-   writes `s023.png` (1920 x 1080) and the three web copies. Ranges work: `render.py 23-30`.
+   writes `s023.png` (1920 x 1080) and the three web copies, and its line in the manifest
+   (`content/deck-probstat/deck.json`: label, stem, title, and the length of a slide that
+   plays). Ranges run in the deck's order: `render.py 60-66` holds 65a too.
    After any write it prints the deck as vectors (`vector.py`): the whole deck as one PDF,
    `content/deck-probstat/probability-statistics-and-estimation.pdf`, which the site offers for
    download, and each page as `web/sNNN.svg`, which the viewer draws while presenting. Both are
@@ -75,8 +79,8 @@ file and those slides seem to disagree, look at what the slides do.
    `render.py --kit` renders the component sampler (`kit.html`) to
    `build/r10-deck/review/kit.png`.
 
-Several agents render at once: each run has its own server and browser and writes only its own
-slide numbers (`build/r10-deck/review/sNNN.json` is each slide's report).
+Several agents render at once (section 15): each run has its own server and browser and writes
+only its own slides (`build/r10-deck/review/sNNN.json` is each slide's report).
 
 ## 4. The page
 
@@ -292,7 +296,7 @@ A slide is written to `content/` only when all pass:
   12 px clear of the foot, no text on other text, every wire found its boxes.
 - **legible**: 24 px text (22 px foot and ticks). A slide may lower its own floor with
   `<section class="slide" data-min="22">`; only the map (slide 2, 20) and the reference slides
-  (72 to 74, 22) do.
+  (71 to 73, 22) do.
 - **leading**: text that runs to two lines is set at 1.3 or more, unless it is a title or a
   heading of 30 px and up.
 
@@ -312,17 +316,17 @@ do not add it to `SKIP` yourself; report it.
 
 ## 11. Families: which slide to copy
 
-| his slides | kind | model |
+| slides (their labels) | kind | model |
 |---|---|---|
-| 12, 13, 16, 17, 21 to 25, 28 to 33, 36, 38, 40, 46, 51, 52, 59, 65, 67 | text beside one figure | 4, 5 |
-| 9, 20, 35, 39, 41, 60, 62 to 64, 71 | a table | 6 (booktabs `.tab`) |
-| 10, 11, 27, 61, 66, 70 | boxes and arrows | 1, 3 (`.node`, wires) |
-| 7, 14, 15, 18, 19, 43, 45, 50, 69 | two or four blocks of text and small figures | 7 |
-| 26, 34, 37, 42, 44, 47 to 49, 53 to 58, 68 | several panels of figures | 8, 7 |
+| 12, 13, 16, 17, 21 to 25, 28 to 33, 36, 38, 40, 46, 51, 52, 59, 65, 66 | text beside one figure | 4, 5 |
+| 9, 20, 35, 39, 41, 60, 62 to 64, 70 | a table | 6 (booktabs `.tab`) |
+| 10, 11, 27, 61, 65a, 69 | boxes and arrows | 1, 3 (`.node`, wires) |
+| 7, 14, 15, 18, 19, 43, 45, 50, 68 | two or four blocks of text and small figures | 7 |
+| 26, 34, 37, 42, 44, 47 to 49, 53 to 58, 67 | several panels of figures | 8, 7 |
 | 2 | the map | 2 |
-| 72 to 74 | references | `.refs`, `data-min="22"` |
+| 71 to 73 | references | `.refs`, `data-min="22"` |
 
-Formula-heavy slides (17 to 19, 28 to 33, 61 to 68): one `.eq` line per line of his, in his
+Formula-heavy slides (17 to 19, 28 to 33, 61 to 67 with 65a): one `.eq` line per line of his, in his
 order, grouped under his headings; his numbered steps stay numbered as he wrote them. His
 multi-space gaps inside a line become wide gaps by themselves.
 
@@ -338,23 +342,89 @@ multi-space gaps inside a line become wide gaps by themselves.
   Serif 4, Source Sans 3), CMU Serif, and a subset of Latin Modern Math in `tools/deck/fonts/`
   (GUST Font License); the PDF embeds the glyphs it uses.
 
-## 13. The deck's numbers: his 73 slides and ours
+## 13. The deck's numbers: his slides keep his, ours are lettered
 
-- **Slide 66 is ours.** On 29 Sep 2026 the client asked for a slide on the Kalman filter's
+- **His slides keep his numbers, 1 to 73** (30 Sep 2026). A slide of ours goes by the number
+  of his slide it follows and a letter: `65a` is the first after his 65, `65b` would be the
+  next. Nothing of his is renumbered when one of ours joins, so his own cross-references
+  ("Slides 65–67" on 9, "slides 65–66" on 67) still point where he meant.
+- **Slide 65a is ours.** On 29 Sep 2026 the client asked for a slide on the Kalman filter's
   logic between his 65 and 66 ("kalman filter between 65-66 ... kalman filter logic slide").
-  It is `src/s066.*`, "The Kalman loop: predict, observe, weigh, update": the loop in the
+  It is `src/s065a.*`, "The Kalman loop: predict, observe, weigh, update": the loop in the
   notation of his slide 65 (x̂⁻, F, H, K, indexed by k), and the next slide's hour drawn in
   one dimension, the update the exact product of the two Gaussians, the gain a balanced lever.
-- **Every number is the deck's.** `render.py N`, `his.py N`, `src/sNNN.*`, `content/`,
-  `titles.json` and each running foot's page number count the deck, 74 slides. `his.his(n)`
-  says which of his slides the deck's slide n is: the same up to 65, one less from 67 on (the
-  deck's 67 is his 66), none for 66. `his.strings(n)` gives his page number as the deck's, so
-  his "66" is checked as 67. His originals in `_orig/` keep his numbers.
-- **A slide of ours** is listed in `his.OURS` with its reason. It has no words of his and no
+  It plays (section 14).
+- **Labels and stems.** `his.LABELS` is the deck in order (`"1"` ... `"65"`, `"65a"`, `"66"`
+  ... `"73"`); `his.label(x)` reads one (`65A`, ` 065a `); `his.stem(x)` names its files
+  (`s065a`, `s004`) in `src/`, in `content/deck-probstat/` and in the review; `his.his(x)` is his
+  number, or None for a slide of ours. `render.py` takes labels and ranges (`65a`, `60-66`).
+  Every running foot ends in its label, as he typed his own numbers.
+- **A slide of ours** is listed in `his.OURS` with its reason; adding one is one line there,
+  and its label must be his number and a letter. It has no words of his and no
   `sNNN.pic.txt`; its words are ours and keep the site's rules (short, no em dash, no spaced
   en dash), and `render.py` checks those instead. Its review sheet shows it between the
   deck's slides before and after it.
-- **His cross-references kept their words.** The deck's 67 (his 66) opens "Zoom into one
-  hour of the previous slide": ours is that hour's loop, drawn with his numbers (10 mm, SD 2;
-  14 mm, SD 3). The deck's 9 ("Slides 65–67") and 68 ("slides 65–66") name the bridge
-  displacement, which slides 65 to 67 all show.
+- **The manifest.** `content/deck-probstat/deck.json` is the deck in order, a row a slide:
+  `label`, `stem`, `title` and, for a slide that plays, `anim` (its length in seconds). A
+  written slide updates its row; `render.py --manifest` writes it again from `content/`. The
+  site reads it (`site/build.py` publishes each slide's files by its stem, and the presenter
+  names each slide by its label: "Slide 65a: ...", the capsule's "65a / 73", the address
+  `#65a`), and so do the PDF's bookmarks ("65a  The Kalman loop ...").
+- **His words where his file is not.** His PowerPoint (`DECK_PPTX`) is on the controller's
+  machine only. Elsewhere the words check cannot run and says so ("his words not checked");
+  the slide is then written only with `--force`, after its words are held to the last print
+  another way (the PDF's text, page by page, the page number aside). Render it again where
+  his file is, and print the vectors there, at the next chance.
+
+## 14. Animated slides
+
+A slide may play: from its first moment to its last, which is its photograph. The static slide
+is untouched: the photograph, the web copies, the PDF and the SVG are the last moment, and a
+reader who asks for less motion (or a printer, or a page without scripts) sees only that.
+
+- **Ask for it.** In `src/sNNN.py`, `ANIM = {"length": 9.8}`: seconds the slide plays; every
+  mark is at rest by then. Optional `"frames": [4.2, 6.5]`, moments the review must show.
+- **The marks of a figure** (`fig.py`) take `anim=`, and each call of `Fig` and `Axes` takes it:
+  `draw(t0, dur)` (a stroke draws itself along its length, its dashes kept; a fill fades),
+  `pop(t0, visual)` (it fades in and settles: a mark from 60 % of its size, a label from 10 px
+  below), `fade(t0, dur)`, `wipe(t0, dur, dir)`, `grow(t0, dur, stagger)` (bars and stems from
+  their base), `seq(t0, dt)` (marks one after another; on one line, the line extends through
+  its points) and `keys(times, values, prop)` (a value from keyframe to keyframe: `xy`, `x`,
+  `y`, `h`, `p`, `o`, `s`, `d`, `text`; its last value is the slide's). Combine them with `+`:
+  `pop(4.9) + keys([4.9, 5.3], [xa, xf], prop="x")`. Times are seconds from the figure's start;
+  `spec.end` is when it has arrived, to start the next thing from.
+- **A ghost** (`ghost=True`) shows only while the slide plays and must leave (`out(t0)`) before
+  the end: the 25 tests that become their average. On a slide of his a ghost's words may only be
+  numbers (they are not his).
+- **The slide's blocks** take `data-in` in `sNNN.html`: a time (`data-in="2.3"`), a figure's cue
+  (`f.cue("observe", 2.3)` in the script, then `data-in="observe"`, `"observe-0.5"`); a cue's
+  name is letters, digits and `_`. `data-as` says how it arrives: `pop` (the default), `fade`,
+  `wipe` (`wipe-up`, `wipe-left` ...), `draw` (a stroke), `none` (a figure's wrapper that only
+  starts its figure's clock). `data-dur` sets how long. A figure's clock starts at its wrapper's
+  `data-in`: `<div data-fig="weigh" class="pic" data-in="2">`. A wire with `data-in` draws itself
+  (`deck.js`), its tip coming as the line arrives.
+- **The motion** is the site's: Motion's spring (bounce 0) for things that arrive, the figures'
+  eased stroke for things that draw (`tools/numfig/engine.js`). A slide plays once, about 10 s
+  at most; one idea arrives at a time, in the order the slide reads.
+- **The page.** `render.py` writes the slide's own page, `content/deck-probstat/anim/sNNN.html`
+  (the slide as rendered, its config and `anim.js`), beside the files every such page shares
+  (`deck.css` with its fonts from the site's `fonts/`, `deck.js`, `anim.js`). The presenter
+  opens it over the slide's picture each time the slide comes on; presenting, a step on while
+  it plays completes it first, as a clicker completes a build.
+- **The checks** (`render.py`, "animation"): the page runs without a script error; its last
+  frame is the photograph (12 of 255 at most); it plays to its end and stops; with less motion
+  asked for it shows the slide at once; nothing is still moving after `length`; every ghost
+  leaves; every `keys` ends where the slide has it; every `data-in` names a cue that exists.
+  The review adds `review/sNNN-anim.png`, the frames on one sheet, and `review/sNNN-anim-<t>.png`.
+  Look at every frame: a label that sits on another while the slide plays is as wrong as one on
+  the photograph.
+
+## 15. Rendering side by side
+
+Several agents render at once. What belongs to one slide (its photograph, its web copies, its
+animation page, its review files) is written whole or not at all: to a temporary file, then
+renamed into place. What the deck shares is written under a lock in `build/r10-deck/locks/`: the
+manifest (read, its line changed, written whole), the animation pages' shared files (written
+only when they differ), and the vector print. A plain write never prints the vectors: the
+controller runs `render.py --vector` once, when every agent is done. A lock older than an hour
+was left by a run that died and is taken over.

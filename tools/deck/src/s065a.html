@@ -17,35 +17,35 @@
   <p class="lede">Every hour the filter goes once around this loop: the model proposes, the sensor reports, the gain decides.</p>
  </header>
  <main class="body hub">
-  <div class="node k-navy" id="pred">
+  <div class="node k-navy" id="pred" data-in="predict">
    <h2 class="h">1&ensp;Predict</h2>
    <p class="ps">Uncertainty grows.</p>
    <div class="eqs"><p class="eq"><m>x̂ₖ⁻ = F x̂ₖ₋₁</m></p><p class="eq"><m>Pₖ⁻ = F Pₖ₋₁ Fᵀ + Q</m></p></div>
   </div>
-  <div class="node k-accent" id="obs">
+  <div class="node k-accent" id="obs" data-in="observe">
    <h2 class="h">2&ensp;Observe</h2>
    <p class="ps">A noisy reading arrives.</p>
    <div class="eqs"><p class="eq"><m>zₖ = H xₖ + vₖ</m></p><p class="eq">noise <m>vₖ ∼ N(0, R)</m></p></div>
   </div>
-  <div class="node k-sky" id="gain">
+  <div class="node k-sky" id="gain" data-in="weigh">
    <h2 class="h">3&ensp;Weigh</h2>
    <p class="ps">How much to trust the reading.</p>
    <div class="eqs"><p class="eq"><m>Kₖ = Pₖ⁻ Hᵀ (H Pₖ⁻ Hᵀ + R)⁻¹</m></p><p class="eq"><m>K = P⁻/(P⁻ + R)</m> for <m>H = 1</m></p></div>
   </div>
-  <div class="node k-blue" id="upd">
+  <div class="node k-blue" id="upd" data-in="update">
    <h2 class="h">4&ensp;Update</h2>
    <p class="ps">Uncertainty shrinks.</p>
    <div class="eqs"><p class="eq"><m>x̂ₖ = x̂ₖ⁻ + Kₖ (zₖ − H x̂ₖ⁻)</m></p><p class="eq"><m>Pₖ = (I − Kₖ H) Pₖ⁻</m></p></div>
   </div>
-  <p class="edge rep lines"><span>next hour</span><span><m>k → k + 1</m></span></p>
+  <p class="edge rep lines" data-in="next" data-as="fade"><span>next hour</span><span><m>k → k + 1</m></span></p>
   <div data-fig="weigh" class="pic"></div>
-  <i class="wire" data-from="#pred" data-to="#obs" data-at=".2"></i>
-  <i class="wire" data-from="#obs" data-to="#gain"></i>
-  <i class="wire" data-from="#gain" data-to="#upd" data-at=".8"></i>
-  <i class="wire" data-from="#upd" data-to="#pred"></i>
+  <i class="wire" data-from="#pred" data-to="#obs" data-at=".2" data-in="observe-0.5" data-dur=".45"></i>
+  <i class="wire" data-from="#obs" data-to="#gain" data-in="weigh-0.5" data-dur=".45"></i>
+  <i class="wire" data-from="#gain" data-to="#upd" data-at=".8" data-in="update-0.5" data-dur=".45"></i>
+  <i class="wire" data-from="#upd" data-to="#pred" data-in="next-0.1" data-dur=".45"></i>
  </main>
  <footer class="foot">
-  <p class="take">The gain weighs the two sources: <m>K</m> near 0 keeps the prediction, <m>K</m> near 1 follows the reading.</p>
+  <p class="take" data-in="next+0.5" data-as="fade">The gain weighs the two sources: <m>K</m> near 0 keeps the prediction, <m>K</m> near 1 follows the reading.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–4: the logic of the Kalman filter</span><span class="src">Sources: [40], [41], [47]</span><span class="num">65a</span></p>
  </footer>
 </section>

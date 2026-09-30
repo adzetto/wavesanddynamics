@@ -2448,6 +2448,21 @@ APPROVED_EDITS = {
 STRUCK = {3: ("Also, are you also asking", "In this webpage, I also explain")}
 
 
+def deck_rows(source):
+    """A deck's slides in order and whether a manifest listed them: its
+    content/<source>/deck.json (tools/deck/render.py: label, stem, title and,
+    for a slide that plays, anim), or, for a deck without one, every
+    sNNN-1600.webp in its web/ folder numbered 1 to n, untitled."""
+    path = os.path.join(ROOT, "content", source, "deck.json")
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh), True
+    web_src = os.path.join(ROOT, "content", source, "web")
+    n = sum(1 for f in (os.listdir(web_src) if os.path.isdir(web_src) else ())
+            if re.fullmatch(r"s\d{3}-1600\.webp", f))
+    return [{"label": str(k), "stem": f"s{k:03d}", "title": None} for k in range(1, n + 1)], False
+
+
 def deck_report():
     """Each paragraph, list item and heading of every PROF_ block, set against
     the paragraphs of the slide it came from: each must be one of them, whole,
@@ -2804,13 +2819,17 @@ def main():
             if f.endswith(".woff2"):
                 shutil.copyfile(os.path.join(cmu, f), os.path.join(OUT, "fonts", f))
     # His decks, a slide viewer each (parts/deck.py). Every slide is in its
-    # deck's web/ folder three times, sNNN-320, -960 and -1600.webp, and goes
+    # deck's web/ folder three times, <stem>-320, -960 and -1600.webp, and goes
     # to deck/<folder>/. A deck with an SVG for every slide publishes no 1600
     # copy: its vectors draw every size the 960 copy cannot (28 Sep 2026, to
     # keep the site well under Wix's 100 MB; the copies stay in content/). A
-    # deck with a titles.json names each slide by its title, his words, so a
-    # dash in one is his (VERBATIM). While the part is missing, the slides are
-    # listed one under the other.
+    # deck with a manifest (deck.json, tools/deck/render.py) goes by it: its
+    # slides in order, each with its label (65a for a slide of ours after his
+    # 65), stem and title, his words, so a dash in one is his (VERBATIM). A
+    # slide that plays brings its page, anim/<stem>.html, and the files those
+    # pages share; their fonts are the site's fonts/, and the deck's Latin
+    # Modern Math subset joins them there. While the part is missing, the
+    # slides are listed one under the other.
     slides = {}     # deck page -> the slides this build wrote, for the Big Picture
     for href, source, folder, head, h1 in (
             ("presentation.html", "deck-phd", "phd", "MSc and PhD Research Presentation",
@@ -2818,9 +2837,8 @@ def main():
             ("probability-statistics.html", "deck-probstat", "probability",
              "Probability, statistics and estimation", "Probability, statistics and estimation")):
         web_src = os.path.join(ROOT, "content", source, "web")
-        files = sorted(f for f in (os.listdir(web_src) if os.path.isdir(web_src) else ())
-                       if re.fullmatch(r"s\d{3}-(?:320|960|1600)\.webp", f))
-        count = sum(f.endswith("-1600.webp") for f in files)
+        rows, manifest = deck_rows(source)
+        count = len(rows)
         if not count:
             continue
         slides[href] = count
@@ -2829,14 +2847,25 @@ def main():
         if said and int(said.group(1)) != count:
             sys.exit(f"{href}: PAGE_DESC says {said.group(1)} slides, the deck has {count}")
         os.makedirs(os.path.join(OUT, "deck", folder), exist_ok=True)
-        svgs = [f"s{k:03d}.svg" for k in range(1, count + 1)]
+        svgs = [f"{r['stem']}.svg" for r in rows]
         vector = all(os.path.isfile(os.path.join(web_src, f)) for f in svgs)
-        for f in files:
-            if not (vector and f.endswith("-1600.webp")):
+        for r in rows:
+            for w in (320, 960) if vector else (320, 960, 1600):
+                f = f"{r['stem']}-{w}.webp"
                 shutil.copyfile(os.path.join(web_src, f), os.path.join(OUT, "deck", folder, f))
-        named = os.path.join(ROOT, "content", source, "titles.json")
-        titles = json.load(open(named, encoding="utf-8")) if os.path.isfile(named) else None
-        VERBATIM.extend(t for t in titles or () if DASH.search(t) or SPACED_EN.search(t))
+        titles = [r["title"] for r in rows] if any(r["title"] for r in rows) else None
+        VERBATIM.extend(t for t in titles or () if t and (DASH.search(t) or SPACED_EN.search(t)))
+        plays = [r for r in rows if r.get("anim")]
+        if plays:
+            anim_src = os.path.join(ROOT, "content", source, "anim")
+            os.makedirs(os.path.join(OUT, "deck", folder, "anim"), exist_ok=True)
+            for f in [f"{r['stem']}.html" for r in plays] + ["deck.css", "deck.js", "anim.js"]:
+                shutil.copyfile(os.path.join(anim_src, f), os.path.join(OUT, "deck", folder, "anim", f))
+            deck_fonts = os.path.join(ROOT, "tools", "deck", "fonts")
+            os.makedirs(os.path.join(OUT, "fonts"), exist_ok=True)
+            for f in os.listdir(deck_fonts):
+                if f.endswith(".woff2"):
+                    shutil.copyfile(os.path.join(deck_fonts, f), os.path.join(OUT, "fonts", f))
         # The deck as vectors, where tools/deck/render.py printed it: an SVG a
         # slide, drawn while presenting, and one PDF of the whole to download.
         # Wix's static host list (WIX_TYPES) has no .pdf yet, so a --strict or
@@ -2852,12 +2881,13 @@ def main():
             shutil.copyfile(os.path.join(ROOT, "content", source, pdfs[0]),
                             os.path.join(OUT, "deck", folder, pdfs[0]))
             pdf = (f"deck/{folder}/{pdfs[0]}", os.path.getsize(os.path.join(OUT, "deck", folder, pdfs[0])))
+        kw = dict(slides=rows) if manifest else dict(titles=titles)
         body = mine("parts/deck.py", ready(deckpart, "render", count, src=f"deck/{folder}/",
-                                           title=h1, titles=titles, vector=vector, pdf=pdf))
+                                           title=h1, vector=vector, pdf=pdf, **kw))
         pages[href] = (f"{head} · Korkut Kaynardag", body or wrap_page(h1, "<ol>" + "".join(
-            f'<li><img src="deck/{folder}/s{k:03d}-960.webp" width="960" height="540" '
-            f'style="height:auto" loading="lazy" alt="Slide {k}"></li>'
-            for k in range(1, count + 1)) + "</ol>"))
+            f'<li><img src="deck/{folder}/{r["stem"]}-960.webp" width="960" height="540" '
+            f'style="height:auto" loading="lazy" alt="Slide {r["label"]}"></li>'
+            for r in rows) + "</ol>"))
     # The Big Picture comes after the decks: it names each by the slides just
     # counted, and a deck this build did not write gets no row there and
     # counts nowhere (ROUND6_BIGPICTURE.md 2.1). Its title and note are the

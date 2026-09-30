@@ -1,0 +1,245 @@
+/* The deck's one stylesheet: Probability, statistics and estimation, 74 slides,
+   each a 1920 x 1080 page (tools/deck/DECK_BRIEF.md says how to use it).
+
+   Type: Source Serif 4 is his voice (titles, text, the take-away line), Source
+   Sans 3 the deck's own furniture (the running foot, table heads, badges),
+   Computer Modern for mathematics and for everything inside a figure, as the
+   site's figures (tools/numfig) set it. Colour: the site's tokens
+   (site/parts/theme.py) and the figure palette (tools/numfig/engine.js C). No
+   italics are loaded for the text faces: emphasis is weight, size or colour. */
+
+@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:200 900;font-display:block;
+  src:url(../../../fonts/source-serif-4-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,
+    U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:200 900;font-display:block;
+  src:url(../../../fonts/source-serif-4-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,
+    U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:200 900;font-display:block;
+  src:url(../../../fonts/source-serif-4-greek.woff2) format("woff2");
+  unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}
+@font-face{font-family:"Source Sans 3";font-style:normal;font-weight:200 900;font-display:block;
+  src:url(../../../fonts/source-sans-3-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,
+    U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Source Sans 3";font-style:normal;font-weight:200 900;font-display:block;
+  src:url(../../../fonts/source-sans-3-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,
+    U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:400 500;font-display:block;
+  src:url(../../../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:400 500;font-display:block;
+  src:url(../../../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:600 700;font-display:block;
+  src:url(../../../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:600 700;font-display:block;
+  src:url(../../../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+/* the operators CMU Serif does not carry (an integral, proportional to, less
+   or equal, a sum ...): Latin Modern Math, Computer Modern's own maths face */
+@font-face{font-family:"Latin Modern Math";font-style:normal;font-weight:400 700;font-display:block;
+  src:url(../../../fonts/latinmodern-math-deck.woff2) format("woff2")}
+
+:root{
+  /* paper and ink (site/parts/theme.py) */
+  --paper:#FFFFFF; --ink:#27221C; --body:#544F48; --muted:#6F6A64; --guide:#8A857C;
+  --rule:#E5E1DB; --line:#D7D2CA; --grid:#ECE8E2; --card:#F2EFE9; --surface:#F6F3EF;
+  /* the blues: structure, the model, the result (numfig C) */
+  --navy:#043052; --blue:#095A94; --sky:#5B8DB8; --mist:#A9C3DA; --steel:#E3EBF2; --steel2:#C9D7E4;
+  /* the crimson: the one thing to follow (numfig C, tools/ROUND11.md). The
+     accent has the blue's CIELAB lightness; amber is the brighter second warm
+     (fills), deep the dark one, wash the tint behind a highlight */
+  --accent:#A7203A; --amber:#D14457; --deep:#781E2C; --wash:#F9EEEE;
+  /* sky is a mark (3.5:1 on paper); set as words it is this darker step */
+  --sky-ink:color-mix(in oklab,var(--sky) 70%,var(--navy));
+
+  --serif:"Source Serif 4",Georgia,serif;
+  --sans:"Source Sans 3","Segoe UI",sans-serif;
+  --math:"CMU Serif","Latin Modern Math",serif;
+
+  /* the grid: 12 columns of 112 px, 32 px gutters, 112 px margins */
+  --mx:112px; --gut:32px; --col:112px;
+  --top:64px;          /* the title's top */
+  /* leading. Text that runs to two lines or more at body or small sizes is
+     set at 1.3 to 1.5 (render.py checks it); only a title or a heading of
+     30 px and up, or a one-line label, may be tighter */
+  --lh-title:1.06; --lh-head:1.2; --lh-text:1.4; --lh-small:1.34;
+  --foot:40px;         /* the page's last line over the bottom edge */
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;background:var(--paper);overflow:hidden}
+body{font:400 34px/var(--lh-text) var(--serif);color:var(--ink);font-optical-sizing:auto;
+  font-kerning:normal;font-variant-ligatures:common-ligatures;
+  -webkit-font-smoothing:antialiased;text-rendering:geometricPrecision;hyphens:manual}
+
+/* ------------------------------------------------------------ the page */
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--paper);
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  padding:var(--top) var(--mx) var(--foot)}
+
+/* the head: his title, and his line under it */
+.head{padding-bottom:40px}
+.title{font:600 64px/var(--lh-title) var(--serif);letter-spacing:-.012em;color:var(--ink);
+  font-variation-settings:normal;text-wrap:balance;max-width:1696px}
+.title--s{font-size:54px;line-height:1.1}
+.title--xs{font-size:44px;line-height:1.14}
+.lede{margin-top:18px;font:400 34px/var(--lh-small) var(--serif);color:var(--body);max-width:1696px;text-wrap:balance}
+
+/* the body: a 12 column grid, top aligned */
+.body{position:relative;min-height:0}
+.g{display:grid;grid-template-columns:repeat(12,var(--col));column-gap:var(--gut);align-items:start}
+.g--rows{grid-auto-rows:min-content}
+.s1{grid-column-end:span 1}.s2{grid-column-end:span 2}.s3{grid-column-end:span 3}.s4{grid-column-end:span 4}
+.s5{grid-column-end:span 5}.s6{grid-column-end:span 6}.s7{grid-column-end:span 7}.s8{grid-column-end:span 8}
+.s9{grid-column-end:span 9}.s10{grid-column-end:span 10}.s11{grid-column-end:span 11}.s12{grid-column-end:span 12}
+.o1{grid-column-start:1}.o2{grid-column-start:2}.o3{grid-column-start:3}.o4{grid-column-start:4}
+.o5{grid-column-start:5}.o6{grid-column-start:6}.o7{grid-column-start:7}.o8{grid-column-start:8}
+.o9{grid-column-start:9}.o10{grid-column-start:10}.o11{grid-column-start:11}.o12{grid-column-start:12}
+.r1{grid-row-start:1}.r2{grid-row-start:2}.r3{grid-row-start:3}.r4{grid-row-start:4}
+.mid{align-self:center}.bot{align-self:end}.stretch{align-self:stretch}
+.fill{height:100%}
+
+/* ------------------------------------------------------------ his text */
+.h{font:600 38px/var(--lh-head) var(--serif);letter-spacing:-.004em;color:var(--navy)}
+.h + .p,.h + .ps,.h + .eqs{margin-top:14px}
+.p{font:400 34px/var(--lh-text) var(--serif);color:var(--ink);text-wrap:pretty}
+.ps{font:400 30px/var(--lh-text) var(--serif);color:var(--ink)}
+.note{font:400 28px/var(--lh-text) var(--serif);color:var(--muted)}
+.lines>span{display:block}            /* his line breaks, kept */
+.stack>*+*{margin-top:56px}           /* blocks under each other */
+.stack--s>*+*{margin-top:32px}
+
+/* his colours, mapped (DECK_BRIEF.md, "Colour") */
+.c-navy{color:var(--navy)}.c-blue{color:var(--blue)}.c-sky{color:var(--sky-ink)}
+.c-accent{color:var(--accent)}.c-deep{color:var(--deep)}.c-ink{color:var(--ink)}
+.c-body{color:var(--body)}.c-muted{color:var(--muted)}
+.b,b,strong{font-weight:600}
+
+/* a panel: his light grey note boxes (fill EEF2F5), a quiet band of text */
+.panel{background:color-mix(in oklab,var(--navy) 5%,var(--paper));padding:20px 28px 22px}
+.panel .h{font-size:32px}
+.panel .p,.panel .ps{margin-top:6px}
+
+/* his bullets: a small navy disc, the text hanging */
+.list{list-style:none}
+.list>li{position:relative;padding-left:1.05em}
+.list>li+li{margin-top:.45em}
+.list>li::before{content:"";position:absolute;left:.12em;top:.6em;width:.3em;height:.3em;border-radius:50%;
+  background:var(--navy)}
+
+/* references: two columns, each number hanging in the margin of its entry */
+.refs{columns:2;column-gap:56px;font:400 22px/1.36 var(--serif);color:var(--ink)}
+.refs>p{break-inside:avoid;padding-left:2.1em;text-indent:-2.1em;margin:0 0 .6em}
+
+/* ------------------------------------------------------------ mathematics
+   <m>..</m> in a source becomes <span class="m">: letters italic, words and
+   digits upright, his sub- and superscripts set as such (render.py). */
+.m{font-family:"Latin Modern Math",var(--math);font-weight:400;font-size:1.1em;line-height:1;letter-spacing:0;
+  font-variant-ligatures:none;white-space:nowrap}
+.m i{font-style:italic}
+.m .mi{font-style:normal}               /* his variables: Mathematical Italic letters */
+.m .op{font-style:normal}
+/* his accents: the combining mark stays in the text, drawn here instead */
+.m .mk{font-size:0}
+.m .acc{position:relative;display:inline-block}
+.m .acc.bar::after{content:"";position:absolute;left:.2em;right:-.02em;top:.04em;border-top:.05em solid currentColor}
+.m .acc.bar.lo::after{top:.3em;left:.12em;right:0}
+.m .acc.hat::after,.m .acc.tilde::after,.m .acc.dot::after{position:absolute;left:0;right:-.2em;text-align:center;line-height:1}
+.m .acc.hat::after{content:"\02C6";top:-.3em}
+.m .acc.tilde::after{content:"\02DC";top:-.28em}
+.m .acc.dot::after{content:"\02D9";top:-.3em}
+.m .acc.lo::after{top:-.06em}
+.m .acc.bar.lo::after{top:.3em}
+/* his wide gap between two formulas on one line */
+.m .qq{margin-left:1em}
+/* a radical: Latin Modern Math's base radical hangs 0.96em below its top,
+   so it is raised to stand 0.76em tall, and the bar (0.04em, its rule
+   thickness) runs from its top over what it covers (the box's top is the
+   font's ascent, 0.806em) */
+.m .sqrt>.op{position:relative;top:-.72em}
+.m .rad{position:relative}
+.m .rad::before{content:"";position:absolute;left:-.02em;right:.02em;top:.046em;border-top:.04em solid currentColor}
+.m sub,.m sup{font-size:.7em;line-height:0;position:relative;vertical-align:baseline}
+.m sub{top:.24em}.m sup{top:-.44em}
+/* a subscript and a superscript on one letter, stacked; the DOM keeps his
+   order (sub, then sup), the order property sets the sup on top */
+.m .ss{display:inline-flex;flex-direction:column;align-items:flex-start;vertical-align:.44em;line-height:1;margin-left:.04em}
+.m .ss>sup{order:1}.m .ss>sub{order:2}
+.m .ss>sub,.m .ss>sup{top:0;line-height:1}
+.m .int{font-size:1.35em;position:relative;top:.08em;margin-right:.02em}
+.m .int+.ss{row-gap:.36em;vertical-align:.7em;margin-right:.14em}
+.m .int+.ss>sub{margin-left:-.14em}.m .int+.ss>sup{margin-left:.1em}
+.m .w{font-style:normal}               /* a word inside maths: upright */
+.eqs>*+*{margin-top:10px}
+.eq{font-size:34px;line-height:1.5}   /* a display line of his: maths at text size */
+
+/* ------------------------------------------------------------ nodes: TikZ's
+   draw=<colour>, fill=<colour>!6, square corners. The colour is his. */
+.node{--k:var(--navy);position:relative;border:2px solid var(--k);
+  background:color-mix(in oklab,var(--k) 6%,var(--paper));padding:26px 32px 28px}
+.node>.h{color:var(--kt,var(--k))}
+.node .p{margin-top:12px}
+.k-navy{--k:var(--navy)}.k-blue{--k:var(--blue)}.k-sky{--k:var(--sky);--kt:var(--sky-ink)}
+.k-accent{--k:var(--accent)}.k-deep{--k:var(--deep)}.k-ink{--k:var(--ink)}
+.node--quiet{border-color:var(--line);background:var(--paper)}
+.node--flat{border:0}
+
+/* a label beside an arrow: his words, in the arrow's colour. In a .cell (a
+   grid cell between two boxes, as tall as they are) .above sits just over the
+   arrow drawn through the cell's middle, .below just under it. */
+.edge{font:600 30px/1.3 var(--serif);color:var(--accent);text-wrap:balance}
+.cell{position:relative;align-self:stretch}
+.cell>.above,.cell>.below{position:absolute;left:0;right:0;text-align:center}
+.cell>.above{bottom:calc(50% + 18px)}
+.cell>.below{top:calc(50% + 18px)}
+
+/* boxes in a row with room for an arrow between each two */
+.route{display:flex;align-items:stretch;gap:80px}
+.route>*{flex:1 1 0;min-width:0}
+/* a hairline between two bands of the body */
+.hair{height:0;border-top:2px solid var(--rule)}
+
+/* the arrows: <i class="wire" data-from="#a" data-to="#b"> drawn by deck.js */
+.wire{display:none}
+svg.wires{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;overflow:visible;z-index:3}
+
+/* a number in a disc, as his stage numbers */
+.badge{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;
+  background:var(--accent);color:#fff;font:700 26px/1 var(--sans);font-variant-numeric:lining-nums tabular-nums;
+  vertical-align:middle}
+
+/* ------------------------------------------------------------ tables: booktabs */
+.tab{width:100%;border-collapse:collapse;font:400 30px/1.34 var(--serif);color:var(--ink)}
+.tab th{font:600 26px/1.3 var(--sans);letter-spacing:.01em;color:var(--navy);text-align:left;
+  vertical-align:bottom;padding:0 24px 16px 0;border-bottom:2px solid var(--ink)}
+.tab thead tr:first-child th{border-top:3px solid var(--ink);padding-top:18px}
+.tab td{padding:20px 24px 20px 0;vertical-align:top;border-bottom:1px solid var(--rule)}
+.tab tr:last-child td{border-bottom:3px solid var(--ink)}
+.tab td:first-child{font-weight:600;color:var(--navy)}
+.tab th:last-child,.tab td:last-child{padding-right:0}
+
+/* ------------------------------------------------------------ figures
+   fig.py writes <div class="fig"> with an <svg> at 1:1 in slide px and its
+   text as HTML over it, each label placed on its anchor. */
+.fig{position:relative;flex:none}
+.fig>svg{position:absolute;left:0;top:0;overflow:visible}
+.ft{position:absolute;white-space:nowrap;font:500 28px/1 var(--math);color:var(--ink);
+  font-variant-numeric:lining-nums}
+.ft .m{font-size:1em}
+.ft.ml{line-height:1.3}                 /* a label of two lines or more */
+.ft sup{font-size:.72em;line-height:0;position:relative;top:-.42em;vertical-align:baseline}
+.ft.axl{font-size:30px}
+.ft.tk{font-size:28px;color:var(--ink)}
+.ft.ser{font-family:var(--serif);font-weight:400}
+
+/* ------------------------------------------------------------ the foot:
+   his take-away over the accent rule, then the running line: his map
+   reference and sources, the page number */
+.foot{border-top:3px solid var(--accent);padding-top:16px}
+.take{font:600 32px/1.3 var(--serif);color:var(--navy);text-wrap:balance}
+.run{display:flex;align-items:baseline;gap:32px;margin-top:10px;font:400 24px/1.3 var(--sans);color:var(--muted)}
+.run .map{font-weight:600;color:var(--accent)}
+.run .map .sep{margin:0 .3em;font-weight:400}
+.run .num{margin-left:auto;font-weight:600;font-variant-numeric:lining-nums tabular-nums;color:var(--muted)}
+.foot--none{border-top:0;padding-top:0}

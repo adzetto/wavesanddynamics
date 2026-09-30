@@ -13,8 +13,7 @@ page:
     says), Waves and Dynamics (which all of the above serve), and Python /
     Programming ("in the end we code everything"). They stand side by side
     as the columns of one table. Over their heads a line runs through a node
-    for each, numbered 1 to 5 as he numbered them, and each concept two
-    topics share is an arc from node to node carrying its word (_BRIDGES).
+    for each, numbered 1 to 5 as he numbered them.
   - His research is no longer a column. Under the five, a brace spans all of
     them and carries his sentence, "My research involves all of these.", and
     his research documents stand under it, with the way to My Research Areas.
@@ -23,7 +22,7 @@ page:
     reader knows what to open in which section. Nothing is listed twice.
 
 Under 920px of its width the table stands upright: the topics one under
-another on a spine, each followed by its cards, the arcs at their side.
+another on a spine, each followed by its cards.
 
 Motion (round 15, 29 Sep 2026: the site's thinking orbs, tools/ROUND15.md).
 The page speaks the column's language (parts/bpnav.py, its Big Picture row):
@@ -33,18 +32,13 @@ ring. Each motion says something, once, and then the page is still:
 
   - the arrival, with the line on screen: the thought runs the line from 1
     to 5, drawing it, and each node is born as it arrives, thinks and rests
-    as its ring, its topic settling in under it. Near the fifth a point sets
-    out along each bridge from its first topic to its second, drawing it,
-    and writes the bridge's word as it passes under it (a thin band of blue
-    runs through the word with the point). About 1.5s;
+    as its ring, its topic settling in under it;
   - his research: the brace, once in view, opens from its point, and a
     point runs out along it and up into each of the five, "involves all of
     these"; pointing at one of his research documents runs them again;
   - a topic in hand (pointed at, tabbed into, tapped, or arrived at from a
     link): its column fills and its rule draws, its node thinks and settles
-    into the lit node, and a point runs along each bridge it shares,
-    lighting the bridge and its word behind it, so each topic at a far end
-    thinks a moment and lights as its point arrives. The rest dims;
+    into the lit node. The rest dims;
   - a card under the pointer or a key: its title's underline draws through
     its lines, a hairline of blue opens under its picture, and its arrow
     springs. It never lifts or casts a shadow (DESIGN_BRIEF 4).
@@ -178,30 +172,7 @@ _AREA = {"probability-statistics": "pr", "signal-processing": "sp", "machine-lea
 RESEARCH_LINE = "My research involves all of these."
 _MORE = ("research.html", "My Research Areas")
 
-# The bridges: a concept two topics share, named by a word both topics' own
-# texts use, so the line shows his "Aha!" instead of asserting a link. In his
-# order the first two join neighbours; the third reaches over Machine
-# Learning. Where his words are:
-#   Estimation: his column's sub-lines, "Stochastic Process, Estimation" and
-#     "Estimation, Inverse Problems, Optimization, Machine Learning"; his deck's
-#     title, and slide 61, "Estimation theory: designing rules for unknown
-#     quantities".
-#   Optimization: the signal processing guide's title, "...Estimation Theory
-#     and Optimization with the underlying logic of machine learning"; the
-#     machine learning guide, "Gradient Descent: The optimization algorithm."
-#   Mode Shapes: the signal processing guide, "most of my own work has
-#     involved identifying structural systems, meaning their resonance
-#     frequencies, mode shapes, and damping ratios"; the vibrations guide on
-#     mode shapes throughout, and the title of From Bridges to Photons.
-# Round 10's Wave Propagation and System Identification joined his research,
-# which is no longer a topic; Regression (Machine Learning and Probability &
-# Statistics) would cross Mode Shapes, and fewer, clearer arcs read faster.
-# None touches Python / Programming: the line itself ends there.
-_BRIDGES = (
-    ("Estimation", "probability-statistics", "signal-processing"),
-    ("Optimization", "signal-processing", "machine-learning"),
-    ("Mode Shapes", "signal-processing", "waves-dynamics"),
-)
+_BRIDGES = ()
 
 CSS = """
 /* ---------- the Big Picture ---------- */
@@ -1129,23 +1100,15 @@ def _research(docs, decks, art):
 
 def _map(docs, decks, art):
     """The figure: the five topics with their cards, the layers the script
-    draws the lines and their words into, his research under them, what a
-    screen reader is told of the bridges, and the caption."""
+  draws the line into, his research under them, and the caption."""
     nodes = [_node(c, k, docs, decks, art) for k, c in enumerate(CATEGORIES, 1)]
-    name = {c["id"]: c.get("short") or c["label"] for c in CATEGORIES}
-    order = [c["id"] for c in CATEGORIES]
-    shared = "".join(
-        f"<li>{_esc(word)}, shared by "
-        f"{' and '.join(_esc(name[x]) for x in sorted((a, b), key=order.index))}.</li>"
-        for word, a, b in _BRIDGES if a in name and b in name)
     bridges = _attr(json.dumps([list(b) for b in _BRIDGES], separators=(",", ":")))
     return (f'<figure class="bpm" data-bridges="{bridges}" aria-labelledby="bpm-cap">'
             f'<div class="bpm__stage"><svg class="bpm__edges" aria-hidden="true" focusable="false"></svg>'
             f'<div class="bpm__words" aria-hidden="true"></div>{"".join(nodes)}</div>'
             f'{_research(docs, decks, art)}'
-            f'<ul class="bp__vh">{shared}</ul>'
-            f'<figcaption class="bpm__cap" id="bpm-cap">Each arc names an idea two topics share. '
-            f'Every card opens its document or deck.</figcaption></figure>')
+            f'<figcaption class="bpm__cap" id="bpm-cap">Every card opens its document or deck.'
+            f'</figcaption></figure>')
 
 
 def render_big_picture(docs=None, decks=None, art=None):

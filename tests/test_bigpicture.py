@@ -186,31 +186,28 @@ def test_his_research_documents_stay_right_there_with_the_way_to_his_research_pa
 
 # ---------------------------------------------------------------- the line and its arcs
 
-def test_the_bridges_name_what_two_of_the_five_share():
+def test_the_big_picture_has_no_cross_topic_bridges():
     fig = figure()
     got = json.loads(html.unescape(re.search(r'data-bridges="([^"]+)"', fig).group(1)))
-    assert got == [["Estimation", "probability-statistics", "signal-processing"],
-                   ["Optimization", "signal-processing", "machine-learning"],
-                   ["Mode Shapes", "signal-processing", "waves-dynamics"]]
-    assert all(a in ORDER and b in ORDER for _, a, b in got)       # none reaches his research
-    # a screen reader is told what the drawn words say
-    said = re.findall(r"<li>([^<]+)</li>", fig[fig.index('<ul class="bp__vh">'):])
-    assert html.unescape(said[0]) == ("Estimation, shared by Probability & Statistics and "
-                                      "Signal Processing & System ID.")
-    assert len(said) == 3
+    assert got == []
+    assert 'class="bp__vh"' not in fig
+    assert "Estimation, shared by" not in fig
+    assert "Optimization, shared by" not in fig
+    assert "Mode Shapes, shared by" not in fig
 
 
 def test_the_topics_stand_side_by_side_under_the_line():
     """Five columns, one per topic, with a numbered line over their heads and
-    each shared concept an arc from node to node; their rows are the table's,
-    so the cards start level. Upright below 920px, cards upright on a phone."""
+    their rows are the table's, so the cards start level. Upright below 920px,
+    cards upright on a phone."""
     css, js = documents.CSS, documents.JS
     assert "grid-template-columns:repeat(5,minmax(0,1fr))" in css and "--band:106px" in css
     assert "grid-template-rows:subgrid" in css
     assert "@container bpm (width < 920px)" in css and "@container bpm (width < 560px)" in css
     assert ".wrap.bp{max-width:1240px}" in css
-    assert "edge('l','line','line'" in js and "edge('b',q[1],q[2]" in js
-    assert "Each arc names an idea two topics share." in figure()
+    assert "edge('l','line','line'" in js
+    assert 'data-bridges="[]"' in figure()
+    assert "Each arc names an idea two topics share." not in figure()
 
 
 # ---------------------------------------------------------------- the pictures
@@ -334,13 +331,13 @@ def test_the_nodes_are_the_sites_orbs():
 
 
 def test_the_arrival_is_quick_and_then_rests():
-    """About 1.5s: the thought runs the line, then the bridges go, each
-    within its bounds; at rest nothing asks for a frame."""
+    """The thought runs the line within its bounds; at rest nothing asks for
+    a frame."""
     js = documents.JS
     c = consts(js)
     arcs = re.search(r"Math\.max\((\d+),Math\.min\((\d+),(\d+)\+\.(\d+)\*Pb\.L\)\)", js)
-    end = c["DEP"] + c["TL"] * c["ARC"] + (len(documents._BRIDGES) - 1) * c["ARCG"] + int(arcs.group(2))
-    assert 1000 <= end <= 2000, end
+    end = c["DEP"] + c["TL"] * c["ARC"] + int(arcs.group(2))
+    assert 1200 <= end <= 1400, end
     # frames only while something moves: the loop asks for the next one only
     # when busy, and requestAnimationFrame is called nowhere else but to
     # start the arrival and to lay the table out again

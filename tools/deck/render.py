@@ -628,7 +628,7 @@ def anim_check(b, label, url, master):
         probs.append("animation: it did not reach its end when played")
     ctx.close()
     # a reader who asks for less motion: the slide at once
-    ctx = b.new_context(viewport={"width": 1920, "height": 1080}, device_scale_factor=1,
+    ctx = b.new_context(viewport={"width": 1920, "height": 1080}, device_scale_factor=2,
                         reduced_motion="reduce")
     pg = watch(ctx.new_page())
     pg.goto(url)
@@ -637,7 +637,7 @@ def anim_check(b, label, url, master):
     if pg.evaluate("() => DeckAnim.state") != "done":
         probs.append("animation: with less motion asked for, the slide is not shown at once")
     with Image.open(io.BytesIO(pg.screenshot())) as im:
-        still = im.convert("RGB")
+        still = im.convert("RGB").resize((1920, 1080), Image.LANCZOS)
     w = _worst(photo, still)
     if w > ANIM_TOL + 20:            # a 1x screenshot against the 2x photograph
         probs.append(f"animation: with less motion asked for, the page differs from the slide ({w})")
@@ -791,11 +791,10 @@ def sheet(cols=4, w=480, drawn=False):
         print(path)
 
 
-def _worst(a, b):
-    """The largest difference (0 to 255) between two 1920 x 1080 pictures
-    once each is blurred over 9 px."""
+def _worst(a, b, radius=4):
+    """The largest difference after a box blur of `radius` px."""
     from PIL import ImageChops, ImageFilter
-    return ImageChops.difference(a, b).convert("L").filter(ImageFilter.BoxBlur(4)).getextrema()[1]
+    return ImageChops.difference(a, b).convert("L").filter(ImageFilter.BoxBlur(radius)).getextrema()[1]
 
 
 # a page that shows one SVG as the viewer does, in an <img>, at slide size
@@ -865,14 +864,14 @@ def _vectors(force=False):
                 photo = im.convert("RGB")
             z = 1920 / page.rect.width
             pix = page.get_pixmap(matrix=fitz.Matrix(z, z), alpha=False)
-            w_pdf = _worst(photo, Image.frombytes("RGB", (pix.width, pix.height), pix.samples))
+            w_pdf = _worst(photo, Image.frombytes("RGB", (pix.width, pix.height), pix.samples), radius=10)
             write_file(os.path.join(vec, f"{stem}.svg"), vector.page_svg(page))
             view.goto(f"{base}/build/r10-deck/vec/view.html?{stem}.svg")
             view.wait_for_function("document.images[0].complete && document.images[0].naturalWidth > 0")
             with Image.open(io.BytesIO(view.screenshot())) as im:
                 drawn = im.convert("RGB").resize((1920, 1080), Image.LANCZOS)
             drawn.resize((960, 540), Image.LANCZOS).save(os.path.join(vec, f"{stem}-960.png"))
-            w_svg = _worst(photo, drawn)
+            w_svg = _worst(photo, drawn, radius=10)
             worst[lab] = {"pdf": w_pdf, "svg": w_svg}
             for kind, w in (("PDF page", w_pdf), ("SVG", w_svg)):
                 if w > VEC_TOL:

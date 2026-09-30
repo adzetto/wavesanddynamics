@@ -369,7 +369,8 @@ def test_the_kalman_loop_plays_from_empty_to_its_photograph():
     url = f"{render.server()}/content/deck-probstat/anim/s065a.html"
     with sync_playwright() as p:
         b = p.chromium.launch(args=["--disable-lcd-text", "--font-render-hinting=none"])
-        pg = b.new_page(viewport={"width": 1920, "height": 1080})
+        ctx = b.new_context(viewport={"width": 1920, "height": 1080}, device_scale_factor=2)
+        pg = ctx.new_page()
         errors = []
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.goto(url + "?t=0")
@@ -386,7 +387,7 @@ def test_the_kalman_loop_plays_from_empty_to_its_photograph():
             e.style.opacity || e.style.translate || e.style.scale || e.style.clipPath || e.style.visibility ||
             (e instanceof SVGElement && e.hasAttribute('transform'))).length""") == 0
         with Image.open(io.BytesIO(pg.screenshot())) as im:
-            last = im.convert("RGB")
+            last = im.convert("RGB").resize((1920, 1080), Image.Resampling.LANCZOS)
         with Image.open(os.path.join(ROOT, "content", "deck-probstat", "s065a.png")) as im:
             photo = im.convert("RGB")
         assert render._worst(photo, last) <= render.ANIM_TOL + 20

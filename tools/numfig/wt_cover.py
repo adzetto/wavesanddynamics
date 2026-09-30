@@ -4,8 +4,11 @@ Left, a cable stayed bridge (130 + 300 + 130 m, steel box deck on 44 stays
 from two concrete pylons) in elevation, breathing in its first vertical
 bending mode, computed by a 2D finite element model (frame elements for
 the deck and pylons, truss elements for the stays) and shown in real time;
-accelerometers ride its deck. Right, detail A: the bottom flange of the
-box girder (a 12 mm steel plate) at the NDT scale, where a transducer
+accelerometers ride its deck. Right, detail A, at the middle of the main
+span (the client, 30 Sep 2026: A in the middle of the bridge, not at its
+edge), where the first mode bends the deck most and its sagging puts the
+bottom flange in tension: that flange of the box girder (a 12 mm steel
+plate) at the NDT scale, where a transducer
 launches a 200 kHz A0 Lamb wave packet (Fourier synthesis over the exact
 Rayleigh-Lamb dispersion) that a fatigue crack partly sends back.
 Global vibration at a fraction of a hertz, local guided waves at hundreds of
@@ -298,7 +301,8 @@ const AMP = 9;                                           // largest deck deflect
 const T0 = .3, T1 = 1 / DATA.f1;
 const WV = DATA.w, NF = WV.f.length;
 const CX = 872, CY = 120, CR = 106, DS = 2.5e3;         // detail circle, units per metre inside it
-const XA = 536;                                          // detail A on the deck (m), near the right abutment
+const XA = DATA.xp[0] + (DATA.xp[1] - DATA.xp[0]) / 2;   // detail A on the deck (m): the middle of the main span
+const YE = 22;                                           // its leader's run to the circle, over the pylon tops
 const POSTER_T = T0 + T1;                                // the deck back at full sag, the echo on its way
 const W_OFF = 30e-6 * WV.slow - T1;                     // the wave loop's phase at T0: the still shows the echo on its way back
 function q() { return t < T0 ? 1 : Math.cos(2 * Math.PI * DATA.f1 * (t - T0)); }   // from rest at full sag
@@ -405,23 +409,25 @@ function draw() {
   line(lo.concat(hi), { color: C.ink, width: 1.3, fill: C.steel2, close: true });
   ctx.restore();
   // accelerometers on the deck: mid side spans, the main span's quarter points
+  // (its middle is detail A's)
   const aS = settle(.2, .28);
-  for (const x of [65, 205, 280, 355, 495]) sensor(x, Q, aS);
+  for (const x of [65, 205, 355, 495]) sensor(x, Q, aS);
   // detail A: the flange at the NDT scale
   const aD = settle(.15, .28);
   const [ax, ay] = deckAt(XA, Q);
   ctx.save(); ctx.globalAlpha *= aD; ctx.beginPath(); ctx.arc(ax, ay + 1, 9, 0, 2 * Math.PI); ctx.lineWidth = 1.2; ctx.strokeStyle = C.ink; ctx.stroke(); ctx.restore();
-  const ang = Math.atan2(CY - ay, CX - ax), sx = ax + 9 * Math.cos(ang), sy = ay + 9 * Math.sin(ang);
-  const ex = CX - CR * Math.cos(ang), ey = CY - CR * Math.sin(ang);
-  line([[sx, sy], [ex, ey]], { color: C.ink, width: 1, progress: seg(.15, .25) });
+  // the leader: up from A between the two fans of stays, then over the
+  // pylon tops to the circle (a straight line would cross the right pylon)
+  const ex = CX - Math.sqrt(CR * CR - (CY - YE) * (CY - YE));
+  line([[ax, ay - 8], [ax, YE], [ex, YE]], { color: C.ink, width: 1, progress: seg(.15, .25) });
   const tw = t < T0 ? W_OFF / WV.slow : wrap((t - T0 + W_OFF) / WV.slow, WV.P);
   detail(aD, tw);
   // the few words: the mode's frequency, the wave's
   const aT = settle(.25, .28) * (NARROW() ? 0 : 1);
-  math('f_1 = ' + DATA.f1.toFixed(2) + '\\,\\rm{Hz}', XB(280), 58, { size: 19, color: C.body, align: 'center', alpha: aT });
+  math('f_1 = ' + DATA.f1.toFixed(2) + '\\,\\rm{Hz}', XB(220), 58, { size: 19, color: C.body, align: 'center', alpha: aT });
   const yd = YD + 25, spans = [[0, DATA.xp[0]], [DATA.xp[0], DATA.xp[1]], [DATA.xp[1], DATA.tot]];
   spans.forEach(([a0, a1]) => dim(XB(a0) + 1, XB(a1) - 1, yd, (a1 - a0).toFixed(0) + '\\,\\rm{m}', { size: 16, alpha: aT * .9, color: C.body }));
-  text('A', ax + 10, ay - 12, { size: 17, italic: true, color: C.ink, alpha: aT });
+  text('A', ax + 7, ay - 22, { size: 17, italic: true, color: C.ink, alpha: aT });
   text('A', CX - CR * .78 - 14, CY - CR * .66, { size: 17, italic: true, color: C.ink, alpha: aT });
   math('A_0,\\ 200\\,\\rm{kHz}', CX, CY + CR - 22, { size: 17, color: C.body, align: 'center', alpha: aT });
 }

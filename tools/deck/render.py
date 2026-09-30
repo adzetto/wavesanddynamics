@@ -15,6 +15,11 @@
     python tools/deck/render.py 4 --vector   write slide 4, then print the vectors
     python tools/deck/render.py --manifest   write deck.json again from the slides
                                              in content/ (the deck in order)
+    python tools/deck/render.py 12 --anim-only
+                                             give a slide its animation and nothing
+                                             else: its page anim/s012.html and its
+                                             manifest line; the photograph, the web
+                                             copies and the vectors stay as printed
     python tools/deck/render.py --sheet      a contact sheet of the deck as it
                                              stands, build/r10-deck/review/sheet-*.png
 
@@ -55,6 +60,11 @@ The checks (a slide that fails one is not written to content/ unless --force):
               for less motion, and every animated value ends where the slide
               has it. Its frames are written to look at: review/<stem>-anim-
               <t>.png and the sheet review/<stem>-anim.png.
+  unchanged (--anim-only) the slide is the one its photograph shows: its
+              markup, less what only plays (data-in, data-as, data-dur,
+              data-anim, data-cues and the ghosts), is byte for byte its
+              markup at git's HEAD. That stands for his words where his file
+              cannot be read: HEAD's slide passed them where it could.
 Also written, to look at: build/r10-deck/review/<stem>.png (his slide and ours
 side by side at 960; a slide of ours between the deck's slides either side of
 it), <stem>-960.png (ours as the page's 960 copy shows it), <stem>.json (the
@@ -270,10 +280,73 @@ def pic_words(label):
 # no spaced en dash
 OUR_DASH = re.compile(r"—|\s–\s")
 
+# ------------------------------------------------------------------ what only plays
 
-def check(label, info):
+# the attributes an animation adds to a slide's markup, and the elements
+# (ghosts) that only the playing slide shows
+PLAYS = re.compile(r"""\sdata-(?:in|as|dur|anim|cues)=(?:'[^']*'|"[^"]*")""")
+GHOST_OPEN = re.compile(r"<(path|rect|span)\b[^>]*\sdata-ghost\b[^>]*?(/?)>")
+
+
+def still_body(body):
+    """A slide's markup as its photograph has it: less the ghosts (a mark
+    only the playing slide shows, and a label with everything inside it)
+    and less the attributes that only say how things arrive."""
+    out, at = [], 0
+    for m in GHOST_OPEN.finditer(body):
+        if m.start() < at:
+            continue
+        out.append(body[at:m.start()])
+        end = m.end()
+        if not m.group(2) and m.group(1) == "span":        # a label: its whole element
+            depth, i = 1, end
+            for t in re.finditer(r"<(/?)span\b[^>]*>", body[end:]):
+                depth += -1 if t.group(1) else 1
+                if depth == 0:
+                    i = end + t.end()
+                    break
+            end = i
+        at = end
+    out.append(body[at:])
+    return PLAYS.sub("", "".join(out))
+
+
+def body_at(label, rev="HEAD"):
+    """The slide's body (figures computed, formulas set) from its sources at
+    git revision `rev`, or None where it had none."""
+    import subprocess
+    import tempfile
+    stem = his.stem(label)
+    tmp = tempfile.mkdtemp(prefix="deck-rev-")
+    for ext in (".html", ".py"):
+        got = subprocess.run(["git", "show", f"{rev}:tools/deck/src/{stem}{ext}"], cwd=ROOT,
+                             capture_output=True)
+        if got.returncode:
+            if ext == ".html":
+                return None
+            continue
+        with open(os.path.join(tmp, stem + ext), "wb") as fh:
+            fh.write(got.stdout)
+    mod = None
+    if os.path.isfile(os.path.join(tmp, stem + ".py")):
+        spec = importlib.util.spec_from_file_location(f"deck_rev_{stem}", os.path.join(tmp, stem + ".py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    return numbered_body(label, os.path.join(tmp, stem + ".html"), mod)
+
+
+def numbered_body(label, html_path=None, mod=None):
+    """slide_body(), its figures' clip ids counted from one (fig.Fig's own
+    counter runs across a process), so two bodies of one slide compare."""
+    import fig
+    fig.Fig._uid = 0
+    return slide_body(label, html_path, mod)
+
+
+def check(label, info, words_elsewhere=False):
     """His words (or, on a slide of ours, our rules), overflow and size.
-    Returns a list of problems."""
+    Returns a list of problems. words_elsewhere: his words are held by the
+    unchanged check (--anim-only), so a missing file of his is no problem."""
     probs = list(info["problems"])
     ours_blocks = [(mathtype.norm(b["t"]), b) for b in info["blocks"]]
     ticks = [t for t, b in ours_blocks if b["tick"]]
@@ -294,7 +367,9 @@ def check(label, info):
             # his PowerPoint is read, never published: on a machine without
             # it (DECK_PPTX) his words cannot be held to it, and the slide is
             # not written unless --force says so
-            probs.append(f"his words not checked: his PowerPoint cannot be read here ({type(e).__name__}: {e})")
+            if not words_elsewhere:
+                probs.append(f"his words not checked: his PowerPoint cannot be read here "
+                             f"({type(e).__name__}: {e})")
             strings = None
     if his.his(label) is not None and strings is not None:
         theirs = [mathtype.norm(s) for s in strings + pic_words(label)]
@@ -662,9 +737,12 @@ def anim_sheet(stem, shots, cols=4, w=480):
 
 # ------------------------------------------------------------------ rendering
 
-def shoot(labels, look_only=False, force=False, with_anim=True):
+def shoot(labels, look_only=False, force=False, with_anim=True, anim_only=False, changed=None):
     """Open each assembled slide, photograph it, check it (and its
-    animation), and write it. Returns (problems, room, written rows)."""
+    animation), and write it. Returns (problems, room, written rows).
+    anim_only: write its animation page and manifest line, never its
+    photograph or web copies; `changed` {label: problem} are the slides the
+    unchanged check refused."""
     from PIL import Image
     from playwright.sync_api import sync_playwright
 
@@ -689,7 +767,9 @@ def shoot(labels, look_only=False, force=False, with_anim=True):
             pg.screenshot(path=master, clip={"x": 0, "y": 0, "width": 1920, "height": 1080})
             info = pg.evaluate(INFO_JS)
             pg.close()
-            probs = check(lab, info)
+            probs = check(lab, info, words_elsewhere=anim_only)
+            if anim_only and (changed or {}).get(lab):
+                probs.append(changed[lab])
             if faces:
                 probs.append(f"fonts not loaded: {faces}")
             probs += [f"script: {e}" for e in errors]
@@ -724,10 +804,11 @@ def shoot(labels, look_only=False, force=False, with_anim=True):
                 save_image(ours960, os.path.join(BUILD, "review", f"{stem}-960.png"), "PNG")
                 if look_only or (probs and not force):
                     continue
-                save_image(full, os.path.join(DECK, f"{stem}.png"), "PNG", optimize=True)
-                for w, q in WEB:
-                    save_image(im.resize((w, w * 9 // 16), Image.LANCZOS),
-                               os.path.join(DECK, "web", f"{stem}-{w}.webp"), "WEBP", quality=q, method=6)
+                if not anim_only:
+                    save_image(full, os.path.join(DECK, f"{stem}.png"), "PNG", optimize=True)
+                    for w, q in WEB:
+                        save_image(im.resize((w, w * 9 // 16), Image.LANCZOS),
+                                   os.path.join(DECK, "web", f"{stem}-{w}.webp"), "WEBP", quality=q, method=6)
             # the animation page goes with the slide; a slide that lost its
             # animation loses its page
             live = os.path.join(ANIM, f"{stem}.html")
@@ -918,6 +999,9 @@ def main(argv=None):
                          "with --sheet, contact sheets of the SVGs as drawn too)")
     ap.add_argument("--manifest", action="store_true", help="write deck.json again from content/")
     ap.add_argument("--no-anim", action="store_true", help="leave the animation pages alone")
+    ap.add_argument("--anim-only", action="store_true",
+                    help="write only the animation page and the manifest line; the slide must be "
+                         "HEAD's, less what only plays")
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -941,10 +1025,19 @@ def main(argv=None):
     if not os.path.isdir(ORIG):
         raise SystemExit("content/deck-probstat/_orig/ is missing: back his slides up first")
     os.makedirs(os.path.join(BUILD, "slides"), exist_ok=True)
+    changed = {}
     for lab in todo:
         stem = his.stem(lab)
         mod = module(lab)
-        body = slide_body(lab, mod=mod)
+        body = numbered_body(lab, mod=mod) if a.anim_only else slide_body(lab, mod=mod)
+        if a.anim_only:
+            was = body_at(lab)
+            if was is None:
+                changed[lab] = "unchanged: the slide has no sources at HEAD to hold it to"
+            elif still_body(was) != still_body(body):
+                changed[lab] = ("unchanged: the slide itself differs from HEAD's, not only in what "
+                                "plays (an animation may add data-in, data-as, data-dur, anim= and "
+                                "ghosts, nothing else)")
         write_file(os.path.join(BUILD, "slides", f"{stem}.html"), SHELL.format(n=lab, body=body))
         page = anim_page(lab, body, mod) if not a.no_anim else None
         look = os.path.join(ANIM_LOOK, f"{stem}.html")
@@ -953,7 +1046,8 @@ def main(argv=None):
             write_file(look, page)
         elif os.path.isfile(look) and not a.no_anim:
             os.remove(look)
-    report, room, rows, anims = shoot(todo, look_only=a.look, force=a.force, with_anim=not a.no_anim)
+    report, room, rows, anims = shoot(todo, look_only=a.look, force=a.force, with_anim=not a.no_anim,
+                                      anim_only=a.anim_only, changed=changed)
     bad = 0
     for lab in todo:
         stem = his.stem(lab)

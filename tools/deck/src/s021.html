@@ -1,0 +1,35 @@
+<section class="slide">
+ <style>
+  .step{padding-left:1.15em;text-indent:-1.15em}
+  .step .n{display:inline-block;width:1.15em;text-indent:0}
+  .steps .step+.step{margin-top:6px}
+  .fig21{margin-top:-6px}
+  .lede .l{display:block}
+ </style>
+ <header class="head">
+  <h1 class="title">Hypothesis test: is an assumed value still plausible?</h1>
+  <p class="lede"><span class="l">Same 25 tests: <m>x̄ = 32</m> MPa, <m>σ = 3</m> MPa. The supplier claims <m>μ = 33</m> MPa.</span> <span class="l">Would data like ours be unusual if the claim were true?</span></p>
+ </header>
+ <main class="body g">
+  <div class="s6 stack">
+   <div class="steps">
+    <h2 class="h">Four steps</h2>
+    <p class="p step"><span class="n">1</span> Claim: <m>H₀: μ = 33</m> MPa;  <m>H₁: μ ≠ 33</m> MPa</p>
+    <p class="p step"><span class="n">2</span> Test statistic: <m>z = (32 − 33)/0.6 = −1.67</m></p>
+    <p class="p step"><span class="n">3</span> p-value: <m>P(|Z| ≥ 1.67) = 9.6%</m></p>
+    <p class="p step b c-blue"><span class="n">4</span> At <m>α = 5%</m>: <m>9.6% &gt; 5%</m>, do not reject <m>H₀</m></p>
+   </div>
+   <div>
+    <h2 class="h">Read it carefully</h2>
+    <p class="ps">Consistent with slide 17: the 95% CI <m>[30.82, 33.18]</m> contains 33.</p>
+    <p class="ps">Not rejecting does not prove <m>μ = 33</m>.</p>
+    <p class="ps">A p-value is not the probability that <m>H₀</m> is true.</p>
+   </div>
+  </div>
+  <div data-fig="test" class="s6 o7 fig21"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">A test checks one assumed value; a confidence interval shows all values the data allow.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 3: confidence intervals and hypothesis tests</span><span class="src">Sources: [3], [11]</span><span class="num">21</span></p>
+ </footer>
+</section>

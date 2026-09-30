@@ -1,0 +1,31 @@
+<section class="slide">
+ <style>
+  .pan .h{font-size:34px}
+  .pan .fig{margin-top:22px}
+  .pan .note{margin-top:22px}
+  .sum{margin-top:30px}
+  .sum .ps{font-size:28px}
+ </style>
+ <header class="head">
+  <h1 class="title">Markov chains (1): the rules for moving between states</h1>
+  <p class="lede">A pavement section is Good, Degraded or Failed. Each year it stays or moves one state worse with fixed probabilities. The next state depends only on the current one.</p>
+ </header>
+ <main class="body">
+  <div class="g">
+   <div class="s5 pan">
+    <h2 class="h">1&ensp;The rules (one inspection interval)</h2>
+    <div data-fig="rules"></div>
+    <p class="note lines"><span>Each year, a section stays or moves one state worse.</span><span>The numbers on arrows are the transition probabilities.</span></p>
+   </div>
+   <div class="s7 o6 pan">
+    <h2 class="h">2&ensp;Follow every path for two intervals, starting Good</h2>
+    <div data-fig="tree"></div>
+   </div>
+  </div>
+  <div class="panel sum"><p class="ps">After two years:&ensp;Good <m>0.8 × 0.8 = 64%</m>,&emsp;Degraded <m>0.16 + 0.14 = 30%</m>,&emsp;Failed <m>0.2 × 0.3 = 6%</m>.&emsp;The three add up to 100%.</p></div>
+ </main>
+ <footer class="foot">
+  <p class="take">Multiply along each path; add the paths that end in the same state.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: state transitions</span><span class="src">Sources: [4], [36]</span><span class="num">53</span></p>
+ </footer>
+</section>

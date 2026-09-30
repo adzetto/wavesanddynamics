@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 2: Occurrence of resonance modes</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #bdbdbd;background:#fff;color:#333;
+  font:12px/1 Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button:focus-visible{outline:2px solid #2b5f9e;outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Animation of a frequency sweep. Bending waves in an infinite beam respond equally at all frequencies, while a finite beam supported at both ends responds strongly only near its resonance frequencies. Right side shows travelling waves forming the 4th standing wave mode and the first four resonance modes."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation">&#8634;</button></div>
+</div>
+<script>
+const W = 1000, H = 570;
+/* ---- shared engine: canvas scaling, play/pause, restart, offscreen pause ---- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const SANS = 'Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const SERIF = '"Cambria Math", Cambria, "STIX Two Text", "Times New Roman", serif';
+let t = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, visible = true, last = null;
+cv.style.aspectRatio = W + ' / ' + H;
+
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  render();
+}
+function render() { ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); draw(); }
+
+const pp = document.getElementById('pp');
+function setPlay(p) { playing = p; pp.textContent = p ? '\u275A\u275A' : '\u25B6'; pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation'); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => { e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); render(); });
+cv.addEventListener('click', () => setPlay(!playing));
+
+new ResizeObserver(fit).observe(cv);
+new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---- drawing helpers ---- */
+function txt(s, x, y, o = {}) {
+  const { size = 14, bold = false, italic = false, color = '#000', align = 'left', font = SANS, base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${font}`;
+  ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot); ctx.fillText(s, 0, 0); ctx.restore();
+}
+function line(x1, y1, x2, y2, color = '#000', lw = 1.5, dash = null) {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+function head(x, y, ang, size, color) {
+  ctx.save(); ctx.fillStyle = color; ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.42); ctx.lineTo(-size, size * 0.42); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = '#000', lw = 1.5, size = 9, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  line(x1 + (both ? Math.cos(a) * size * 0.8 : 0), y1 + (both ? Math.sin(a) * size * 0.8 : 0),
+       x2 - Math.cos(a) * size * 0.8, y2 - Math.sin(a) * size * 0.8, color, lw, dash);
+  head(x2, y2, a, size, color); if (both) head(x1, y1, a + Math.PI, size, color);
+}
+function poly(pts, color = '#000', lw = 1.5, dash = null, alpha = 1) {
+  if (!pts.length) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); ctx.restore();
+}
+/* pinned support: circle on top of a triangle, with a ground line */
+function pin(x, y, s = 1, color = '#000') {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(x, y + 5 * s); ctx.lineTo(x - 10 * s, y + 20 * s); ctx.lineTo(x + 10 * s, y + 20 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 14 * s, y + 20 * s); ctx.lineTo(x + 14 * s, y + 20 * s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 5 * s, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+/* math text: letters italic, "_d" gives a subscript digit */
+function mtext(s, x, y, size = 18, align = 'center', color = '#000') {
+  const segs = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/[a-zA-Z]/.test(c) && s[i + 1] === '_') { segs.push({ t: c, it: 1 }); segs.push({ t: s[i + 2], sub: 1 }); i += 2; }
+    else if (/[a-zA-Z\u1E8B\u1E8D]/.test(c)) segs.push({ t: c, it: 1 });
+    else segs.push({ t: c });
+  }
+  const fontOf = g => `${g.it ? 'italic ' : ''}${g.sub ? size * 0.68 : size}px ${SERIF}`;
+  let wsum = 0; for (const g of segs) { ctx.font = fontOf(g); g.w = ctx.measureText(g.t).width; wsum += g.w; }
+  let cx = align === 'center' ? x - wsum / 2 : align === 'right' ? x - wsum : x;
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  for (const g of segs) { ctx.font = fontOf(g); ctx.fillText(g.t, cx, y + (g.sub ? size * 0.28 : 0)); cx += g.w; }
+  ctx.restore();
+}
+/* ordinal like 1st: number plus raised suffix */
+function ord(n, suf, rest, x, y, o = {}) {
+  const { size = 16, bold = false, align = 'center', color = '#000' } = o;
+  const f = s => `${bold ? 'bold ' : ''}${s}px ${SANS}`;
+  ctx.save(); ctx.font = f(size); const w1 = ctx.measureText(n).width, w3 = ctx.measureText(rest).width;
+  ctx.font = f(size * 0.62); const w2 = ctx.measureText(suf).width;
+  const wt = w1 + w2 + w3; let cx = align === 'center' ? x - wt / 2 : align === 'right' ? x - wt : x;
+  ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = f(size); ctx.fillText(n, cx, y); cx += w1;
+  ctx.font = f(size * 0.62); ctx.fillText(suf, cx, y - size * 0.4); cx += w2;
+  ctx.font = f(size); ctx.fillText(rest, cx, y); ctx.restore();
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+
+
+
+/* ---- simply supported beam model (normalized): omega_n = n^2 * omega_1 ---- */
+const ZETA = 0.05, XF = 0.13, NM = 6;
+const phi = (n, xi) => Math.sin(n * Math.PI * xi);
+const LRMIN = Math.log(0.4), LRMAX = Math.log(22);
+function mobility(r, xi) {                   // complex velocity response at xi for force at XF
+  let re = 0, im = 0;
+  for (let n = 1; n <= NM; n++) {
+    const a = n ** 4 - r * r, b = 2 * ZETA * n * n * r, g = phi(n, xi) * phi(n, XF) / (a * a + b * b);
+    re += g * a; im -= g * b;
+  }
+  return [-im * r, re * r];                  // multiply by i*r
+}
+const FRF = []; let FRFMAX = 0;
+for (let i = 0; i <= 400; i++) { const lr = LRMIN + (LRMAX - LRMIN) * i / 400, m = Math.hypot(...mobility(Math.exp(lr), XF)); FRF.push(m); FRFMAX = Math.max(FRFMAX, m); }
+const peaks = [1, 2, 3, 4].map(n => Math.log(n * n));
+
+let lr = LRMIN + 0.05, dir = 1, theta = 0;
+function reset() { lr = LRMIN + 0.05; dir = 1; theta = 0; snaps = []; lastSnap = -1; }
+let snaps = [], lastSnap = -1;
+const TE = 1.6;                              // period of the 4th mode animation [s]
+function step(dt) {
+  const d = Math.min(...peaks.map(p => Math.abs(lr - p)));
+  const slow = 0.18 + 0.82 * (1 - Math.exp(-((d / 0.13) ** 2)));
+  lr += dir * 0.3 * slow * dt;
+  if (lr > LRMAX - 0.05) { lr = LRMAX - 0.05; dir = -1; }
+  if (lr < LRMIN + 0.05) { lr = LRMIN + 0.05; dir = 1; }
+  theta += 2 * Math.PI * (0.7 + 0.35 * (lr - LRMIN)) * dt;
+  if (lastSnap < 0 || t - lastSnap >= TE / 14) { snaps.push(t); if (snaps.length > 7) snaps.shift(); lastSnap = t; }
+}
+const nearMode = () => { for (let n = 0; n < 4; n++) if (Math.abs(lr - peaks[n]) < 0.13) return n + 1; return 0; };
+const ACC = '#b3261e';
+
+/* left axes share one log-frequency axis */
+const AX0 = 125, AX1 = 495;
+const fx = l => AX0 + (AX1 - AX0) * (l - LRMIN) / (LRMAX - LRMIN);
+
+function panelA() {
+  txt('a)', 30, 24, { size: 15, bold: true });
+  txt('Bending waves', 120, 50, { size: 13 });
+  txt('Direction of travel', 330, 32, { size: 13, align: 'center' }); arrow(285, 42, 380, 42, { lw: 1.3, size: 7 });
+  const y0 = 78, x0 = 92, x1 = 470;
+  line(40, y0 - 4, x0, y0 - 4, '#666', 1, [2, 3]); line(40, y0 + 4, x0, y0 + 4, '#666', 1, [2, 3]);
+  line(x1, y0 - 4, 520, y0 - 4, '#666', 1, [2, 3]); line(x1, y0 + 4, 520, y0 + 4, '#666', 1, [2, 3]);
+  line(x0, y0 - 4, x1, y0 - 4, '#999', 0.8); line(x0, y0 + 4, x1, y0 + 4, '#999', 0.8);
+  const k = 2 * Math.PI / 170 * Math.sqrt(Math.exp(lr)), p = [];
+  for (let x = x0; x <= x1; x += 2) p.push([x, y0 - 17 * Math.sin(k * (x - x0) - theta)]);
+  poly(p, '#000', 1.6);
+  txt('Infinite beam', 32, 118, { size: 13 });
+}
+function panelB() {
+  txt('b)', 30, 146, { size: 15, bold: true });
+  arrow(AX0 - 5, 250, AX0 - 5, 142, { lw: 1.2, size: 6 }); arrow(AX0 - 5, 250, 505, 250, { lw: 1.2, size: 6 });
+  txt('Magnitude', 104, 196, { size: 12, rot: -Math.PI / 2, align: 'center' });
+  txt('Frequency', 500, 243, { size: 12, align: 'right' });
+  line(AX0, 176, AX1, 176, '#000', 1.6);
+  ctx.fillStyle = ACC; ctx.beginPath(); ctx.arc(fx(lr), 176, 4.5, 0, 7); ctx.fill();
+}
+function panelC() {
+  txt('c)', 30, 266, { size: 15, bold: true });
+  const x0 = 135, x1 = 485, y0 = 300, Lb = x1 - x0, N = 90;
+  const r = Math.exp(lr), mag = Math.hypot(...mobility(r, XF)) / FRFMAX;
+  const amp = 32 * Math.pow(mag, 0.6);
+  const Z = []; let zmax = 1e-9;
+  for (let i = 0; i <= N; i++) { const z = mobility(r, i / N); Z.push(z); zmax = Math.max(zmax, Math.hypot(...z)); }
+  const top = [], bot = [];
+  for (let i = 0; i <= N; i++) {
+    const y = amp * (Z[i][0] * Math.cos(theta) - Z[i][1] * Math.sin(theta)) / zmax;
+    top.push([x0 + Lb * i / N, y0 - 3 - y]); bot.push([x0 + Lb * i / N, y0 + 3 - y]);
+  }
+  ctx.save(); ctx.fillStyle = '#f2f2f2'; ctx.beginPath(); top.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p));
+  bot.slice().reverse().forEach(p => ctx.lineTo(...p)); ctx.closePath(); ctx.fill(); ctx.restore();
+  poly(top, '#000', 1.2); poly(bot, '#000', 1.2);
+  pin(x0, y0 + 3, 0.8); pin(x1, y0 + 3, 0.8);
+  const xf = x0 + XF * Lb; arrow(xf, top[Math.round(XF * N)][1] - 20, xf, top[Math.round(XF * N)][1] - 2, { color: '#777', lw: 1.2, size: 6 });
+  txt('A finite beam supported at both ends.', 310, 345, { size: 13, align: 'center' });
+}
+function panelD() {
+  txt('d)', 30, 380, { size: 15, bold: true });
+  const yb = 545;
+  arrow(AX0 - 5, yb, AX0 - 5, 385, { lw: 1.2, size: 6 }); arrow(AX0 - 5, yb, 505, yb, { lw: 1.2, size: 6 });
+  txt('Magnitude', 104, 470, { size: 12, rot: -Math.PI / 2, align: 'center' });
+  txt('Frequency', 500, 563, { size: 12, align: 'right' });
+  const p = FRF.map((m, i) => [fx(LRMIN + (LRMAX - LRMIN) * i / 400), yb - 4 - 118 * m / FRFMAX]);
+  poly(p, '#000', 1.5);
+  const nm = nearMode(), sfx = ['st', 'nd', 'rd', 'th'];
+  peaks.forEach((pk, i) => {
+    const idx = Math.round((pk - LRMIN) / (LRMAX - LRMIN) * 400), x = fx(pk), yt = p[idx][1] - 34;
+    const col = nm === i + 1 ? ACC : '#000', b = nm === i + 1;
+    ord(String(i + 1), sfx[i], '', x, yt, { size: 11, color: col, bold: b });
+    txt('Resonance', x, yt + 13, { size: 11, align: 'center', color: col, bold: b });
+    txt('Mode', x, yt + 26, { size: 11, align: 'center', color: col, bold: b });
+  });
+  const cx = fx(lr), ci = clamp(Math.round((lr - LRMIN) / (LRMAX - LRMIN) * 400), 0, 400);
+  line(cx, yb, cx, p[ci][1], 'rgba(179,38,30,.35)', 1);
+  ctx.fillStyle = ACC; ctx.beginPath(); ctx.arc(cx, p[ci][1], 4.5, 0, 7); ctx.fill();
+}
+
+/* ---- right column ---- */
+const RX0 = 565, RX1 = 935, RL = RX1 - RX0, K4 = 4 * Math.PI / RL;
+function panelE() {
+  txt('e)', 530, 32, { size: 15, bold: true });
+  txt('Direction of travel', 700, 22, { size: 13, align: 'center' }); arrow(655, 32, 745, 32, { lw: 1.3, size: 7 });
+  txt('Direction of travel', 850, 22, { size: 13, align: 'center' }); arrow(895, 32, 805, 32, { lw: 1.3, size: 7 });
+  const y0 = 80, th = 2 * Math.PI * t / TE, a = [], b = [];
+  line(RX0, y0 - 3, RX1, y0 - 3, '#aaa', 0.8); line(RX0, y0 + 3, RX1, y0 + 3, '#aaa', 0.8);
+  for (let x = 0; x <= RL; x += 2) { a.push([RX0 + x, y0 - 18 * Math.sin(K4 * x - th)]); b.push([RX0 + x, y0 - 18 * Math.sin(K4 * x + th)]); }
+  poly(a, '#000', 1.6); poly(b, '#666', 1.4, [5, 4]);
+  pin(RX0, y0 + 3, 0.8); pin(RX1, y0 + 3, 0.8);
+  ord('Waves at 4', 'th', ' Resonance Mode', 750, 130, { size: 13 });
+}
+function panelF() {
+  txt('f)', 530, 162, { size: 15, bold: true });
+  const y0 = 218, shape = tt => { const p = []; for (let x = 0; x <= RL; x += 2) p.push([RX0 + x, y0 - 36 * Math.sin(K4 * x) * Math.cos(2 * Math.PI * tt / TE)]); return p; };
+  line(RX0, y0, RX1, y0, '#888', 0.8);
+  snaps.forEach((s, i) => { const g = Math.round(215 - 110 * i / Math.max(1, snaps.length - 1)); poly(shape(s), `rgb(${g},${g},${g})`, 1.1, i % 2 ? [5, 3] : null); });
+  poly(shape(t), '#000', 2.2);
+  arrow(RX0 + RL / 8, y0 + 30, RX0 + RL / 8, y0 - 30, { lw: 1, size: 6, both: true });
+  pin(RX0, y0, 0.8); pin(RX1, y0, 0.8);
+  txt('time', 968, 172, { size: 11, align: 'center' }); line(952, 176, 984, 176, '#000', 0.8);
+  line(950, 190, 975, 190, '#000', 2); txt('now', 978, 194, { size: 10 });
+  line(950, 206, 975, 206, '#bbb', 1.1); txt('earlier', 950, 222, { size: 10 });
+}
+function panelG() {
+  txt('g)', 530, 300, { size: 15, bold: true });
+  const nm = nearMode(), sfx = ['st', 'nd', 'rd', 'th'], cs = [595, 700, 805, 910], y0 = 372, hw = 36;
+  cs.forEach((c, i) => {
+    const n = i + 1, col = nm === n ? ACC : '#000', p = [];
+    for (let k = 0; k <= 60; k++) { const xi = k / 60; p.push([c - hw + 2 * hw * xi, y0 - 22 * Math.sin(n * Math.PI * xi) * Math.cos(2 * Math.PI * 0.45 * n * t)]); }
+    line(c - hw, y0, c + hw, y0, '#999', 0.8);
+    poly(p, col, nm === n ? 2.4 : 1.6); pin(c - hw, y0, 0.65); pin(c + hw, y0, 0.65);
+    ord(String(n), sfx[i], '', c, 412, { size: 12, color: col, bold: nm === n });
+    txt('Resonance', c, 427, { size: 12, align: 'center', color: col, bold: nm === n });
+    txt('Mode', c, 442, { size: 12, align: 'center', color: col, bold: nm === n });
+  });
+  txt('\u2026', 968, 368, { size: 22, align: 'center' });
+}
+
+function draw() { panelA(); panelB(); panelC(); panelD(); panelE(); panelF(); panelG(); }
+
+setPlay(playing); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

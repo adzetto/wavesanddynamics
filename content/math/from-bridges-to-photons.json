@@ -1,0 +1,19 @@
+{"entries": [
+  {"find": "sinc²", "tex": "\\operatorname{sinc}^2", "count": 1,
+   "why": "Figure 1 caption, '(sinc²) envelopes'; sinc has no LaTeX command, so \\operatorname, squared as \\sin^2 is"},
+  {"find": "V² + D² ≤ 1", "joined": true, "tex": "V^2 + D^2 \\leq 1", "count": 1,
+   "why": "the duality relation; Word split it into runs: italic V and D, plain '² + ' and '² ≤ 1, where '"},
+  {"find": "V", "before": "where ", "after": " is the fringe visibility", "joined": true, "tex": "V", "count": 1,
+   "why": "an italic run of its own; its context is in the runs around it"},
+  {"find": "D", "before": "visibility and ", "after": " measures how reliably", "joined": true, "tex": "D", "count": 1},
+  {"find": "P = P_A + P_B", "joined": true, "tex": "P = P_{\\mathrm{A}} + P_{\\mathrm{B}}", "count": 1,
+   "why": "seven runs in Word; _A and _B are his subscript runs, which are upright, as are 'slits A and B' and Figure 1's labels: A and B name the slits, so they are upright labels, not variables"},
+  {"find": "λL/a", "tex": "\\lambda L/a", "count": 1,
+   "why": "the single-slit width on the screen; his slash stays inline"},
+  {"find": "a", "before": ", where ", "after": " is the slit width", "joined": true, "tex": "a", "count": 1,
+   "why": "an italic run of its own; its context is in the runs around it"},
+  {"find": "L", "before": "width and ", "after": " is the distance to the screen", "joined": true, "tex": "L", "count": 1},
+  {"find": "d", "before": "the slit separation ", "after": ", so the two envelopes", "joined": true, "tex": "d", "count": 1},
+  {"find": "ad/(λL) > 1", "tex": "ad/(\\lambda L) > 1", "count": 1,
+   "why": "the near-field condition; his whole run was italic in Word, but the 1, the slash, the brackets and > are upright in LaTeX"}
+]}

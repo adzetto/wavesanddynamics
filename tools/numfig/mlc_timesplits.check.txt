@@ -1,0 +1,25 @@
+nf-mlc-timesplits: Figure 33, splitting time-ordered data
+
+SERIES: 730 days, y = 20 + 6 sin(2 pi (t - 80)/365) + 0.004 t + e_t, e_t = 0.8 e_(t-1) + N(0, 1),
+  seed 4. MODEL: least squares on (1, t/365, sin, cos of 2 pi t/365). SCORE: MAE.
+
+(a) RANDOM: 584 training days, 146 test days at random; 583 of the 584 training days come
+    after the earliest test day: the model trains on the future of the days it is tested on.
+    Test MAE 1.274.
+(b) HOLDOUT: train days 0-437, validate 438-583, test 584-729.
+    validation MAE 1.389 (trained on 0-437); test MAE 1.494 (refit on 0-583).
+(c) EXPANDING, (d) SLIDING (300 days): gap 14 days, validation windows of 60 days:
+    round 1: validate 490-549;  expanding trains 0-475, MAE 1.368;  sliding trains 176-475, MAE 1.488
+    round 2: validate 550-609;  expanding trains 0-535, MAE 1.187;  sliding trains 236-535, MAE 2.073
+    round 3: validate 610-669;  expanding trains 0-595, MAE 1.290;  sliding trains 296-595, MAE 1.398
+    round 4: validate 670-729;  expanding trains 0-655, MAE 1.797;  sliding trains 356-655, MAE 2.363
+    means: expanding 1.410, sliding 1.831
+
+CHECKS
+  every training window ends 14 days before its validation window: True
+  every training day precedes every validation day in (b), (c), (d): True by construction;
+  in (a) it does not: the random split's MAE (1.274) is lower than the honest
+  forward-looking scores (1.410), because it interpolates between
+  days it has already seen on both sides.
+  noise level for reference: the AR(1) noise has standard deviation 1.667, MAE of a
+  perfect model about 1.330.

@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s059-pic1.png)
+Autocorrelation ρ(h)
+Lag (samples)
+φ = 0.8
+φ = −0.6

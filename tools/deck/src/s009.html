@@ -1,0 +1,30 @@
+<section class="slide">
+ <style>
+  .models{margin-top:6px;font-size:28px}
+  .models th{font-size:26px}
+  .models td{padding-top:15px;padding-bottom:15px}
+ </style>
+ <header class="head">
+  <h1 class="title">Probabilistic models: distributions, regression and more</h1>
+  <p class="lede">Every probabilistic model states how probability is spread. The families differ in what else they describe: predictors, dependence, time or hidden states.</p>
+ </header>
+ <main class="body">
+  <table class="tab models">
+   <colgroup><col style="width:19.5%"><col style="width:38%"><col style="width:29%"><col style="width:13.5%"></colgroup>
+   <thead><tr><th>Model family</th><th>What it describes</th><th>Civil engineering example</th><th>In this guide</th></tr></thead>
+   <tbody>
+    <tr><td>Distribution</td><td>One uncertain quantity</td><td>Concrete strength, annual peak flow</td><td>Slides 8, 13, 25</td></tr>
+    <tr><td>Joint distribution</td><td>Several quantities that vary together</td><td>Load and capacity rising together</td><td>Slides 7, 37</td></tr>
+    <tr><td>Regression</td><td>A distribution whose mean depends on predictors</td><td>Strength vs water-to-cement ratio</td><td>Slides 22–24</td></tr>
+    <tr><td>Logistic regression, fragility curve</td><td>Probability of a yes/no outcome vs a predictor</td><td><m>P(damage)</m> vs earthquake shaking</td><td>This slide</td></tr>
+    <tr><td>Bayesian model</td><td>Uncertainty about the parameters themselves</td><td>Updating mean strength with tests</td><td>Slides 14–20</td></tr>
+    <tr><td>Stochastic process</td><td>Uncertainty over time or space</td><td>Traffic, vibration, deterioration</td><td>Slides 40–60</td></tr>
+    <tr><td>State-space model</td><td>A hidden state seen through noisy sensors</td><td>Tracking bridge displacement</td><td>Slides 65–67</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">Distributions and regression are the workhorses; next slide shows they share one core.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–5: the models used across this guide</span><span class="src">Sources: [1], [10], [12], [13], [22], [41]</span><span class="num">9</span></p>
+ </footer>
+</section>

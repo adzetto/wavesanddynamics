@@ -1,0 +1,39 @@
+<section class="slide">
+ <style>
+  .pair{margin-top:2px}
+  .pair .p{margin-top:12px}
+  .spread{margin-top:24px}
+  .laws{margin-top:14px}
+  .laws .eq{font-size:36px}
+  .foot{position:relative}
+  .foot .mark{position:absolute;left:-60px;top:17px}
+ </style>
+ <header class="head">
+  <h1 class="title">Two kinds of spread: one test vs. the average of 25</h1>
+  <p class="lede">Single cylinders scatter because the material varies. The average of 25 cylinders scatters much less, because high and low results cancel out.</p>
+ </header>
+ <main class="body">
+  <div class="g pair">
+   <div class="s5" id="one">
+    <h2 class="h">One cylinder: material variability</h2>
+    <p class="p">Lands anywhere around <m>μ</m>; SD <m>σ = 3 MPa</m>. <br>More testing never shrinks <m>σ</m>.</p>
+   </div>
+   <div class="cell s1 o6"><p class="edge above">More data</p></div>
+   <div class="s6 o7" id="avg">
+    <h2 class="h">Average of 25: estimation uncertainty</h2>
+    <p class="p">Averages cluster near <m>μ</m>; <m>SE = 0.6 MPa</m>. <br>More tests shrink <m>SE = σ/√n</m>.</p>
+   </div>
+  </div>
+  <i class="wire" data-from="#one" data-to="#avg" data-gap="14"></i>
+  <div data-fig="spread" class="spread"></div>
+  <div class="g laws">
+   <p class="eq c-navy s6"><m>Var(X̄) = (1/n²) × nσ² = σ²/n</m></p>
+   <p class="eq c-blue s6 o7"><m>SE(X̄) = σ/√n = 3/√25 = 0.6 MPa</m></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <div data-fig="star" class="mark"></div>
+  <p class="take">More tests sharpen our estimate of <m>μ</m>; they never make individual cylinders more alike.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: distinguish population variation from estimation uncertainty</span><span class="src">Sources: [3], [6]</span><span class="num">16</span></p>
+ </footer>
+</section>

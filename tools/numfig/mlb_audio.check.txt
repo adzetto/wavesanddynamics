@@ -1,0 +1,24 @@
+nf-mlb-audio: Figure 22, audio processing with a neural network
+
+MODEL
+  1 s at 8000 Hz; gearbox 30 teeth, run up 13.3 -> 53.3 turns/s in 0.25 s, then steady;
+  mesh tone 30 f_r and harmonic 60 f_r; faulty: one click per output turn (ratio 1:3),
+  2200 Hz, decay 0.3 ms; white noise 0.02. STFT: Hann 128 samples (16 ms), hop 32 (4 ms); 65 bins x 247 frames;
+  dB over 50 dB, 8 bit. Filters 9 wide: horizontal, rising (slope 0.6 bin/frame), vertical; ReLU;
+  global average; dense 3-4-2 (ReLU, softmax), gradient descent 3000 epochs, rate 0.5.
+
+CHECK 1: scipy's STFT against a direct DFT of one frame
+  frame 100: max |scipy - numpy DFT| = 4.2e-17 (periodic Hann window, scaled by its sum)
+
+CHECK 2: what the spectrogram shows against what was synthesized
+  steady tone: peak at 1598.3 Hz (parabolic), synthesized 1599.0 Hz, bin width 62.5 Hz
+  steady tone: peak at 3198.8 Hz (parabolic), synthesized 3198.0 Hz, bin width 62.5 Hz
+  repeated sounds: the vertical filter's autocorrelation peaks at 14 frames = 56.0 ms; clicks every 56.29 ms (steady), 16 clicks in the second
+
+CHECK 3: the page's own correlation (symmetric edges, as written in its script) against scipy
+  vertical filter, faulty clip: max |difference| 5.6e-17
+
+CHECK 4: the classifier
+  training 300 of 300, held out 100 of 100 synthetic clips
+  faulty clip: mean responses [0.0199, 0.0383, 0.0195] -> p(normal, fault) = [0.0, 1.0]
+  normal clip: mean responses [0.0206, 0.0408, 0.0117] -> p(normal, fault) = [1.0, 0.0]

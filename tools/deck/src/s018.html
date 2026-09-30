@@ -1,0 +1,55 @@
+<section class="slide">
+ <style>
+  .der .h + .p,.der .h + .eqs{margin-top:12px}
+  .der .p + .eq,.der .eq + .p{margin-top:8px}
+  .der .rule .eq{font-size:36px}
+  .der .post .eq{font-size:40px}
+  .der .ph{visibility:hidden}
+  .der .post + .note{margin-top:12px}
+ </style>
+ <header class="head">
+  <h1 class="title">Bayesian updating: deriving the posterior</h1>
+  <p class="lede">We describe uncertainty about the unknown mean <m>μ</m> with a prior, then update it using the observed tests.</p>
+ </header>
+ <main class="body g der">
+  <div class="s6 stack">
+   <div>
+    <h2 class="h">Ingredients and notation</h2>
+    <p class="p lines"><span><m>D</m>: the observed strength measurements</span><span>Prior: <m>μ ∼ N(m₀, v₀)</m></span><span><m>m₀</m>: prior mean; <m>v₀</m>: prior variance</span><span><m>vᴅ = σ²/n</m>: variance of the sample mean</span></p>
+   </div>
+   <div>
+    <h2 class="h">Bayes’ rule</h2>
+    <div class="eqs rule">
+     <p class="eq c-blue"><m>p(μ | D) ∝ p(D | μ) × p(μ)</m></p>
+     <p class="eq c-blue"><m>posterior ∝ likelihood × prior</m></p>
+    </div>
+   </div>
+   <p class="ps"><m>∝</m> means “proportional to.” A normalizing constant makes the total probability equal to one.</p>
+  </div>
+  <div class="s6 o7 stack">
+   <div>
+    <h2 class="h">Combine the two squared distances</h2>
+    <div class="eqs">
+     <p class="eq"><m>p(μ | D) ∝ exp{−½[(μ − m₀)²/v₀</m></p>
+     <p class="eq"><span class="ph"><m>p(μ | D) ∝ exp{−½[</m></span><m>+ (μ − x̄)²/vᴅ]}</m></p>
+    </div>
+   </div>
+   <div>
+    <p class="p">Expand the squares and collect terms in <m>μ</m>:</p>
+    <p class="eq"><m>μ²(1/v₀ + 1/vᴅ) − 2μ(m₀/v₀ + x̄/vᴅ)</m></p>
+    <p class="p">Then complete the square: <m>(μ − mₚ)²/vₚ</m>.</p>
+   </div>
+   <div>
+    <div class="eqs post">
+     <p class="eq c-blue"><m>vₚ = 1 / (1/v₀ + 1/vᴅ)</m></p>
+     <p class="eq c-blue"><m>mₚ = vₚ(m₀/v₀ + x̄/vᴅ)</m></p>
+    </div>
+    <p class="note"><m>mₚ</m> = posterior mean; <m>vₚ</m> = posterior variance.</p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Multiplying two normal-shaped functions adds their precisions: precision = 1 / variance.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: prior information plus the data likelihood</span><span class="src">Sources: [10]</span><span class="num">18</span></p>
+ </footer>
+</section>

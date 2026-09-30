@@ -1,0 +1,41 @@
+nf-wt-cover: the waves guide's cover (image1)
+
+BRIDGE MODEL
+  cable stayed, spans 130 + 300 + 130 m; steel box deck EA = 2.520e+11 N, EI = 6.720e+11 N m^2, m = 18000 kg/m;
+  concrete pylons 82 m above the deck and 45 m below, EI = 2.520e+12 N m^2, m = 62000 kg/m, fixed at the pile caps;
+  44 stays (E = 195 GPa, area 57 to 141 cm^2 by length), taut: axial stiffness, no sag, no geometric stiffness;
+  deck on rollers at the abutments (fixed longitudinally at the left one) and on vertical bearings
+  at the pylon crossbeams. 2D Euler-Bernoulli frame elements, consistent mass.
+
+CHECK 1: the element, alone, against closed forms
+  simply supported 100 m deck beam: f1 0.95977 Hz (+2.5e-08), f2 3.83909 Hz (+4.2e-07), f3 8.63797 Hz (+2.1e-06)
+  free standing pylon (127 m cantilever): f1 0.22119 Hz, closed form 0.22119 Hz (+2.7e-08)
+
+CHECK 2: the bridge, mesh convergence of its first frequencies
+  elements of 4 m: 0.3926, 0.5706, 0.9549, 1.1281, 1.2926, 1.3350 Hz
+  elements of 2 m: 0.3922, 0.5701, 0.9548, 1.1279, 1.2947, 1.3331 Hz
+  elements of 1 m: 0.3923, 0.5701, 0.9548, 1.1279, 1.2947, 1.3331 Hz
+  the 2 m mesh is drawn. Mode 1, the first vertical bending of the deck, symmetric:
+  f1 = 0.3922 Hz; deck vertical share of its motion 0.999; symmetry of the main span +1.0000
+  (then f2 = 0.5701 Hz, antisymmetric)
+
+DETAIL A MODEL
+  the box girder's bottom flange, steel plate 12 mm: c_L = 5920.9 m/s, c_T = 3220.1 m/s, c_R = 2981.3 m/s
+  a 3 cycle Hann burst at 200 kHz from a transducer on the plate launches A0 both ways;
+  its displacement is the Fourier synthesis over 89 frequencies of the exact A0 branch
+  of the Rayleigh-Lamb equation. A crack 0.046 m on reflects R = 0.5 (assumed; no mode conversion), passes T = sqrt(1 - R^2) = 0.866.
+
+CHECK 3: the A0 branch against its limits
+  0.5 kHz: c_A0 = 242.005 m/s, Kirchhoff plate 242.519 m/s (-2.1e-03)
+  1.0 kHz: c_A0 = 341.525 m/s, Kirchhoff plate 342.974 m/s (-4.2e-03)
+  2.0 kHz: c_A0 = 480.963 m/s, Kirchhoff plate 485.038 m/s (-8.4e-03)
+  0.5 MHz (f d = 6 MHz mm): c_A0 = 2967.773 m/s, Rayleigh speed 2981.277 m/s (-4.5e-03)
+  1.0 MHz (f d = 12 MHz mm): c_A0 = 2981.151 m/s, Rayleigh speed 2981.277 m/s (-4.2e-05)
+  at 200 kHz: c_p = 2794.0 m/s, c_g = 3191.3 m/s, wavelength 13.97 mm
+  the 89 components rebuild the burst at the source to 2.5e-03 of its peak (the spectrum outside 20 to 460 kHz is below 2.3e-02)
+  the loop: 80 us; what is left in the view when the next burst leaves: 5.7e-04 of the peak
+
+DRAWING
+  bridge 1.2 units per metre; the mode's largest deck deflection drawn 9 units; real time (0.392 Hz).
+  detail A: 2.5 units per mm; the plate's u_z drawn 6 units at most and through the diverging palette;
+  time slowed 4e+04 x (one burst every 3.2 s on screen).

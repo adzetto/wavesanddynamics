@@ -1,0 +1,8 @@
+# his words inside his two-panel picture (build/r10-deck/his/s036-pic1.png)
+R: capacity, mean 100, SD 10
+S: demand, mean 70, SD 8
+Density
+Force (kN)
+Independent case: failure area ≈ 0.96%
+Density
+Margin G = R − S (kN)

@@ -26,13 +26,31 @@ shapes the typings leave looking wrong: the CAPTION child of an IMAGE (the
 typings declare no CAPTION type and give `ImageNode.nodes?: never[]`), the
 empty `tableCellData: {}`, and `imageData.caption` beside `altText`.
 
+Three shapes were added after the validator was last reachable and are the
+ones a later session with a key should check first. They were read off the
+copies kept under `reference/ricos-schema/` - the ricos-schema 10.102.0
+typings and JSON Type Definition, and the text of Wix's REST reference for
+Ricos documents - not from memory. `COLOR` (`colorData.foreground` /
+`background`, hex) and `DIVIDER` (`dividerData.lineStyle` / `width` /
+`alignment`, the schema's enum names) are in both sources; `STRIKETHROUGH`
+(`strikethroughData: true`, the idiom of the accepted ITALIC and UNDERLINE)
+is in the REST reference only, and the npm schema of the same date does not
+declare it. `TEXT_COLOR`, `TEXT_HIGHLIGHT` and `DIVIDER` are in the plugin
+list the handover records for the validator, so the plugins that render them
+are already expected. Each shape is pinned whole in the tests, so that what
+to check is written down rather than remembered. The REST reference also
+documents `SUPERSCRIPT` and `SUBSCRIPT`; those are deliberately not used,
+see `_text_nodes`.
+
 Bytes are the standing constraint. A CMS item holds 500,000 bytes across all of
 its fields and the rich content counts against that, so nothing optional is
 emitted and node ids stay as short as uniqueness allows.
 """
+
 from dataclasses import replace
 
-from tools.ricos.blocks import Callout, Figure, Para, Run, Table
+from tools.ricos.blocks import Callout, Figure, Para, Rule, Run, Table
+from tools.ricos.glyphs import script
 
 # A list kind, as the reader names it, to its Ricos node type.
 LIST_NODE = {"bullet": "BULLETED_LIST", "ordered": "ORDERED_LIST"}
@@ -52,7 +70,59 @@ class Ids:
         return f"n{self.n}"
 
 
-def _decorations(run):
+# The least contrast a colour may have against the page's white, 3:1, which is
+# what WCAG allows large text. Cell shading is not carried, so a colour the
+# author set against a dark fill - white on maroon in every table header of
+# the corpus, 26 runs - would be published as text nobody can see.
+MIN_CONTRAST = 3.0
+
+
+def _luminance(color):
+    """Relative luminance of "#rrggbb", per WCAG."""
+
+    def channel(hex2):
+        c = int(hex2, 16) / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (channel(color[i : i + 2]) for i in (1, 3, 5))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def color_on_page(run, heading=False):
+    """The foreground colour this run reaches the page with, or "".
+
+    Three rules stand between the colour the reader read and the page, and
+    the CLI counts through this function so that the manifest reports what
+    the page shows rather than what the document said.
+
+    A heading takes none: Word's default heading blue arrives on every
+    Heading1 in the corpus through its style, and what a heading looks like
+    is the theme's decision. A link takes none: every hyperlink is blue
+    through Word's `Hyperlink` style, and a link on the page is styled by
+    the site. And a colour too light to read on white is dropped unless the
+    run carries a background of its own to read it against.
+    """
+    if heading or run.link or not run.color:
+        return ""
+    if not run.highlight and 1.05 / (_luminance(run.color) + 0.05) < MIN_CONTRAST:
+        return ""
+    return run.color
+
+
+def _decorations(run, heading=False):
+    """The run's marks as Ricos decorations.
+
+    Colour is withheld from a link for the reason in `color_on_page`; an
+    underline is not, because the reader has already set aside the one Word
+    gives every link and what is left is the author's own. A highlight is
+    withheld from a heading for the same reason its colour is.
+
+    Strikethrough is the one decoration here the validator has never seen
+    (see the module docstring). It is emitted because its failure is benign:
+    refused or ignored, the text is published plain, which is what the page
+    showed before, and the manifest counts every run it happens to. Vertical
+    alignment is not a decoration here on purpose, see `_text_nodes`.
+    """
     decs = []
     if run.bold:
         decs.append({"type": "BOLD", "fontWeightValue": 700})
@@ -60,22 +130,46 @@ def _decorations(run):
         decs.append({"type": "ITALIC", "italicData": True})
     if run.underline:
         decs.append({"type": "UNDERLINE", "underlineData": True})
+    if run.strike:
+        decs.append({"type": "STRIKETHROUGH", "strikethroughData": True})
     if run.link:
         decs.append({"type": "LINK", "linkData": {"link": {"url": run.link}}})
+    color = color_on_page(run, heading)
+    background = "" if heading else run.highlight
+    if color or background:
+        data = {}
+        if color:
+            data["foreground"] = color
+        if background:
+            data["background"] = background
+        decs.append({"type": "COLOR", "colorData": data})
     return decs
 
 
-def _text_nodes(runs):
+def _text_nodes(runs, heading=False):
     """TEXT nodes carry an empty id; that is what the live document does.
 
     A run with no text is dropped rather than emitted empty: the schema says a
     TEXT node must hold a non-empty string, so an empty paragraph is a node
     with no children at all.
+
+    A super- or subscript run has no decoration to become and becomes text:
+    the glyph where Unicode has one - 10⁶ is not 106, and the meaning is
+    the whole point - and Word's own linear notation, `^`/`_`, where it has
+    not. See `glyphs.script`.
     """
     return [
-        {"type": "TEXT", "id": "", "nodes": [],
-         "textData": {"text": r.text, "decorations": _decorations(r)}}
-        for r in runs if r.text
+        {
+            "type": "TEXT",
+            "id": "",
+            "nodes": [],
+            "textData": {
+                "text": script(r.text, r.vertical),
+                "decorations": _decorations(r, heading),
+            },
+        }
+        for r in runs
+        if r.text
     ]
 
 
@@ -94,14 +188,24 @@ def _para(block, ids):
     """
     level = block.heading
     if level:
-        return {"type": "HEADING", "id": ids.next(),
-                "nodes": _text_nodes(block.runs),
-                "headingData": {"level": level,
-                                "textStyle": {"textAlignment": block.align}}}
-    return {"type": "PARAGRAPH", "id": ids.next(),
-            "nodes": _text_nodes(block.runs),
-            "paragraphData": {"textStyle": {"textAlignment": block.align},
-                              "indentation": 0}}
+        return {
+            "type": "HEADING",
+            "id": ids.next(),
+            "nodes": _text_nodes(block.runs, heading=True),
+            "headingData": {
+                "level": level,
+                "textStyle": {"textAlignment": block.align},
+            },
+        }
+    return {
+        "type": "PARAGRAPH",
+        "id": ids.next(),
+        "nodes": _text_nodes(block.runs),
+        "paragraphData": {
+            "textStyle": {"textAlignment": block.align},
+            "indentation": 0,
+        },
+    }
 
 
 def _has_text(block):
@@ -150,6 +254,32 @@ def _drop_from_body(block):
     return not _has_text(block)
 
 
+# A picture Word draws at less than this share of its text column was set
+# narrow on purpose - thirteen of the corpus's figures sit at 29 to 74% of the
+# column - and keeps its own width. At or above it, it fills the column, as the
+# 47 figures Word draws at 80 to 100% of it do on the page.
+NARROW = 0.8
+
+
+def _width(block):
+    """The IMAGE container's width: the author's own, in pixels, for a picture
+    he set narrow; the content width otherwise.
+
+    `PluginContainerData_Width.custom` is "a custom width value in pixels", a
+    string, in all three references (ricos_document.d.ts l.181, ricos.jtd.json,
+    the REST reference). The JSON Type Definition makes `size` and `custom`
+    one-of, so a custom width is written alone. The validator has not seen it
+    yet: it is the first shape to check once one is reachable.
+    """
+    if (
+        block.display_width
+        and block.column
+        and block.display_width < NARROW * block.column
+    ):
+        return {"custom": str(block.display_width)}
+    return {"size": "CONTENT"}
+
+
 def _image(block, ids, media_ids):
     """One IMAGE node, with its caption as a child.
 
@@ -160,24 +290,58 @@ def _image(block, ids, media_ids):
     """
     file_id = media_ids.get(block.filename, block.filename)
     node = {
-        "type": "IMAGE", "id": ids.next(), "nodes": [],
+        "type": "IMAGE",
+        "id": ids.next(),
+        "nodes": [],
         "imageData": {
-            "containerData": {"width": {"size": "CONTENT"},
-                              "alignment": "CENTER", "textWrap": True},
-            "image": {"src": {"id": file_id},
-                      "width": block.width, "height": block.height},
+            "containerData": {
+                "width": _width(block),
+                "alignment": "CENTER",
+                "textWrap": True,
+            },
+            "image": {
+                "src": {"id": file_id},
+                "width": block.width,
+                "height": block.height,
+            },
         },
     }
     if block.caption:
         # Both forms on purpose: imageData.caption is deprecated but the
         # official examples still emit it alongside the CAPTION child.
-        node["nodes"] = [{"type": "CAPTION", "id": ids.next(), "captionData": {},
-                          "nodes": [{"type": "TEXT", "id": "", "nodes": [],
-                                     "textData": {"text": block.caption,
-                                                  "decorations": []}}]}]
+        node["nodes"] = [
+            {
+                "type": "CAPTION",
+                "id": ids.next(),
+                "captionData": {},
+                "nodes": [
+                    {
+                        "type": "TEXT",
+                        "id": "",
+                        "nodes": [],
+                        "textData": {"text": block.caption, "decorations": []},
+                    }
+                ],
+            }
+        ]
         node["imageData"]["altText"] = block.caption
         node["imageData"]["caption"] = block.caption
     return node
+
+
+def _divider(ids):
+    """One DIVIDER, the rule Word draws as a paragraph border.
+
+    All three fields are optional in the schema and are written anyway,
+    with the values a plain rule takes, so that what the page draws is what
+    this says and not whatever the viewer's default happens to be.
+    """
+    return {
+        "type": "DIVIDER",
+        "id": ids.next(),
+        "nodes": [],
+        "dividerData": {"lineStyle": "SINGLE", "width": "LARGE", "alignment": "CENTER"},
+    }
 
 
 def _cell(blocks, ids, media_ids):
@@ -190,20 +354,46 @@ def _cell(blocks, ids, media_ids):
     """
     nodes = _nodes(blocks, ids, media_ids)
     if not nodes:
-        nodes = [{"type": "PARAGRAPH", "id": ids.next(), "nodes": [],
-                  "paragraphData": {"textStyle": {"textAlignment": "AUTO"},
-                                    "indentation": 0}}]
-    return {"type": "TABLE_CELL", "id": ids.next(), "nodes": nodes,
-            "tableCellData": {}}
+        nodes = [
+            {
+                "type": "PARAGRAPH",
+                "id": ids.next(),
+                "nodes": [],
+                "paragraphData": {
+                    "textStyle": {"textAlignment": "AUTO"},
+                    "indentation": 0,
+                },
+            }
+        ]
+    return {"type": "TABLE_CELL", "id": ids.next(), "nodes": nodes, "tableCellData": {}}
 
 
 def _table(block, ids, media_ids):
-    """TABLE -> TABLE_ROW -> TABLE_CELL -> blocks, strictly in that order."""
-    rows = [{"type": "TABLE_ROW", "id": ids.next(),
-             "nodes": [_cell(cell, ids, media_ids) for cell in row]}
-            for row in block.rows]
-    return {"type": "TABLE", "id": ids.next(), "nodes": rows,
-            "tableData": {"rowHeader": block.header_row}}
+    """TABLE -> TABLE_ROW -> TABLE_CELL -> blocks, strictly in that order.
+
+    Word's column widths travel as `tableData.dimensions.colsWidthRatio`,
+    float64 elements, "each column width as a fraction to the width of table"
+    (the REST reference; ricos_document.d.ts and ricos.jtd.json declare the
+    same). Four decimals: the ratios are for layout, and bytes are the
+    constraint. Like the custom image width, the validator has not seen it.
+    """
+    rows = [
+        {
+            "type": "TABLE_ROW",
+            "id": ids.next(),
+            "nodes": [_cell(cell, ids, media_ids) for cell in row],
+        }
+        for row in block.rows
+    ]
+    data = {"rowHeader": block.header_row}
+    if block.widths:
+        data["dimensions"] = {"colsWidthRatio": [round(w, 4) for w in block.widths]}
+    return {
+        "type": "TABLE",
+        "id": ids.next(),
+        "nodes": rows,
+        "tableData": data,
+    }
 
 
 def _joined(paras):
@@ -270,15 +460,24 @@ def _callout(block, ids, media_ids):
     said = [b for b in block.blocks if isinstance(b, Para) and _has_text(b)]
     out = []
     if said:
-        quote = {"type": "BLOCKQUOTE", "id": ids.next(), "nodes": [],
-                 "blockquoteData": {"indentation": 0}}
+        quote = {
+            "type": "BLOCKQUOTE",
+            "id": ids.next(),
+            "nodes": [],
+            "blockquoteData": {"indentation": 0},
+        }
         # Filled after the dict is made so the quote takes its id before its
         # child takes its own, the way every other container here does.
-        quote["nodes"] = [_para(replace(said[0], runs=_joined(said),
-                                        style="", heading=0), ids)]
+        quote["nodes"] = [
+            _para(replace(said[0], runs=_joined(said), style="", heading=0), ids)
+        ]
         out.append(quote)
-    out.extend(n for b in block.blocks if not isinstance(b, Para)
-               for n in _node(b, ids, media_ids))
+    out.extend(
+        n
+        for b in block.blocks
+        if not isinstance(b, Para)
+        for n in _node(b, ids, media_ids)
+    )
     return out
 
 
@@ -308,6 +507,8 @@ def _node(block, ids, media_ids):
         return [_table(block, ids, media_ids)]
     if isinstance(block, Callout):
         return _callout(block, ids, media_ids)
+    if isinstance(block, Rule):
+        return [_divider(ids)]
     return []
 
 
@@ -334,9 +535,14 @@ def _list(kind, items, ids):
     and then rendered however the viewer felt; leaving the object out asks for
     the default instead, and saves ~35 bytes a list.
     """
-    return {"type": LIST_NODE[kind], "id": ids.next(),
-            "nodes": [{"type": "LIST_ITEM", "id": ids.next(),
-                       "nodes": [_para(item, ids)]} for item in items]}
+    return {
+        "type": LIST_NODE[kind],
+        "id": ids.next(),
+        "nodes": [
+            {"type": "LIST_ITEM", "id": ids.next(), "nodes": [_para(item, ids)]}
+            for item in items
+        ],
+    }
 
 
 def _nodes(blocks, ids, media_ids):
@@ -412,8 +618,13 @@ def emit(blocks, media_ids=None):
     list the page shows instead of two lists restarting.
     """
     ids = Ids()
-    kept = [block for block in blocks
-            if not (isinstance(block, Para) and _drop_from_body(block))]
-    return {"nodes": _nodes(kept, ids, media_ids or {}),
-            "metadata": {"version": 1},
-            "documentStyle": {}}
+    kept = [
+        block
+        for block in blocks
+        if not (isinstance(block, Para) and _drop_from_body(block))
+    ]
+    return {
+        "nodes": _nodes(kept, ids, media_ids or {}),
+        "metadata": {"version": 1},
+        "documentStyle": {},
+    }

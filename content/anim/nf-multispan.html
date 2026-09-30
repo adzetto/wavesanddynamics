@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 7: Vibrational modes of multi span beams</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Two columns of computed vibration modes of a two span beam on three pin supports whose spans are joined over the middle pin by a rotational spring, each mode oscillating at a rate proportional to its frequency: (a) spans of similar length, (b) spans of more different length. Each mode is labelled with its frequency, and the span with the larger amplitude is marked as the dominating span."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 614;
+const DATA = {"slow":6,"cases":{"a":{"L":[58.6,62.5],"k":350000000.0,"rows":[{"f":1.29372,"w1":[-0.0,-0.00387,-0.00775,-0.01161,-0.01547,-0.01932,-0.02316,-0.02698,-0.03079,-0.03457,-0.03834,-0.04207,-0.04579,-0.04947,-0.05312,-0.05674,-0.06032,-0.06387,-0.06737,-0.07083,-0.07425,-0.07762,-0.08093,-0.0842,-0.08741,-0.09057,-0.09367,-0.09671,-0.09969,-0.10261,-0.10546,-0.10824,-0.11095,-0.11359,-0.11616,-0.11866,-0.12107,-0.12341,-0.12568,-0.12786,-0.12996,-0.13197,-0.1339,-0.13574,-0.1375,-0.13917,-0.14075,-0.14223,-0.14363,-0.14493,-0.14613,-0.14725,-0.14826,-0.14918,-0.15001,-0.15073,-0.15136,-0.15188,-0.15231,-0.15264,-0.15286,-0.15299,-0.15301,-0.15294,-0.15276,-0.15248,-0.1521,-0.15161,-0.15103,-0.15034,-0.14956,-0.14867,-0.14768,-0.14659,-0.1454,-0.14411,-0.14272,-0.14124,-0.13965,-0.13797,-0.1362,-0.13432,-0.13235,-0.13029,-0.12814,-0.12589,-0.12355,-0.12113,-0.11861,-0.11601,-0.11332,-0.11054,-0.10768,-0.10474,-0.10172,-0.09862,-0.09544,-0.09218,-0.08885,-0.08544,-0.08196,-0.07842,-0.0748,-0.07112,-0.06737,-0.06356,-0.05968,-0.05575,-0.05176,-0.04771,-0.0436,-0.03945,-0.03524,-0.03099,-0.02669,-0.02234,-0.01795,-0.01352,-0.00905,-0.00454,1.26988e-16],"w2":[-0.0,0.02556,0.05113,0.07671,0.10227,0.12779,0.15326,0.17865,0.20394,0.22913,0.25418,0.27909,0.30383,0.32839,0.35274,0.37687,0.40077,0.42441,0.44778,0.47086,0.49364,0.51609,0.53821,0.55997,0.58136,0.60236,0.62297,0.64315,0.66291,0.68223,0.70108,0.71947,0.73737,0.75477,0.77166,0.78803,0.80386,0.81915,0.83388,0.84804,0.86162,0.87462,0.88702,0.89881,0.90999,0.92055,0.93047,0.93976,0.9484,0.95639,0.96373,0.9704,0.9764,0.98174,0.9864,0.99038,0.99367,0.99629,0.99821,0.99945,1.0,0.99986,0.99903,0.99751,0.9953,0.9924,0.98882,0.98456,0.97961,0.97399,0.96769,0.96072,0.95309,0.94481,0.93586,0.92627,0.91604,0.90517,0.89368,0.88157,0.86885,0.85552,0.84161,0.82711,0.81203,0.7964,0.78021,0.76348,0.74623,0.72845,0.71017,0.6914,0.67215,0.65243,0.63226,0.61165,0.59062,0.56918,0.54734,0.52512,0.50254,0.47961,0.45635,0.43277,0.40889,0.38473,0.3603,0.33562,0.31071,0.28558,0.26025,0.23474,0.20907,0.18326,0.15731,0.13126,0.10512,0.0789,0.05263,0.02633,-0.0],"dom":1,"label":"1.3 Hz","mag":5},{"f":1.47845,"w1":[-0.0,0.02637,0.05271,0.07903,0.10528,0.13146,0.15755,0.18354,0.20939,0.2351,0.26064,0.286,0.31117,0.33611,0.36083,0.38529,0.40948,0.43339,0.457,0.48029,0.50324,0.52584,0.54808,0.56994,0.5914,0.61244,0.63307,0.65325,0.67298,0.69223,0.71101,0.72929,0.74707,0.76433,0.78105,0.79723,0.81286,0.82792,0.84241,0.85631,0.86962,0.88232,0.89441,0.90588,0.91672,0.92693,0.93649,0.9454,0.95365,0.96125,0.96817,0.97443,0.98001,0.98491,0.98913,0.99266,0.99551,0.99767,0.99914,0.99991,1.0,0.99939,0.9981,0.99611,0.99344,0.99008,0.98604,0.98132,0.97593,0.96986,0.96312,0.95573,0.94767,0.93897,0.92962,0.91963,0.90902,0.89778,0.88593,0.87347,0.86042,0.84678,0.83257,0.81779,0.80245,0.78657,0.77016,0.75323,0.73579,0.71785,0.69944,0.68055,0.66121,0.64143,0.62123,0.60061,0.5796,0.55821,0.53645,0.51434,0.4919,0.46914,0.44608,0.42275,0.39914,0.37529,0.3512,0.32691,0.30241,0.27774,0.25292,0.22795,0.20286,0.17767,0.15239,0.12704,0.10165,0.07623,0.05081,0.02539,-0.0],"w2":[-0.0,0.00291,0.00587,0.00888,0.01193,0.01502,0.01815,0.0213,0.02449,0.0277,0.03093,0.03417,0.03743,0.0407,0.04397,0.04724,0.05052,0.05378,0.05704,0.06029,0.06352,0.06672,0.06991,0.07307,0.0762,0.0793,0.08236,0.08538,0.08836,0.09129,0.09417,0.09701,0.09978,0.1025,0.10516,0.10776,0.11029,0.11275,0.11514,0.11746,0.11971,0.12187,0.12396,0.12596,0.12788,0.12971,0.13145,0.13311,0.13467,0.13614,0.13751,0.13879,0.13996,0.14104,0.14202,0.1429,0.14368,0.14435,0.14492,0.14538,0.14573,0.14598,0.14613,0.14616,0.14609,0.14591,0.14562,0.14523,0.14472,0.14411,0.14339,0.14257,0.14163,0.1406,0.13945,0.1382,0.13685,0.13539,0.13383,0.13217,0.13041,0.12856,0.1266,0.12455,0.1224,0.12016,0.11783,0.11541,0.1129,0.1103,0.10762,0.10486,0.10202,0.0991,0.0961,0.09303,0.08989,0.08668,0.08341,0.08007,0.07666,0.0732,0.06969,0.06612,0.06249,0.05883,0.05511,0.05135,0.04756,0.04372,0.03986,0.03596,0.03203,0.02808,0.02411,0.02012,0.01612,0.0121,0.00807,0.00404,-0.0],"dom":0,"label":"1.45 Hz","mag":5},{"f":5.1126,"w1":[0.0,0.00215,0.00429,0.00642,0.00854,0.01064,0.01271,0.01475,0.01676,0.01872,0.02064,0.02251,0.02433,0.02608,0.02778,0.0294,0.03096,0.03244,0.03384,0.03517,0.0364,0.03755,0.03861,0.03958,0.04045,0.04122,0.04189,0.04247,0.04294,0.04331,0.04357,0.04373,0.04379,0.04373,0.04358,0.04332,0.04296,0.04249,0.04192,0.04125,0.04048,0.03962,0.03866,0.03761,0.03647,0.03525,0.03394,0.03255,0.03108,0.02954,0.02794,0.02626,0.02453,0.02274,0.02089,0.019,0.01707,0.0151,0.01309,0.01106,0.009,0.00693,0.00484,0.00275,0.000651991,-0.00144,-0.00352,-0.00559,-0.00764,-0.00967,-0.01167,-0.01363,-0.01555,-0.01742,-0.01925,-0.02102,-0.02273,-0.02438,-0.02596,-0.02747,-0.0289,-0.03025,-0.03151,-0.03269,-0.03378,-0.03477,-0.03566,-0.03645,-0.03713,-0.03772,-0.03819,-0.03855,-0.0388,-0.03894,-0.03896,-0.03887,-0.03866,-0.03833,-0.03788,-0.03732,-0.03664,-0.03584,-0.03492,-0.03389,-0.03274,-0.03147,-0.03009,-0.0286,-0.027,-0.0253,-0.02348,-0.02156,-0.01954,-0.01742,-0.0152,-0.01289,-0.01048,-0.00799,-0.00541,-0.00274,0.0],"w2":[0.0,0.05149,0.10293,0.15416,0.20505,0.25544,0.30519,0.35417,0.40223,0.44925,0.49508,0.5396,0.58268,0.6242,0.66405,0.70211,0.73828,0.77245,0.80453,0.83443,0.86206,0.88735,0.91022,0.93062,0.94847,0.96374,0.97638,0.98635,0.99362,0.99817,1.0,0.99909,0.99544,0.98907,0.97999,0.96822,0.9538,0.93677,0.91716,0.89505,0.87047,0.84352,0.81424,0.78274,0.74908,0.71338,0.67571,0.63619,0.59493,0.55203,0.50762,0.46182,0.41475,0.36654,0.31733,0.26726,0.21645,0.16504,0.11319,0.06103,0.00871,-0.04364,-0.09586,-0.14781,-0.19935,-0.25034,-0.30064,-0.3501,-0.3986,-0.446,-0.49217,-0.53698,-0.58031,-0.62203,-0.66205,-0.70023,-0.73649,-0.77071,-0.80281,-0.8327,-0.86029,-0.88551,-0.90829,-0.92856,-0.94628,-0.96139,-0.97384,-0.98362,-0.99068,-0.99502,-0.99661,-0.99545,-0.99155,-0.98492,-0.97558,-0.96355,-0.94886,-0.93156,-0.91169,-0.8893,-0.86447,-0.83726,-0.80774,-0.77599,-0.7421,-0.70617,-0.6683,-0.62858,-0.58713,-0.54407,-0.4995,-0.45356,-0.40637,-0.35806,-0.30876,-0.25861,-0.20775,-0.15631,-0.10445,-0.0523,1.60418e-14],"dom":1,"label":"5.2 Hz","mag":10},{"f":5.81617,"w1":[-0.0,-0.0523,-0.10445,-0.15631,-0.20774,-0.25861,-0.30875,-0.35805,-0.40636,-0.45355,-0.49949,-0.54406,-0.58713,-0.62857,-0.66829,-0.70616,-0.74209,-0.77597,-0.80772,-0.83724,-0.86445,-0.88928,-0.91166,-0.93153,-0.94883,-0.96351,-0.97554,-0.98489,-0.99151,-0.99541,-0.99656,-0.99497,-0.99063,-0.98356,-0.97379,-0.96132,-0.94621,-0.92849,-0.90822,-0.88543,-0.86021,-0.83262,-0.80273,-0.77062,-0.7364,-0.70014,-0.66195,-0.62194,-0.58021,-0.53688,-0.49206,-0.44589,-0.39849,-0.34999,-0.30052,-0.25023,-0.19923,-0.14769,-0.09574,-0.04352,0.00883,0.06115,0.11331,0.16516,0.21656,0.26737,0.31745,0.36666,0.41486,0.46193,0.50772,0.55213,0.59502,0.63629,0.6758,0.71346,0.74916,0.78281,0.81431,0.84358,0.87054,0.8951,0.91721,0.93681,0.95384,0.96825,0.98001,0.98909,0.99545,0.99909,1.0,0.99817,0.99361,0.98633,0.97635,0.96371,0.94844,0.93058,0.91018,0.8873,0.86201,0.83437,0.80447,0.77239,0.73821,0.70204,0.66398,0.62413,0.58261,0.53953,0.49501,0.44918,0.40217,0.35411,0.30514,0.25539,0.20501,0.15413,0.10291,0.05148,-1.70931e-14],"w2":[-0.0,0.0011,0.00228,0.00356,0.0049,0.00632,0.00779,0.00931,0.01087,0.01246,0.01407,0.0157,0.01733,0.01896,0.02058,0.02218,0.02376,0.0253,0.02681,0.02827,0.02967,0.03101,0.03229,0.0335,0.03463,0.03568,0.03664,0.03751,0.03829,0.03896,0.03954,0.04001,0.04037,0.04062,0.04076,0.04079,0.04071,0.04051,0.0402,0.03977,0.03923,0.03858,0.03782,0.03695,0.03597,0.03489,0.03371,0.03242,0.03105,0.02958,0.02803,0.0264,0.02469,0.02291,0.02106,0.01915,0.01718,0.01517,0.01311,0.01102,0.00889,0.00674,0.00458,0.0024,0.000212972,-0.00197,-0.00414,-0.0063,-0.00843,-0.01054,-0.01261,-0.01464,-0.01662,-0.01855,-0.02042,-0.02222,-0.02395,-0.0256,-0.02718,-0.02866,-0.03006,-0.03136,-0.03256,-0.03366,-0.03465,-0.03553,-0.0363,-0.03695,-0.03749,-0.03791,-0.03821,-0.03839,-0.03845,-0.03839,-0.03821,-0.03791,-0.03748,-0.03694,-0.03629,-0.03552,-0.03464,-0.03365,-0.03255,-0.03135,-0.03005,-0.02866,-0.02718,-0.02561,-0.02396,-0.02224,-0.02045,-0.01859,-0.01667,-0.01471,-0.01269,-0.01064,-0.00855,-0.00644,-0.0043,-0.00215,-0.0],"dom":0,"label":"5.92 Hz","mag":10}]},"b":{"L":[64.3,29.4],"k":790000000.0,"rows":[{"f":1.25412,"w1":[-0.0,0.02655,0.05309,0.07959,0.10603,0.13239,0.15866,0.18482,0.21085,0.23673,0.26245,0.28797,0.3133,0.3384,0.36326,0.38787,0.4122,0.43624,0.45997,0.48337,0.50644,0.52914,0.55148,0.57342,0.59496,0.61607,0.63676,0.65699,0.67676,0.69605,0.71485,0.73314,0.75092,0.76817,0.78487,0.80103,0.81662,0.83163,0.84606,0.85989,0.87311,0.88572,0.89771,0.90907,0.91978,0.92985,0.93927,0.94803,0.95612,0.96354,0.97028,0.97635,0.98173,0.98642,0.99042,0.99373,0.99634,0.99826,0.99948,1.0,0.99983,0.99895,0.99739,0.99513,0.99217,0.98853,0.9842,0.9792,0.97351,0.96715,0.96012,0.95243,0.94408,0.93509,0.92545,0.91518,0.90428,0.89276,0.88064,0.86792,0.8546,0.84071,0.82625,0.81123,0.79567,0.77958,0.76296,0.74584,0.72822,0.71013,0.69157,0.67255,0.6531,0.63322,0.61294,0.59227,0.57123,0.54982,0.52808,0.50601,0.48363,0.46096,0.43802,0.41483,0.3914,0.36775,0.34391,0.31988,0.2957,0.27137,0.24692,0.22236,0.19773,0.17302,0.14828,0.12351,0.09874,0.07398,0.04926,0.02459,9.60592e-16],"w2":[-0.0,-0.000819489,-0.00162,-0.0024,-0.00316,-0.0039,-0.00462,-0.00532,-0.00601,-0.00667,-0.00731,-0.00794,-0.00855,-0.00914,-0.00971,-0.01026,-0.0108,-0.01132,-0.01182,-0.0123,-0.01277,-0.01322,-0.01365,-0.01406,-0.01446,-0.01484,-0.01521,-0.01556,-0.01589,-0.01621,-0.01651,-0.0168,-0.01707,-0.01732,-0.01756,-0.01779,-0.018,-0.01819,-0.01838,-0.01854,-0.0187,-0.01884,-0.01896,-0.01907,-0.01917,-0.01926,-0.01933,-0.01939,-0.01943,-0.01946,-0.01949,-0.01949,-0.01949,-0.01947,-0.01945,-0.01941,-0.01936,-0.01929,-0.01922,-0.01913,-0.01904,-0.01893,-0.01882,-0.01869,-0.01855,-0.0184,-0.01825,-0.01808,-0.0179,-0.01772,-0.01752,-0.01732,-0.01711,-0.01688,-0.01666,-0.01642,-0.01617,-0.01592,-0.01565,-0.01539,-0.01511,-0.01482,-0.01453,-0.01423,-0.01393,-0.01362,-0.0133,-0.01298,-0.01265,-0.01231,-0.01197,-0.01162,-0.01127,-0.01091,-0.01055,-0.01018,-0.00981,-0.00944,-0.00906,-0.00867,-0.00828,-0.00789,-0.0075,-0.0071,-0.0067,-0.00629,-0.00589,-0.00548,-0.00506,-0.00465,-0.00423,-0.00382,-0.0034,-0.00297,-0.00255,-0.00213,-0.0017,-0.00128,-0.000852658,-0.000426421,-7.50463e-18],"dom":0,"label":"1.23 Hz","mag":30},{"f":4.85561,"w1":[0.0,-0.05227,-0.10439,-0.15622,-0.20762,-0.25844,-0.30855,-0.3578,-0.40606,-0.4532,-0.49908,-0.54358,-0.58658,-0.62794,-0.66757,-0.70535,-0.74118,-0.77495,-0.80658,-0.83597,-0.86304,-0.88773,-0.90995,-0.92966,-0.94679,-0.96129,-0.97314,-0.98228,-0.98871,-0.99239,-0.99333,-0.99151,-0.98695,-0.97965,-0.96963,-0.95693,-0.94158,-0.92362,-0.90309,-0.88007,-0.8546,-0.82676,-0.79664,-0.7643,-0.72984,-0.69336,-0.65496,-0.61473,-0.57281,-0.52929,-0.4843,-0.43796,-0.39041,-0.34177,-0.29218,-0.24178,-0.1907,-0.13908,-0.08708,-0.03482,0.01753,0.06985,0.12198,0.17378,0.22511,0.27583,0.32579,0.37486,0.4229,0.46979,0.51538,0.55956,0.6022,0.64319,0.68242,0.71977,0.75514,0.78844,0.81958,0.84846,0.87502,0.89917,0.92086,0.94002,0.95661,0.97057,0.98187,0.99048,0.99638,0.99956,1.0,0.99771,0.99269,0.98497,0.97456,0.9615,0.94583,0.92758,0.90682,0.88361,0.85801,0.83009,0.79994,0.76765,0.7333,0.697,0.65885,0.61896,0.57744,0.53443,0.49003,0.44438,0.39762,0.34986,0.30127,0.25197,0.20211,0.15184,0.10129,0.05063,0.0],"w2":[0.0,-0.00376,-0.00748,-0.01117,-0.01481,-0.01841,-0.02196,-0.02547,-0.02894,-0.03235,-0.03572,-0.03904,-0.0423,-0.04552,-0.04868,-0.05178,-0.05483,-0.05782,-0.06076,-0.06363,-0.06644,-0.0692,-0.07189,-0.07451,-0.07707,-0.07957,-0.082,-0.08436,-0.08666,-0.08888,-0.09104,-0.09312,-0.09514,-0.09708,-0.09894,-0.10074,-0.10246,-0.1041,-0.10567,-0.10717,-0.10858,-0.10993,-0.11119,-0.11237,-0.11348,-0.11451,-0.11546,-0.11633,-0.11712,-0.11784,-0.11847,-0.11902,-0.1195,-0.11989,-0.12021,-0.12044,-0.1206,-0.12068,-0.12068,-0.1206,-0.12044,-0.1202,-0.11989,-0.1195,-0.11903,-0.11848,-0.11786,-0.11717,-0.11639,-0.11555,-0.11463,-0.11364,-0.11258,-0.11144,-0.11024,-0.10896,-0.10762,-0.10621,-0.10473,-0.10319,-0.10158,-0.09991,-0.09818,-0.09638,-0.09453,-0.09261,-0.09064,-0.08862,-0.08653,-0.0844,-0.08221,-0.07997,-0.07768,-0.07535,-0.07296,-0.07053,-0.06806,-0.06555,-0.06299,-0.0604,-0.05777,-0.05511,-0.05241,-0.04968,-0.04691,-0.04412,-0.0413,-0.03846,-0.03559,-0.0327,-0.0298,-0.02687,-0.02392,-0.02097,-0.01799,-0.01501,-0.01202,-0.00902,-0.00602,-0.00301,0.0],"dom":0,"label":"4.95 Hz","mag":5},{"f":5.87772,"w1":[0.0,-0.00331,-0.00661,-0.00988,-0.01312,-0.01632,-0.01946,-0.02254,-0.02554,-0.02846,-0.03128,-0.03399,-0.03659,-0.03907,-0.04142,-0.04362,-0.04568,-0.04759,-0.04934,-0.05092,-0.05233,-0.05356,-0.05461,-0.05548,-0.05617,-0.05666,-0.05696,-0.05707,-0.05699,-0.05672,-0.05625,-0.0556,-0.05475,-0.05373,-0.05252,-0.05113,-0.04957,-0.04784,-0.04595,-0.04391,-0.04171,-0.03937,-0.0369,-0.0343,-0.03159,-0.02876,-0.02584,-0.02282,-0.01973,-0.01656,-0.01334,-0.01007,-0.00676,-0.00342,-6.71995e-05,0.00329,0.00665,0.00998,0.01329,0.01657,0.01979,0.02295,0.02605,0.02906,0.03199,0.03482,0.03754,0.04015,0.04263,0.04499,0.0472,0.04927,0.05119,0.05295,0.05455,0.05598,0.05724,0.05833,0.05924,0.05998,0.06053,0.06091,0.06111,0.06112,0.06097,0.06063,0.06013,0.05945,0.05862,0.05762,0.05647,0.05517,0.05373,0.05216,0.05046,0.04864,0.04672,0.0447,0.04259,0.04041,0.03816,0.03586,0.03352,0.03115,0.02876,0.02637,0.02399,0.02163,0.01932,0.01705,0.01486,0.01275,0.01074,0.00884,0.00707,0.00544,0.00397,0.00268,0.00157,0.000676255,2.12345e-15],"w2":[0.0,0.02536,0.05076,0.07616,0.10156,0.12693,0.15226,0.17752,0.20269,0.22777,0.25272,0.27754,0.3022,0.32668,0.35097,0.37504,0.39889,0.42249,0.44583,0.46888,0.49163,0.51407,0.53618,0.55794,0.57933,0.60035,0.62096,0.64117,0.66096,0.6803,0.69919,0.71761,0.73555,0.75299,0.76993,0.78635,0.80224,0.81758,0.83237,0.84659,0.86024,0.8733,0.88576,0.89762,0.90887,0.9195,0.92949,0.93885,0.94756,0.95563,0.96303,0.96978,0.97585,0.98126,0.98599,0.99004,0.99341,0.99609,0.99808,0.99939,1.0,0.99992,0.99915,0.99769,0.99554,0.9927,0.98918,0.98497,0.98007,0.9745,0.96825,0.96133,0.95374,0.94549,0.93658,0.92703,0.91683,0.90599,0.89452,0.88244,0.86974,0.85643,0.84253,0.82805,0.81299,0.79736,0.78118,0.76445,0.7472,0.72942,0.71114,0.69236,0.6731,0.65337,0.63319,0.61257,0.59151,0.57005,0.54819,0.52595,0.50335,0.48039,0.4571,0.43348,0.40957,0.38537,0.36091,0.33619,0.31124,0.28607,0.2607,0.23515,0.20944,0.18358,0.15759,0.13149,0.10531,0.07904,0.05273,0.02637,1.06173e-15],"dom":1,"label":"5.8 Hz","mag":10},{"f":23.11825,"w1":[-0.0,-0.00218,-0.00433,-0.00642,-0.00843,-0.01033,-0.01209,-0.0137,-0.01512,-0.01634,-0.01735,-0.01813,-0.01867,-0.01896,-0.01901,-0.0188,-0.01835,-0.01765,-0.01672,-0.01558,-0.01422,-0.01268,-0.01098,-0.00912,-0.00715,-0.00508,-0.00295,-0.000777004,0.00141,0.00357,0.00569,0.00773,0.00967,0.01148,0.01315,0.01463,0.01593,0.01702,0.01788,0.01851,0.01889,0.01902,0.01891,0.01854,0.01793,0.01708,0.01601,0.01473,0.01326,0.01161,0.0098,0.00787,0.00584,0.00372,0.00156,-0.000618722,-0.00279,-0.00493,-0.007,-0.00898,-0.01084,-0.01255,-0.0141,-0.01547,-0.01663,-0.01756,-0.01827,-0.01874,-0.01896,-0.01892,-0.01864,-0.01811,-0.01734,-0.01634,-0.01512,-0.0137,-0.01209,-0.01033,-0.00842,-0.0064,-0.00429,-0.00212,7.83105e-05,0.00229,0.00447,0.0066,0.00866,0.01061,0.01243,0.0141,0.0156,0.0169,0.018,0.01888,0.01954,0.01996,0.02014,0.02009,0.01981,0.01931,0.01859,0.01767,0.01658,0.01532,0.01393,0.01244,0.01086,0.00923,0.00759,0.00597,0.0044,0.00292,0.00157,0.000385381,-0.000591927,-0.00133,-0.00178,-0.00191,-0.00168,-0.00106,-5.44461e-13],"w2":[-0.0,0.0514,0.10275,0.15391,0.20473,0.25506,0.30476,0.3537,0.40173,0.44872,0.49453,0.53903,0.58211,0.62363,0.66348,0.70156,0.73774,0.77193,0.80403,0.83396,0.86162,0.88694,0.90985,0.93029,0.94818,0.9635,0.97618,0.9862,0.99352,0.99812,1.0,0.99914,0.99554,0.98922,0.98019,0.96848,0.95411,0.93712,0.91757,0.8955,0.87097,0.84406,0.81483,0.78336,0.74975,0.71407,0.67644,0.63696,0.59572,0.55285,0.50847,0.46269,0.41564,0.36745,0.31826,0.26819,0.21739,0.166,0.11415,0.062,0.00968,-0.04267,-0.09489,-0.14685,-0.1984,-0.2494,-0.29971,-0.34919,-0.3977,-0.44512,-0.4913,-0.53613,-0.57948,-0.62123,-0.66127,-0.69947,-0.73575,-0.77,-0.80213,-0.83204,-0.85966,-0.88491,-0.90771,-0.92801,-0.94576,-0.96089,-0.97337,-0.98318,-0.99026,-0.99462,-0.99624,-0.99511,-0.99123,-0.98463,-0.9753,-0.96329,-0.94862,-0.93134,-0.91149,-0.88912,-0.86431,-0.83711,-0.8076,-0.77587,-0.742,-0.70608,-0.66821,-0.62851,-0.58707,-0.54401,-0.49945,-0.45352,-0.40633,-0.35802,-0.30873,-0.25859,-0.20773,-0.1563,-0.10444,-0.05229,-0.0],"dom":1,"label":"22.90 Hz","mag":30}]}}};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => setPlay(!playing));
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+function start() {
+  if (STILL) document.querySelector('.ctl').style.display = 'none';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+const POSTER_T = 12.302;            // the moment every mode is nearest its extreme
+const SLOW = DATA.slow;
+const TS = 0.35, RAMP = 0.25;             // the physics starts at TS, full speed by TS + RAMP
+function clock() { const s = t - TS; return s <= 0 ? 0 : s < RAMP ? s * s / (2 * RAMP) : s - RAMP / 2; }
+const lab = t0 => settle(t0, .28);        // labels arrive
+const SC = 2.85;                           // px per metre, both panels
+const ROW0 = 118, DY = 124, A = 30;
+
+/* a rotational spring over the middle pin, as TikZ draws one: a spiral */
+function spiral(cx, cy, r, alpha) {
+  const pts = [];
+  for (let i = 0; i <= 90; i++) { const s = i / 90, a = -Math.PI / 2 + s * 3.2 * Math.PI; pts.push([cx + r * s * Math.cos(a), cy + r * s * Math.sin(a)]); }
+  line(pts, { color: C.ink, width: 1.2, alpha });
+}
+
+function column(key, cx0, letter, words, tl) {
+  const cs = DATA.cases[key], [L1, L2] = cs.L;
+  const ha = lab(tl);
+  panel(letter, cx0, 36, { alpha: ha });
+  text(words, cx0 + 36, 36, { size: 16, color: C.body, alpha: ha });
+  const bx = cx0 + 110, xs = [bx, bx + L1 * SC, bx + (L1 + L2) * SC];
+  cs.rows.forEach((r, k) => {
+    const y = ROW0 + k * DY, t0 = tl + .07 * k;
+    const p = seg(t0, .3);
+    line([[xs[0], y], [xs[2], y]], { color: C.ink, width: 1.8, progress: p });
+    xs.forEach(x => { const a = p > 0 ? clamp((p - (x - xs[0]) / (xs[2] - xs[0])) * 8 + 1) : 0; if (a > 0) pin(x, y, { s: 12, alpha: a }); });
+    const sa = lab(t0 + .2);
+    if (sa > 0) { spiral(xs[1], y - 14, 8, sa); if (k === 0) math('k', xs[1] - 12, y - 17, { size: 15, align: 'right', alpha: sa }); }
+    const q = Math.cos(2 * Math.PI * r.f / SLOW * clock());
+    const n = r.w1.length, pts = [], ghost = [[], []];
+    const X1 = i => xs[0] + i / (n - 1) * L1 * SC, X2 = i => xs[1] + i / (n - 1) * L2 * SC;
+    for (let i = 0; i < n; i++) { pts.push([X1(i), y - A * q * r.w1[i]]); ghost[0].push([X1(i), y - A * r.w1[i]]); ghost[1].push([X1(i), y + A * r.w1[i]]); }
+    for (let i = 1; i < n; i++) { pts.push([X2(i), y - A * q * r.w2[i]]); ghost[0].push([X2(i), y - A * r.w2[i]]); ghost[1].push([X2(i), y + A * r.w2[i]]); }
+    const ga = seg(t0 + .45, .3);
+    if (ga > 0) for (const g of ghost) {            // the envelope; not over a span drawn magnified
+      const keep = r.mag ? (r.dom === 0 ? g.slice(0, n) : g.slice(n - 1)) : g;
+      line(keep, { color: C.mist, width: 1.1, alpha: ga });
+    }
+    // the other span alone, magnified, where it barely moves
+    if (r.mag) {
+      const w = r.dom === 0 ? r.w2 : r.w1, X = r.dom === 0 ? X2 : X1, ma = seg(t0 + .5, .3);
+      if (ma > 0) {
+        line(w.map((v, i) => [X(i), y - A * q * r.mag * v]), { color: C.sky, width: 1.5, dash: [4, 3], alpha: ma });
+        const lx = bx - 24, ly = y + 27;               // under his frequency: a dashed sample, the factor
+        const tw = text(`×${r.mag}`, lx, ly, { size: 14, color: C.muted, align: 'right', alpha: ma });
+        line([[lx - tw - 24, ly - 5], [lx - tw - 5, ly - 5]], { color: C.sky, width: 1.5, dash: [4, 3], alpha: ma });
+      }
+    }
+    line(pts, { color: C.blue, width: 2.4, progress: seg(t0 + .12, .4) });
+    // his frequency, and the span that dominates, arriving
+    const fa = lab(t0 + .08);
+    if (fa > 0) math(r.label.replace(' Hz', '\\,\\rm{Hz}'), bx - 24 - 8 * (1 - fa), y + 6, { size: 17, align: 'right', alpha: fa });
+    const da = lab(t0 + .55);
+    if (da > 0) {
+      const mx = (xs[r.dom] + xs[r.dom + 1]) / 2;
+      text('Dominating span', mx, y - A - 12 + 6 * (1 - da), { size: 15, color: C.accent, align: 'center', alpha: da });
+    }
+  });
+  // the span lengths and the joint under the last row
+  const yd = ROW0 + 3 * DY + 44, la = lab(tl + .7);
+  if (la > 0) {
+    dim(xs[0] + 2, xs[1] - 2, yd, `${L1.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 15 });
+    dim(xs[1] + 2, xs[2] - 2, yd, `${L2.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 15 });
+    const e = Math.floor(Math.log10(cs.k)), mant = (cs.k / Math.pow(10, e)).toFixed(1);
+    math(`k = ${mant}\\ \\times\\ 10^{${e}}\\,\\rm{N}\\,\\rm{m/rad}`, xs[1], yd + 30 + 5 * (1 - la), { size: 15, align: 'center', alpha: la });
+  }
+}
+
+function draw() {
+  column('a', 16, 'a', 'similar span lengths', 0);
+  column('b', 516, 'b', 'more different span lengths', .035);
+  const fa = lab(.95);
+  text('girder EI = 1.0 × 10¹¹ N m², m = 10 t/m on three pins; k: rotational spring joining the spans; dashed: other span magnified',
+       16, H - 12, { size: 14, color: C.muted, alpha: fa });
+  text(`time slowed ${SLOW} ×`, W - 16, H - 12, { size: 14, color: C.muted, align: 'right', alpha: fa });
+}
+boot();
+</script>
+</body>
+</html>

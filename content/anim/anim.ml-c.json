@@ -1,0 +1,14 @@
+{
+ "machine-learning-the-complete-picture-and-guide-5": {
+  "image21": "nf-mlc-transformer.html",
+  "image22": "nf-mlc-embeddings.html",
+  "image23": "nf-mlc-bank.html",
+  "image24": "nf-mlc-paradigms.html",
+  "image25": "nf-mlc-rlloop.html",
+  "image26": "nf-mlc-policy.html",
+  "image27": "nf-mlc-qlearning.html",
+  "image28": "nf-mlc-modelmap.html",
+  "image29": "nf-mlc-splits.html",
+  "image30": "nf-mlc-timesplits.html"
+ }
+}

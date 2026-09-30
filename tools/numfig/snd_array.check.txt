@@ -1,0 +1,59 @@
+Figure 1 (nf-snd-array): sensor configurations, (a) linear array sensors,
+(b) circular array sensors. Generator: tools/numfig/snd_array.py
+
+MODEL
+  A plane sound wave in air, c = 343 m/s (20 C), from the direction theta (measured
+  from the x axis, on the side it comes from), s = (cos theta, sin theta). A sensor at p
+  hears the front at t(p) = t0 - p.s / c. The front that has just reached the reference
+  sensor n has the Additional Distance Dd = (p_n - p_m).s still to go before it reaches m;
+  m hears it tau = Dd / c later.
+  gamma, as he draws it: the angle at n between the chord to m and the line from n to the
+  origin. The chord's direction is then beta_n + pi - gamma, and
+    Dd = d_{n,m} cos(theta + gamma - beta_n).
+  Symphony (Wang et al. 2020, eq. 6) writes the relative delay as
+  d_{n,m} cos(pi - (gamma - beta_n) - theta) / v; cos(pi - x) = -cos x, so it is the same
+  length, its sign set by which of the two sensors is counted first.
+
+(a) LINEAR ARRAY SENSORS
+  n at (rho_n, beta_n) = (6 cm, 13 deg), m at (rho_m, beta_m) = (4.5 cm, 77 deg),
+  theta = 30 deg
+  d_{n,m} = 5.7077 cm, gamma = 45.122 deg
+  Additional Distance: (p_n - p_m).s = 2.668836 cm
+                       d cos(theta + gamma - beta_n) = 2.668836 cm (difference 4.4e-16)
+                       the drawn construction, |m F| with F on m's ray and nF normal to s:
+                       2.668836 cm; nF.s = -4.4e-16 (a right angle at F)
+  time delay tau = Dd / c = 77.809 us
+
+(b) CIRCULAR ARRAY SENSORS
+  six sensors on a circle of radius rho = 3 cm, sensor k at beta_k = 60 k deg; theta = 25 deg
+  d_{0,2} = rho sqrt(3) = 5.1962 cm (5.1962), gamma = 30.000 deg
+  Additional Distance: (p_0 - p_2).s = 2.980391 cm
+                       d_{0,2} cos(theta + gamma) = 2.980391 cm (difference 4.4e-16)
+                       |2 F| = 2.980391 cm
+  time delay tau = Dd / c = 86.892 us
+  every sensor's delay after sensor 0 (us): 0: 0.00, 1: 7.62, 2: 86.89, 3: 158.54, 4: 150.91, 5: 71.65
+  the front reaches them in the order 0, 1, 5, 2, 4, 3: all six apart, whatever theta
+  spacing of neighbours rho = 3 cm: no spatial aliasing below c / (2 rho) = 5717 Hz
+
+CHECK: the delays a correlator measures. White noise (48 kHz, 8192 samples) arriving
+  at each sensor with its plane-wave delay (applied exactly, as a phase in the frequency
+  domain); GCC-PHAT between the pair, its peak found on a grid 64 times finer:
+  (a) n, m: 77.799 us against tau = 77.809 us (error 0.009 us; one sample is 20.83 us)
+  (b) 0, 2: 86.914 us against tau = 86.892 us; all five pairs (0, k) within 0.136 us
+
+DISPLAY
+  both panels at 52 page units per cm; the front moves at c, time slowed 1e+04:
+  3.43 cm of travel per second of the page; it crosses the extra distance of (a) in 0.78 s
+  and of (b) in 0.87 s. The loop is 5.01 s; both fronts reach the far sensor (m, 2)
+  2.26 s into it; the printed frame is that moment.
+  The red Additional Distance grows from F to m exactly as the front travels it; each
+  sensor lights when the front reaches it. The front is drawn only inside the axes and is
+  left out where it would pass a label or a sensor (the gap a TikZ node's white fill leaves).
+  Type: the engine sets Greek in CMU Serif, whose theta and rho are its Greek-text shapes
+  (TeX's vartheta, and a rho with a curled tail); TeX's math italic theta and rho (the
+  closed theta, the plain rho) are in Latin Modern Math, which the figure fonts do not carry.
+
+OVERLAP (engine.js ?overlap, through common.overlaps)
+  the poster and every 0.1 s from 0.1 to 5.9 s (60 moments, the intro
+  and a whole loop of the motion): no label meets another, no stroke crosses a label;
+  nothing is excused (common.still is called with no allow list).

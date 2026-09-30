@@ -1,0 +1,33 @@
+<section class="slide">
+ <style>
+  .read{padding-top:6px}
+  .read .h{font-size:34px}
+  .read .eqs{margin-bottom:12px}
+ </style>
+ <header class="head">
+  <h1 class="title">Stationarity: do the statistical rules change with time?</h1>
+  <p class="lede">Stationary means the process follows the same rules at every time: same mean, same spread, same correlation pattern. We check it by comparing statistics measured at different times.</p>
+ </header>
+ <main class="body g">
+  <div data-fig="stationarity" class="s7"></div>
+  <div class="s5 o8 stack read">
+   <div>
+    <h2 class="h">How to read the figures</h2>
+    <p class="ps lines"><span>Each panel: 5 possible records of one process.</span><span>Band: ±2 SD across records at each time.</span><span>Left: flat band, variance 1.0 in every window.</span><span>Right: band widens, variance 0.8 <m>→</m> 3.6.</span></p>
+   </div>
+   <div>
+    <h2 class="h">Definition (weak stationarity)</h2>
+    <div class="eqs c-blue">
+     <p class="eq"><m>E[X(t)] = μ</m></p>
+     <p class="eq"><m>Var[X(t)] = σ²</m></p>
+     <p class="eq"><m>Cov[X(t), X(t+τ)] = C(τ)</m></p>
+    </div>
+    <p class="ps">The covariance depends only on the time gap <m>τ</m>, not on when you look.</p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Statistics measured early and late agree: stationary. If not, model the change or analyze stable windows.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: dependence over time</span><span class="src">Sources: [22], [23]</span><span class="num">42</span></p>
+ </footer>
+</section>

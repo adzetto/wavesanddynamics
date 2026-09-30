@@ -1,0 +1,21 @@
+{"entries": [
+  {"find": "x(t) * h(t) = y(t)", "tex": "x(t) \\ast h(t) = y(t)", "count": 1,
+   "why": "Figure 1 caption; his * is convolution, so \\ast"},
+  {"find": "Ax = b", "tex": "Ax = b", "count": 4,
+   "why": "Figure 1 caption, Estimation Theory, twice in Closing Thoughts; italic A, x, b as Boyd sets them"},
+  {"find": "A", "before": "where ", "after": " is the system", "tex": "A", "count": 1},
+  {"find": "x", "before": "system, ", "after": " is the input", "tex": "x", "count": 1},
+  {"find": "b", "before": "and ", "after": " is the output", "tex": "b", "count": 1},
+  {"find": "e(n) = d(n) − y(n)", "tex": "e(n) = d(n) - y(n)", "count": 1,
+   "why": "Figure 2 caption; his minus is already U+2212"},
+  {"find": "H1", "before": "(", "after": "/", "tex": "H_1", "count": 1,
+   "why": "the H1 and H2 FRF estimators; his slash means 'or', so each symbol is set alone and the slash stays text"},
+  {"find": "H2", "before": "/", "after": ")", "tex": "H_2", "count": 1},
+  {"find": "L1", "tex": "L_1", "count": 2,
+   "why": "the L1 norm; his letter kept, not renamed to \\ell_1"},
+  {"find": "L2", "tex": "L_2", "count": 2},
+  {"find": "k", "after": "-means", "tex": "k", "count": 2,
+   "why": "k is the number of clusters, set as k-means is in LaTeX; the hyphen stays text"},
+  {"find": "Q", "after": "-learning", "tex": "Q", "count": 1,
+   "why": "Q is the action-value function Q(s, a), set as Q-learning is in LaTeX; the hyphen stays text"}
+]}

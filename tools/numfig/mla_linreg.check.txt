@@ -1,0 +1,33 @@
+nf-mla-linreg: Figure 8, linear regression (least squares)
+
+DATA
+  14 house sales, simulated: price = 40 k$ + 170 $/ft^2 x area + e, e ~ N(0, 38 k$), seed 2
+  area evenly spread 1000..2800 ft^2 (+-40 ft^2), rounded to 10 ft^2; price rounded to 1 k$
+  area (ft^2): 980 1120 1300 1380 1560 1710 1810 1930 2090 2260 2390 2500 2660 2810
+  price (k$):  224 227 282 252 310 297 380 375 408 440 408 495 570 455
+
+FIT (closed form)
+  b1 = Sxy/Sxx = 169.4761 $/ft^2,  b0 = ybar - b1 xbar = 45.1344 k$
+
+CHECK 1: closed form against two independent solvers
+  numpy lstsq:          b0 = 45.1344447032, b1 = 0.169476142421  |diff| 1.3e-13, 5.6e-17
+  sklearn Linear...:    b0 = 45.1344447032, b1 = 0.169476142421  |diff| 0.0e+00, 0.0e+00
+
+CHECK 2: the normal equations (residuals sum to zero and are orthogonal to x)
+  sum r = 1.99e-13 k$,  sum r x = 4.07e-10 k$ ft^2
+
+CHECK 3: the parabola of panel (b), SSR(b) = Syy - 2 b Sxy + b^2 Sxx
+  brute force argmin over b (step 1e-6): 169.4761 $/ft^2 (closed form 169.4761)
+  SSR at b1 - d, b1, b1 + d (d = 45 $/ft^2): direct sum 24979.951, 16036.162, 24979.951
+                                         parabola   24979.951, 16036.162, 24979.951
+  minimum SSR = Syy - Sxy^2/Sxx = 16036.162 (k$)^2 = sum r^2 = 16036.162
+  tilt by +-d raises it by d^2 Sxx = 8943.8 (k$)^2 either way
+
+CHECK 4: against the line the data were drawn from
+  b1 = 169.5 +- 17.4 $/ft^2 (1 s.e.), true 170: 0.03 s.e. away
+  b0 = 45.1 +- 34.3 k$, true 40: 0.15 s.e. away
+  residual s = sqrt(SSR/(n-2)) = 36.6 k$ (sigma used 38)
+
+PAGE
+  the line tilts about the mean point (xbar, ybar) = (1892.9 ft^2, 365.93 k$) to b1 -+ 45 $/ft^2 and back;
+  squares, segments and the marker on (b) are computed from the data every frame.

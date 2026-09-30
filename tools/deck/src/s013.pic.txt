@@ -1,0 +1,6 @@
+# his words inside his chart (build/r10-deck/his/s013-pic1.png)
+32 illustrative tests
+Fitted normal model
+Lower 5%
+Probability density
+28-day compressive strength (MPa)

@@ -1,0 +1,27 @@
+<section class="slide">
+ <style>
+  .rules{margin-top:8px}
+  .rules th{font-size:28px}
+  .rules td{padding-top:40px;padding-bottom:40px}
+ </style>
+ <header class="head">
+  <h1 class="title">Model outputs and decision rules are different</h1>
+  <p class="lede">A single number can still contain probabilistic information. A decision needs a rule for using that information.</p>
+ </header>
+ <main class="body">
+  <table class="tab rules">
+   <colgroup><col style="width:31%"><col style="width:35%"><col style="width:34%"></colgroup>
+   <thead><tr><th>Model output</th><th>What it tells you</th><th>Possible decision rule</th></tr></thead>
+   <tbody>
+    <tr><td>Point prediction <m>ŷ</m></td><td>A predicted response, often a mean</td><td>Compare with an operating limit</td></tr>
+    <tr><td>Quantile <m>q<sub>0.05</sub></m> or <m>q<sub>0.99</sub></m></td><td>A specified model tail level</td><td>Use a chosen design percentile</td></tr>
+    <tr><td>Exceedance probability</td><td>Chance an outcome crosses a limit</td><td>Require probability below a target</td></tr>
+    <tr><td>Reliability index <m>β</m></td><td>A scalar reliability summary</td><td>Compare with a consistent <m>β</m> target</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">Comparing <m>β</m> with a target is a reliability-based decision, even though <m>β</m> is a scalar.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 5: model outputs support decision rules</span><span class="src">Sources: [1], [16]</span><span class="num">39</span></p>
+ </footer>
+</section>

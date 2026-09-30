@@ -1,0 +1,25 @@
+nf-mlb-loss: Figure 19, training and validation loss curves
+
+MODEL
+  data: make_circles(470, noise=0.2, factor=0.5, random_state=0); 63 labels flipped (15% at random, seed 0); first 70 training, last 400 validation;
+  standardized with the training mean and deviation. 12 flipped labels are in the training set.
+  network 2-64-64-2, tanh, softmax; 4482 weights; init N(0,1) first layer,
+  N(0, 1/64) after, last layer x 0.1; cross-entropy; full batch gradient descent, learning rate 0.05, 4000 epochs (seed 2).
+
+CHECK 1: back propagation against central differences (40 random weights, h = 1e-6)
+  largest relative error: 5.1e-06 at the start, 4.1e-05 at the end
+
+CHECK 2: gradient descent on a smooth loss with a small step never raises it
+  training loss rose in 0 of 4000 epochs (largest rise 0.0e+00); 0.6976 -> 0.1391
+
+CHECK 3: the loss of a network that knows nothing is ln 2 per point
+  ln 2 = 0.6931; training loss at epoch 0 = 0.6976, validation 0.6938 (the small last layer starts every prediction near 1/2)
+  cross-entropy of a constant 0.5 prediction, computed: 0.6931
+
+RESULT
+  validation loss is smallest at epoch 740: 0.5543 (training 0.4597); accuracy 0.77 training, 0.75 validation
+  at epoch 4000: training 0.1391, validation 1.1496 (2.07 x its minimum); accuracy 0.96 training, 0.68 validation
+  after the minimum the validation loss rises in 3260 of 3260 epochs
+  training points whose (flipped, wrong) label the final network reproduces: 11 of 12 (memorized noise)
+  model panel: p(purple) on a 44 x 44 grid over [-2.4, 2.4]^2 at epochs [0, 250, 500, 740, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000]
+  curves drawn at 401 epochs (every 10, and epoch 740)

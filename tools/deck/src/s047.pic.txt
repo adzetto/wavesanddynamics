@@ -1,0 +1,17 @@
+# his words inside his three panels (build/r10-deck/his/s047-pic1.png)
+1  Signal in time: x(t)
+x (normalized)
+Time t (s)
+variance scaled to 1
+2  Autocorrelation: R(τ)
+R(τ)
+Lag τ (s)
+R(0) = variance = 1
+repeats every 0.5 s
+(a 2 Hz rhythm)
+3  Spectrum: G(f)
+G(f)  (x² per Hz)
+Frequency f (Hz)
+peak at 2 Hz
+shaded area
+= variance = 1

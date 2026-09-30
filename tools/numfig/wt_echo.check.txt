@@ -1,0 +1,28 @@
+nf-wt-echo: the fun table, 'Pulse and echo' (image10)
+
+MODEL
+  steel, c_L = sqrt(E (1 - nu) / (rho (1 + nu) (1 - 2 nu))) = 5920.9 m/s; block 60 mm along the beam
+  probe 12 mm, 5 MHz, 3 cycle Hann burst (wavelength 1.18 mm); flaw: a void 1.2 x 3.6 mm, 32 mm in
+  echoes: flaw at 2 x_f / c = 10.607 us (its near face), back wall at 2 L / c = 20.267 us
+
+CHECK: 2D FDTD of the longitudinal wave (scalar), 0.06 mm cells, the flaw and the back wall
+  free (p = 0), the probe a velocity source over its face; the record: p averaged over the probe
+  flaw echo, delay behind the recorded emission: 10.767 us, closed form 2 (x_f - w/2) / c = 10.607 us (+160 ns)
+  back wall echo (no flaw): 20.410 us, closed form 2 L / c = 20.267 us (+142 ns)
+  the lag is the grid's own numerical dispersion (waves on a 20 cell per wavelength grid run
+  slow); the same scheme in 1D over the same 120 mm path, refined:
+     60 um cells: back wall echo +152.1 ns from 2 L / c
+     30 um cells: back wall echo  +12.5 ns from 2 L / c
+     15 um cells: back wall echo   +2.5 ns from 2 L / c
+  so the closed form times, which the drawing uses, are the converged ones.
+  echo envelopes against the emitted pulse's (2D): flaw 0.500; back wall 0.419, without the flaw 1.556
+  (the probe's face is rigid once it has fired, so an echo arrives doubled; the flaw shades the
+  back wall both ways; its own second echo, at 21.21 us, is left out of the drawing)
+
+DRAWING
+  60 mm = 700 units, the block drawn 20 mm deep to the same scale (the FDTD's is wide);
+  the A scan's time axis drawn as depth c t / 2 on the same scale;
+  the A scan is drawn rectified (its envelope, the Hann window of each burst: 5 MHz cycles are finer
+  than the drawing), at the closed form times with the 2D FDTD's amplitudes; the fronts in the
+  block are the geometric wavefronts at the same times.
+  time slowed 1.2e+05 x: the back wall echo returns 20.3 us after the pulse, 2.43 s on screen.

@@ -1,0 +1,7 @@
+{"entries": [
+  {"find": "N", "before": "the ", "after": "th ", "tex": "N", "count": 4,
+   "why": "the zone and mode index in 'the Nth propagation zone' (2) and 'the Nth resonance frequency' (2); the ordinal ending stays text, as LaTeX's $N$th"},
+  {"picture": "image16", "tex": "u(x, y, z, t) = U(y, z)\\, e^{i(kx - \\omega t)}", "count": 2,
+   "display": true,
+   "why": "his one equation, a picture from Word's equation editor, in the SAFE paragraph and in the Figure 5 caption; the TeX is math-waves' (review.md), the alttext build.py's ALT for image16; added by mathinfra at the controller's request"}
+]}

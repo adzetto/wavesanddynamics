@@ -1,0 +1,147 @@
+<section class="slide s2" data-min="20">
+ <style>
+  /* His map: the one slide set at the map's scale (a 20 px floor, DECK_BRIEF.md). */
+  .s2{padding-top:30px;padding-bottom:22px}
+  .s2 .head{padding-bottom:14px}
+  .s2 .title{font-size:30px;line-height:1.14;letter-spacing:.01em;text-wrap:balance}
+  .s2 .lede{margin-top:8px;font-size:22px;line-height:1.3;max-width:none}
+  .s2 .lede span{display:block}
+  .map{display:grid;grid-template-columns:48px 12px 806px 22px 372px 22px 414px;grid-template-rows:auto 1fr;height:calc(100% - 14px)}
+  .map>.data{grid-column:1;grid-row:1;align-self:start;margin-top:150px}
+  .map>.statcol{grid-column:3;grid-row:1/3;display:flex;flex-direction:column}
+  .map>#models{grid-column:5;grid-row:1}
+  .map>#risk{grid-column:5;grid-row:2;margin-top:8px;align-self:stretch}
+  .map>.dec1{grid-column:7;grid-row:1;display:flex;flex-direction:column}
+  .map>#pr{grid-column:7;grid-row:2;margin-top:8px;align-self:stretch}
+  .data{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .data .dl{font:700 20px/1 var(--sans);letter-spacing:.06em;color:var(--ink)}
+  #stats{border:2.5px dashed var(--navy);padding:10px;display:grid;grid-template-columns:repeat(3,1fr);column-gap:12px}
+  .stage{background:color-mix(in oklab,var(--sky) 9%,var(--paper));padding:10px 12px 12px}
+  .sh{display:flex;align-items:center;gap:10px}
+  .s2 .badge{width:32px;height:32px;font-size:20px;flex:none}
+  .st{font:700 21px/1.1 var(--sans);letter-spacing:.03em;color:var(--sky-ink)}
+  .sd{margin-top:4px;font:400 20px/1.3 var(--serif);color:var(--body)}
+  .mm{margin-top:8px}
+  .mm .fig{margin-bottom:3px}
+  .mn{font:600 21px/1.3 var(--serif);color:var(--ink)}
+  .md{font:400 20px/1.3 var(--serif);color:var(--ink)}
+  .aside{margin-top:8px;font:400 20px/1.3 var(--serif);color:var(--ink)}
+  .paths{margin-top:12px}
+  .ph{font:700 21px/1.3 var(--sans);letter-spacing:.03em;color:var(--accent)}
+  .pl{display:grid;grid-template-columns:104px 1fr 104px 1fr;column-gap:12px;row-gap:6px;margin-top:8px;align-items:center}
+  .pb{display:flex;justify-content:flex-end;gap:4px}
+  .pb .badge{width:30px;height:30px;font-size:20px}
+  .pt{font:400 20px/1.3 var(--serif);color:var(--ink)}
+  .none{font:700 21px/1 var(--sans);color:var(--accent)}
+  .s2 .node{padding:7px 14px 8px}
+  #models,#risk{--k:var(--navy)}
+  .dec1 .node,#pr{--k:var(--deep)}
+  .node .st{color:var(--kt,var(--k))}
+  .node .sd{margin-top:5px}
+  .s2 .node .mm{margin-top:5px}
+  .d5{display:flex;align-items:center;gap:10px}
+  .d5 .st{color:var(--deep)}
+  .dsent{margin:3px 0 5px;font:600 20px/1.3 var(--serif);color:var(--ink)}
+  /* his two readings, named up the side of their box as he set them */
+  #pw,#pr{position:relative;padding-left:44px}
+  .grp{position:absolute;left:19px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);white-space:nowrap;
+    font:700 20px/1.1 var(--sans);letter-spacing:.03em;color:var(--deep)}
+  .item+.item{margin-top:3px;padding-top:3px;border-top:1px solid var(--rule)}
+  .it{font:700 20px/1.1 var(--sans);letter-spacing:.03em;color:var(--ink)}
+  .item .fig{margin:3px 0 1px}
+  .id{font:400 20px/1.3 var(--serif);color:var(--ink)}
+  .s2 .foot{padding-top:10px}
+  .s2 .take{font-size:24px}
+ </style>
+ <header class="head">
+  <h1 class="title">THE FULL WORKFLOW OF A PROBABILISTIC DECISION (FROM STATISTICS TO PROBABILISTIC DECISION – ALL STEPS INVOLVE PROBABILITY)</h1>
+  <p class="lede"><span>Five stages carry data to a decision. The first 3 are optional, sometimes the model is already known, and you can skip straight to using it.</span><span>Probabilistic models (that we will cover in this class) are distribution and regression based.</span></p>
+ </header>
+ <main class="body map">
+  <div class="data" id="data"><div data-fig="data_icon"></div><span class="dl">DATA</span></div>
+
+  <div class="statcol">
+   <div id="stats">
+    <div class="stage">
+     <div class="sh"><span class="badge">1</span><h2 class="st">GOODNESS FIT</h2></div>
+     <p class="sd">checks whether the family you assumed is a plausible fit for the data</p>
+     <div class="mm"><div data-fig="chi"></div><h3 class="mn">chi square test</h3>
+      <p class="md">compares observed counts to what the assumed family predicts</p></div>
+     <div class="mm"><div data-fig="qq"></div><h3 class="mn">probability plots</h3>
+      <p class="md">points should fall near a line if the family fits well</p></div>
+     <p class="aside"><b class="b">also used: </b>Kolmogorov Smirnov, Anderson Darling, Shapiro Wilk</p>
+    </div>
+    <div class="stage">
+     <div class="sh"><span class="badge">2</span><h2 class="st">ESTIMATION</h2></div>
+     <p class="sd">a best fit number from a sample, on its own just a point, not yet a probability</p>
+     <div class="mm"><div data-fig="moments"></div>
+      <p class="md">Probability distributions’ parameters are estimated (mean, variance, etc)</p></div>
+     <div class="mm"><div data-fig="fit_line"></div><h3 class="mn">correlation and regression</h3>
+      <p class="md">covariance and <m>r</m> show the linkage, least squares fits the line</p></div>
+    </div>
+    <div class="stage">
+     <div class="sh"><span class="badge">3</span><h2 class="st">INFERENCE</h2></div>
+     <p class="sd">attaches a probability to that estimate: how sure, and how wide</p>
+     <div class="mm"><div data-fig="interval"></div><h3 class="mn">confidence and hypothesis tests</h3>
+      <p class="md">a plausible range, and is an assumed value still ok</p></div>
+     <div class="mm"><div data-fig="band"></div><h3 class="mn">regression inference</h3>
+      <p class="md">is the slope real, is the fit valid, how wide is the prediction</p></div>
+    </div>
+   </div>
+   <div class="paths">
+    <p class="ph">STATISTICS SECTION: OPTIONAL, DEPENDING ON THE PROBLEM</p>
+    <div class="pl">
+     <div class="pb"><span class="badge">1</span></div><p class="pt">checking an assumed model against fresh data</p>
+     <div class="pb"><span class="badge">2</span></div><p class="pt">a quick point value, family and confidence not needed</p>
+     <div class="pb"><span class="badge">1</span><span class="badge">2</span></div><p class="pt">the family is unsure, so test it, then fit it</p>
+     <div class="pb"><span class="badge">2</span><span class="badge">3</span></div><p class="pt">the family is trusted, but confidence is still needed</p>
+     <div class="pb"><span class="badge">1</span><span class="badge">2</span><span class="badge">3</span></div><p class="pt">the full rigorous path, from family, to fit, to confidence</p>
+     <div class="pb"><span class="none">None</span></div><p class="pt">Just a model assumed (to be right)</p>
+    </div>
+   </div>
+  </div>
+
+  <div class="node" id="models">
+   <div class="sh"><span class="badge">4</span><h2 class="st">PROBABILITY MODELS</h2></div>
+   <p class="sd">the rules for combining and describing random outcomes</p>
+   <div class="mm"><div data-fig="venn"></div><h3 class="mn">counting rules and Bayes</h3>
+    <p class="md">count outcomes, combine chances, update them with new evidence</p></div>
+   <div class="mm"><div data-fig="two_families"></div><h3 class="mn">random variables and distributions</h3>
+    <p class="md">normal, lognormal, binomial, …, each with its own mean and spread</p></div>
+  </div>
+  <div class="node" id="risk">
+   <h2 class="st">RISK AND RELIABILITY</h2>
+   <p class="sd">turns the model into the chance of a real engineering outcome</p>
+   <div class="mm"><div data-fig="propagate"></div><h3 class="mn">uncertainty propagation</h3>
+    <p class="md">carry input randomness (and its covariance) through a formula</p></div>
+   <div class="mm"><div data-fig="demand_capacity"></div><h3 class="mn">reliability (FOSM)</h3>
+    <p class="md">chance that capacity falls short of demand</p></div>
+  </div>
+
+  <div class="dec1">
+   <div class="d5"><span class="badge">5</span><h2 class="st">DECISION</h2></div>
+   <p class="dsent">Reading probabilities 2 different way is a separate choice</p>
+   <div class="node" id="pw">
+    <p class="grp">Point Wise Decision</p>
+    <div class="item"><p class="it">REGRESSION</p><div data-fig="point_regression"></div><p class="id">the predicted number, used directly</p></div>
+    <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="point_design"></div><p class="id">the mean, or a single chosen quantile</p></div>
+    <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="point_beta"></div><p class="id">pass or fail against a safety index</p></div>
+   </div>
+  </div>
+  <div class="node" id="pr">
+   <p class="grp">Probabilistic Decision</p>
+   <div class="item"><p class="it">REGRESSION</p><div data-fig="prob_regression"></div><p class="id">the chance the true value exceeds a limit</p></div>
+   <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="prob_exceed"></div><p class="id">the chance of exceeding that value</p></div>
+   <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="prob_shortfall"></div><p class="id">the actual chance capacity falls short</p></div>
+  </div>
+
+  <i class="wire" data-from="#data" data-to="#stats" data-color="sky"></i>
+  <i class="wire" data-from="#stats" data-to="#models" data-color="sky"></i>
+  <i class="wire" data-from="#stats" data-to="#risk" data-color="sky"></i>
+  <i class="wire" data-from="#models" data-to="#pw" data-color="sky"></i>
+  <i class="wire" data-from="#risk" data-to="#pr" data-color="sky"></i>
+ </main>
+ <footer class="foot">
+  <p class="take">The reason that we teach probability first (opposite of the workflow) is that we need to know probability to learn statistics</p>
+ </footer>
+</section>

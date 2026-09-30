@@ -1,0 +1,55 @@
+/* Palette v2. Two hue families only: blue oklch H=248, warm oklch H=52.
+   Every value generated in OKLCH at a fixed hue, chroma clamped to sRGB. */
+:root{
+  --page:#FFFFFF;        /* oklch(1.000 0     0  ) */
+  --surface:#F8FAFD;     /* oklch(0.985 0.004 248) */
+  --card:#F3F7FB;        /* oklch(0.974 0.007 248) */
+  --wash:#FEF0E8;        /* oklch(0.964 0.018  52) */
+  --rule:#E4E8ED;        /* oklch(0.930 0.008 248) hairline separator */
+  --line:#D3DAE1;        /* oklch(0.885 0.012 248) card border */
+  --line-strong:#818990; /* oklch(0.625 0.014 248) input + ghost-button border, 3.55:1 */
+
+  --nav:#043052;         /* oklch(0.300 0.076 248) column flood */
+  --nav-hover:#104169;   /* oklch(0.366 0.086 248) LIGHTER than base */
+  --nav-press:#002443;   /* oklch(0.256 0.070 248) */
+  --nav-deep:#001C36;    /* oklch(0.222 0.062 248) column foot / masthead */
+  --nav-rule:rgba(255,255,255,.12);
+
+  --accent:#E7813B;      /* oklch(0.705 0.150  52) active-page rail, marks on dark */
+  --accent-ink:#A5510B;  /* oklch(0.530 0.132  52) warm TEXT + primary button fill */
+  --accent-hover:#904607;/* oklch(0.480 0.120  52) */
+  --accent-press:#7B3D0C;/* oklch(0.432 0.104  52) */
+
+  --ink:#1A242D;         /* oklch(0.255 0.022 248) headings */
+  --body:#485159;        /* oklch(0.430 0.018 248) body copy */
+  --muted:#697179;       /* oklch(0.545 0.016 248) captions */
+  --link:#095A94;        /* oklch(0.455 0.118 248) */
+  --link-hover:#004170;  /* oklch(0.365 0.100 248) */
+  --focus:#095A94;
+  --focus-inverse:#FFFFFF;   /* focus ring inside the nav column */
+  --btn-fg:#FFFFFF;          /* foreground on --accent-ink */
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+  --page:#0E1113; --surface:#171A1D; --card:#1D2125; --wash:#271B14;
+  --rule:#282D32; --line:#343B43; --line-strong:#5D666F;
+  --nav:#132B41; --nav-hover:#1E3B55; --nav-press:#0E2234; --nav-deep:#081A2A;
+  --nav-rule:rgba(255,255,255,.12);
+  --accent:#F59B62; --accent-ink:#EF8F51; --accent-hover:#FDA46C; --accent-press:#DC7E3F;
+  --ink:#E8EEF3; --body:#BDC3CA; --muted:#899097;
+  --link:#6FACE5; --link-hover:#94C5F4; --focus:#6FACE5; --focus-inverse:#FFFFFF;
+  --btn-fg:#0E1113;   /* FLIPS: dark text on the light amber button */
+}}
+:root[data-theme="dark"]{
+  --page:#0E1113; --surface:#171A1D; --card:#1D2125; --wash:#271B14;
+  --rule:#282D32; --line:#343B43; --line-strong:#5D666F;
+  --nav:#132B41; --nav-hover:#1E3B55; --nav-press:#0E2234; --nav-deep:#081A2A;
+  --nav-rule:rgba(255,255,255,.12);
+  --accent:#F59B62; --accent-ink:#EF8F51; --accent-hover:#FDA46C; --accent-press:#DC7E3F;
+  --ink:#E8EEF3; --body:#BDC3CA; --muted:#899097;
+  --link:#6FACE5; --link-hover:#94C5F4; --focus:#6FACE5; --focus-inverse:#FFFFFF;
+  --btn-fg:#0E1113;
+}
+/* dark mode only: the column no longer separates from the page by luminance (1.31:1),
+   so it needs an edge. Light mode does not (13.55:1). */
+@media (prefers-color-scheme: dark){ .side{ border-right:1px solid var(--rule) } }
+[data-theme="dark"] .side{ border-right:1px solid var(--rule) }

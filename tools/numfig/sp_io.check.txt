@@ -1,0 +1,40 @@
+Figure 1, input, system, output: check of tools/numfig/sp_io.py
+
+MODEL
+  System: the damped resonator h(t) = exp(-zeta w_n t) sin(w_d t), f_n = 1 Hz,
+  zeta = 0.1, w_d = w_n sqrt(1 - zeta^2) = 6.251690 rad/s (the impulse response of
+  w_d / (s^2 + 2 zeta w_n s + w_n^2)).
+  Input: 100 samples dt = 0.08 s apart over 8 s, three sin^2 pulses (centre, length,
+  height) = [(0.9, 1.0, 1.0), (3.3, 1.4, -0.75), (5.3, 0.9, 0.6)], and linear between the samples (first order hold).
+  Output: y = x * h, exact for that input: the kernel of the hold, g_0 and g_k = Im C e^{p k dt},
+  run as a complex first order recursion (sp_model.foh_filter), on a grid of
+  dt/20 = 0.004 s. max |y| = 0.23320.
+  A x = b, the linear system (c) states: A the 100 x 100 lower triangular Toeplitz matrix of the
+  same kernel on the sample grid, A_ij = g_(i-j), max |A_ij| = 0.06721; x the input's
+  samples; b = A x.
+
+VALIDATION
+  1. The equation of motion y'' + 2 zeta w_n y' + w_n^2 y = w_d x(t), integrated interval by
+     interval (DOP853, rtol 1e-12), against the recursion on the whole fine grid:
+     largest difference 2.9e-13 (1.2e-12 of max |y|).
+  2. Adaptive quadrature of the convolution integral (breakpoints at the samples) at
+     t = [1.3, 2.1, 3.552, 5.2, 7.9] s: largest difference 2.4e-15.
+  3. b = A x against y(t_i) at all 100 samples: largest difference 2.8e-15: sampled, the
+     convolution of (b) is the linear system of (c), b the output. Row i of A is h(t_i - tau)
+     sampled with the hold's weights: the flipped impulse response of (b).
+  4. Integral of h from 0 to infinity: 0.1583571689 against w_d / w_n^2 = 0.1583571689
+     (+6.4e-11); zero crossings of h every pi / w_d = 0.502519 s.
+  5. The page: its own trapezoid integral of x(tau) h(t - tau) (5 ms steps), the number it
+     prints as y(t), against y at the same t: largest difference 9.2e-06; its y(t) curve
+     (float32) against y: 4.1e-09.
+
+DISPLAY
+  (a) each plot titled with what it is and its symbol: input x(t), system, impulse response
+  h(t), output y(t). (b) runs in real time: 8 s of record in 8 s, then rests 1.1 s and glides
+  back; its top plot is titled by naming its three curves (input, flipped impulse response,
+  their product), its bottom plot 'output y(t): the area of the product', with the running
+  t and y(t) on the same row. The cursor is drawn inside each plot, never across the row
+  between them. (c) states A x = b with each part named under a brace (A system, x input,
+  b output); the matrix picture of the first version is gone at the professor's request
+  (29 Sep), its numbers stay in 3. above.
+  (a) draws x and y each to its own height (y is 0.23 at most); (b) carries the scales.

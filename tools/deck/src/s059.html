@@ -1,0 +1,28 @@
+<section class="slide">
+ <style>
+  .ar .eq{margin-top:12px}
+  .ar .eq + .p{margin-top:4px}
+ </style>
+ <header class="head">
+  <h1 class="title">Autoregression: predict using the recent past</h1>
+  <p class="lede">AR(1) uses the previous value and fresh noise. The coefficient controls persistence and possible alternation.</p>
+ </header>
+ <main class="body g">
+  <div class="s5 stack ar">
+   <div>
+    <h2 class="h">The model</h2>
+    <p class="eq"><m>Xₜ − μ = φ(Xₜ₋₁ − μ) + εₜ</m></p>
+    <p class="p"><m>εₜ</m> supplies fresh unpredictable input.</p>
+   </div>
+   <div>
+    <h2 class="h">How it behaves</h2>
+    <p class="p lines"><span><m>φ</m> near 1: persistent disturbances</span><span><m>φ</m> near 0: little lagged dependence</span><span>Negative <m>φ</m>: alternating responses</span></p>
+   </div>
+  </div>
+  <div data-fig="acf" class="s7 o6"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">An AR(1) model is stationary when <m>|φ| &lt; 1</m> with stationary initialization.</p>
+  <p class="run"><span class="src">Sources: [25]</span><span class="num">59</span></p>
+ </footer>
+</section>

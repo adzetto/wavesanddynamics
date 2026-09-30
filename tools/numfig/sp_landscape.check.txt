@@ -1,0 +1,31 @@
+Figure 3, convex versus nonconvex optimization landscapes: check of tools/numfig/sp_landscape.py
+
+MODEL
+  (a) f(w) = 0.9 (w - 0.2)^2 - 0.3: convex, f'' = 1.8 everywhere; one minimum, w* = 0.2, f* = -0.3.
+  (b) f(w) = (w^2 - 1)^2 - 0.3 w: a tilted double well; f'' = 12 w^2 - 4 < 0 on |w| < 1/sqrt(3),
+      so it is not convex.
+  Gradient descent w_(k+1) = w_k - eta f'(w_k), 20 steps from w_0 = -1.6 (left) and 1.6
+  (right); eta = 0.2 in (a), 0.03 in (b). Double precision, no line search.
+
+VALIDATION
+  1. Critical points of (b), the roots of f' = 4 w^3 - 4 w - 0.3, in closed form
+     (trigonometric solution of the cubic):
+     local minimum w = -0.960149556, f = 0.294146481
+     barrier       w = -0.075429159, f = 1.011282003
+     global minimum w = 1.035578714, f = -0.305428484
+     against numpy's polynomial roots: 4.4e-16. The local minimum lies f = 0.5996 above the
+     global one (the 0.60 drawn in (b)).
+  2. (a) is quadratic, so w_k - 0.2 = (w_0 - 0.2)(1 - eta f'')^k exactly, with 1 - eta f'' =
+     0.64: both runs against it, largest difference 2.2e-16; both end at
+     w = 0.19976 and 0.20019, f = -0.300000 and -0.300000 (f* = -0.3).
+  3. (b): each run ends in the basin it started in; near a minimum w* the error shrinks by
+     1 - eta f''(w*) per step (linear convergence):
+     left : w_20 = -0.962171, |w_20 - w*| = 2.0e-03, last ratio 0.78723 against 0.78812
+     right: w_20 = 1.036061, |w_20 - w*| = 4.8e-04, last ratio 0.73368 against 0.73393
+     The left run stops at f = 0.29416; the right run reaches f = -0.30543.
+  4. The page's own f(w) in (a) and (b) against these at 9 points: 0.0e+00.
+
+DISPLAY
+  One step every 0.22 s; between iterates the marker glides along the curve (a Motion
+  spring, for the eye only). The segments are the chords of the jumps; the short line
+  through each marker is the tangent, slope f'(w), that the next step follows.

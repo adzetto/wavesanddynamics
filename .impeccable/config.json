@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "content/blog/laser-doppler-vibrometer-how-it-works-advantages-and-disadvantages-speckle-noise/text/ce0a40_ceab5e568ac749f483600e27297584d1_mv2.html"
+        ],
+        "createdAt": "2026-09-25T07:57:24.063Z",
+        "reason": "claude: data-crop images get their src from site/build.py post_page at build time"
+      }
+    ]
+  }
+}

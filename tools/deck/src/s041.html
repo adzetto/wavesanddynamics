@@ -1,0 +1,35 @@
+<section class="slide">
+ <style>
+  .fams{display:grid;grid-template-columns:436px 380px;column-gap:16px;row-gap:26px}
+  .fams .h{font-size:30px}
+  .fams>div:nth-child(odd) .h{padding-left:86px}
+  .fams .fig{margin-top:10px}
+  .kinds{font-size:28px}
+  .kinds th{font-size:26px}
+  .kinds td{padding-top:26px;padding-bottom:26px}
+ </style>
+ <header class="head">
+  <h1 class="title">Four families of stochastic processes</h1>
+  <p class="lede">Two questions classify a process: does time move in steps or continuously, and are the values categories/counts or real numbers?</p>
+ </header>
+ <main class="body g">
+  <div class="s6 fams">
+   <div><h2 class="h">Markov chain</h2><div data-fig="markov"></div></div>
+   <div><h2 class="h">Random walk, AR(1)</h2><div data-fig="walk"></div></div>
+   <div><h2 class="h">Poisson process</h2><div data-fig="poisson"></div></div>
+   <div><h2 class="h">Gaussian process, vibration</h2><div data-fig="vibration"></div></div>
+  </div>
+  <table class="tab kinds s6 o7 mid">
+   <colgroup><col style="width:26%"><col style="width:37%"><col style="width:37%"></colgroup>
+   <thead><tr><th></th><th>Values: categories or counts</th><th>Values: real numbers</th></tr></thead>
+   <tbody>
+    <tr><td>Time in steps</td><td>Markov chain: pavement condition each year (slide 53)</td><td>Random walk, AR(1): daily settlement readings (slides 51, 59)</td></tr>
+    <tr><td>Continuous time</td><td>Poisson process: truck arrivals, earthquakes (slide 55)</td><td>Gaussian process, vibration: bridge response (slides 47, 57)</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">Same tools (mean, variance, correlation) for all four; only the indexing changes.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: probability models indexed by time or space</span><span class="src">Sources: [4], [22]</span><span class="num">41</span></p>
+ </footer>
+</section>

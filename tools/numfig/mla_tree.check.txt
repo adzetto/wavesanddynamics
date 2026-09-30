@@ -1,0 +1,29 @@
+nf-mla-tree: Figure 10, decision tree for loan approval
+
+DATA
+  200 simulated applications, seed 11: income ~ lognormal(ln 52, 0.38) k$, credit ~ N(690, 45) in [500, 850], debt share ~ U(8, 48) %
+  recorded decision: income <= 50 -> approve iff credit > 720; income > 50 -> approve iff debt < 38 %; 6 of 200 flipped (5 %)
+  approved 98, declined 102
+
+TREE (Gini, depth 2)
+  root: income <= 49.9000  (page: income >= $50.0k? yes to the right)
+  left: credit <= 719.5000  (page: credit score >= 720?)
+  right: debt <= 37.8500  (page: debt <= 37.8% of income?)
+  leaf ll: declined 70, approved 3
+  leaf lr: declined 0, approved 16
+  leaf rl: declined 2, approved 78
+  leaf rr: declined 30, approved 1
+  training accuracy 0.970
+
+CHECK 1: every split is the best Gini split of its node (brute force over all features, all cuts)
+  root: brute force income <= 49.9000, weighted Gini 0.377186; tree income <= 49.9000 (parent Gini 0.499800)
+  left:  brute force credit score <= 719.5000, Gini 0.064645; tree credit score <= 719.5000
+  right: brute force debt share <= 37.8500, Gini 0.052572; tree debt share <= 37.8500
+CHECK 2: the tree's questions against the rule the records came from
+  income cut 49.90 (rule 50), credit cut 719.5 (rule 720), debt cut 37.85 % (rule 38)
+  records the tree gets wrong: 6; records flipped from the rule: 6; wrong and not flipped: 0
+CHECK 3: the page's four new applicants, routed by the page's questions and by sklearn
+  income 62k, credit 640, debt 24 %: page leaf 3, sklearn leaf 3, approve
+  income 41k, credit 745, debt 30 %: page leaf 1, sklearn leaf 1, approve
+  income 73k, credit 705, debt 44 %: page leaf 2, sklearn leaf 2, decline
+  income 38k, credit 668, debt 21 %: page leaf 0, sklearn leaf 0, decline

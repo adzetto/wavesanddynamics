@@ -1,0 +1,7 @@
+# motivation
+
+`render(prof_html)` restages his "Motivation for Creating the Educational Sections" on the home page. It wraps PROF_MOTIVATION, unchanged, in `<section class="motiv">`, so the --strict on-page check still finds the block character for character and his words keep one source.
+The change is CSS only, scoped under `.motiv`; his `.col` is the query container `motiv`. From 900px of column the four points stand in one row of four under serif numerals in the accent, each column as wide as its point is long (1.9, 1.3, 1, 1), so the four end together since his markup of 27 Sep 2026 made the first twice the second; from 520px they form a 2 by 2 grid parted by a hairline cross, the first column the wider (1.4 to 1); narrower, they run as a sequence with hanging numerals and a hairline between points. His "Aha!" line is the largest type in the block (28px to 38px). What he typed into his last paragraph is bold at his request (`<strong>`, 600 in the ink).
+`JS` lays a wave under his "Aha!" from a DOM Range and draws it once; his markup is only read.
+render() reads the block's shape with html.parser (one h2, one `<ul>` of two or more `<li>`, then a `<p>`). If that ever fails it ships the block unwrapped, with his bullets, and prints a `!!` line in the build log.
+The gaps above and below the block are the h2's 47px. Since round 5 the block above it is a section too: the hero sets his "Myself:" as the page's h2, as his slide sets it like this block's heading, so the home page reads Myself:, Motivation, Explore the topics, three sections on one rhythm.

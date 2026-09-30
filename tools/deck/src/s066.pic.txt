@@ -1,0 +1,7 @@
+# his words inside his chart (build/r10-deck/his/s066-pic1.png)
+Model prediction (prior): 10 mm, SD 2
+Sensor reading: 14 mm, SD 3
+Updated estimate (posterior): 11.23 mm, SD 1.66
+moves 31% of the way toward the sensor
+Probability density
+Displacement (mm)

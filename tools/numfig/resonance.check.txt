@@ -1,0 +1,69 @@
+nf-resonance: Figure 2, occurrence of resonance modes
+
+MODEL
+  steel bar 40 x 10 mm, E = 210 GPa, rho = 7850 kg/m^3: EI = 700.0 N m^2, m = 3.140 kg/m; span L = 1.0 m, force at x_F = 0.13 m
+  light hysteretic damping: EI -> EI (1 + i eta), eta = 0.05 (every mode zeta = eta/2 = 0.025)
+  (a) infinite beam, exact Green's function: w_inf(x) = -F (i e^{-ik|x-x_F|} + e^{-k|x-x_F|}) / (4 EI k^3)
+  (c) simply supported span, exact: closed form field transfer matrices (beam_model.field)
+      with the shear jump F at x_F; the page evaluates the modal sum of the same span
+      (60 modes, sin(n pi x/L), damping as above), checked against the exact solution below.
+  (b), (d): |w(x_F) / w_inf(x_F)| in dB; the infinite beam is 0 dB at every frequency (flat), the
+      span shows what the reflections from its supports add. (His 'flat spectrum' of the
+      infinite beam: its plain receptance falls as f^(-3/2), smoothly, with no peak.)
+
+CHECK 1: resonance peaks against the simply supported frequencies (n pi/L)^2 sqrt(EI/m) / 2 pi
+  f_1 =   23.4533 Hz; peak of |w| at   23.4436 Hz (-0.041 %), of |w/w_inf| at   23.4656 Hz, height 15.10 dB
+  f_2 =   93.8132 Hz; peak of |w| at   93.7813 Hz (-0.034 %), of |w/w_inf| at   93.8689 Hz, height 19.64 dB
+  f_3 =  211.0798 Hz; peak of |w| at  211.1362 Hz (+0.027 %), of |w/w_inf| at  211.3326 Hz, height 20.57 dB
+  f_4 =  375.2529 Hz; peak of |w| at  375.8369 Hz (+0.156 %), of |w/w_inf| at  376.1866 Hz, height 19.16 dB
+  (the peaks of |w| sit on f_n to within the other modes' pull, eta = 0.05 wide)
+
+CHECK 2: the infinite beam's receptance against a long span (40 m, force at mid span, eta = 0.2
+  so the far supports' reflections die: e^{2 Im(k) 20 m} < 1e-4), modal sum of 4000 modes
+  f =    50 Hz: long span / closed form = 0.999861-0.000104j
+  f =   300 Hz: long span / closed form = 1.000008-0.000011j
+
+CHECK 3: the page's modal sum (60 modes) against the exact span, max |difference| / max |w|
+  f =   15.000 Hz: 1.1e-06
+  f =   23.453 Hz: 9.0e-08
+  f =   60.000 Hz: 5.7e-06
+  f =  211.080 Hz: 3.1e-06
+  f =  300.000 Hz: 3.8e-05
+  f =  480.000 Hz: 7.7e-05
+
+CHECK 4: mode shapes, beam_model (Wittrick-Williams, null vector) against sin(n pi x/L)
+  mode 1: f = 23.453306 Hz (closed form 23.453306), max |shape difference| 5.1e-15
+  mode 2: f = 93.813225 Hz (closed form 93.813225), max |shape difference| 3.8e-14
+  mode 3: f = 211.079755 Hz (closed form 211.079755), max |shape difference| 7.2e-13
+  mode 4: f = 375.252899 Hz (closed form 375.252899), max |shape difference| 3.1e-11
+
+CHECK 5: at each resonance the forced shape is the mode (MAC of w(x) at the peak with sin(n pi x/L))
+  mode 1: MAC = 0.99996
+  mode 2: MAC = 0.99888
+  mode 3: MAC = 0.99657
+  mode 4: MAC = 0.99239
+
+(e), (f): sin(k4 x) cos(w4 t) = [sin(k4 x - w4 t) + sin(k4 x + w4 t)] / 2, exact: the 4th mode is two
+  equal waves travelling in opposite directions, k4 = 4 pi / L (four half wavelengths in L).
+
+SWEEP AND TIME
+  time slowed 200 x; the drive's phase is the integral of f(t)/200 (a sweep, not a jump)
+  sweep: log f from 10.5 to 477 Hz and back, period 41.53 s on screen; it rests at
+  every resonance on the way up and on the way down (29 Sep: hold the simulation on the peaks).
+  Glides [1.4, 2.0, 1.8, 1.7, 1.2] s, eased (Beta(2, 4): still at both ends, slowest on arrival) in a
+  coordinate stretched ten times within about 0.03 decades of each f_n; dwells at f1 ... f4
+  4.26, 2.60, 2.60, 2.60 s (at f1 half the mode's slow period, 8.5 s on screen, so it swings
+  once from one extreme to the other). Each frame is the steady state at the frequency of the
+  moment (the page's parameter line says so), so arriving at f_n the response is seen building up
+  the peak of (d): the curve's value against the time left before the dwell, on the way up:
+    f1 =   23.45 Hz (15.10 dB), dwell  1.60 to  5.86 s: within 20, 10, 3 dB of it for the last 1.02, 0.90, 0.69 s
+    f2 =   93.81 Hz (19.64 dB), dwell  7.86 to 10.46 s: within 20, 10, 3 dB of it for the last 1.17, 1.05, 0.82 s
+    f3 =  211.08 Hz (20.56 dB), dwell 12.26 to 14.86 s: within 20, 10, 3 dB of it for the last 1.12, 1.01, 0.78 s
+    f4 =  375.25 Hz (19.11 dB), dwell 16.56 to 19.16 s: within 20, 10, 3 dB of it for the last 1.08, 0.97, 0.75 s
+  The still: f4, 0.49 s into its dwell on the way up, t = 17.530 s: 4 half periods of mode 1 after
+  the physics clock starts (TS = 0.35 s, eased over 0.25 s), when every mode in (g) and the span
+  in (c) are at an extreme (and at the clock's start every mode in (g) is at an extreme too).
+  The page's tables (16 ms, float32, linear between): log f within 6.3e-04 decades, the phase
+  within 6.4e-04 rad of the 1 ms grid's; the 1 ms trapezoid phase against 0.125 ms over a whole
+  period: 6.2e-08 rad of 214.1.
+  display scale of (c): G = max over the peaks of |w(x)/w_inf(x_F)| = 14.314

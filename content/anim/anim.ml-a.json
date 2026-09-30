@@ -1,0 +1,14 @@
+{
+ "machine-learning-the-complete-picture-and-guide-5": {
+  "image1": "nf-mla-tasks.html",
+  "image2": "nf-mla-cleaning.html",
+  "image3": "nf-mla-features.html",
+  "image4": "nf-mla-learning.html",
+  "image5": "nf-mla-linreg.html",
+  "image6": "nf-mla-logreg.html",
+  "image7": "nf-mla-tree.html",
+  "image8": "nf-mla-forest.html",
+  "image9": "nf-mla-boost.html",
+  "image10": "nf-mla-svm.html"
+ }
+}

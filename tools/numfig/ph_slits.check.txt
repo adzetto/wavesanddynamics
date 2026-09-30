@@ -1,0 +1,106 @@
+Figure 1 (nf-ph-slits): double-slit interference as a mode-shape problem
+generator: tools/numfig/ph_slits.py
+
+MODEL (lengths in wavelengths, lambda = 1, k = 2 pi)
+  a line source (a point in 2D) at x = -100, on the axis; an opaque screen at x = 0 with two slits
+  of width a = 1.2, centres y = +2.4 (A) and -2.4 (B), so d = 4.8; the detecting screen at
+  x = L = 12, drawn over |y| < 11. ad / (lambda L) = 0.48: the far-field side of
+  the document's ad / (lambda L) > 1 for two separate bands.
+  incident field U_inc = H0(k r); each slit's field behind the screen is the first Rayleigh-Sommerfeld
+  (Huygens-Fresnel) integral in 2D over its aperture, with U_inc in the slit and 0 on the screen:
+    U_s(x, y) = (i k / 2) Int_slit U_inc(0, y') H1(k rho) x / rho dy',  rho = |(x, y) - (0, y')|
+  time harmonic, the field Re{U e^{-i w t}}. (a) one polarization: U = U_A + U_B, intensity |U_A + U_B|^2.
+  (b) perpendicular polarizations: E = U_A e_A + U_B e_B with e_A . e_B = 0, so |E|^2 = |U_A|^2 + |U_B|^2.
+  all fields divided by |U_inc| at the slits (0.031831). B is A mirrored in the axis (the source is on it).
+  quadrature: 800 Gauss-Legendre points per slit; screen sampled every 0.01.
+
+CHECK 1, the superposition against the Fraunhofer formula (normal plane wave, R = 1e5, |theta| <= 60 deg)
+  2D far field: I(theta) = cos^2 theta sinc^2(pi a sin theta) cos^2(pi d sin theta) (the cos^2 is the
+  Rayleigh-Sommerfeld obliquity), and without the interference term cos^2 theta sinc^2(pi a sin theta) / 2
+    |U_A + U_B|^2, normalised, against it: largest difference 2.1e-09 of the peak
+    |U_A|^2 + |U_B|^2 against the sum of the two single-slit envelopes: largest difference 3.1e-09
+    the level on axis: |U_A|^2 / ((k/2)^2 (2 / (pi k R)) a^2) = 1.000000 (1 exactly in the far field)
+
+CHECK 2, the page's screen (source 100 away, screen at L = 12) against the two-source
+  superposition of two Fraunhofer slits: each slit's own far field (a^2 / (lambda L) = 0.12), sinc^2 about
+  its own centre and lit at the source's angle, the two added with their exact path lengths:
+    U_s = (i k / 2) sqrt(2 / (pi k r_s)) e^{i (k r_s - 3 pi / 4)} cos th_s U_inc(0, y_s) a sinc(a (sin th_s - sin th_i))
+    (a) |U_A + U_B|^2: largest difference 1.39 % of its peak; (b) |U_A|^2 + |U_B|^2: 0.06 %
+    one slit, |U_A|^2 against its sinc^2 envelope: 0.22 % of its peak (absolute levels, not rescaled)
+CHECK 2b, the whole double slit's Fraunhofer formula, angles from the midpoint, holds only far away (the page's
+  screen is at d^2 / (lambda L) = 1.9); the same angles, |theta| <= 40 deg, on screens further off,
+  intensity times r, normalised:
+    L =    12: (a) largest difference 15.70 % of the peak, (b) 25.43 %
+    L =    48: (a) largest difference  1.28 % of the peak, (b)  2.19 %
+    L =   192: (a) largest difference  0.25 % of the peak, (b)  0.42 %
+    L =   768: (a) largest difference  0.14 % of the peak, (b)  0.21 %
+    the differences fall with L; what is left far off comes from the source's own distance, 100
+    wavelengths, which lights the slits 1.4 deg off normal (a plane wave: CHECK 1)
+  dark fringes of (a), y > 0: the computed minima, the exact two-point condition |r_A - r_B| = (m + 1/2),
+  and Fraunhofer d sin theta = (m + 1/2):
+    m = 0: computed 1.279, two-point 1.281 (-0.002), Fraunhofer 1.257 (+0.022)
+    m = 1: computed 4.030, two-point 4.018 (+0.012), Fraunhofer 3.948 (+0.083)
+    m = 2: computed 7.609, two-point 7.427 (+0.182), Fraunhofer 7.321 (+0.288)
+  fringe visibility at the centre (V = (I_max - I_min) / (I_max + I_min), first dark fringe): 0.9639
+  (b) has 1 maximum on the screen: one smooth hump, no fringes
+  the interference term 2 Re(U_A U_B*) integrates over the screen to +0.20 % of the total:
+  the fringes move the light, they do not make or lose it
+
+CONVERGENCE
+  (a) on the screen with 400 Gauss points instead of 800: largest change 1.8e-14 of the peak
+  (a) on the screen with 1600 Gauss points instead of 800: largest change 8.5e-14 of the peak
+  the grid's first column behind the slit (x = 1/6): 800 against 3200 points, largest change 2.6e-13
+
+THE FIELD ON THE PAGE
+  A's field on a grid every 1/6 wavelength, 73 x 133 points, stored as its envelope
+  E = U e^{-i k rho} sqrt(rho + 0.5) (rho from A's centre), int16 (rounding 1.6e-05 of max |E|); the page
+  rebuilds U at its own pixel size by Catmull-Rom and the exact carrier e^{i k rho}; B is A mirrored.
+  rebuilt against the integral at 3000 random points, in units of max |E|:
+    beyond 0 wavelength of the slit's centre: largest error 4.2e-02
+    beyond 0.5 wavelength of the slit's centre: largest error 1.5e-02
+    beyond 1 wavelength of the slit's centre: largest error 2.7e-03
+    beyond 2 wavelength of the slit's centre: largest error 7.9e-04
+  crest lines: where Re{U e^{-i w t}} peaks, darkness g ((cos(phi - w t) - 0.35) / 0.65)^3, phi = arg U;
+  g = min(1, |U| sqrt(rho + 0.5) / n0) takes out the 2D spreading 1 / sqrt(rho) so the far lobes stay
+  visible (rho from each slit in (b), from the midpoint in (a)); n0 = 1.4388: A alone peaks at 0.85
+  on the screen, so where A and B add in (a) the lines are darkest and where they cancel they vanish.
+  colour is polarization: (a) one field, blue; (b) A blue, B crimson; the source's field grey.
+  crest lines rather than the engine's DIVERGING map: its crimson arm would mean a negative field in (a)
+  and slit B's light in (b); as crest lines one colour means one polarization in both panels.
+  the opaque screen is drawn 0.34 wavelength thick, centred on the aperture plane; the field within 0.17
+  of the plane lies under it, where the grid's error is largest. Just behind it, in units of max |E|:
+    0.17 <= x < 0.35: largest error 5.0e-02
+    0.35 <= x < 0.5: largest error 1.9e-02
+    0.5 <= x < 1: largest error 8.9e-03
+  the source's field H0(k r) is drawn near the source (r < 2.5, a 42 deg cone) and in front of the slits
+  (the last 2.1 wavelengths, |y| < 3.3, 100 from the source); the break mark on the axis stands for the
+  95 wavelengths between. The phase of H0 beyond k r - pi/4 is tabulated from scipy for r < 3.
+
+THE PHOTONS
+  10000 per screen; each lands at y drawn from the screen's intensity as a probability density (inverse
+  CDF, linear between the fine grid's points) and anywhere across the drawn plate's width; arrival
+  times a Poisson process with expected count n(tau) = n0 (e^{tau/tau0} - 1), tau0 = 0.7303 s,
+  4 expected in the first second and 10000 by 6.5 s (time rescaling of unit exponential gaps);
+  seeds 1927 (a) and 1961 (b).
+    (a) Kolmogorov-Smirnov against the density: D = 0.0134, p = 0.06; histogram of 88 bins,
+        chi^2 = 96.1 on 87 degrees of freedom, p = 0.24; 4 landed in the first second,
+        the last at 6.506 s
+    (b) Kolmogorov-Smirnov against the density: D = 0.0040, p = 1.00; histogram of 88 bins,
+        chi^2 = 82.7 on 87 degrees of freedom, p = 0.61; 5 landed in the first second,
+        the last at 6.486 s
+  the histogram: bins of 0.25 wavelength, counts / (max(n, 800) bin), in the same units as the
+  curve (the probability density), so its bars grow with the first photons and then settle onto the curve.
+  both panels use one density scale: the same light, in (a) moved into fringes twice the smooth level.
+
+TIME
+  one optical period per second of the page (for 600 nm light, time slowed 5e+14 times); the crests
+  move lambda per second. The intro draws the field along its own path: the source's waves (0.08 to 0.4 s),
+  then the slits' fields out to the screen (0.34 to 0.82 s): a drawing, not the switch-on transient, which
+  would take the light 12 periods (12 s here) to reach the screen. The photons start at 0.9 s; the cycle
+  is 10 s: they land, the histogram holds, then fades in 0.35 s and starts again.
+  poster (print, reduced motion) at t = 8.01 s: all 10000 photons landed in both panels.
+
+OVERLAP (engine.js ?overlap, common.still and common.overlaps)
+  clean at the poster and every 0.25 s from 0.25 to 8.25 s (common.still),
+  and at 9, 10.5, 10.8, 11.2, 12, 14 s (the fade and the next build): clean
+  no label on a label and no stroke through a label; nothing allowed.

@@ -1,0 +1,11 @@
+# his words inside his two charts (build/r10-deck/his/s067-pic1.png)
+Case A: concrete strength (slides 18–19)
+prior belief: 30 MPa (SD 2)
+25 tests: 32 MPa (SE 0.6)
+combined: 31.83 MPa
+MPa
+Case B: bridge displacement (slides 65–66)
+model prediction: 10 mm (SD 2)
+sensor: 14 mm (SD 3)
+combined: 11.23 mm
+mm

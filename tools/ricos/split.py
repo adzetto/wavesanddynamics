@@ -24,6 +24,7 @@ this corpus, 323 of them in the guide - which is small only because these
 documents are almost all ASCII, and would not stay small for a document written
 in Turkish. `doc_bytes` counts the bytes that are actually stored.
 """
+
 import json
 
 from tools.ricos.blocks import Para
@@ -123,42 +124,59 @@ def pack(sections, limit=LIMIT, media_ids=None):
 
     Each record is measured on its own emitted document rather than by adding
     up its sections, because it is not additive - the wrapper is paid once per
-    record, and `emit` numbers nodes from `n1` in each one.
+    record, and `emit` numbers nodes from `n1` in each one. The sum of the
+    sections' own sizes is wrong in both directions: the ML guide's twelve
+    sections come to 712 bytes *less* than the one record they partition,
+    while Dynamical's eleven come to 399 more.
 
-    That measurement is why this is quadratic in the number of sections: every
-    section re-emits the record accumulated so far to ask whether it still
-    fits. At 47 sections that is the whole corpus in a fraction of a second, so
-    it is left simple. The way to make it cheap is not to add section sizes up
-    instead - the paragraph above is why that is not a sound count, and it is
-    wrong in both directions: the ML guide's twelve sections come to 712 bytes
-    *less* than the one record they partition, while Dynamical's eleven come to
-    399 more. Use the sum as a cheap screen and re-emit only once it comes
-    within a margin of the limit; the answer stays exact where it decides
-    anything.
+    So the sum is the screen and the emitted record is the measurement. Each
+    section is emitted once, for its own size, and the record accumulated so
+    far is re-emitted only when the running sum comes within a tenth of the
+    limit; below that the record fits, and above it the answer stays exact.
+    It used to be re-emitted for every section, which is quadratic - 0.17 s
+    at 47 sections, and growing with the square of a longer document.
+
+    Why a tenth is enough: the sum over-counts the wrapper, once per section
+    instead of once, and under-counts only the node ids, which run on into
+    more digits in a long record than in a short section. That is at most a
+    few bytes per node against the fifty or more a node costs, so a record
+    whose sections sum to nine tenths of the limit cannot reach it.
     """
     out = []
-    cur_titles, cur_blocks = [], []
+    cur_titles, cur_blocks, cur_sum = [], [], 0
+    near = limit - limit // 10
 
     def flush():
         """Close the record being accumulated and start an empty one.
 
         The reset lives in here on purpose. With it at the call sites, `flush`
-        reads two names the loop rebinds, and a reset written one line too
+        reads three names the loop rebinds, and a reset written one line too
         early loses a whole section with nothing to show for it.
         """
-        nonlocal cur_titles, cur_blocks
+        nonlocal cur_titles, cur_blocks, cur_sum
         if cur_blocks:
             doc = emit(cur_blocks, media_ids)
             size = doc_bytes(doc)
-            out.append({"titles": list(cur_titles), "doc": doc,
-                        "bytes": size, "over_limit": size > limit})
-        cur_titles, cur_blocks = [], []
+            out.append(
+                {
+                    "titles": list(cur_titles),
+                    "doc": doc,
+                    "bytes": size,
+                    "over_limit": size > limit,
+                }
+            )
+        cur_titles, cur_blocks, cur_sum = [], [], 0
 
     for title, blocks in sections:
-        trial = emit(cur_blocks + blocks, media_ids)
-        if cur_blocks and doc_bytes(trial) > limit:
+        size = doc_bytes(emit(blocks, media_ids))
+        if (
+            cur_blocks
+            and cur_sum + size > near
+            and doc_bytes(emit(cur_blocks + blocks, media_ids)) > limit
+        ):
             flush()
         cur_titles.append(title)
         cur_blocks.extend(blocks)
+        cur_sum += size
     flush()
     return out

@@ -4,6 +4,7 @@ Every later test trusts make_docx() and para() to produce what Word would. If th
 fixture itself wrote malformed XML or mis-typed relationships, failures downstream
 would point at the converter instead of here.
 """
+
 import io
 import zipfile
 

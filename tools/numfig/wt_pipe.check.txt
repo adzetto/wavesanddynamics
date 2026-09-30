@@ -1,0 +1,30 @@
+nf-wt-pipe: the fun table, 'Pressure-wave reflection' (image4)
+
+MODEL
+  steel water main, bore 300 mm, wall 8 mm; water K = 2.19 GPa, rho = 998 kg/m^3.
+  Korteweg wave speed a = sqrt(K/rho / (1 + K D / (E e))) = 1256.0 m/s; Z0 = rho a / A = 1.7733e+07 Pa s/m^3.
+  leak: 50 mm orifice, Cd = 0.61, at 5 bar: Q = 37.9 L/s; linearised dQ/dp = Q / 2p = 3.791e-08 m^3/(s Pa).
+  at the leak: R = -Z0 Y / (2 + Z0 Y) = -0.2516, T = 1 + R = 0.7484; leak 250 m from the generator.
+  pulse: Hann, 40 ms (50 m long); echo at the sensor after 2 x_L / a = 398.1 ms.
+
+CHECK 1: energy at the leak, incident = reflected + transmitted + lost through the orifice
+  1 = R^2 + T^2 + Z0 Y T^2: 1.000000000000
+
+CHECK 2: an independent finite difference run of the water hammer equations
+  (p_t = -(rho a^2 / A) q_x, q_t = -(A / rho) p_x on a staggered grid, the orifice as a
+  sink Y p at the leak's node, open boundaries by characteristics), against the closed form
+  dx = 0.550 m: echo peak -0.2516 at 417.76 ms; closed form -0.2516 at 418.10 ms (error +2.4e-05, -0.33 ms)
+  dx = 0.138 m: echo peak -0.2516 at 418.09 ms; closed form -0.2516 at 418.10 ms (error +4.6e-05, -0.01 ms)
+  the grid converges on R and on 2 x_L / a: the timing that locates a leak.
+
+CHECK 3: the leak located from the finest run's echo alone: x_L = a (t_peak - tau/2) / 2
+  t_peak = 418.090 ms  ->  x_L = 250.00 m against 250 m (-0.004 m)
+
+DRAWING
+  pipe from -20 m to 380 m = 1000 units; bore and wall drawn to no scale
+  (a 300 mm pipe drawn 100 units: the cross direction is not to scale).
+  the field: p / p_pulse through the diverging palette over +-0.5 (the pulse saturates, the echo
+  shows), uniform across the bore (plane waves);
+  under the pipe the sensor's record, its time axis drawn as a t / 2 so each echo sits under
+  the place it comes from.
+  time slowed 8 x: one pulse every 700 ms, 5.6 s on screen.

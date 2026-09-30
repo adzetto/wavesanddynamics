@@ -1,0 +1,43 @@
+nf-mlc-policy: Figure 29, a tabular policy and a neural network policy
+
+(a) TABLE: the Q-table of Figure 30's run after 300 episodes (mlc_grid.py, seed 21):
+  25 rows (states) x 4 columns (up, down, left, right) = 100 numbers, no neurons.
+  largest value in every row leads one square closer to the goal: True
+  max |Q - Q*| over the 24 non goal rows: 0.7739 (Q* by value iteration)
+
+(b) NETWORK: deep Q-network on the continuous world (mlc_dqn.py): position (x, y) real,
+  a move shifts it by 1 (the wall stops it), the goal is the square [4,5) x [4,5),
+  +1 there, -0.02 per other step, gamma = 0.95. 2 inputs (x/2.5 - 1, y/2.5 - 1),
+  hidden 12 tanh, 12 tanh, 4 linear outputs: 244 weights and biases.
+  trained by interaction: epsilon-greedy from 1 to 0.05 over 15000 steps, 40000 steps,
+  replay buffer 20000, batch 64, Huber loss, Adam 1e-3, target network synced every 250
+  steps; random start anywhere; 7251 episodes; torch seed 3.
+
+CHECK 1: the network at the 25 square centres against the exact Q* of the grid
+  max |Q_net - Q*| = 0.0509, mean 0.0210; its largest output is an optimal
+  action at 24 of 24 centres.
+
+CHECK 2: greedy rollouts of the network from 1000 random real starting positions
+  reach the goal: 1000 / 1000; by a shortest route: 1000 / 1000
+
+CHECK 3: the page's forward pass is this one (numpy float64, tanh); at the four
+  starting positions the outputs are
+    (x, y) = (0.37, 0.58): Q = [0.5835 0.515  0.4954 0.5946]
+    (x, y) = (2.71, 0.26): Q = [0.6901 0.6301 0.5829 0.6958]
+    (x, y) = (0.44, 3.62): Q = [0.727  0.6491 0.6505 0.7509]
+    (x, y) = (1.63, 2.21): Q = [0.7366 0.628  0.6203 0.7442]
+
+THE WALKS SHOWN
+  from (0.37, 0.58): network 8 steps, table 8 steps from square (0, 0)
+  from (2.71, 0.26): network 6 steps, table 6 steps from square (2, 0)
+  from (0.44, 3.62): network 5 steps, table 5 steps from square (0, 3)
+  from (1.63, 2.21): network 5 steps, table 5 steps from square (1, 2)
+
+TIMING (Round 3, 30 Sep 2026: the client asked for the figure slowed down; about 2 x)
+  one move every 1.25 s (was 0.62 s): both agents glide 0.7 s (was 0.38) and rest 0.55 s on the
+  new square (was 0.24) while the table's row and the network's outputs can be read.
+  A lap: the agents appear in 0.4 s (was 0.25) and set off 0.6 s after it opens (was 0.3); at the
+  goal they rest 2.15 s (was 1.14), then fade out in 0.5 s (was 0.3). Laps 12.70, 10.20, 8.95, 8.95 s:
+  the four walks repeat every 40.8 s (was 20.9 s). The first move at 1.2 s (was 0.9);
+  the intro is unchanged (drawn by 1.0 s). Poster (reduced motion, print): 4.52 s
+  (was 2.64), lap 1, three moves made, the same frame as before.

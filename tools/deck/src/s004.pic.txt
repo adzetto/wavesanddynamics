@@ -1,0 +1,4 @@
+# his words inside his chart (build/r10-deck/his/s004-pic1.png)
+Chance of finding the defect (%)
+Number inspected without replacement
+3 inspected: 12%

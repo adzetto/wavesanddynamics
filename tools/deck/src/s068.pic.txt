@@ -1,0 +1,7 @@
+# his words inside his chart (build/r10-deck/his/s068-pic1.png)
+Noisy observations
+95% posterior interval
+Simulated truth
+Kalman estimate
+Displacement (mm)
+Measurement step

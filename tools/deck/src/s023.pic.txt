@@ -1,0 +1,8 @@
+# his words inside his chart (build/r10-deck/his/s023-pic1.png)
+95% of outcomes at each x
+tests
+mean: β₀ + β₁x
+28-day strength Y (MPa)
+Water-to-cement ratio x
+25 MPa limit
+P(Y < 25 | x = 0.55) = 2.3%

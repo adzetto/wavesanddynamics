@@ -1,0 +1,8 @@
+# his words inside his 2 x 2 picture (build/r10-deck/his/s041-pic1.png), panel by panel
+Markov chain
+Failed
+Degr.
+Good
+Random walk, AR(1)
+Poisson process
+Gaussian process, vibration

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 4: The five data-cleaning steps from this section, illustrated</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Five rows, one per cleaning step, each on a small worked example: a missing glucose value filled with the median and flagged in a new column, dates and heights made consistent, two ages beyond Tukey's fence investigated (one kept, one typing slip corrected from 430 to 43), three features turned into z-scores, and four frauds among 196 normal transactions balanced with synthetic frauds by SMOTE."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 900;
+const DATA = {"a":{"glu":[98,142,-1,115,104,131,88],"med":109.5,"mid":[104.0,115.0]},"b":{"raw":[["12/05/2024","172 cm"],["2024-12-09","68 in"],["11 Dec 2024","5 ft 9 in"]],"iso":["2024-12-05","2024-12-09","2024-12-11"],"cm":[172.0,172.72,175.26]},"c":{"ages":[34,45,29,51,38,62,47,55,41,430,58,36,96,49],"q":[38.75,48.0,57.25],"f":[11.0,85.0],"w":[29,62]},"d":{"names":["age (years)","income (k$)","glucose (mg/dL)"],"x":[[23.0,37.0,45.0,52.0,61.0,74.0],[28.0,54.0,61.0,95.0,120.0,210.0],[82.0,96.0,104.0,118.0,141.0,187.0]],"z":[[-1.56525,-0.71148,-0.22361,0.20328,0.75213,1.54492],[-1.1222,-0.68454,-0.56671,0.00561,0.42643,1.9414],[-1.13551,-0.73134,-0.50039,-0.09623,0.56775,1.89572]],"lim":[[20,80],[0,240],[60,200]],"mean":[48.66667,94.66667,121.33333],"sd":[16.39783,59.40726,34.63941]},"e":{"maj":[[0.35877,1.20854],[-1.78633,1.34929],[-0.04732,-0.63998],[-0.80296,-0.86625],[-0.22365,0.66711],[0.58406,0.51063],[-1.69481,-1.25677],[1.5538,0.77511],[2.18321,0.96785],[-1.02439,1.02822],[0.62839,0.17186],[-0.81987,0.00222],[-0.147,0.71403],[0.1245,1.2678],[-0.77449,0.37688],[0.49884,-0.69147],[-1.18127,0.81086],[0.51744,-0.13],[0.39437,-0.54028],[0.23835,-0.4841],[0.18879,0.78887],[-0.33963,0.67982],[-1.0342,-0.23079],[-1.36474,-0.08047],[0.07865,-0.15781],[-0.26768,1.07216],[1.42379,-0.9725],[1.17411,-1.37846],[-0.73448,-0.13876],[0.11106,-0.83793],[-0.72247,0.06132],[-0.69342,-0.51296],[0.66626,0.74538],[-0.06006,0.01456],[-0.0196,-0.36359],[-0.51139,-0.8302],[0.64839,-0.06733],[-0.13744,0.16043],[0.53067,1.13683],[-0.27355,-0.32094],[0.20057,-0.6764],[1.27243,0.741],[0.69392,-0.09569],[0.73958,0.84016],[0.49991,-0.22399],[-1.68507,0.75757],[-0.35325,-0.67459],[0.8906,0.27054],[-1.41884,-0.07923],[-0.26923,0.79409],[-1.89512,-0.30845],[-0.13825,1.13512],[-1.08339,-2.35235],[-1.38403,0.21046],[0.80959,1.38683],[0.40094,-0.64185],[0.88439,-0.00885],[-0.20096,0.01404],[1.27458,-0.72115],[-1.02393,-0.05322],[-0.06657,-0.65157],[-0.87946,0.30213],[1.33784,0.57039],[0.68512,0.99659],[-1.99097,-1.20826],[-0.7054,-0.95609],[-0.9894,0.0559],[-1.28439,-0.3548],[-2.04315,-0.77918],[1.34555,-0.43432],[0.32414,0.56652],[-0.4909,0.46327],[0.21454,0.55792],[-0.63555,-1.15214],[-1.02212,-0.44385],[0.53583,-0.16345],[-0.39881,-0.14375],[1.09976,-0.4604],[1.51133,-0.98207],[-0.59224,0.684],[0.51783,-0.68441],[-0.10903,-0.56714],[0.85102,0.43179],[-0.71311,0.31775],[-0.36715,-0.05753],[0.06461,-0.45124],[0.42501,0.36823],[0.42593,0.88371],[-0.27174,-1.18629],[-0.48907,0.16059],[0.02199,0.46295],[0.80642,-0.09407],[-0.11037,-0.78993],[1.0331,-0.21115],[-1.08331,-0.8915],[-0.41477,1.24432],[0.77255,-1.35523],[-0.12361,0.21117],[0.62656,0.27493],[-0.64074,0.32951],[-0.55415,-1.79252],[-0.70886,-0.54877],[0.95363,0.8448],[-1.04528,0.13913],[0.09014,-1.14864],[-2.05314,-0.07421],[0.13644,-0.47587],[-2.71117,-0.02359],[-0.57862,-0.71153],[-0.32419,-0.90285],[0.55984,0.00848],[-0.55946,0.2255],[-0.0321,-1.21456],[-0.14415,-0.36573],[-1.74072,-0.52163],[0.42634,-0.4956],[1.40751,1.35857],[-0.30635,0.44275],[1.99265,-0.26522],[-0.89896,-0.33787],[-1.37422,-1.07935],[0.20865,-0.33341],[0.24644,0.3907],[-0.76432,-0.15556],[-0.2693,-0.53493],[-0.83646,0.25244],[-0.14025,0.26583],[1.00092,0.81137],[-1.11206,-0.68466],[-0.25625,0.09891],[0.93839,-0.76974],[-0.43685,0.19763],[1.22887,1.10339],[-1.00598,-0.16963],[-0.80775,0.67798],[0.4469,-0.28624],[-0.61125,0.23596],[0.98029,-0.61396],[-0.32366,0.09038],[0.01801,0.27029],[-0.99958,-0.47594],[-2.10011,0.04459],[1.07016,-1.64576],[-0.63181,0.71882],[-0.1428,-1.51603],[1.16879,-1.14078],[1.37091,-0.46771],[-0.70655,0.02156],[-0.02218,0.48038],[0.50251,-0.11835],[1.32253,0.57078],[0.27379,0.10809],[-0.09533,-0.06206],[0.6649,0.3794],[0.03973,0.81209],[-0.26221,0.34872],[0.85952,-0.8924],[-0.26411,1.33505],[-0.9571,0.92166],[-1.05976,0.32443],[-1.06419,-0.49311],[-0.37531,-0.43906],[1.00857,0.6668],[0.87006,0.15479],[1.63669,0.82303],[0.32475,-0.83903],[0.68545,0.52173],[0.09434,0.57031],[0.76994,-0.23877],[0.5653,0.27765],[0.31315,-0.27344],[-0.46298,0.0949],[1.43172,1.86079],[-0.36981,-0.84348],[-0.34156,-0.66811],[-0.41706,0.31743],[-0.91425,0.48717],[0.79155,1.21315],[1.81927,0.79826],[2.26719,-0.3997],[0.27647,0.13765],[0.43919,0.81967],[-0.32327,1.3707],[1.27597,0.28246],[0.47172,-0.77073],[-2.47598,-0.06473],[0.324,0.1883],[-1.08979,-0.35369],[1.75926,0.58896],[0.6243,-0.23919],[0.74675,1.0339],[0.76638,-0.31455],[0.29516,-0.69129],[-0.29174,0.48086],[-0.51956,-0.17386],[1.44003,-0.12315]],"min":[[1.5,1.7],[2.9,0.3],[2.1,0.8],[3.7,1.9]],"syn":[[1.81693,1.38307],[3.38122,1.68084],[1.6729,1.44065],[2.20454,0.73466],[1.71379,1.37932],[1.99251,1.20749],[2.53341,0.66659],[2.0962,0.8057],[1.62635,1.57365],[1.69447,1.40829],[1.87123,1.32877],[2.2274,0.9726],[3.33154,1.8665],[2.43297,0.59189],[1.81781,1.22329],[1.62978,1.50533],[1.51924,1.67113],[3.20128,0.90255],[3.40734,1.6988],[1.6403,1.48955],[1.82072,1.37928],[3.47088,1.87917],[1.66324,1.45514],[2.71338,0.41663],[1.98879,0.96682],[3.6002,1.89093],[2.81142,0.35536],[1.98091,1.21909],[1.52235,1.70203],[1.54561,1.63159],[2.43673,1.0315],[2.42659,0.59588],[2.64878,0.45701],[2.88589,0.30882],[2.22782,0.88788],[2.54351,1.10491],[1.79355,1.25968],[3.44271,1.38542],[2.74515,0.45485],[3.54371,1.58743],[2.59605,0.60395],[3.20808,0.91617],[2.18567,1.01433],[1.96112,1.00832],[3.56625,1.80805],[2.80709,0.35807],[1.80061,1.24909],[2.62158,0.47401],[1.69817,1.40274],[2.4873,0.55794],[2.702,0.42375],[2.71146,0.48854],[3.49921,1.49842],[2.68679,0.43326],[3.35557,1.66321],[2.65248,1.80477],[2.51973,1.08856],[1.90827,1.08759],[1.87032,1.14452],[1.93815,1.04278],[1.72637,1.36044],[2.2138,0.9862],[2.30932,0.89068],[2.30487,0.94085],[2.41016,0.60615],[3.07001,0.64002],[2.76258,0.38589],[2.59223,0.60777],[2.75873,0.38829],[2.22658,0.88703],[2.55027,1.79548],[3.309,1.11799],[2.48481,0.55949],[3.34311,1.18622],[2.79717,0.36427],[2.11718,1.08282],[2.55288,0.51695],[1.63222,1.50166],[2.17755,1.7616],[2.85953,0.34047],[3.5459,1.88599],[1.8692,1.1462],[2.57719,1.79793],[3.27783,1.05566],[2.56774,1.12157],[3.07274,0.64548],[3.49501,1.49002],[2.47717,1.05931],[1.93222,1.05166],[1.75915,1.31127],[3.69754,1.89508],[2.03037,0.90445],[1.57219,1.70656],[2.43436,1.02987],[3.53503,1.57005],[3.17485,1.85226],[1.71145,1.38283],[2.34472,0.64705],[2.04369,1.15631],[3.6644,1.89676],[2.86968,0.33032],[3.52651,1.78073],[1.98186,0.97721],[1.77598,1.28603],[3.12065,0.74129],[2.8386,0.33837],[2.54528,1.79503],[2.47571,0.56518],[2.65995,0.45003],[3.01266,0.52532],[3.56103,1.88737],[1.51068,1.68932],[2.60752,0.59248],[3.56123,1.8046],[2.25282,0.94718],[2.46706,1.78791],[1.71407,1.37889],[2.91294,0.32588],[3.25287,1.5926],[3.12195,0.7439],[3.47239,1.87931],[2.84617,1.82238],[2.22983,1.76635],[2.70358,0.49642],[3.11628,0.73256],[2.58095,0.49941],[3.5109,1.52179],[3.48845,1.47689],[2.46717,0.73283],[2.62597,0.57403],[1.67463,1.43806],[1.63454,1.71223],[1.81745,1.38255],[1.71074,1.3839],[2.24589,0.95411],[2.79207,0.36746],[2.27334,0.69166],[2.04781,0.87828],[2.73519,0.40301],[3.55211,1.79833],[2.85384,0.32885],[2.93402,1.83037],[2.57495,0.50316],[2.66563,0.44648],[2.42191,0.77809],[2.58568,1.1339],[3.68227,1.88781],[2.28123,0.91877],[3.30588,1.11175],[2.62308,0.47307],[2.72176,1.22746],[3.68296,1.86593],[2.55055,1.10975],[2.70057,0.42465],[3.13552,0.77103],[3.6365,1.77299],[2.70948,0.41907],[3.23405,1.57966],[2.17769,0.85341],[2.4745,0.56593],[1.53874,1.66126],[3.03286,0.56573],[3.14689,0.79378],[2.36707,0.83293],[3.40873,1.69975],[2.24353,0.71029],[2.14134,0.77416],[1.96326,1.00511],[3.20075,1.55676],[2.46133,0.57417],[2.30393,0.9402],[2.79586,0.36509],[1.7674,1.4326],[2.45755,0.74245],[1.95128,1.02308],[2.40168,0.61145],[2.90556,0.31112],[2.46768,0.73232],[2.79761,0.40239],[2.67351,1.19429],[2.10731,0.79543],[2.14303,0.77311],[2.70983,0.41886],[2.32471,0.65956],[2.58536,0.49665],[2.8893,1.8263],[2.87622,1.33365],[1.54951,1.65049],[2.92901,1.82991],[3.10601,1.49163],[2.817,0.35188],[2.78164,1.81651]],"src":[0,3,2,2,0,1,1,2,1,0,0,0,0,2,0,2,2,3,2,0,0,3,0,1,0,0,1,1,3,2,2,1,2,1,2,3,2,1,1,3,0,1,0,0,3,1,0,2,0,1,2,0,3,2,3,3,3,2,0,2,2,1,1,2,2,3,1,0,2,3,3,1,2,1,2,1,2,2,0,1,0,2,0,1,3,1,3,2,0,0,1,0,3,2,3,0,2,2,0,3,0,3,0,0,3,1,3,2,2,1,0,1,1,3,0,0,2,3,2,3,0,0,0,1,1,2,3,3,0,0,0,3,1,0,1,1,1,0,2,3,2,3,2,1,1,2,3,0,3,2,2,1,3,2,1,1,2,2,2,1,0,1,3,1,2,1,2,2,2,2,3,2,1,0,2,2,1,0,1,2,2,2,2,2,2,3,3,1,3,3,2,3]}};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+/* ---------------------------------------------------------------- mla
+   helpers shared by the machine learning guide's figures */
+const arrive = t0 => settle(t0, .28);                 // a label or a mark arriving
+const sp = (dt, v = .5) => dt <= 0 ? 0 : settle(t - dt, v);   // a spring let go dt seconds ago
+function sub(letter, x, y, words, a = 1) {            // (a) and a subtitle of a few words
+  panel(letter, x, y, {alpha: a});
+  if (words) text(words, x + 35, y, {size: 17, color: C.body, alpha: a});
+}
+const nfmt = (v, d = 0) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+const thou = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+/* a data mark. kind 1: a filled navy disc; 0: an open disc; 2: unlabelled
+   (grey); 3: the accent (the one thing to follow); 4: filled sky. `a` is its
+   arrival, 0 to 1: it grows from 0.9 of its size as it fades in, never from
+   nothing. */
+function mark(x, y, kind, a = 1, r = 4.6) {
+  if (a <= 0) return;
+  const rr = r * (.9 + .1 * Math.min(a, 1));
+  ctx.save(); ctx.globalAlpha *= clamp(a); ctx.beginPath(); ctx.arc(x, y, rr, 0, 2 * Math.PI);
+  if (kind === 0) { ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = C.navy; ctx.lineWidth = 1.5; ctx.stroke(); }
+  else {
+    ctx.fillStyle = kind === 1 ? C.navy : kind === 2 ? C.guide : kind === 3 ? C.accent : C.sky;
+    ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = .9; ctx.stroke();
+  }
+  ctx.restore();
+}
+/* a ring around a mark: support vectors, the applicant, a flagged value */
+function ring(x, y, r, o = {}) {
+  const { color = C.accent, width = 1.8, alpha = 1, dash = null } = o;
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke(); ctx.restore();
+}
+/* a filled rectangle, optionally outlined */
+function box(x, y, w, h, o = {}) {
+  const { fill = null, stroke = null, width = 1, alpha = 1, dash = null } = o;
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (fill) { ctx.fillStyle = fill; ctx.fillRect(x, y, w, h); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
+  ctx.restore();
+}
+/* a legend inside the axes: a thin 1 px box, white fill, serif 15.
+   rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
+function legend(x, y, rows, a = 1, w = 0) {
+  if (a <= 0) return;
+  ctx.save(); ctx.font = font({size: 15});
+  const tw = Math.max(...rows.map(r => ctx.measureText(r[1]).width)); ctx.restore();
+  const W_ = w || tw + 58, H_ = rows.length * 22 + 10;
+  box(x, y, W_, H_, {fill: '#fff', stroke: C.ink, width: 1, alpha: a});
+  rows.forEach(([key, lab], i) => {
+    const yy = y + 21 + 22 * i;
+    ctx.save(); ctx.globalAlpha *= a; key(x + 22, yy - 5); ctx.restore();
+    text(lab, x + 44, yy, {size: 15, alpha: a});
+  });
+  return W_;
+}
+/* a step function drawn from edges e[0..n] and values v[0..n-1] */
+function stepPts(e, v, X, Y) {
+  const p = [];
+  for (let i = 0; i < v.length; i++) { p.push([X(e[i]), Y(v[i])]); p.push([X(e[i + 1]), Y(v[i])]); }
+  return p;
+}
+
+/* forever: rest at each stop, glide to the next with Motion's spring
+   (bounce 0) of visual duration G. stops [[v, rest], ...]. Before t0 the
+   value is the last stop; at t0 it glides to the first, and so on round.
+   Returns {from, to, p (0..1), k (index of `to`)}; p follows the spring. */
+function cycle(t0, stops, G) {
+  const n = stops.length; let P = 0;
+  for (const s of stops) P += G + s[1];
+  if (t < t0) return {from: stops[n - 1][0], to: stops[n - 1][0], p: 1, k: n - 1};
+  const tau = (t - t0) % P;
+  let S = 0, k = 0;
+  for (k = 0; k < n; k++) { const L = G + stops[k][1]; if (tau < S + L || k === n - 1) break; S += L; }
+  return {from: stops[(k + n - 1) % n][0], to: stops[k][0], p: sp(tau - S, G), k};
+}
+const cyc = c => Array.isArray(c.to) ? c.to.map((v, i) => lerp(c.from[i], v, c.p)) : lerp(c.from, c.to, c.p);
+
+/* TikZ node: a rectangle with ink outline, lines of text centred inside */
+function node(cx, cy, w, h, lines, o = {}) {
+  const { fill = '#fff', stroke = C.ink, width = 1.3, alpha = 1, size = 16, color = C.ink, gap = 20 } = o;
+  if (alpha <= 0) return;
+  box(cx - w / 2, cy - h / 2, w, h, {fill, stroke, width, alpha});
+  const y0 = cy - (lines.length - 1) * gap / 2 + size * .34;
+  lines.forEach((s, i) => {
+    const spec = typeof s === 'string' ? {s} : s;
+    if (spec.math) math(spec.s, cx, y0 + i * gap, {size: spec.size || size, align: 'center', color: spec.color || color, alpha});
+    else text(spec.s, cx, y0 + i * gap, {size: spec.size || size, align: 'center', color: spec.color || color,
+                                        alpha, italic: spec.italic, bold: spec.bold});
+  });
+}
+/* booktabs rules across [x0, x1] at y: top and bottom 1.3, mid 0.8 */
+function rule(x0, x1, y, o = {}) {
+  const { width = .8, alpha = 1, progress = 1, color = C.ink } = o;
+  line([[x0, y], [x1, y]], {color, width, alpha, progress});
+}
+/* the width of a run of text or math, without drawing it */
+function tw(s, size = 16, o = {}) {
+  ctx.save(); ctx.font = font({size, ...o}); const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+function mw(s, size = 16) { return math(s, 0, -1e4, {size, alpha: 0}); }
+
+const D = DATA;
+const ROW = [0, 172, 344, 516, 688];
+const R0 = .6, WIN = 3, ROUND = 17;
+const POSTER_T = R0 + 5 * WIN + 1;
+function win(k) { if (t < R0) return -1; const u = (t - R0) % ROUND - k * WIN; return u >= 0 && u < WIN ? u : -1; }
+/* a value that, in its window, starts over from `from` and reaches `to` at time a..a+d (spring) */
+const replay = (u, a, d = .3) => u < 0 ? 1 : sp(u - a, d);
+
+/* (a) imputation */
+function drawA() {
+  const y0 = ROW[0], u = win(0), A = D.a;
+  sub('a', 18, y0 + 30, 'imputation', arrive(0));
+  const X0 = 250, DX = 52, ya = y0 + 70, aa = arrive(.05);
+  rule(40, X0 + 6 * DX + 30, ya - 22, {width: 1.3, alpha: aa});
+  text('patient', 40, ya - 4, {size: 15, color: C.body, alpha: aa});
+  for (let k = 0; k < 7; k++) text(String(k + 1), X0 + k * DX, ya - 4, {size: 15, color: C.body, align: 'center', alpha: aa});
+  rule(40, X0 + 6 * DX + 30, ya + 4, {alpha: aa});
+  text('glucose (mg/dL)', 40, ya + 20, {size: 15, alpha: aa});
+  const ind = replay(u, 1.95);
+  /* the empty cell, one thing at a time (out, then in): as the window opens the value gives way
+     to '?'; once the median is marked, '?' goes and the median slides in from the strip's side */
+  let qa = 0, va = 1, vdx = 0;
+  if (u >= 0) {
+    const vin = sp(u - 1.55, .3);
+    qa = clamp((u - .12) / .15) * (1 - clamp((u - 1.3) / .15));
+    va = u < .12 ? 1 - u / .12 : vin; vdx = u < .12 ? 0 : 14 * (1 - vin);
+  }
+  A.glu.forEach((v, k) => {
+    if (v >= 0) { text(String(v), X0 + k * DX, ya + 20, {size: 15, align: 'center', alpha: aa}); return; }
+    box(X0 + k * DX - 24, ya + 5, 48, 21, {fill: C.wash, alpha: aa});
+    text('?', X0 + k * DX, ya + 20, {size: 16, bold: true, color: C.accent, align: 'center', alpha: aa * qa});
+    text(A.med.toFixed(1), X0 + k * DX + vdx, ya + 20, {size: 15, bold: true, color: C.accent, align: 'center', alpha: aa * va});
+  });
+  text('was missing', 40, ya + 44, {size: 15, alpha: aa * ind});
+  A.glu.forEach((v, k) => text(v >= 0 ? '0' : '1', X0 + k * DX, ya + 44, {size: 15, align: 'center', alpha: aa * ind,
+    color: v >= 0 ? C.ink : C.accent, bold: v < 0}));
+  rule(40, X0 + 6 * DX + 30, ya + 52, {width: 1.3, alpha: aa});
+  // the six observed values in order, and their median
+  const SX = v => 640 + (v - 80) / 70 * 320, sy = y0 + 110, sa = arrive(.12);
+  line([[SX(80), sy], [SX(150), sy]], {width: 1.2, alpha: sa});
+  for (const v of [80, 100, 120, 140]) { line([[SX(v), sy], [SX(v), sy + 5]], {width: 1.1, alpha: sa});
+    text(String(v), SX(v), sy + 20, {size: 14, align: 'center', alpha: sa}); }
+  text('observed glucose (mg/dL)', SX(115), sy + 40, {size: 14, color: C.body, align: 'center', alpha: sa});
+  A.glu.forEach(v => { if (v >= 0) mark(SX(v), sy - 12, 1, arrive(.15 + .2 * (v - 80) / 70), 4.4); });
+  const ma = u < 0 ? arrive(.4) : clamp((u - .7) / .25);
+  for (const v of A.mid) ring(SX(v), sy - 12, 9, {alpha: u < 0 ? 0 : clamp((u - .35) / .2) * (1 - clamp((u - 1.3) / .2))});
+  line([[SX(A.med), sy - 32], [SX(A.med), sy]], {color: C.accent, width: 2, alpha: ma});
+  text('median ' + A.med.toFixed(1), SX(A.med), sy - 38, {size: 15, color: C.accent, align: 'center', alpha: ma});
+  // the median then fills the empty cell (above): it slides in there, it does not fly over the
+  // table's rules and column numbers
+}
+
+/* (b) formats and units */
+function drawB() {
+  const y0 = ROW[1], u = win(1), B = D.b;
+  sub('b', 18, y0 + 30, 'inconsistent formats and units', arrive(.04));
+  const tA = [60, 230], tB = [560, 730], y1 = y0 + 62, aa = arrive(.08);
+  const table = (x, head, rows, a, rowA) => {
+    rule(x - 20, x + 290, y1 - 20, {width: 1.3, alpha: a});
+    text(head[0], x, y1 - 2, {size: 15, color: C.body, alpha: a}); text(head[1], x + 170, y1 - 2, {size: 15, color: C.body, alpha: a});
+    rule(x - 20, x + 290, y1 + 6, {alpha: a});
+    rows.forEach((r, i) => { const ra = a * rowA(i);
+      text(r[0], x, y1 + 26 + 22 * i, {size: 15, alpha: ra}); text(r[1], x + 170, y1 + 26 + 22 * i, {size: 15, alpha: ra}); });
+    rule(x - 20, x + 290, y1 + 26 + 22 * 2 + 10, {width: 1.3, alpha: a});
+  };
+  table(tA[0], ['visit date', 'height'], B.raw, aa, () => 1);
+  const conv = i => replay(u, .45 + .55 * i);
+  table(tB[0], ['visit date', 'height (cm)'], B.iso.map((d, i) => [d, B.cm[i].toFixed(1)]), aa, conv);
+  const ar = arrive(.12);
+  arrow(400, y1 + 30, 520, y1 + 30, {width: 1.3, head: 9, alpha: ar});
+  text('one date format', 460, y1 + 20, {size: 14, color: C.body, align: 'center', alpha: ar});
+  text('one unit', 460, y1 + 50, {size: 14, color: C.body, align: 'center', alpha: ar});
+  // in its window: the record being converted, on both sides, in the accent
+  if (u >= 0) for (let i = 0; i < 3; i++) {
+    const h = clamp((u - .3 - .55 * i) / .15) * (1 - clamp((u - .8 - .55 * i) / .15));
+    if (h > 0) { box(tA[0] - 12, y1 + 12 + 22 * i, 300, 20, {stroke: C.accent, width: 1.4, alpha: h});
+      box(tB[0] - 12, y1 + 12 + 22 * i, 300, 20, {stroke: C.accent, width: 1.4, alpha: h}); }
+  }
+}
+
+/* (c) outlier handling, on a broken axis */
+function drawC() {
+  const y0 = ROW[2], u = win(2), Cc = D.c;
+  sub('c', 18, y0 + 30, 'outlier handling', arrive(.08));
+  const A0 = 60, A1 = 600, B0 = 648, B1 = 740, sy = y0 + 118;
+  const X = v => v <= 110 ? A0 + (v - 20) / 90 * (A1 - A0) : B0 + (v - 420) / 20 * (B1 - B0);
+  const aa = arrive(.12);
+  line([[A0, sy], [A1 + 8, sy]], {width: 1.2, alpha: aa}); line([[B0 - 8, sy], [B1, sy]], {width: 1.2, alpha: aa});
+  for (const bx of [A1 + 14, B0 - 14]) line([[bx - 4, sy + 6], [bx + 4, sy - 6]], {width: 1.2, alpha: aa});
+  for (const v of [20, 40, 60, 80, 100, 420, 440]) {
+    line([[X(v), sy], [X(v), sy + 5]], {width: 1.1, alpha: aa}); text(String(v), X(v), sy + 20, {size: 14, align: 'center', alpha: aa});
+  }
+  text('age (years)', X(60), sy + 40, {size: 14, color: C.body, align: 'center', alpha: aa});
+  // Tukey's box and fence, from the ages as recorded
+  const bp = u < 0 ? seg(.3, .4) : clamp((u - .3) / .5), by = sy - 44, [q1, md, q3] = Cc.q;
+  box(X(q1), by - 9, X(q3) - X(q1), 18, {stroke: C.ink, width: 1.3, alpha: bp});
+  line([[X(md), by - 9], [X(md), by + 9]], {width: 1.6, alpha: bp});
+  line([[X(Cc.w[0]), by], [X(q1), by]], {width: 1.2, alpha: bp}); line([[X(q3), by], [X(Cc.w[1]), by]], {width: 1.2, alpha: bp});
+  line([[X(Cc.w[0]), by - 5], [X(Cc.w[0]), by + 5]], {width: 1.2, alpha: bp}); line([[X(Cc.w[1]), by - 5], [X(Cc.w[1]), by + 5]], {width: 1.2, alpha: bp});
+  line([[X(Cc.f[1]), by - 18], [X(Cc.f[1]), sy]], {color: C.guide, width: 1, dash: [5, 4], alpha: bp});
+  text('Q3 + 1.5 IQR', X(Cc.f[1]), by - 24, {size: 14, color: C.body, align: 'center', alpha: bp});
+  // the ages; the slip travels from 430 to 43 once it has been checked
+  const flag = u < 0 ? arrive(.5) : clamp((u - .85) / .2);
+  const keep = u < 0 ? arrive(.6) : clamp((u - 1.25) / .2);
+  const fix = u < 0 ? 1 : sp(u - 1.7, .55);
+  Cc.ages.forEach((v, i) => {
+    const a = arrive(.1 + .25 * i / Cc.ages.length);
+    if (v === 430) {
+      const x = lerp(X(430), X(43), fix), y = sy - 14 - 46 * Math.sin(Math.PI * fix);
+      if (fix > .02) ring(X(430), sy - 14, 9, {alpha: .8 * flag, dash: [3, 3]});
+      mark(x, y, 3, a, 4.6);
+      if (fix < .98) ring(x, y, 9, {alpha: flag});
+    } else {
+      mark(X(v), sy - 14, v === 96 ? 3 : 1, a, 4.6);
+      if (v === 96) ring(X(v), sy - 14, 9, {alpha: flag});
+    }
+  });
+  text('checked: real, kept', X(96), sy - 30, {size: 14, color: C.accent, align: 'center', alpha: keep});
+  text('430 was a typing slip for 43: corrected', X(430), sy + 40, {size: 14, color: C.accent, align: 'center', alpha: clamp(fix * 3 - 2) * (u < 0 ? arrive(.7) : 1)});
+}
+
+/* (d) normalization and standardization */
+const KIND = [1, 4, 0];
+function drawD() {
+  const y0 = ROW[3], u = win(3), Dd = D.d;
+  sub('d', 18, y0 + 30, 'normalization and standardization', arrive(.12));
+  const RX0 = 196, RX1 = 390, ZX0 = 560, ZX1 = 960, ys = [y0 + 64, y0 + 94, y0 + 124];
+  const ZX = z => ZX0 + (z + 2.5) / 5 * (ZX1 - ZX0);
+  const aa = arrive(.16);
+  Dd.names.forEach((nm, k) => {
+    const [lo, hi] = Dd.lim[k], RX = v => RX0 + (v - lo) / (hi - lo) * (RX1 - RX0), y = ys[k];
+    text(nm, 40, y + 5, {size: 15, alpha: aa});
+    line([[RX0, y], [RX1, y]], {width: 1.1, alpha: aa});
+    for (const v of [lo, hi]) line([[RX(v), y - 4], [RX(v), y + 4]], {width: 1, alpha: aa});
+    text(String(lo), RX0 - 6, y + 5, {size: 14, color: C.body, align: 'right', alpha: aa});
+    text(String(hi), RX1 + 6, y + 5, {size: 14, color: C.body, alpha: aa});
+    line([[ZX0, y], [ZX1, y]], {width: 1.1, alpha: aa});
+    for (let i = 0; i < 6; i++) {
+      const x0 = RX(Dd.x[k][i]), x1 = ZX(Dd.z[k][i]), a = arrive(.18 + .03 * i + .04 * k);
+      mark(x0, y - 7, KIND[k], a, 4.2);
+      const p = replay(u, .3 + .25 * k + .05 * i, .45);
+      if (u >= 0 && p < .999) { const xx = lerp(x0, x1, p); mark(xx, y - 7 - 26 * Math.sin(Math.PI * p), KIND[k], 1, 4.2); }
+      if (p > .98 || u < 0) mark(x1, y - 7, KIND[k], u < 0 ? a : 1, 4.2);
+    }
+  });
+  const za = arrive(.3), yb = ys[2];
+  for (const z of [-2, -1, 0, 1, 2]) { line([[ZX(z), yb], [ZX(z), yb + 5]], {width: 1.1, alpha: za});
+    math(fmt(z), ZX(z), yb + 20, {size: 14, align: 'center', alpha: za}); }
+  text('z-score (standard deviations from the mean)', ZX(0), yb + 40, {size: 14, color: C.body, align: 'center', alpha: za});
+  line([[ZX(0), ys[0] - 16], [ZX(0), yb]], {color: C.guide, width: 1, dash: [5, 4], alpha: za});
+  arrow(424, ys[1] - 7, 536, ys[1] - 7, {width: 1.3, head: 9, alpha: za});
+  math('z = (x - \\rm{mean}) / \\rm{sd}', 480, ys[1] - 18, {size: 15, align: 'center', alpha: za});
+}
+
+/* (e) class imbalance handling */
+function drawE() {
+  const y0 = ROW[4], u = win(4), E = D.e;
+  sub('e', 18, y0 + 30, 'class imbalance handling', arrive(.16));
+  const P = {x: 60, y: y0 + 46, w: 380, h: 118};
+  const g = axes({...P, xlim: [-3.2, 4.4], ylim: [-2.8, 2.6], xticks: [], yticks: [], progress: seg(.18, .35)});
+  const nS = E.syn.length, shown = u < 0 ? nS * clamp(seg(.5, .5) * 1.2) : (u < .3 ? nS * (1 - u / .3) : nS * clamp((u - .45) / 1.6));
+  g.inside(() => {
+    for (const p of E.maj) mark(g.X(p[0]), g.Y(p[1]), 4, arrive(.2), 2.2);
+    const m = Math.floor(shown);
+    for (let i = 0; i < m; i++) {
+      const s = E.min[E.src[i]], q = E.syn[i];
+      // each synthetic fraud slides out of its source fraud along the segment to its place
+      const age = u < 0 ? 1 : clamp((shown - i) / 6);
+      const x = lerp(s[0], q[0], easeOut(age)), y = lerp(s[1], q[1], easeOut(age));
+      ring(g.X(x), g.Y(y), 2.1, {color: C.accent, width: .9, alpha: .85});
+    }
+    for (const p of E.min) mark(g.X(p[0]), g.Y(p[1]), 1, arrive(.3), 5);
+  });
+  // the counts, before and after
+  const BX = 620, BW = 250, bx = n => BW * n / 196, la = arrive(.3), nf = 4 + Math.floor(shown);
+  const rowsY = [y0 + 84, y0 + 128];
+  text('before', 490, rowsY[0] + 5, {size: 15, color: C.body, alpha: la});
+  text('after SMOTE', 490, rowsY[1] + 5, {size: 15, color: C.body, alpha: la});
+  for (const [r, nfr] of [[0, 4], [1, nf]]) {
+    const y = rowsY[r];
+    box(BX, y - 18, bx(196), 12, {fill: C.sky, alpha: la});
+    text('normal 196', BX + bx(196) + 8, y - 8, {size: 14, alpha: la});
+    box(BX, y, Math.max(1.5, bx(nfr)), 12, {fill: C.navy, alpha: la});
+    text('fraud ' + nfr + (r === 0 ? ' (2%)' : ''), BX + Math.max(1.5, bx(nfr)) + 8, y + 10, {size: 14, color: r ? C.accent : C.ink, alpha: la});
+  }
+  text('4 real frauds and ' + (nf - 4) + ' synthetic', BX, rowsY[1] + 34, {size: 14, color: C.body, alpha: la});
+  const ka = arrive(.4), kx = 490, ky = y0 + 50;
+  mark(kx + 4, ky - 4, 4, ka, 2.6); text('normal', kx + 12, ky, {size: 14, alpha: ka});
+  mark(kx + 72, ky - 4, 1, ka, 4.4); text('fraud', kx + 82, ky, {size: 14, alpha: ka});
+  ring(kx + 132, ky - 4, 3, {color: C.accent, width: 1.1, alpha: ka}); text('synthetic fraud', kx + 140, ky, {size: 14, alpha: ka});
+}
+
+function draw() {
+  drawA(); drawB(); drawC(); drawD(); drawE();
+  text('median imputation with an indicator column; ISO dates and centimetres; Tukey’s fences; z-scores; ' +
+       'SMOTE, 3 neighbours', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+}
+boot();
+</script>
+</body>
+</html>

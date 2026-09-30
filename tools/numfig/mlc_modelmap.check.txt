@@ -1,0 +1,40 @@
+nf-mlc-modelmap: Figure 31, a model selection map computed from learning curves
+
+EXPERIMENT (mlc_modelmap_exp.py): 4 features uniform on [-1, 1]; noise sd 0.3;
+  simple pattern: y = x1 - 0.8 x2 + 0.6 x3 + 0.4 x4;  complex: the same + 1.2 x1 x2
+  + sin(2.5 x3) cos(1.5 x4) + 0.9 sin(4 x1 + 3 x2) + 0.8 sin(6 x3 x4) + 0.6 cos(7 x1 - 5 x4).
+  models (scikit-learn): ridge regression (penalty by CV), decision tree (leaf size by CV),
+  k nearest neighbours (k by CV), random forest (100 trees), MLP (64, 64, early stopping).
+  score: RMSE against the noiseless pattern on 4000 fresh points; repeats per size
+
+SIMPLE PATTERN (repeats per size [16, 16, 16, 16, 8, 8, 8, 4, 2])
+  n               linear  decision tree           k-NN  random forest            MLP   best (within 2 SE)
+     25      0.144+-0.011    0.670+-0.014    0.477+-0.015    0.494+-0.014    0.290+-0.031   linear
+     50      0.090+-0.007    0.613+-0.020    0.374+-0.008    0.401+-0.011    0.225+-0.011   linear
+    100      0.060+-0.004    0.491+-0.008    0.313+-0.007    0.317+-0.008    0.181+-0.009   linear
+    200      0.044+-0.004    0.443+-0.008    0.253+-0.005    0.245+-0.005    0.140+-0.008   linear
+    400      0.033+-0.003    0.387+-0.005    0.208+-0.001    0.212+-0.005    0.090+-0.003   linear
+    800      0.029+-0.002    0.334+-0.003    0.174+-0.004    0.172+-0.003    0.080+-0.002   linear
+   1600      0.013+-0.001    0.290+-0.004    0.138+-0.001    0.143+-0.001    0.064+-0.002   linear
+   3200      0.014+-0.001    0.251+-0.002    0.120+-0.001    0.131+-0.002    0.052+-0.001   linear
+   6400      0.007+-0.002    0.223+-0.000    0.096+-0.002    0.116+-0.002    0.047+-0.008   linear
+
+COMPLEX PATTERN (repeats per size [16, 16, 16, 16, 8, 8, 8, 4, 2])
+  n               linear  decision tree           k-NN  random forest            MLP   best (within 2 SE)
+     25      1.239+-0.034    1.506+-0.026    1.266+-0.033    1.289+-0.029    1.299+-0.054   linear, k-NN, random forest, MLP
+     50      1.116+-0.007    1.394+-0.031    1.133+-0.017    1.102+-0.016    1.127+-0.020   random forest, linear, MLP, k-NN
+    100      1.080+-0.006    1.342+-0.043    0.991+-0.010    0.984+-0.014    1.037+-0.012   random forest, k-NN
+    200      1.064+-0.002    1.135+-0.015    0.871+-0.007    0.870+-0.010    0.986+-0.020   random forest, k-NN
+    400      1.061+-0.003    0.963+-0.010    0.740+-0.005    0.753+-0.006    0.700+-0.006   MLP
+    800      1.053+-0.001    0.895+-0.015    0.624+-0.006    0.655+-0.006    0.604+-0.015   MLP, k-NN
+   1600      1.052+-0.000    0.791+-0.010    0.521+-0.004    0.559+-0.002    0.444+-0.019   MLP
+   3200      1.050+-0.000    0.694+-0.004    0.418+-0.003    0.473+-0.003    0.276+-0.007   MLP
+   6400      1.049+-0.000    0.622+-0.012    0.337+-0.001    0.392+-0.006    0.209+-0.003   MLP
+
+CHECKS
+  simple pattern: the linear model is best at every size, by at least 0.038 RMSE; its error keeps falling as data grow (25 -> 6400: 0.144 -> 0.007): the pattern needs nothing more flexible.
+  complex pattern: the best straight line there is (least squares on the 4000 noiseless test
+  points themselves) has RMSE 1.049; the linear model levels off at 1.049, +0.001 from it,
+  so its error is the pattern's curvature, not a lack of data; the flexible models keep
+  improving past it.
+  at 6400 examples: linear 1.049, MLP 0.209.

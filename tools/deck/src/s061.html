@@ -1,0 +1,48 @@
+<section class="slide">
+ <style>
+  .rules{gap:80px}
+  .rules .node{padding:22px 28px 24px}
+  .rules .ps{margin-top:10px}
+  .better{margin-top:60px}
+  .mse{display:grid;grid-template-columns:auto auto;justify-content:start;column-gap:.3em;margin-top:14px}
+  .mse .eq{font-size:36px}
+  .mse + .ps{margin-top:26px}
+ </style>
+ <header class="head">
+  <h1 class="title">Estimation theory: designing rules for unknown quantities</h1>
+  <p class="lede">The unknown may be a population parameter, a physical property, or a changing hidden state.</p>
+ </header>
+ <main class="body">
+  <div class="route rules">
+   <div class="node k-navy" id="tgt">
+    <h2 class="h">Unknown target <m>θ</m></h2>
+    <p class="ps lines"><span>Mean <m>μ</m> or variance <m>σ²</m></span><span>Stiffness <m>k</m> or hidden state <m>xₖ</m></span></p>
+   </div>
+   <div class="node k-accent" id="obs">
+    <h2 class="h">Observation model</h2>
+    <p class="ps lines"><span>Model <m>h(θ)</m>; noise <m>v</m></span><span>Measured <m>y = h(θ) + v</m></span></p>
+   </div>
+   <div class="node k-blue" id="est">
+    <h2 class="h">Estimator <m>θ̂ = T(D)</m></h2>
+    <p class="ps lines"><span>A rule extracts information</span><span>from the observed data</span></p>
+   </div>
+  </div>
+  <i class="wire" data-from="#tgt" data-to="#obs"></i>
+  <i class="wire" data-from="#obs" data-to="#est"></i>
+  <div class="g better">
+   <div class="s5">
+    <h2 class="h">What makes one rule better?</h2>
+    <div class="mse c-blue">
+     <p class="eq"><m>MSE(θ̂)</m></p><p class="eq"><m>= E[(θ̂ − θ)²]</m></p>
+     <p class="eq"></p><p class="eq"><m>= variance + bias²</m></p>
+    </div>
+    <p class="ps lines"><span>Bias: systematic offset. Variance: spread</span><span>MSE combines both across repeated datasets.</span></p>
+   </div>
+   <div data-fig="errors" class="s7 o6"></div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">An estimator is a rule applied to data. An estimate is the value that rule returns for one dataset.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3, now extended to stochastic models in box 4</span><span class="src">Sources: [6], [38]</span><span class="num">61</span></p>
+ </footer>
+</section>

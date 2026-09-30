@@ -1,0 +1,9 @@
+# his words inside his two panels (build/r10-deck/his/s016-pic1.png)
+One cylinder: where a single test lands
+Average of 25: where a sample mean lands
+Density
+σ = 3 MPa (± 1 SD)
+SE = 0.6 MPa
+faint: single cylinders
+Strength (MPa)
+Strength (MPa)

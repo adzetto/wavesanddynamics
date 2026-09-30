@@ -1,0 +1,13 @@
+# his words inside his three panels (build/r10-deck/his/s049-pic1.png)
+1  Cut into overlapping segments,
+taper each with a window
+Time (s)
+2  Periodogram of each
+segment (still noisy)
+PSD
+Frequency (Hz)
+3  Average them: smooth estimate
+Frequency (Hz)
+single periodogram
+Welch average of 14 segments
+true spectrum

@@ -1,0 +1,47 @@
+<section class="slide">
+ <style>
+  .tool .route{margin-top:10px}
+  .tool .node{padding:26px 30px 30px}
+  .tool .h{font-size:36px}
+  .low{margin-top:148px}
+ </style>
+ <header class="head">
+  <h1 class="title">One bridge can use the whole toolkit</h1>
+  <p class="lede">The methods connect through a physical question: how should we inspect, operate or maintain this structure?</p>
+ </header>
+ <main class="body tool">
+  <div class="route">
+   <div class="node k-navy" id="data">
+    <h2 class="h">Data and statistics</h2>
+    <p class="p lines"><span>Tests and sensor records</span><span>Estimate and validate model inputs.</span></p>
+   </div>
+   <div class="node k-accent" id="prob">
+    <h2 class="h">Probability and reliability</h2>
+    <p class="p lines"><span>Load + capacity uncertainty</span><span>Estimate limit-crossing probabilities.</span></p>
+   </div>
+   <div class="node k-deep" id="dec">
+    <h2 class="h">Decisions</h2>
+    <p class="p lines"><span>Inspect, restrict or repair</span><span>Weigh risk and consequences.</span></p>
+   </div>
+  </div>
+  <div class="g low">
+   <div class="node k-sky s5" id="proc">
+    <h2 class="h">Stochastic model</h2>
+    <p class="p lines"><span>How loading and response</span><span>change together over time.</span></p>
+   </div>
+   <div class="cell s2 o6"><p class="edge above lines"><span>Prediction +</span><span>evidence</span></p></div>
+   <div class="node k-blue s5 o8" id="rec">
+    <h2 class="h">Recursive estimation</h2>
+    <p class="p lines"><span>Use new measurements to update</span><span>hidden states and uncertain parameters.</span></p>
+   </div>
+  </div>
+  <i class="wire" data-from="#data" data-to="#prob"></i>
+  <i class="wire" data-from="#prob" data-to="#dec"></i>
+  <i class="wire" data-from="#proc" data-to="#rec"></i>
+  <i class="wire" data-from="#rec" data-to="#dec"></i>
+ </main>
+ <footer class="foot">
+  <p class="take">The workflow is iterative: new observations can change the model and the decision.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> The whole slide 2 map applied to one structure</span><span class="src">Sources: [1], [16], [41]</span><span class="num">69</span></p>
+ </footer>
+</section>

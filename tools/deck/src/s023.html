@@ -1,0 +1,39 @@
+<section class="slide">
+ <style>
+  .model .eq{font-size:38px;margin-top:10px}
+  .model .ps{margin-top:6px}
+  .gives .ps+.ps{margin-top:6px}
+  .fig23 .note{margin-top:4px;padding-left:120px}
+ </style>
+ <header class="head">
+  <h1 class="title">Why regression is a probabilistic model</h1>
+  <p class="lede">Regression does not just draw a line. It says that at each <m>x</m>, the response has a distribution, centered on the line.</p>
+ </header>
+ <main class="body g">
+  <div class="s5 stack">
+   <div class="model">
+    <h2 class="h">The model</h2>
+    <p class="eq c-blue"><m>Y | x ~ N(β₀ + β₁x, σ²)</m></p>
+    <p class="ps">The line is the mean at each <m>x</m>; <m>σ</m> is the scatter.</p>
+   </div>
+   <div class="gives">
+    <h2 class="h">What that gives us</h2>
+    <p class="ps">Least squares = maximum likelihood here</p>
+    <p class="ps">Prediction intervals for a new test (slide 24)</p>
+    <p class="ps">Probabilities: <m>P(Y &lt; 25 MPa | x = 0.55) = 2.3%</m></p>
+   </div>
+   <div>
+    <h2 class="h">Same idea, other outcomes</h2>
+    <p class="ps lines"><span>Counts: Poisson regression.</span><span>Yes/no: logistic regression, fragility curves.</span></p>
+   </div>
+  </div>
+  <div class="s7 o6 fig23">
+   <div data-fig="model"></div>
+   <p class="note">Illustrative data: <m>β₀ = 75</m> MPa, <m>β₁ = −80</m> MPa, <m>σ = 3</m> MPa</p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">The line is the mean of a distribution; the scatter around it is part of the model.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 2: regression, used as a probability model</span><span class="src">Sources: [6], [12], [13]</span><span class="num">23</span></p>
+ </footer>
+</section>

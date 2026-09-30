@@ -1,0 +1,69 @@
+Figure 11 (nf-bulk-ut): conventional (bulk wave) ultrasonic testing
+generator: tools/numfig/bulk_ut.py
+
+MODEL
+  2D plane-strain elastodynamics, velocity-stress, staggered grid (Virieux 1986),
+  second order in space and time; voids as cells of zero density and stiffness,
+  i.e. EFIT (Fellinger et al. 1995). Elastic, so P, S and Rayleigh waves and mode
+  conversion are all in it. Every face of the block and of the flaw is traction free.
+  steel: cL = 5900 m/s, cT = 3230 m/s, rho = 7850 kg/m3  (nu = 0.286, E = 210.6 GPa)
+  block 50 x 25 mm; flaw: elliptical void, centre (x, z) = (29, 12) mm (x from the left face, z down from the top face),
+  semi-axes 1.5 x 0.6 mm, major axis inclined 12 deg (right end up)
+  source: uniform normal traction on the probe face, 5 MHz, 3 cycles, Hann window; burst centre t0 = 0.3 us
+  receiver: mean normal particle velocity v over the same face; (b) plots v/v0, v0 its peak in the initial pulse
+  (a), (b): one probe 10 mm wide centred at x = 29 mm, over the flaw
+  (c), (d): 32 elements, pitch 0.60 mm, width 0.52 mm, centres x = 15.70 ... 34.30 mm; one run per transmitter (full matrix capture)
+  field shown in (a): p = -(s_xx + s_zz)/2 over p0 (peak probe pressure), mean of 5 x 5 cells (0.2 mm pixels), colour range +-0.5, stored in steps of p0/126
+
+GRID
+  dx = 0.04 mm: 29.5 points per P wavelength and 16.1 per S wavelength at 5 MHz; 17.7 and 9.7 at 8.3 MHz (edge of the burst's main lobe)
+  dt = 4.167 ns; CFL number cL dt/dx = 0.615 (limit 1/sqrt 2 = 0.707)
+  block 1250 x 625 cells; pulse echo 2400 steps; FMC 32 runs x 2640 steps; half-space reference 2250 x 900 cells
+  echo times (envelope peaks, from the burst's centre) as the grid is refined:
+    the figure's model (10 mm probe, flaw):
+      dx = 0.100 mm   flaw echo 3.9118 us   back wall echo 8.6694 us
+      dx = 0.050 mm   flaw echo 3.8518 us   back wall echo 8.5027 us
+      dx = 0.040 mm   flaw echo 3.8406 us   back wall echo 8.4885 us
+      dx = 0.025 mm   flaw echo 3.8357 us   back wall echo 8.4690 us
+      back wall, dx halved twice (0.1, 0.05, 0.025 mm): changes -0.1667 and -0.0337 us, ratio 4.9 (4 for second order)
+    a near plane wave (40 mm probe, 100 x 25 mm block, no flaw), back wall echo:
+      dx = 0.050 mm 8.5266 us, 0.040 mm 8.5071 us, 0.025 mm 8.4880 us; Richardson limit 8.4752 us
+
+VALIDATION
+  1. P wave travel time: the plane wave's back wall echo, extrapolated to dx -> 0, arrives at 8.4752 us;
+     2d/cL = 2 x 25 / 5.9 = 8.4746 us; error +0.0006 us (+0.007 %). At the figure's dx = 0.04 mm the grid's own dispersion delays it +0.0319 us (+0.38 %).
+  2. the figure's A scan (b), dx = 0.04 mm:
+     back wall echo 8.4885 us vs 2d/cL = 8.4746 us: +0.0139 us (+0.16 %)
+     flaw echo 3.8406 us vs 2 d_f/cL = 3.8425 us, d_f = 11.335 mm the top of the void under the probe (x = 29.58 mm): -0.0019 us (-0.05 %)
+     extrapolated to dx -> 0 (Richardson, 0.05 and 0.025 mm): back wall 8.4577 us (-0.20 %), flaw 3.8303 us (-0.32 %).
+     With the travel time exact (1), these small offsets are the echoes' own shape (a finite
+     probe; a curved flaw that also shadows the back wall), not an error of the model.
+     echo amplitudes over the initial pulse: flaw 0.254, back wall 0.554
+  3. Rayleigh wave along a free face (half-space, receivers 12 and 18.6 mm from the transmitter); root of the Rayleigh equation cR = 2988 m/s:
+     dx = 0.04 mm: phase speed 2967 m/s (-0.70 %), group speed 2901 m/s (-2.93 %)
+     dx = 0.02 mm: phase speed 2983 m/s (-0.18 %), group speed 2965 m/s (-0.79 %)
+     both errors fall by 3.9 and 3.7 when dx halves (second order). The figure uses no surface wave:
+     they cancel in the FMC data (PROCESSING), and the echoes of (b) are bulk P waves.
+  4. reciprocity of the scattered FMC data: max|h_ij - h_ji| / max|h| = 6.9e-07 over all 1024 pairs
+  5. TFM (d): flaw peak at x = +4.00 mm, z = 11.40 mm (x from the array centre); nearest point of the void's boundary 0.01 mm away
+     (void centre x = +4.00, z = 12.00 mm; its top at z = 11.34 mm)
+     back wall imaged at z = 25.10 mm (true 25 mm, pixel 0.1 mm); levels: back wall 0.0 dB, flaw -1.6 dB
+  (p0 = 0.9365 of the burst's sine amplitude; t0 = 0.3 us, the burst's centre, is time zero of (b) and of the TFM delays)
+
+PROCESSING
+  FMC: h_ij = recorded - half-space run at the same element distance |i - j| (same grid,
+  so the direct waves cancel exactly): removes the initial pulse and the surface waves
+  along the array, keeps every echo (flaw, back wall, side walls).
+  TFM: I(x, z) = | sum_i sum_j H[h_ij](t0 + (|x - e_i| + |x - e_j|)/cL) |, H the analytic
+  signal, t0 = 0.3 us, 0.1 mm pixels over x = +-14 mm, z = 0 ... 27 mm.
+  (d) builds up the mean over transmitters 1 ... k (the partial sum over k), each exact,
+  in dB of the complete image's peak, 30 dB range (the partial images peak at most +3.7 dB).
+  The fan in (c) is the delay-law path of the flaw's
+  peak pixel; each line's opacity is that pair's |H[h_ij]| at its delay (the pair's
+  contribution to the pixel).
+
+PAGE
+  nf-bulk-ut.html 66 kB (draws at once; the data below loads behind it)
+  nf-bulk-ut-field-0..3.png: 201 frames 250 x 125, 0.05 us apart, 7 bit, in the order they play: frames 0-24 15 kB, 25-69 108 kB, 70-129 373 kB, 130-200 681 kB
+  nf-bulk-ut-tfm.png 205 kB (32 partial images 281 x 271); total 1.45 MB
+  time slowed 1.1 x 10^6 in (a) and (b): 10 us of the model in 11 s; (c) fires its 32 elements at the same pace (1.375 x the first design, 8 s for the 10 us)

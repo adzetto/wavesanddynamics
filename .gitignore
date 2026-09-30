@@ -14,3 +14,10 @@ content/dynamical-behavior/figures/
 content/source/*.docx
 content/source/*.pptx
 content/source/ppt-icons/
+
+# Site: built output and the Wix anonymous claim token (whoever holds it can claim the site)
+site/dist/
+site/.wix/
+
+# Competing section designs awaiting a judge; decision inputs, not deliverables
+site/candidates/

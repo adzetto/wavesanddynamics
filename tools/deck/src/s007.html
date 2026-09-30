@@ -1,0 +1,52 @@
+<section class="slide">
+ <style>
+  .q .eq{margin:8px 0 18px}
+  .qrow{display:flex;align-items:center;gap:40px}
+  .band{padding:0 0 26px}
+  .band+.hair+.band{padding:26px 0 0}
+ </style>
+ <header class="head">
+  <h1 class="title">The probability toolkit in action</h1>
+  <p class="lede">Events become numbers, evidence updates chances, and joint models describe quantities that vary together.</p>
+ </header>
+ <main class="body">
+  <div class="g band">
+   <div class="s6 q">
+    <h2 class="h">Events and counting</h2>
+    <p class="eq"><m>P(A) = |A| / |Ω| = 3/25 = 12%</m></p>
+    <div class="qrow">
+     <div data-fig="dots"></div>
+     <p class="ps lines"><span>Count favorable outcomes</span><span>among equally likely outcomes.</span></p>
+    </div>
+   </div>
+   <div class="s6 o7 q">
+    <h2 class="h">Conditional probability and Bayes</h2>
+    <p class="eq"><m>P(D|A) = P(A|D)P(D) / P(A)</m></p>
+    <p class="ps lines"><span>Damage <m>D</m>: 1% prior probability</span><span>Alarm <m>A</m>: 90% sensitivity, 5% false alarms</span><span>After an alarm: <m>P(D|A) = 15.4%</m></span></p>
+   </div>
+  </div>
+  <div class="hair"></div>
+  <div class="g band">
+   <div class="s6 q">
+    <h2 class="h">Random variables and distributions</h2>
+    <p class="eq"><m>P(a &lt; X &lt; b) = ∫ₐᵇ fₓ(x) dx</m></p>
+    <div class="qrow">
+     <div data-fig="area"></div>
+     <p class="ps lines"><span>The shaded area is</span><span>a probability.</span><span><m>X</m> assigns a number</span><span>to each outcome.</span></p>
+    </div>
+   </div>
+   <div class="s6 o7 q">
+    <h2 class="h">Joint models and dependence</h2>
+    <p class="eq"><m>Cov(X,Y) = E[(X − μₓ)(Y − μᵧ)]</m></p>
+    <div class="qrow">
+     <div data-fig="cloud"></div>
+     <p class="ps lines"><span>A joint model keeps</span><span>the relationship</span><span>between uncertain</span><span>quantities.</span></p>
+    </div>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Probability starts with a model and computes the implications of that model.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: the probability machinery</span><span class="src">Sources: [1], [4]</span><span class="num">7</span></p>
+ </footer>
+</section>

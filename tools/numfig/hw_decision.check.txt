@@ -1,0 +1,17 @@
+HOW IT WORKS, step 4 (nf-hw-decision): Decision making, the brochure's image4
+generator: tools/numfig/hw_decision.py
+
+THE DRAWING
+  no model: a shield (a chevron top, straight sides, two cubic curves to its point), a report
+  in front of it (a sheet with a folded corner, four lines of findings) and the one accent, the
+  check: the decision, drawn after the report is written
+  his seal (a second gold check on the report) is left out: the icon keeps one accent
+
+DISPLAY
+  the icon is step 4: it starts 1.05 s after the flow is seen; the shield draws in 0.34 s, the
+  report from 0.10 s, its lines from 0.36 s, the check from 0.50 s to 0.76 s of its own start
+  it is the last step: no arrow follows it
+
+OVERLAP (common.overlaps, 672 px wide)
+  moments: still, 0.3 s, 1.2 s, 1.4 s, 1.6 s, 1.8 s
+  labels [] and crossings [] at every moment: nothing collides (the icon sets no type)

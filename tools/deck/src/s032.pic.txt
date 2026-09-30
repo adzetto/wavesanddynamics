@@ -1,0 +1,6 @@
+# his words inside his chart (build/r10-deck/his/s032-pic1.png)
+Exact nonlinear response
+First order: tangent
+Second order: curvature
+Y (mm)
+Stiffness k (N/mm), fixed F = 100 N

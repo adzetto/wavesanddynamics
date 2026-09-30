@@ -1,0 +1,45 @@
+<section class="slide">
+ <style>
+  .defs{margin-bottom:28px}
+  .gap{display:inline-block;width:1.6em}
+  .why .eqs{margin-top:10px}
+  .quad{margin-top:30px}
+  .quad .eq{margin:2px 0}
+  .ex .fig{margin-top:2px}
+  .ex .ps{margin-top:14px}
+ </style>
+ <header class="head">
+  <h1 class="title">Nonlinear <m>f</m>, method 2: second order (add curvature)</h1>
+  <p class="lede">“Order” is the highest power of the input deviation kept. First- and second-order (Taylor) approximations are the standard tools in textbooks and research papers.</p>
+ </header>
+ <main class="body">
+  <div class="eqs defs">
+   <p class="eq">One input: <m>δ = X − μ</m>, local slope <m>a = f′(μ)</m>, curvature <m>b = f″(μ)</m></p>
+   <p class="eq">First order: <m>Y ≈ f(μ) + aδ</m> <span class="gap"></span>Second order: <m>Y ≈ f(μ) + aδ + ½bδ²</m></p>
+  </div>
+  <div class="g">
+   <div class="s6">
+    <div class="why">
+     <h2 class="h">Why curvature matters</h2>
+     <div class="eqs c-blue">
+      <p class="eq"><m>E[δ] = 0</m>, <b>but</b> <m>E[δ²] = σ²</m>.</p>
+      <p class="eq"><b>So</b> <m>E[Y] ≈ f(μ) + ½bσ²</m>.</p>
+     </div>
+    </div>
+    <div class="quad">
+     <p class="p">For a normal input, the quadratic model gives:</p>
+     <p class="eq"><m>Var(Y) ≈ a²σ² + ½b²σ⁴</m>.</p>
+     <p class="p lines"><span>For nonnormal inputs, skewness and the</span><span>fourth central moment also enter.</span></p>
+    </div>
+   </div>
+   <div class="s6 o7 ex">
+    <div data-fig="parabola"></div>
+    <p class="ps c-blue b lines"><span><m>X ∼ N(0, 1)</m>, <m>Y = X²</m>: first order predicts zero.</span><span>Second order is exact: mean 1, variance 2.</span></p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">A zero slope does not imply zero uncertainty when the response is curved.</p>
+  <p class="run"><span class="map">NONLINEAR CASE, METHOD 2 <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: curvature can change the mean and the spread</span><span class="src">Sources: [1], [17], [43], [44]</span><span class="num">31</span></p>
+ </footer>
+</section>

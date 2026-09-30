@@ -1,0 +1,19 @@
+# his words inside his picture (build/r10-deck/his/s055-pic1.png)
+# panel 1
+1  Each tick = one truck arriving (3 different days)
+first 2 h
+Day 1
+Day 2
+Day 3
+24 trucks
+13 trucks
+26 trucks
+Time of day (h)
+# panel 2
+2  Count so far: each step up = one truck
+Trucks so far, N(t)
+Time (h)
+Day 1
+Day 2
+Day 3
+average: 2 per hour × t

@@ -1,0 +1,32 @@
+<section class="slide">
+ <style>
+  .two{grid-template-rows:auto auto auto auto}
+  .two .ps.lines{margin-top:12px}
+  .two .fig{margin-top:18px}
+  .two .low{margin-top:12px}
+  .two .eq{line-height:1.4}
+ </style>
+ <header class="head">
+  <h1 class="title">Frequentist and Bayesian inference: two frameworks</h1>
+  <p class="lede"><m>D</m> = observed data; <m>θ</m> = unknown parameter. Likelihood <m>p(D|θ)</m> measures how well <m>θ</m> explains the observed data.</p>
+ </header>
+ <main class="body">
+  <div class="g two">
+   <h2 class="h s6 r1">FREQUENTIST</h2>
+   <p class="ps lines s6 r2"><span><m>θ</m> is fixed and unknown. Samples vary.</span><span>Build rules that work over repeated samples.</span></p>
+   <div data-fig="repeated" class="s6 r3"></div>
+   <p class="ps lines low s6 r4"><span>95% confidence: the procedure covers the</span><span>fixed true value in 95% of repeated samples.</span></p>
+   <h2 class="h c-blue s6 o7 r1">BAYESIAN</h2>
+   <p class="ps lines s6 o7 r2"><span>A distribution describes uncertainty about <m>θ</m>.</span><span>Update it after observing the data <m>D</m>.</span></p>
+   <div data-fig="update" class="s6 o7 r3"></div>
+   <div class="eqs low s6 o7 r4">
+    <p class="eq c-blue"><m>p(θ|D) ∝ p(D|θ) p(θ)</m></p>
+    <p class="eq c-blue"><m>posterior ∝ likelihood × prior</m></p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">The distinction concerns what probability describes and how we assess uncertainty.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: estimating unknowns and expressing uncertainty</span><span class="src">Sources: [6], [10]</span><span class="num">15</span></p>
+ </footer>
+</section>

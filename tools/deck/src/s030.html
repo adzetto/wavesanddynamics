@@ -1,0 +1,51 @@
+<section class="slide">
+ <style>
+  .chk .h+.eqs{margin-top:10px}
+  .chk .eq{line-height:1.4}
+  .stack.chk>*+*{margin-top:34px}
+  .lede .l{display:block}
+  .chk .note30{margin-top:18px}
+  .next{margin-top:6px;padding-left:112px}
+  .next .h+.eqs{margin-top:8px}
+ </style>
+ <header class="head">
+  <h1 class="title">Nonlinear <m>f</m>: why the tangent misses the mean</h1>
+  <p class="lede"><span class="l">First order plugs in the mean stiffness and gets <m>Y = 5.00</m> mm.</span> <span class="l">A three-point check, with no calculus, shows why the true mean is a little higher.</span></p>
+ </header>
+ <main class="body g">
+  <div class="s5 stack chk">
+   <div>
+    <h2 class="h"><m>F = 100</m> N, three stiffness values</h2>
+    <div class="eqs">
+     <p class="eq"><m>k = 18</m> N/mm (softer): <m>Y = 5.56</m> mm, <m>+0.56</m></p>
+     <p class="eq"><m>k = 20</m> N/mm (mean): <m>Y = 5.00</m> mm</p>
+     <p class="eq"><m>k = 22</m> N/mm (stiffer): <m>Y = 4.55</m> mm, <m>−0.45</m></p>
+     <p class="eq">Average of the 18 and 22 cases: 5.05 mm</p>
+     <p class="eq">Softer springs stretch extra.</p>
+    </div>
+   </div>
+   <div>
+    <h2 class="h">Compare: <m>Y</m> is a straight line in <m>F</m></h2>
+    <div class="eqs c-blue">
+     <p class="eq b"><m>F = 90</m> or <m>110</m> N gives <m>Y = 4.5</m> or <m>5.5</m> mm</p>
+     <p class="eq b">Average 5.00 mm: no shift</p>
+    </div>
+    <p class="ps lines note30"><span>The tangent (orange) cannot see the bend,</span><span>so first order misses this 0.05 mm.</span></p>
+   </div>
+  </div>
+  <div class="s7 o6">
+   <div data-fig="curve"></div>
+   <div class="next">
+    <h2 class="h">Next: second order adds the curvature</h2>
+    <div class="eqs c-navy">
+     <p class="eq"><m>½ × (∂²Y/∂k²) × σₖ² = ½ × 0.025 × 2²</m></p>
+     <p class="eq"><m>= 0.05</m> mm, so <m>μʏ ≈ 5.05</m> mm</p>
+    </div>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Curved model: the average output is not the output at the average input.</p>
+  <p class="run"><span class="map">NONLINEAR CASE <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: see the curvature before the second-order formula</span><span class="src">Sources: [1], [17], [43]</span><span class="num">30</span></p>
+ </footer>
+</section>

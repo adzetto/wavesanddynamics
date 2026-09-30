@@ -1,0 +1,40 @@
+<section class="slide">
+ <style>
+  .four{row-gap:148px;margin-top:6px}
+  .four .node{padding:30px 36px 32px}
+ </style>
+ <header class="head">
+  <h1 class="title">Probability, statistics and estimation</h1>
+  <p class="lede">Four connected questions organize the whole subject. Decisions also require consequences, constraints and judgment.</p>
+ </header>
+ <main class="body">
+  <div class="g four">
+   <div class="node k-navy s5" id="prob">
+    <h2 class="h">Probability</h2>
+    <p class="p lines"><span>Given a model,</span><span>what could happen?</span></p>
+   </div>
+   <div class="cell s2 o6"><p class="edge above">learn and check a model</p></div>
+   <div class="node k-accent s5 o8" id="stat">
+    <h2 class="h">Statistics</h2>
+    <p class="p lines"><span>Given observations,</span><span>what can we learn?</span></p>
+   </div>
+   <div class="node k-sky s5 o1 r2" id="proc">
+    <h2 class="h">Stochastic processes</h2>
+    <p class="p lines"><span>How do uncertain values</span><span>relate across time or space?</span></p>
+   </div>
+   <div class="cell s2 o6 r2"><p class="edge above">model + observations</p></div>
+   <div class="node k-blue s5 o8 r2" id="est">
+    <h2 class="h">Estimation</h2>
+    <p class="p lines"><span>What is an unknown parameter,</span><span>state or future response?</span></p>
+   </div>
+  </div>
+  <i class="wire" data-from="#stat" data-to="#prob"></i>
+  <i class="wire" data-from="#prob" data-to="#proc"></i>
+  <i class="wire" data-from="#stat" data-to="#est"></i>
+  <i class="wire" data-from="#proc" data-to="#est"></i>
+ </main>
+ <footer class="foot">
+  <p class="take">Probability supplies the language. Statistics uses it to learn from evidence.</p>
+  <p class="run"><span class="num">1</span></p>
+ </footer>
+</section>

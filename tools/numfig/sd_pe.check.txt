@@ -1,0 +1,37 @@
+nf-sd-pe: the brochure's image7 (pulse echo), redrawn from a model
+generator: tools/numfig/sd_pe.py (helpers: sd_ndtlib.py);
+model: shm_ndt.main(), imported (tools/numfig/shm_ndt.py and shm_fdtd.py, Figure 3 of the SHM article);
+  the model's own validation is tools/numfig/shm_ndt.check.txt
+his words in the picture, kept verbatim: "Acoustic sensor (sends and receives waves)", "Steel beam", "crack", "Recorded signal", "Amplitude", "Excitation", "Reflection", "Boundary", "Time"
+
+MODEL
+  2D plane-strain elastodynamics, velocity-stress on a staggered grid (Virieux 1986), voids as
+  cells of zero density and stiffness (EFIT, Fellinger et al. 1995); every face traction free.
+  steel: c_L = 5900 m/s, c_T = 3230 m/s, rho = 7850 kg/m3
+  grid dx = 0.1 mm; a burst of 3 cycles at 2 MHz, Hann window (1.5 us)
+
+THE PICTURE
+  beam 40 mm deep (the page draws 50 mm of the 110 mm modelled), drawn 6.3 units/mm;
+  probe 12 mm wide; crack: a void 14 x 0.5 mm, centre 17 mm down, +6 mm from the probe's axis, tilted 13 deg
+  the recorded signal: the model's mean normal velocity under the probe, over its peak while it sends:
+    Reflection (crack): envelope peak 0.450 at t = 6.369 us
+    Boundary (back wall): envelope peak 0.326 at t = 13.599 us
+  CHECK 1 (shm_ndt.check.txt): the scheme's P travel time, Richardson extrapolated, 13.5610 us against 2d/c_L = 13.5593 us (+0.012 %)
+  CHECK 2: the back wall echo at 13.5989 us against 2d/c_L = 13.5593 us (+0.29 %, the 12 mm probe's own diffraction and the grid)
+  echo times as the grid is refined (from shm_ndt): dx 0.100 mm: 6.369, 13.599 us; dx 0.050 mm: 6.357, 13.556 us; dx 0.025 mm: 6.354, 13.546 us
+  the lanes: 1D kinematics at c_L, 0.5 and 4 mm right of the probe's axis, where the
+    crack is 18.27 and 17.46 mm down: the lane's crack echo back at 6.193 us, the back wall's
+    at 13.559 us; the lanes show where the waves are, the recorded signal how strong
+
+TIME
+  time slowed 1e5; a shot every 4.2 s from t = 0.5 s; in the first shot the signal draws itself as the probe records it and each of his words arrives as the signal passes it; after it the
+  signal stays whole and each shot's cursor replays it
+  poster (printed frame) at t = 5.2 s: the second shot 5 us in (the crack's echo rising in the right
+  lane, the pulse past the crack going down in the left), the whole signal beside it
+  drawn at his picture's proportions: 1000 x 435 (his 398 x 173)
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.05 s from 0.05 to 16.8 s (two loops, 337 moments): nothing collides
+  one label sits on a knockout by design: the 2d/c_L value in the recorded signal, on a white box drawn after its dimension line (as nf-shm-ndt draws it); nothing is allowed (still(allow=()))

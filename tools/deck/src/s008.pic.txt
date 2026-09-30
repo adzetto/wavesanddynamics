@@ -1,0 +1,25 @@
+# his words inside his gallery picture (build/r10-deck/his/s008-pic1.png), panel by panel
+Normal
+sum of many small effects
+measurement error, dead load
+Lognormal
+positive; product of factors
+strength, stiffness, fatigue life
+Gumbel (extreme value)
+largest value per period
+annual peak flood, wind
+Weibull
+weakest link fails first
+brittle strength, component life
+Exponential
+waiting time, no memory
+time to next vehicle or event
+Poisson
+count of rare events
+trucks per hour, quakes per year
+Binomial
+successes in n trials
+defective bolts in a sample of 10
+Beta
+a fraction between 0 and 1
+percent damaged, a probability

@@ -1,0 +1,26 @@
+<section class="slide">
+ <style>
+  .methods{margin-top:6px}
+  .methods td{padding-top:24px;padding-bottom:24px}
+ </style>
+ <header class="head">
+  <h1 class="title">Choosing a propagation method: linear or nonlinear?</h1>
+  <p class="lede">First ask: is <m>f</m> linear? Linear models have exact moments. Nonlinear models need a tangent, a curvature correction, or a simulation.</p>
+ </header>
+ <main class="body">
+  <table class="tab methods">
+   <colgroup><col style="width:20%"><col style="width:27%"><col style="width:26%"><col style="width:27%"></colgroup>
+   <thead><tr><th>Method</th><th>What it does</th><th>Useful when</th><th>What to check</th></tr></thead>
+   <tbody>
+    <tr><td>Exact linear moments</td><td>For <m>Y = b + ΣaᵢXᵢ</m>, calculate mean and variance exactly.</td><td>The model is linear over the input range.</td><td>Moments alone do not determine every output distribution.</td></tr>
+    <tr><td>First-order Taylor</td><td>Replace a curved response by its local tangent.</td><td>Uncertainty is narrow; curvature is small.</td><td>Compare the function with its tangent over plausible inputs.</td></tr>
+    <tr><td>Second-order Taylor</td><td>Keep quadratic terms to represent curvature.</td><td>Smooth, moderate curvature affects mean or spread.</td><td>It is still local; neglected higher terms may matter.</td></tr>
+    <tr><td>Monte Carlo</td><td>Sample inputs; evaluate the original model many times.</td><td>Complex response, skewed outputs or quantiles matter.</td><td>Dependence, convergence, computing cost and rare events.</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">Monte Carlo is useful for nonlinear propagation, but nonlinearity does not automatically require simulation.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: select a method that resolves the uncertainty you need</span><span class="src">Sources: [16], [17], [21], [43], [44]</span><span class="num">35</span></p>
+ </footer>
+</section>

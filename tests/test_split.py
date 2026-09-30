@@ -17,6 +17,7 @@ whole comes back as one record; it is only when the bytes force a cut that it
 makes more. A single section too big to fit alone is emitted anyway and flagged,
 because where to cut inside a section is the author's call, not a program's.
 """
+
 from tools.ricos.blocks import Para, Run
 from tools.ricos.emit import emit
 from tools.ricos.split import LIMIT, doc_bytes, pack, split_at_headings
@@ -56,7 +57,7 @@ def test_split_at_headings_groups_body_under_its_heading():
     parts = split_at_headings(blocks)
     assert [t for t, _ in parts] == ["", "One", "Two"]
     assert len(parts[0][1]) == 1
-    assert len(parts[1][1]) == 2      # heading + body
+    assert len(parts[1][1]) == 2  # heading + body
 
 
 def test_an_empty_heading_is_not_a_section_boundary():
@@ -64,11 +65,16 @@ def test_an_empty_heading_is_not_a_section_boundary():
     both: a heading with nothing written on it is a blank line the author left
     with the style still switched on, and cutting there would open a record
     with no heading at the top of it."""
-    blocks = [_h("One"), _p("a"), Para(heading=1),
-              Para(runs=[Run(text="  ")], heading=1), _p("b")]
+    blocks = [
+        _h("One"),
+        _p("a"),
+        Para(heading=1),
+        Para(runs=[Run(text="  ")], heading=1),
+        _p("b"),
+    ]
     parts = split_at_headings(blocks)
     assert [t for t, _ in parts] == ["One"]
-    assert len(parts[0][1]) == 5      # they stay in the flow for `emit` to drop
+    assert len(parts[0][1]) == 5  # they stay in the flow for `emit` to drop
 
 
 def test_split_with_no_headings_returns_one_part():
@@ -102,3 +108,39 @@ def test_pack_reports_an_oversize_single_section():
     big = [_h("Huge")] + [_p("x" * 500) for _ in range(5)]
     out = pack(split_at_headings(big), limit=400)
     assert out[0]["over_limit"] is True
+
+
+def test_pack_does_not_re_emit_the_whole_record_for_every_section(monkeypatch):
+    """Quadratic in the number of sections: every section re-emitted the
+    record accumulated so far to ask whether it still fit. The sum of the
+    sections' own sizes is the screen; the exact measurement is kept for
+    where it decides anything, within a tenth of the limit.
+
+    Measured as blocks handed to `emit`, because the call count is the same
+    either way - it is the size of each call that grew.
+    """
+    from tools.ricos import split
+
+    handed = []
+    real = split.emit
+
+    def counting(blocks, media_ids=None):
+        handed.append(len(blocks))
+        return real(blocks, media_ids)
+
+    monkeypatch.setattr(split, "emit", counting)
+    sections = split_at_headings([_h(f"H{i}") for i in range(40)])
+    out = pack(sections)
+    assert len(out) == 1 and len(out[0]["titles"]) == 40
+    assert sum(handed) < 3 * 40
+
+
+def test_pack_still_measures_exactly_where_the_sum_comes_near_the_limit():
+    """Six 261-byte sections at a limit that takes two: the sum alone would
+    say three fit (783 < 800 with no wrapper) and the exact count says
+    otherwise, so the record must be measured, not estimated, there."""
+    sections = split_at_headings([_h(f"H{i}") for i in range(6)])
+    out = pack(sections, limit=600)
+    assert [len(r["titles"]) for r in out] == [2, 2, 2]
+    for rec in out:
+        assert rec["bytes"] == doc_bytes(rec["doc"]) <= 600

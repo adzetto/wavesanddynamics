@@ -1,0 +1,30 @@
+nf-mla-learning: Figure 7, feature engineering versus feature learning
+
+DATA: scikit-learn digits, 1797 images 8 x 8; train 1203, test 594 (stratified, seed 0)
+
+(a) SIX DESIGNED FEATURES + LOGISTIC REGRESSION
+  holes              training range 0.000 .. 3.000
+  strokes across     training range 1.000 .. 2.000
+  strokes down       training range 1.000 .. 3.000
+  ink in top half    training range 0.254 .. 0.785
+  ink in left half   training range 0.183 .. 0.820
+  mirror symmetry    training range 0.549 .. 0.961
+  test accuracy 0.7020
+(b) NETWORK 64-16-12-10 ON RAW PIXELS
+  MLPClassifier(16, 12), tanh, alpha 0.01, adam; 670 epochs; test accuracy 0.9731
+
+CHECK 1: the page's forward pass (numpy) against scikit-learn's predict_proba
+  max |softmax(ours) - predict_proba| over the test set = 0.0e+00
+CHECK 2: the designed features on images whose answer is known by hand
+  ring:  holes 1 (1), strokes across 2.0 (2), strokes down 2.0 (2), top 0.50 (0.50), left 0.50 (0.50), symmetry 1.00 (1.00)
+  bar:   holes 0 (0), strokes across 1.0 (1), strokes down 1.0 (1), top 0.50 (0.50), left 0.50 (0.50), symmetry 1.00 (1.00)
+CHECK 3: the logistic regression's probabilities sum to one; the page's argmax is predict
+  max |sum p - 1| = 4.4e-16; argmax == predict on all: True
+
+THE SIX TEST IMAGES
+  test #11: digit 3; designed features predict 3 (p 0.47), network predicts 3 (p 1.00)
+  test #38: digit 0; designed features predict 0 (p 0.95), network predicts 0 (p 0.99)
+  test #17: digit 7; designed features predict 8 (p 0.26), network predicts 7 (p 1.00)
+  test #3: digit 4; designed features predict 4 (p 0.96), network predicts 4 (p 0.91)
+  test #2: digit 2; designed features predict 2 (p 0.41), network predicts 2 (p 1.00)
+  test #5: digit 8; designed features predict 2 (p 0.30), network predicts 8 (p 0.92)

@@ -1,0 +1,33 @@
+nf-sd-img: the brochure's image8 (imaging), redrawn from a model
+generator: tools/numfig/sd_img.py (helpers: sd_ndtlib.py);
+model: shm_ndt.main(), imported (tools/numfig/shm_ndt.py and shm_fdtd.py, Figure 3 of the SHM article);
+  the model's own validation is tools/numfig/shm_ndt.check.txt
+his words in the picture, kept verbatim: "Scanning transducers", "structure", "crack", "Resulting Image"
+
+MODEL
+  2D plane-strain elastodynamics, velocity-stress on a staggered grid (Virieux 1986), voids as
+  cells of zero density and stiffness (EFIT, Fellinger et al. 1995); every face traction free.
+  steel: c_L = 5900 m/s, c_T = 3230 m/s, rho = 7850 kg/m3
+
+THE PICTURE
+  wall 40 mm of 90 mm modelled, 12 mm thick, drawn 10.2 units/mm; crack: a void 8 x 0.5 mm at (24, 8) mm, tilted 20 deg
+  array: 16 elements, pitch 1.5 mm, width 1.3 mm; full matrix capture, 16 runs of 8 us
+  CHECK 1 (shm_ndt.check.txt, CHECK 5): reciprocity of the scattered data, max|h_ij - h_ji| / max|h| = 3.4e-07
+  CHECK 2 (CHECK 6): the image's crack peak at (23.60, 8.00) mm, 0.14 mm from the crack's line; the back wall imaged at z = 12.20 mm (true 12), -4.5 dB
+  total focusing: I(x, z) = |sum_i sum_j H[h_ij](t_i + t_j)|, the mean over transmitters 1 ... k after the
+  k-th firing, in dB of the complete image's peak, 24 dB range
+  the fronts drawn: the incident circle c_L t about the transmitter, cut where the crack shadows it;
+  the crack's specular front (the transmitter's mirror image in the crack's line), its edge waves,
+  the back wall's echo; a front is not drawn through his words "structure" and "crack"
+
+TIME
+  time slowed 1e5; a firing every 0.4 s from t = 0.6 s (4 us each); the loop is 8.4 s
+  poster (printed frame) at t = 6.82 s: the last firing 2.2 us in, its fronts in the wall, the image of
+  the 15 firings before it (the mean over transmitters 1 ... 15)
+  drawn at his picture's proportions: 1000 x 312 (his 401 x 125)
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.05 s from 0.05 to 16.8 s (two loops, 337 moments): nothing collides
+  no knockout is relied on and nothing is allowed (still(allow=()))

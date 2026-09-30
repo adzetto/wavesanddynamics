@@ -1,0 +1,36 @@
+<section class="slide">
+ <style>
+  .gallery{row-gap:40px}
+  .dist .h{font-size:34px}
+  .dist .fig{margin:14px 0 16px}
+  .dist .ps{font-size:27px;line-height:1.36}
+ </style>
+ <header class="head">
+  <h1 class="title">Distribution models: the shape follows the mechanism</h1>
+  <p class="lede">A distribution is the simplest probabilistic model: it spreads probability over the possible values of one quantity. How the quantity is produced suggests the family.</p>
+ </header>
+ <main class="body">
+  <div class="g gallery">
+   <div class="s3 dist"><h2 class="h">Normal</h2><div data-fig="normal"></div>
+    <p class="ps">sum of many small effects</p><p class="ps c-accent">measurement error, dead load</p></div>
+   <div class="s3 dist"><h2 class="h">Lognormal</h2><div data-fig="lognormal"></div>
+    <p class="ps">positive; product of factors</p><p class="ps c-accent">strength, stiffness, fatigue life</p></div>
+   <div class="s3 dist"><h2 class="h">Gumbel (extreme value)</h2><div data-fig="gumbel"></div>
+    <p class="ps">largest value per period</p><p class="ps c-accent">annual peak flood, wind</p></div>
+   <div class="s3 dist"><h2 class="h">Weibull</h2><div data-fig="weibull"></div>
+    <p class="ps">weakest link fails first</p><p class="ps c-accent">brittle strength, component life</p></div>
+   <div class="s3 dist"><h2 class="h">Exponential</h2><div data-fig="exponential"></div>
+    <p class="ps">waiting time, no memory</p><p class="ps c-accent">time to next vehicle or event</p></div>
+   <div class="s3 dist"><h2 class="h">Poisson</h2><div data-fig="poisson"></div>
+    <p class="ps">count of rare events</p><p class="ps c-accent">trucks per hour, quakes per year</p></div>
+   <div class="s3 dist"><h2 class="h">Binomial</h2><div data-fig="binomial"></div>
+    <p class="ps">successes in <m>n</m> trials</p><p class="ps c-accent">defective bolts in a sample of 10</p></div>
+   <div class="s3 dist"><h2 class="h">Beta</h2><div data-fig="beta"></div>
+    <p class="ps">a fraction between 0 and 1</p><p class="ps c-accent">percent damaged, a probability</p></div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Ask how the value is produced; the mechanism suggests the distribution family.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: random variables and distributions</span><span class="src">Sources: [1], [4], [7], [15]</span><span class="num">8</span></p>
+ </footer>
+</section>

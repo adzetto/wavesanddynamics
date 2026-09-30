@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 3: NDT techniques</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #bdbdbd;background:#fff;color:#333;
+  font:12px/1 Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button:focus-visible{outline:2px solid #2b5f9e;outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Animation of three nondestructive testing techniques: (a) ultrasonic pulse echo, where a sensor sends a wave into a steel beam and records echoes from a crack and the boundary; (b) acoustic emission, where a growing crack releases waves that a listening sensor picks up; (c) ultrasonic imaging, where scanning transducers build up an image of a crack."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation">&#8634;</button></div>
+</div>
+<script>
+const W = 1000, H = 420;
+/* ---- shared engine: canvas scaling, play/pause, restart, offscreen pause ---- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const SANS = 'Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const SERIF = '"Cambria Math", Cambria, "STIX Two Text", "Times New Roman", serif';
+let t = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, visible = true, last = null;
+cv.style.aspectRatio = W + ' / ' + H;
+
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  render();
+}
+function render() { ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); draw(); }
+
+const pp = document.getElementById('pp');
+function setPlay(p) { playing = p; pp.textContent = p ? '\u275A\u275A' : '\u25B6'; pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation'); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => { e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); render(); });
+cv.addEventListener('click', () => setPlay(!playing));
+
+new ResizeObserver(fit).observe(cv);
+new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---- drawing helpers ---- */
+function txt(s, x, y, o = {}) {
+  const { size = 14, bold = false, italic = false, color = '#000', align = 'left', font = SANS, base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${font}`;
+  ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot); ctx.fillText(s, 0, 0); ctx.restore();
+}
+function line(x1, y1, x2, y2, color = '#000', lw = 1.5, dash = null) {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+function head(x, y, ang, size, color) {
+  ctx.save(); ctx.fillStyle = color; ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.42); ctx.lineTo(-size, size * 0.42); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = '#000', lw = 1.5, size = 9, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  line(x1 + (both ? Math.cos(a) * size * 0.8 : 0), y1 + (both ? Math.sin(a) * size * 0.8 : 0),
+       x2 - Math.cos(a) * size * 0.8, y2 - Math.sin(a) * size * 0.8, color, lw, dash);
+  head(x2, y2, a, size, color); if (both) head(x1, y1, a + Math.PI, size, color);
+}
+function poly(pts, color = '#000', lw = 1.5, dash = null, alpha = 1) {
+  if (!pts.length) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); ctx.restore();
+}
+/* pinned support: circle on top of a triangle, with a ground line */
+function pin(x, y, s = 1, color = '#000') {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(x, y + 5 * s); ctx.lineTo(x - 10 * s, y + 20 * s); ctx.lineTo(x + 10 * s, y + 20 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 14 * s, y + 20 * s); ctx.lineTo(x + 14 * s, y + 20 * s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 5 * s, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+/* math text: letters italic, "_d" gives a subscript digit */
+function mtext(s, x, y, size = 18, align = 'center', color = '#000') {
+  const segs = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/[a-zA-Z]/.test(c) && s[i + 1] === '_') { segs.push({ t: c, it: 1 }); segs.push({ t: s[i + 2], sub: 1 }); i += 2; }
+    else if (/[a-zA-Z\u1E8B\u1E8D]/.test(c)) segs.push({ t: c, it: 1 });
+    else segs.push({ t: c });
+  }
+  const fontOf = g => `${g.it ? 'italic ' : ''}${g.sub ? size * 0.68 : size}px ${SERIF}`;
+  let wsum = 0; for (const g of segs) { ctx.font = fontOf(g); g.w = ctx.measureText(g.t).width; wsum += g.w; }
+  let cx = align === 'center' ? x - wsum / 2 : align === 'right' ? x - wsum : x;
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  for (const g of segs) { ctx.font = fontOf(g); ctx.fillText(g.t, cx, y + (g.sub ? size * 0.28 : 0)); cx += g.w; }
+  ctx.restore();
+}
+/* ordinal like 1st: number plus raised suffix */
+function ord(n, suf, rest, x, y, o = {}) {
+  const { size = 16, bold = false, align = 'center', color = '#000' } = o;
+  const f = s => `${bold ? 'bold ' : ''}${s}px ${SANS}`;
+  ctx.save(); ctx.font = f(size); const w1 = ctx.measureText(n).width, w3 = ctx.measureText(rest).width;
+  ctx.font = f(size * 0.62); const w2 = ctx.measureText(suf).width;
+  const wt = w1 + w2 + w3; let cx = align === 'center' ? x - wt / 2 : align === 'right' ? x - wt : x;
+  ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = f(size); ctx.fillText(n, cx, y); cx += w1;
+  ctx.font = f(size * 0.62); ctx.fillText(suf, cx, y - size * 0.4); cx += w2;
+  ctx.font = f(size); ctx.fillText(rest, cx, y); ctx.restore();
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+
+
+
+/* ---------- (a) pulse echo ---------- */
+const A = { top: 45, crack: 128, bot: 215, v: 120, xd: 205, xu: 233, cyc: 4.6 };
+A.t1 = (A.crack - A.top) / A.v; A.tC = 2 * A.t1; A.tB = 2 * (A.bot - A.top) / A.v;
+const SIG = { x0: 342, x1: 555, T: 3.4, yb: 212 };
+const sx = tt => SIG.x0 + (SIG.x1 - SIG.x0) * tt / SIG.T;
+const spikes = [[0.02, 158], [A.tC, 112], [A.tB, 70]];
+function sig(tt) { let v = 0; for (const [t0, h] of spikes) if (tt >= t0 && tt < t0 + 0.14) v += h * (1 - (tt - t0) / 0.14); return v; }
+
+function zigzag(x, y1, y2, amp, per, color, lw) {
+  const p = [], n = Math.max(2, Math.round(Math.abs(y2 - y1) / per * 2)), dy = (y2 - y1) / n;
+  for (let i = 0; i <= n; i++) p.push([x + (i === 0 || i === n ? 0 : (i % 2 ? amp : -amp)), y1 + dy * i]);
+  poly(p, color, lw);
+}
+function burst(x, yHead, dir, color, alpha = 1) {       // moving wave packet with arrowhead
+  const len = 26, yTail = yHead - dir * len;
+  ctx.save(); ctx.globalAlpha = alpha; zigzag(x, yTail, yHead - dir * 5, 6, 6, color, 2); head(x, yHead, dir > 0 ? Math.PI / 2 : -Math.PI / 2, 9, color); ctx.restore();
+}
+function crackPath(color, lw) {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath();
+  ctx.moveTo(196, 123); ctx.quadraticCurveTo(232, 140, 266, 118); ctx.stroke(); ctx.restore();
+}
+function panelA() {
+  const ta = t % A.cyc;
+  txt('a)', 18, 30, { size: 17 });
+  txt('Acoustic sensor', 58, 130, { size: 12.5, rot: -Math.PI / 2, align: 'center' });
+  txt('(sends and receives waves)', 76, 130, { size: 12.5, rot: -Math.PI / 2, align: 'center' });
+  arrow(162, 30, 98, 34, { lw: 1.2, size: 7 });
+  ctx.fillStyle = '#000'; ctx.fillRect(165, 21, 72, 22);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.6; ctx.strokeRect(105, A.top, 195, A.bot - A.top);
+  txt('Steel', 110, 182, { size: 15 }); txt('beam', 110, 201, { size: 15 });
+  // faint guide zigzags like the static figure
+  zigzag(A.xd, A.top + 2, A.bot - 2, 5, 6, '#d5d5d5', 1); zigzag(A.xu, A.top + 2, A.crack - 8, 5, 6, '#d5d5d5', 1); zigzag(A.xu, A.crack + 8, A.bot - 2, 5, 6, '#d5d5d5', 1);
+  const hitC = ta > A.t1 && ta < A.t1 + 0.25, hitB = ta > A.tB / 2 && ta < A.tB / 2 + 0.25;
+  crackPath(hitC ? '#b3261e' : '#000', hitC ? 3 : 2);
+  txt('crack', 268, 112, { size: 13.5 });
+  if (hitB) line(106, A.bot, 299, A.bot, '#b3261e', 3);
+  ctx.save(); ctx.beginPath(); ctx.rect(106, A.top + 1, 193, A.bot - A.top - 2); ctx.clip();
+  // down-going pulse (continues through, weaker, after the crack)
+  const yd = A.top + A.v * ta;
+  if (yd <= A.bot) burst(A.xd, yd, 1, '#000', yd > A.crack ? 0.55 : 1);
+  // crack echo going up
+  if (ta > A.t1 && ta < A.tC) burst(A.xu, A.crack - A.v * (ta - A.t1), -1, '#b3261e');
+  // boundary echo going up
+  if (ta > A.tB / 2 && ta < A.tB) burst(A.xu, A.bot - A.v * (ta - A.tB / 2), -1, '#000', 0.8);
+  ctx.restore();
+
+  // recorded signal
+  txt('Recorded signal', 450, 36, { size: 13.5, align: 'center' });
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.4; ctx.strokeRect(335, 45, 230, 170);
+  txt('Amplitude', 323, 130, { size: 13, rot: -Math.PI / 2, align: 'center' });
+  txt('Time', 560, 208, { size: 13, align: 'right' });
+  const tn = Math.min(ta, SIG.T), p = [];
+  for (let tt = 0; tt <= tn; tt += 0.004) p.push([sx(tt), SIG.yb - sig(tt)]);
+  poly(p, '#000', 1.4);
+  if (ta < SIG.T) line(sx(tn), 50, sx(tn), SIG.yb, 'rgba(179,38,30,.35)', 1);
+  const lab = [['Excitation', sx(0.02) + 4, 62, 0.02, 'left'], ['Reflection', sx(A.tC) + 4, 110, A.tC, 'left'], ['Boundary', 561, 134, A.tB, 'right']];
+  for (const [s, x, y, t0, al] of lab) if (ta >= t0) txt(s, x, y, { size: 13, align: al, alpha: clamp((ta - t0) / 0.3, 0, 1), color: s === 'Reflection' ? '#b3261e' : '#000' });
+}
+
+/* ---------- (b) acoustic emission ---------- */
+const AE = { cyc: 6.5, events: [0.3, 1.9, 3.5, 5.0], v: 110, sx: 779, sy: 105 };
+const CRACK = [[764, 170], [786, 152], [800, 161], [820, 143], [838, 158], [852, 138]];
+function panelB() {
+  const tb = t % AE.cyc;
+  txt('b)', 680, 30, { size: 17 });
+  txt('Acoustic Emission (sensor is only listening)', 692, 62, { size: 15 });
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.6; ctx.strokeRect(720, 105, 265, 65);
+  txt('Steel beam', 980, 163, { size: 15, align: 'right' });
+  let seg = 2, sensorHit = 0;
+  ctx.save(); ctx.beginPath(); ctx.rect(721, 106, 263, 63); ctx.clip();
+  AE.events.forEach((te, i) => {
+    if (tb < te) return; seg = i + 3;
+    const tip = CRACK[Math.min(i + 2, CRACK.length - 1)], r = AE.v * (tb - te);
+    for (let k = 0; k < 3; k++) {
+      const rr = r - k * 8; if (rr <= 0) continue;
+      ctx.strokeStyle = `rgba(0,0,0,${clamp(1 - rr / 230, 0, 1) * 0.85})`; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.arc(tip[0], tip[1], rr, 0, 2 * Math.PI); ctx.stroke();
+    }
+    const d = Math.hypot(tip[0] - AE.sx, tip[1] - AE.sy), dt = tb - te - d / AE.v;
+    if (dt > 0 && dt < 0.35) sensorHit = Math.max(sensorHit, 1 - dt / 0.35);
+  });
+  ctx.restore();
+  poly(CRACK.slice(0, Math.min(seg, CRACK.length)), '#000', 2.2);
+  ctx.fillStyle = '#000'; ctx.fillRect(768, 84, 22, 21);
+  if (sensorHit > 0) { ctx.save(); ctx.globalAlpha = sensorHit; ctx.fillStyle = '#b3261e'; ctx.fillRect(768, 84, 22, 21);
+    ctx.strokeStyle = '#b3261e'; ctx.lineWidth = 1.5;
+    for (const r of [8, 14]) { ctx.beginPath(); ctx.arc(779, 94, r + 6, -Math.PI * 0.85, -Math.PI * 0.15); ctx.stroke(); }
+    ctx.restore(); }
+}
+
+/* ---------- (c) imaging with scanning transducers ---------- */
+const S = { x0: 420, x1: 630, y0: 321, y1: 400, scan: 5, hold: 1.6, pitch: 42, ew: 20, v: 120, cx: 585, cy: 381 };
+const IM = { x0: 660, x1: 880, y0: 330, y1: 400 };
+const imx = x => IM.x0 + (x - S.x0) * (IM.x1 - IM.x0) / (S.x1 - S.x0), imy = y => IM.y0 + (y - S.y0) * (IM.y1 - IM.y0) / (S.y1 - S.y0);
+let emits = [], lastEmit = -1, cycleStart = 0;
+function reset() { emits = []; lastEmit = -1; cycleStart = 0; }
+function step() {
+  if (t - cycleStart > S.scan + S.hold) { cycleStart = t; emits = []; lastEmit = -1; }
+  const tc = t - cycleStart;
+  if (tc < S.scan && (lastEmit < 0 || tc - lastEmit > 0.38)) { emits.push({ x: activeX(tc), t0: tc }); lastEmit = tc; }
+  emits = emits.filter(e => tc - e.t0 < 1.6);
+}
+const scanX = tc => S.x0 + (S.x1 - S.x0) * clamp(tc / S.scan, 0, 1);
+const span = 3 * S.pitch + S.ew;
+const arrLeft = tc => clamp(scanX(tc) - span / 2, S.x0, S.x1 - span);
+function activeX(tc) { const l = arrLeft(tc), xs = scanX(tc); let best = 0, bd = 1e9; for (let i = 0; i < 4; i++) { const c = l + S.ew / 2 + i * S.pitch; if (Math.abs(c - xs) < bd) { bd = Math.abs(c - xs); best = c; } } return best; }
+function ellipse(x, y, rx, ry, rot, fill) { ctx.save(); ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, 2 * Math.PI); ctx.fill(); ctx.restore(); }
+function panelC() {
+  const tc = t - cycleStart;
+  txt('c)', 395, 262, { size: 17 });
+  txt('Scanning transducers', 412, 290, { size: 15 });
+  arrow(400, 298, 640, 298, { lw: 1.3, size: 8 });
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.6; ctx.strokeRect(S.x0, S.y0, S.x1 - S.x0, S.y1 - S.y0);
+  txt('structure', 426, 393, { size: 14 });
+  ctx.save(); ctx.beginPath(); ctx.rect(S.x0 + 1, S.y0 + 1, S.x1 - S.x0 - 2, S.y1 - S.y0 - 2); ctx.clip();
+  for (const e of emits) {
+    const r = S.v * (tc - e.t0);
+    for (let k = 0; k < 2; k++) { const rr = r - k * 7; if (rr <= 0) continue;
+      ctx.strokeStyle = `rgba(0,0,0,${clamp(1 - rr / 110, 0, 1) * 0.8})`; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.arc(e.x, S.y0, rr, 0.12 * Math.PI, 0.88 * Math.PI); ctx.stroke(); }
+    const d = Math.hypot(e.x - S.cx, S.y0 - S.cy);
+    if (Math.abs(e.x - S.cx) < 55 && r > d) {
+      const re = r - d; if (re < 70) { ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = `rgba(0,0,0,${1 - re / 70})`; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.arc(S.cx, S.cy, re + 4, 1.05 * Math.PI, 1.95 * Math.PI); ctx.stroke(); ctx.restore(); }
+    }
+  }
+  ctx.restore();
+  ellipse(S.cx, S.cy, 18, 7, -0.35, '#000');
+  txt('crack', 580, 350, { size: 14 });
+  const l = arrLeft(tc), ax = activeX(tc);
+  for (let i = 0; i < 4; i++) { const x = l + i * S.pitch; ctx.fillStyle = (tc < S.scan && Math.abs(x + S.ew / 2 - ax) < 1) ? '#b3261e' : '#000'; ctx.fillRect(x, S.y0 - 17, S.ew, 17); }
+  arrow(638, 370, 655, 370, { lw: 3, size: 8 });
+  // resulting image, revealed as the scan proceeds
+  txt('Resulting Image', 770, 318, { size: 14, align: 'center' }); line(713, 321, 827, 321, '#000', 1);
+  const rx = imx(scanX(tc));
+  ctx.save(); ctx.beginPath(); ctx.rect(IM.x0, IM.y0, rx - IM.x0, IM.y1 - IM.y0); ctx.clip();
+  ctx.fillStyle = '#d2d2d2'; ctx.fillRect(IM.x0, IM.y0, IM.x1 - IM.x0, IM.y1 - IM.y0);
+  ellipse(imx(S.cx), imy(S.cy), 21, 7.5, -0.35, '#000'); ctx.restore();
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.6; ctx.strokeRect(IM.x0, IM.y0, IM.x1 - IM.x0, IM.y1 - IM.y0);
+  if (tc < S.scan) line(rx, IM.y0, rx, IM.y1, '#b3261e', 1.5);
+}
+
+function draw() { panelA(); panelB(); panelC(); }
+
+setPlay(playing); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

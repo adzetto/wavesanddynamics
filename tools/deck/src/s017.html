@@ -1,0 +1,48 @@
+<section class="slide">
+ <style>
+  .steps .h .n{margin-right:.34em}
+  .steps .eqs{margin-top:12px}
+  .steps .res .eq{font-size:37px}
+  .steps .fig{margin-top:6px}
+  .step3{margin-top:36px}
+ </style>
+ <header class="head">
+  <h1 class="title">Frequentist: why 1.96 in a 95% confidence interval?</h1>
+  <p class="lede">Concrete strength: 25 independent normal tests, known population SD <m>σ = 3 MPa</m>, observed mean <m>x̄ = 32 MPa</m>.</p>
+ </header>
+ <main class="body g steps">
+  <div class="s6 stack">
+   <div>
+    <h2 class="h"><span class="n">1</span> Standardize the sample mean</h2>
+    <div class="eqs">
+     <p class="eq"><m>μ = unknown population mean strength</m></p>
+     <p class="eq"><m>SE = σ/√n = 3/√25 = 0.6 MPa</m></p>
+     <p class="eq"><m>Z = (X̄ − μ)/SE  ∼  N(0, 1)</m></p>
+    </div>
+   </div>
+   <div>
+    <h2 class="h"><span class="n">2</span> Keep the central 95%</h2>
+    <div class="eqs">
+     <p class="eq"><m>P(−1.96 ≤ Z ≤ 1.96) = 0.95</m></p>
+     <p class="p">Each tail contains 2.5%.</p>
+     <p class="p">1.96 is the 97.5th percentile of <m>N(0, 1)</m>.</p>
+    </div>
+   </div>
+   <p class="note">Here <m>N(mean, variance)</m> denotes a normal distribution.</p>
+  </div>
+  <div class="s6 o7">
+   <div data-fig="central"></div>
+   <div class="step3">
+    <h2 class="h"><span class="n">3</span> Return to MPa</h2>
+    <div class="eqs res">
+     <p class="eq c-blue"><m>x̄ ± 1.96 SE = 32 ± 1.176</m></p>
+     <p class="eq c-blue"><m>95% CI = [30.82, 33.18] MPa</m></p>
+    </div>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">1.96 comes from the standard normal distribution and the chosen two-sided 95% coverage.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: estimate a population mean and quantify its uncertainty</span><span class="src">Sources: [3], [6]</span><span class="num">17</span></p>
+ </footer>
+</section>

@@ -1,0 +1,29 @@
+<section class="slide">
+ <style>
+  .figs{margin-top:20px}
+  .deriv{margin-top:22px}
+  .deriv .eqs{margin-top:8px}
+ </style>
+ <header class="head">
+  <h1 class="title">Capacity, demand and the safety margin</h1>
+  <p class="lede"><m>R</m> = resistance or capacity. <m>S</m> = applied load effect or demand. <m>G = R − S</m> is the remaining safety margin.</p>
+ </header>
+ <main class="body">
+  <p class="p lines"><span>Model: <m>R ∼ N(100, 10²) kN</m> and <m>S ∼ N(70, 8²) kN</m>; assume independence for this first case.</span><span>Example realization: <m>R = 95 kN</m>, <m>S = 80 kN</m> gives <m>G = 15 kN</m>, a positive margin.</span></p>
+  <div class="g figs">
+   <div data-fig="marginals" class="s6"></div>
+   <div data-fig="margin" class="s6 o7"></div>
+  </div>
+  <div class="deriv">
+   <h2 class="h">Derivation: <m>ΔR = R − μ<sub>R</sub></m> and <m>ΔS = S − μ<sub>S</sub></m></h2>
+   <div class="eqs">
+    <p class="eq">Mean: <m>E[R − S] = μ<sub>R</sub> − μ<sub>S</sub> = 30 kN</m></p>
+    <p class="eq">Variance: <m>E[(ΔR − ΔS)²] = σ<span class="ss"><sub>R</sub><sup>2</sup></span> + σ<span class="ss"><sub>S</sub><sup>2</sup></span> − 2Cov(R, S) = 164 kN²</m></p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Failure is the joint event <m>S > R</m>, equivalently <m>G &lt; 0</m>. Marginal curve overlap is not the failure probability.</p>
+  <p class="run"><span class="map">LINEAR CASE: G = R − S IS EXACT (SLIDE 28) <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: propagate uncertainty; box 5 uses the failure probability</span><span class="src">Sources: [16], [18]</span><span class="num">36</span></p>
+ </footer>
+</section>

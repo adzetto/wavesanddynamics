@@ -1,0 +1,24 @@
+# his words inside his figure (build/r10-deck/his/s042-pic1.png), panel by panel
+Stationary: the rules stay the same
+±2 SD band
+Response
+Time (s)
+Not stationary: the spread grows
+±2 SD band
+Time (s)
+Variance in three time windows
+Variance
+0–60 s
+70–130 s
+140–200 s
+1.0
+1.0
+1.0
+Variance in three time windows
+Variance
+0–60 s
+70–130 s
+140–200 s
+0.8
+2.2
+3.6

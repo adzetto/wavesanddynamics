@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 13: Coverage comparison between the two families of ultrasonic testing</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="On the same 2 m steel plate, a bulk wave probe steps along 400 positions, each covering only the narrow zone beneath it, and a flaw lights up only when the probe is over it; a single guided wave shot from one transducer sweeps the whole span in 0.4 ms and returns an echo from each flaw."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 716;
+const DATA = {"slow":5000.0,"slowtex":"5\\,\\times\\,10^{3}","tc_us":30.0,"f0":50000.0,"ncyc":3,"cg":5364.22907,"span":2.0,"xend":2.15,"nx":861,"dx":0.0025,"ppm":400,"ph":34,"thick_mm":10.0,"R":0.25,"T":0.96825,"index_mm":5.0,"npos":400,"tstep":[0.0,0.33333,0.66667,1.0,1.19936,1.29471,1.34861,1.38389,1.40953,1.42967,1.44649,1.46131,1.47501,1.48834,1.50167,1.51501,1.52834,1.54167,1.55501,1.56834,1.58167,1.59501,1.60834,1.62167,1.63501,1.64834,1.66167,1.67501,1.68834,1.70167,1.71501,1.72834,1.74167,1.75501,1.76834,1.78167,1.79501,1.80834,1.82167,1.83501,1.84834,1.86167,1.87501,1.88834,1.90167,1.91501,1.92834,1.94167,1.95501,1.96834,1.98167,1.99501,2.00834,2.02167,2.03501,2.04834,2.06167,2.07501,2.08834,2.10167,2.11501,2.12834,2.14167,2.15501,2.16834,2.18167,2.19501,2.20834,2.22167,2.23501,2.24834,2.26167,2.27501,2.28834,2.30167,2.31501,2.32834,2.34167,2.35501,2.36834,2.38167,2.39501,2.40834,2.42167,2.43501,2.44834,2.46167,2.47501,2.48834,2.50167,2.51501,2.52834,2.54167,2.55501,2.56834,2.58167,2.59501,2.60834,2.62167,2.63501,2.64834,2.66167,2.67501,2.68834,2.70167,2.71501,2.72834,2.74168,2.75502,2.76839,2.78188,2.79572,2.81052,2.8276,2.84936,2.87946,2.92223,2.98114,3.05678,3.14527,3.2386,3.32709,3.40272,3.46164,3.5044,3.53451,3.55627,3.57335,3.58814,3.60198,3.61547,3.62885,3.64219,3.65553,3.66886,3.68219,3.69553,3.70886,3.72219,3.73553,3.74886,3.76219,3.77553,3.78886,3.80219,3.81553,3.82886,3.84219,3.85553,3.86886,3.88219,3.89553,3.90886,3.92219,3.93553,3.94886,3.96219,3.97553,3.98886,4.00219,4.01553,4.02886,4.04219,4.05553,4.06886,4.08219,4.09553,4.10886,4.12219,4.13553,4.14886,4.16219,4.17553,4.18886,4.20219,4.21553,4.22886,4.24219,4.25553,4.26886,4.28219,4.29553,4.30886,4.32219,4.33553,4.34886,4.36219,4.37553,4.38886,4.40219,4.41553,4.42886,4.44219,4.45553,4.46886,4.48219,4.49553,4.50886,4.52219,4.53553,4.54886,4.56219,4.57553,4.58886,4.60219,4.61553,4.62886,4.64219,4.65553,4.66886,4.68219,4.69553,4.70886,4.72219,4.73553,4.74886,4.76219,4.77553,4.78886,4.80219,4.81553,4.82886,4.84219,4.85553,4.86886,4.88219,4.89553,4.90886,4.92219,4.93553,4.94886,4.96219,4.97553,4.98886,5.00219,5.01553,5.02886,5.04219,5.05553,5.06886,5.08219,5.09553,5.10886,5.12219,5.13553,5.14886,5.16219,5.17553,5.18886,5.20219,5.21553,5.22886,5.24219,5.25553,5.26886,5.28219,5.29553,5.30886,5.32219,5.33553,5.34886,5.36219,5.37553,5.38886,5.40219,5.41553,5.42886,5.4422,5.45554,5.46891,5.4824,5.49624,5.51104,5.52811,5.54988,5.57998,5.62275,5.68166,5.7573,5.84579,5.93912,6.0276,6.10324,6.16216,6.20492,6.23502,6.25679,6.27386,6.28866,6.3025,6.31599,6.32937,6.34271,6.35604,6.36938,6.38271,6.39604,6.40938,6.42271,6.43604,6.44938,6.46271,6.47604,6.48938,6.50271,6.51604,6.52938,6.54271,6.55604,6.56938,6.58271,6.59604,6.60938,6.62271,6.63604,6.64938,6.66271,6.67604,6.68938,6.70271,6.71604,6.72938,6.74271,6.75604,6.76938,6.78271,6.79604,6.80938,6.82271,6.83604,6.84938,6.86271,6.87604,6.88938,6.90271,6.91604,6.92938,6.94271,6.95604,6.96938,6.98271,6.99604,7.00938,7.02271,7.03604,7.04938,7.06271,7.07604,7.08938,7.10271,7.11604,7.12938,7.14271,7.15604,7.16938,7.18271,7.19604,7.20938,7.22271,7.23604,7.24938,7.26271,7.27604,7.28938,7.30271,7.31604,7.32938,7.34271,7.35604,7.36938,7.38271,7.39604,7.40938,7.42271,7.43604,7.44938,7.46271,7.47604,7.48938,7.50271,7.51604,7.52938,7.54271,7.55604,7.56938,7.58271,7.59604,7.60938,7.62271,7.63604,7.64938,7.66271,7.67604,7.68938,7.70271,7.71604,7.72938,7.74271,7.75604,7.76938],"tscan":7.78271,"lit":[[116,122],[276,282]],"poster_scan":6.69938,"shot_end_us":775.68031,"wmid_mm":7.40156,"probe_mm":10.0,"flaws":[{"x":0.6,"z_mm":6.0,"L_mm":24.0,"h_mm":1.2},{"x":1.4,"z_mm":3.5,"L_mm":24.0,"h_mm":1.2}],"beam":{"nx":161,"nz":41,"x0_mm":-20.0,"dx_mm":0.25,"z_mm":[0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,4.75,5.0,5.25,5.5,5.75,6.0,6.25,6.5,6.75,7.0,7.25,7.5,7.75,8.0,8.25,8.5,8.75,9.0,9.25,9.5,9.75,10.0],"w_mm":[4.64738,4.64738,4.55175,4.4594,4.38623,4.32386,4.2657,4.20942,4.15875,4.10847,4.05624,4.00475,3.96001,3.93095,3.91719,3.91278,3.90757,3.89021,3.8516,3.78747,3.70078,3.60054,3.49529,3.39102,3.30621,3.24573,3.20927,3.20661,3.23328,3.28169,3.34774,3.42767,3.51713,3.61581,3.66473,3.64719,3.62834,3.59648,3.56477,3.52348,3.48178],"a":"AgICAgICAwMDAwMDAwMDAwMDAwMDAwMDAwQEBAQEBAQEBAQEBQUFBQUFBgYGBgcHBwgICQkKCwwNDxMZKEZeX1JJT1VUUVFSUlJSU1NVU15yXlNVU1NSUlJSUVFUVU9JUl9eRigZEw8NDAsKCQkICAcHBwYGBgYFBQUFBQUEBAQEBAQEBAQEBAMDAwMDAwMDAwMDAwMDAwMDAwMCAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwMDBAQEBAQEBAQEBAQFBQUFBQUGBgYGBwcHCAgJCQoLDA0PExkoRl5fUklPVVRRUVJSUlJTU1VTXnJeU1VTU1JSUlJRUVRVT0lSX15GKBkTDw0MCwoJCQgIBwcHBgYGBgUFBQUFBQQEBAQEBAQEBAQEAwMDAwMDAwMDAwMDAwMDAwMDAwICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwMEBAQEBAQEBAQEBAUFBQUFBQYGBgYHBwcICAkJCgsMDhAUGyg+VWBbTkpRVVRRUVJSUlNTVVNfcl9TVVNTUlJSUVFUVVFKTltgVT4oGxQQDgwLCgkJCAgHBwcGBgYGBQUFBQUFBAQEBAQEBAQEBAQDAwMDAwMDAwMDAwMDAwMDAwMDAgICAgICAgICAgICAwMDAwMDAwMDAwMDAwMDAwMDAwQEBAQEBAQEBAQEBQUFBQUFBgYGBgcHBwgICQkKCwwOERUcKDlOXWBWS0tSVVNRUVJTU1NVUl9yX1JVU1NTUlFRU1VSS0tWYF1OOSgcFREODAsKCQkICAcHBwYGBgYFBQUFBQUEBAQEBAQEBAQEBAMDAwMDAwMDAwMDAwMDAwMDAwMCAgICAgICAgICAgIDAwMDAwMDAwMDAwMDAwMDAwMDBAQEBAQEBAQEBAQFBQUFBQUGBgYGBwcHCAgJCQoLDQ8SFh0oN0lZYFxQSU5UVVJRUVNTU1VSX3JfUlVTU1NRUVJVVE5JUFxgWUk3KB0WEg8NCwoJCQgIBwcHBgYGBgUFBQUFBQQEBAQEBAQEBAQEAwMDAwMDAwMDAwMDAwMDAwMDAwICAgICAgICAgICAgMDAwMDAwMDAwMDAwMDAwMDAwMEBAQEBAQEBAQEBAUFBQUFBQYGBgYHBwcICAkKCwwNDxIXHic1RVVfX1ZLSlFVVFJRUlNTVVJfcl9SVVNTUlFSVFVRSktW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"},"c":{"w":"YxQdRWMUnUWUnutFYxQdRnxZREaUnmtG1nGJRmMUnUbvtrBGfFnERgj810aUnutGIUH/RtZxCUcdQxNHYxQdR6nlJkfvtjBHNYg6R3xZREfCKk5HCPxXR07NYUeUnmtH2m91RyFBf0cziYRH1nGJR3pajkcdQ5NHwCuYR2MUnUcG/aFHqeWmR0zOq0fvtrBHkp+1RzWIukfYcL9HfFnERx9CyUfCKs5HZRPTRwj810er5NxHTs3hR/G15keUnutHN4fwR9pv9Ud9WPpHIUH/R+IUAkgziQRIhf0GSNZxCUgo5gtIeloOSMvOEEgdQxNIbrcVSMArGEgRoBpIYxQdSLSIH0gG/SFIV3EkSKnlJkj7WSlITM4rSJ5CLkjvtjBIQSszSJKfNUjkEzhINYg6SIf8PEjYcD9IKuVBSHxZREjNzUZIH0JJSHC2S0jCKk5IE59QSGUTU0i2h1VICPxXSFlwWkir5FxI/FhfSE7NYUigQWRI8bVmSEMqaUiUnmtI5hJuSDeHcEiJ+3JI2m91SCzkd0h9WHpIz8x8SCFBf0i52oBI4hSCSAtPg0gziYRIXMOFSIX9hkiuN4hI1nGJSP+rikgo5otIUSCNSHpajkiilI9Iy86QSPQIkkgdQ5NIRX2USG63lUiX8ZZIwCuYSOhlmUgRoJpIOtqbSGMUnUiMTp5ItIifSN3CoEgG/aFILzejSFdxpEiAq6VIqeWmSNIfqEj7WalII5SqSEzOq0h1CK1InkKuSMZ8r0jvtrBIGPGxSEErs0hpZbRIkp+1SLvZtkjkE7hIDU65SDWIukhewrtIh/y8SLA2vkjYcL9IAavASCrlwUhTH8NIfFnESKSTxUjNzcZI9gfISB9CyUhHfMpIcLbLSJnwzEjCKs5I6mTPSBOf0Eg82dFIZRPTSI5N1Ei2h9VI38HWSAj810gxNtlIWXDaSIKq20ir5NxI1B7eSPxY30glk+BITs3hSHcH40igQeRIyHvlSPG15kga8OdIQyrpSGtk6kiUnutIvdjsSOYS7kgPTe9IN4fwSGDB8UiJ+/JIsjX0SNpv9UgDqvZILOT3SFUe+Uh9WPpIppL7SM/M/Ej4Bv5IIUH/SKU9AEm52gBJzXcBSeIUAkn2sQJJC08DSR/sA0kziQRJSCYFSVzDBUlxYAZJhf0GSZmaB0muNwhJwtQISdZxCUnrDgpJ/6sKSRRJC0ko5gtJPIMMSVEgDUllvQ1JeloOSY73DkmilA9JtzEQScvOEEnfaxFJ9AgSSQimEkkdQxNJMeATSUV9FElaGhVJbrcVSYNUFkmX8RZJq44XScArGEkRoBpJJj0bSTraG0lOdxxJYxQdSXexHUmMTh5JoOseSbSIH0nJJSBJ3cIgSfJfIUkG/SFJGpoiSS83I0lD1CNJV3EkSWwOJUmAqyVJlUgmSanlJkm9gidJ0h8oSea8KEn7WSlJD/cpSSOUKkk4MStJTM4rSWBrLEl1CC1JiaUtSZ5CLkmy3y5JxnwvSdsZMEnvtjBJBFQxSX4CNUmSnzVJpzw2SbvZNknPdjdJ5BM4SfiwOEkNTjlJIes5STWIOklKJTtJXsI7SXJfPEmH/DxJm5k9SbA2PknE0z5J2HA/Se0NQEkBq0BJFkhBSSrlQUk+gkJJUx9DSWe8Q0l8WURJkPZESaSTRUm5MEZJzc1GSeFqR0n2B0hJCqVISR9CSUkTn1BJKDxRSTzZUUlQdlJJZRNTSXmwU0mOTVRJoupUSbaHVUnLJFZJ38FWSfNeV0kI/FdJHJlYSTE2WUlF01lJWXBaSW4NW0mCqltJl0dcSavkXEm/gV1J1B5eSei7Xkn8WF9JEfZfSSPqb0k3h3BJTCRxSWDBcUl0XnJJiftySZ2Yc0k=","k":"jxnuPpYZbj85k7I/shnuPxzQFEBpkzJAwFZQQCMabkDK7oVAitCUQFSyo0AnlLJABHbBQO1X0EDjOd9A5RvuQPb9/EAL8AVBI2ENQUPSFEFsQxxBnrQjQdolK0EglzJBcQg6Qc15QUE060hBp1xQQSfOV0GzP19BTbFmQfQibkGqlHVBbgZ9QSE8gkES9YVBDK6JQQ1njUEYIJFBKtmUQUaSmEFrS5xBmQSgQdG9o0ETd6dBXjCrQbTprkEVo7JBgFy2QfYVukF4z71BBInBQZ1CxUFB/MhB8rXMQa9v0EF5KdRBT+PXQTOd20EjV99BIhHjQS7L5kFIhepBcT/uQaj58UHus/VBQ275Qaco/UGNcQBCz04CQhksBEJrCQZCxeYHQifECUKSoQtCBn8NQoJcD0IHOhFClRcTQiz1FELN0hZCd7AYQiqOGkLnaxxCrkkeQn8nIEJZBSJCPuMjQi3BJUInnydCK30pQjpbK0JTOS1CeBcvQqf1MELi0zJCKLI0QnqQNkLXbjhCQE06QrUrPEI2Cj5Cw+g/QlzHQUICpkNCtYRFQnRjR0JAQklCGSFLQv//TELy3k5C871QQgKdUkIefFRCSFtWQoA6WELHGVpCG/lbQn/YXULwt19CcZdhQgB3Y0KfVmVCTTZnQgoWaULX9WpCs9VsQqC1bkKclXBCqHVyQsVVdELzNXZCMRZ4Qn/2eULf1ntCULd9QtKXf0IzvIBChqyBQuGcgkJGjYNCtH2EQipuhUKqXoZCNE+HQsc/iEJjMIlCCSGKQrkRi0JyAoxCNfOMQgLkjULa1I5Cu8WPQqe2kEKcp5FCnZiSQqiJk0K9epRC3WuVQghdlkI+TpdCfz+YQsswmUIiIppChBObQvIEnEJr9pxC8OedQoDZnkIcy59CxLygQnmuoUI5oKJCBZKjQt6DpELDdaVCtWemQrNZp0K+S6hC1j2pQvovqkIsIqtCaxSsQrgGrUIR+a1CeeuuQu7dr0Jw0LBCAcOxQp+1skJMqLNCB5u0QtCNtUKngLZCjnO3QoNmuEKGWblCmUy6Qrs/u0LsMrxCLSa9QnwZvkLcDL9CSwDAQsrzwEJZ58FC+drCQqjOw0JowsRCObbFQhqqxkIMnsdCD5LIQiOGyUJIespCf27LQsdizEIhV81CjUvOQgtAz0KbNNBCPSnRQvId0kK6EtNClAfUQoH81EKB8dVClebWQrvb10L20NhCRMbZQqa72kIcsdtCp6bcQkWc3UL5kd5CwYffQp594EKQc+FCmGniQrVf40LnVeRCMEzlQo5C5kIDOedCji/oQjAm6UKdAe1CsvjtQuDv7kIl5+9Cg97wQvnV8UKHzfJCL8XzQu+89ELJtPVCvKz2Qsmk90LwnPhCMZX5QoyN+kIChvtCk378Qj93/UIGcP5C6Gj/QvMwAEOBrQBDHCoBQ8amAUN+IwJDRKACQxkdA0P9mQND8BYEQ/KTBEMDEQVDI44FQ1MLBkOTiAZD4gUHQ0GDB0OwAAhDL34IQ4VwC0N57gtDf2wMQ5bqDEO/aA1D+eYNQ0ZlDkOl4w5DFmIPQ5rgD0MwXxBD2t0QQ5ZcEUNl2xFDSFoSQz/ZEkNJWBNDZ9cTQ5lWFEPg1RRDO1UVQ6vUFUMvVBZDydMWQ3hTF0M90xdDF1MYQwfTGEMOUxlDKtMZQ15TGkOo0xpDCVQbQ4HUG0OP4SFDS2MiQyLlIkMTZyNDIOkjQ0lrJEON7SRD7m8lQ2ryJUMEdSZDuvcmQ456J0N//SdDjoAoQ7sDKUMHhylDcQoqQ/uNKkOkEStDbZUrQ1YZLENgnSxDiiEtQ9alLUNDKi5D0q4uQ/dYPEO34TxDpWo9Q8LzPUMOfT5DiwY/QziQP0M=","a":"ezrJNw3vSDjkVJY4rsDHOIWU+DjPVBQ5UuwrOdH8Qjn3cVk5BTdvOWYbgjnRLYw5rceVOZ3dnjn9Y6c5306vOQWStjnnIL05q+7COSvuxzn1Ecw5SUzPOR+P0TkqzNI52/TSOWb60TnIzc85zV/MORihxzkqgsE5afO5OS7lsDnKR6Y5kwuaOfAgjDnG8Hg5LAVWOc9gLznz5QQ5+O6sOCTkDzhsh5U38EGbOJTwDDkKuFA5K4eMOYIEszkJ3ts5do4DOrhkGjp0dTI61sNLOn9SZjrDEYE6NJyPOgbJnjpcmK46Bgq/On0d0Drk0eE6Ayb0OiKMAztcUw07hmcXO0bHITsUcSw7M2M3O7ibQjuFGE47StdZO4fVZTuMEHI7doV+O5uYhTtFCIw7ApCSOwcumTtv4J87Q6WmO3h6rTvuXbQ7c027O8RGwjuOR8k7bk3QO/NV1zuhXt477WTlO0Rm7DsLYPM7nk/6OyqZADy/AgQ8NmMHPDe5CjxoAw48cUARPP1uFDy4jRc8UZsaPH2WHTzzfSA8dFAjPMQMJjywsSg8DD4rPLawLTyVCDA8mkQyPMFjNDwTZTY8pEc4PJUKOjwVrTs8Xy49PMCNPjyRyj88O+RAPDnaQTwUrEI8ZVlDPNjhQzwoRUQ8I4NEPKabRDyhjkQ8F1xEPBgERDzLhkM8Y+RCPCkdQjx0MUE8rSFAPE7uPjzflz08+x48PEyEOjyJyDg8euw2PPXwNDzb1jI8H58wPLtKLjy52is8LVApPDSsJjz47yM8qRwhPIIzHjzDNRs8tSQYPKYBFTzqzRE82IoOPMw5Czwl3Ac8Q3MEPIcAATymCvs7Ewb0OxT27Dtm3eU7v77eO9Cc1zs/etA7qlnJO6I9wjutKLs7QB20O8QdrTuPLKY750ufO/19mDvwxJE7yiKLO36ZhDvXVXw7rrFvO+BJYzuXIVc7zztLO06bPzunQjQ7OTQpOy5yHjt8/hM749oJO+wIADveE+06GL7aOl4SyTokErg6dL6nOvQXmDrqHok6cqZ1OspoWjoxg0A6SPMnOgS2EDpoj/U5EEjMOTKMpTnZUIE5BBQ/OUVVADn0kow4ApeGN8y3ADjis5k43qbqOAa+GTlwPjo5ZvpWOX4YcDkF4II5fAyMOdalkzlzwJk5z3CeOXPLoTnm5KM5ndGkOe+lpDkGdqM5z1WhOfFYnjnBkpo5MxaWOdH1kDmyQ4s5bBGFOSXgfDlN4G45J0NgOU8nUTkaqkE5iucxOUf6ITmX+xE5VAMCOdlP5Di1/MQ4TDSmOMEaiDiaolU4iewcOGqUzDcg6rc3McEFOEikLDgFjVA44m5xOP2ghzhpAZU4GdmgOHEqqzi++bM4Fk27OD4swTiOoMU4zLTIOBV1yji67so4JjDKOLlIyDixSMU4BUHBOFBDvDirYbY4lq6vON08qDh6H6A4fGmXOO4tjjjCf4Q4auN0OHgsYDjg/ko48X01OPrLHzgeCgo4gLDoN7+pvTcFOpM3djBTN8HvaTfQGJQ3aDOxN2MxzDc7AOU3H5H7N3HsBzj15xA4DrkYOFpfHzgc3CQ4JTIpOMZlLDi6fC44FH4vOCVyLzhuYi44f1ksOOdiKTgYiyU4Ud8gOINtGzg6RBU4gnIOONIHBzjhJ/43uU3tN26h2zdXQ8k3tFO2N4HyojdQP483QLJ2N3G8TjcIF1M3k9JrN1M7gTdQeYs3tZyUN7egnDdCgqM38D+pNwXarTdZUrE3UayzN8vstDcOGrU3tzu0N6RasjfggK83jLmrN8YQpzeVk6E3z0+bN/1TlDdIr4w3WXGEN4pUdzfm1GQ3AYVRN3IvTDdS6E43VGFQNyagUDcPrE833I1NN8xPSjc=","p":"gbbSvydd3L/NA+a/c6rvvxlR+b/gewHAM08GwIYiC8DZ9Q/ALMkUwH+cGcDSbx7AJUMjwHgWKMDL6SzAHr0xwHKQNsDFYzvAGDdAwGsKRcD3QUhApG5DQFGbPkD+xzlAq/Q0QFghMEAFTitAsnomQF+nIUAM1BxAuQAYQGYtE0ATWg5AwIYJQGyzBEAzwP8/jRn2P+Zy7D9AzOI/miXZP/R+zz9nR8y/De7Vv7SU379aO+m/AOLyv6aI/L+mFwPA+eoHwEy+DMCfkRHA8mQWwEU4G8CZCyDA7N4kwD+yKcCShS7A5VgzwDgsOMCL/zzA3tJBwDGmRsAxpkZA3tJBQIv/PEA4LDhA5VgzQJKFLkA/silA7N4kQJkLIEBFOBtA8mQWQJ+REUBMvgxA+eoHQKYXA0CmiPw/AOLyP1o76T+0lN8/De7VP2dHzD/BoMI/G/q4P3VTrz/PrKU/KQacP4Jfkj/cuIg/bCR+PyDXaj/UiVc/iDxEPzvvMD/voR0/o1QKP60O7j4UdMc+fNmgPsZ9dD6VSCc+yCa0PS7jTTz9rYC9L4wNvmHBWr5J+5O+4ZW6vnow4b6J5QO/1jIXvyKAKr9uzT2/uhpRvwdoZL9TtXe/UIGFv/Ynj7+czpi/QnWiv+gbrL+OwrW/NGm/v9sPyb+BttK/J13cv80D5r9zqu+/GVH5v+B7AcAzTwbAhiILwNn1D8AsyRTAf5wZwNJvHsAlQyPAeBYowMvpLMAevTHAcpA2wMVjO8AYN0DAawpFwPdBSECkbkNAUZs+QP7HOUCr9DRAWCEwQAVOK0CyeiZAX6chQAzUHEC5ABhAZi0TQBNaDkDAhglAbLMEQDPA/z+NGfY/5nLsP0DM4j+aJdk/9H7PP07YxT+oMbw/AouyP1vkqD+1PZ8/D5eVP2nwiz/DSYI/OkZxP+34XT+hq0o/VV43PwgRJD+8wxA/4Oz6PkdS1D6vt60+Fh2HPvsEQT6Tn+c9YmoaPWJqGr2Tn+e9+wRBvhYdh76vt62+R1LUvuDs+r68wxC/CBEkv1VeN7+hq0q/7fhdvzpGcb/DSYK/afCLvw+Xlb+1PZ+/W+SovwKLsr+oMby/TtjFv8Ggwj8b+rg/dVOvP8+spT8pBpw/gl+SP9y4iD9sJH4/INdqP9SJVz+IPEQ/O+8wP++hHT+jVAo/rQ7uPhR0xz582aA+xn10PpVIJz7IJrQ9LuNNPP2tgL0vjA2+YcFavkn7k77hlbq+ejDhvonlA7/WMhe/IoAqv27NPb+6GlG/B2hkv1O1d79QgYW/9iePv5zOmL9CdaK/6Busv47Ctb+OwrU/6BusP0J1oj+czpg/9iePP1CBhT9TtXc/B2hkP7oaUT9uzT0/IoAqP9YyFz+J5QM/ejDhPuGVuj5J+5M+YcFaPi+MDT79rYA9LuNNvMgmtL2VSCe+xn10vnzZoL4UdMe+rQ7uvqNUCr/voR2/O+8wv4g8RL/UiVe/INdqv2wkfr/cuIi/gl+SvykGnL/PrKW/dVOvv1vkqD+1PZ8/D5eVP2nwiz/DSYI/OkZxP+34XT+hq0o/VV43PwgRJD+8wxA/4Oz6PkdS1D6vt60+Fh2HPvsEQT6Tn+c9YmoaPWJqGr2Tn+e9+wRBvhYdh76vt62+R1LUvuDs+r68wxC/CBEkv1VeN7+hq0q/7fhdvzpGcb/DSYK/afCLvw+Xlb/cuIg/bCR+PyDXaj/UiVc/iDxEPzvvMD/voR0/o1QKP60O7j4UdMc+fNmgPsZ9dD6VSCc+yCa0PS7jTTz9rYC9L4wNvmHBWr5J+5O+4ZW6vnow4b6J5QO/1jIXvyKAKr9uzT2/uhpRv+GVuj5J+5M+YcFaPi+MDT79rYA9LuNNvMgmtL0="},"trace":"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","dt_tr_us":1.0,"tmax_us":775.68031,"echo_us":[253.8,552.3],"win_us":[[225.9,281.8],[522.4,584.8]],"params_a":"probe 10 mm, 5 MHz; N = 21 mm; index 5 mm","spanlab":"\\rm{whole span inspected at once: }2\\,\\rm{m}","params":"steel plate, d = 10 mm (drawn 8.5 \u00d7 thicker); S0 at 50 kHz, group velocity 5364 m/s; flaws 24 mm long, reflection 0.25"};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+const G = DATA;
+G.tc = G.tc_us * 1e-6; G.tmax = G.tmax_us * 1e-6; G.dt_tr = G.dt_tr_us * 1e-6;
+const T0 = 0.15, SLOW = G.slow, M0 = -20e-6, S = .28;
+const PX0 = 90, PPM = G.ppm, PH = G.ph, ZS = PH / G.thick_mm;   // ZS: drawing units per mm of depth
+const XU = x => PX0 + x * PPM;
+const PYA = 78, YB = 338, PYB = YB + 100;                                     // the two strips
+const ACC = C.accent, FLAW = '#781E2C', LBL = 15;
+const STOPS = ['#043052', '#2E6A9E', '#9CBBD6', null, '#DEABAB', '#B03F4D', '#651020'];
+const lutWith = mid => _ramp(STOPS.map(s => _hex(s || mid)));
+const LUT_STEEL = lutWith(C.steel), LUT_DONE = lutWith(C.mist);
+const BLUT = _ramp(['#E3EBF2', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+
+/* ------------------------------------------------------------ data */
+const COMP = { w: b64f32(G.c.w), k: b64f32(G.c.k), a: b64f32(G.c.a), p: b64f32(G.c.p) };
+const TRACE = b64f32(G.trace);
+const NX = G.nx, DXM = G.dx, U = new Float64Array(NX);
+const I1 = Math.round(G.flaws[0].x / DXM), I2 = Math.round(G.flaws[1].x / DXM);
+const BEAM = b64i8(G.beam.a), BNX = G.beam.nx, BNZ = G.beam.nz;
+const XP = i => (i + 1) * G.index_mm / 1000;                  // probe position i (m): the first flush with the end
+
+/* the S0 burst along the plate at model time tm: incident (passing each flaw
+   with T), the echo from flaw 1 (R) and from flaw 2 (T R, then T again past
+   flaw 1): the Fourier sum, each line rotated along x */
+function fieldAt(tm) {
+  U.fill(0);
+  const { w, k, a, p } = COMP, n = w.length, R = G.R, T = G.T, x1 = G.flaws[0].x, x2 = G.flaws[1].x;
+  for (let j = 0; j < n; j++) {
+    const kj = k[j], aj = a[j], ph = w[j] * tm + p[j], cd = Math.cos(kj * DXM), sd = Math.sin(kj * DXM);
+    let c = Math.cos(ph), s = Math.sin(ph);
+    for (let i = 0; i < NX; i++) {
+      U[i] += (i < I1 ? aj : i < I2 ? aj * T : aj * T * T) * c;
+      const c2 = c * cd + s * sd; s = s * cd - c * sd; c = c2;
+    }
+    for (const [xf, iEnd, g1, g2] of [[x1, I1, R, R], [x2, I2, T * T * R, T * R]]) {
+      const b = ph - 2 * kj * xf;
+      c = Math.cos(b); s = Math.sin(b);
+      for (let i = 0; i < iEnd; i++) {
+        U[i] += aj * (i < I1 ? g1 : g2) * c;
+        const c2 = c * cd - s * sd; s = s * cd + c * sd; c = c2;
+      }
+    }
+  }
+  return U;
+}
+
+/* ------------------------------------------------------------ the clock
+   One loop: the guided wave shot (model time, slowed SLOW times) and the bulk
+   probe's scan start together; the scan's pace is designed (slow first steps,
+   fast, easing while a flaw is under the probe), the positions are the model's */
+const SHOT0 = .3, SHOT1 = SHOT0 + (G.shot_end_us * 1e-6 - M0) * SLOW;
+const SCAN0 = .3, SCAN1 = SCAN0 + G.tscan, HOLD = 2.4, FADE = .8;
+const PER = SCAN1 + HOLD + FADE;
+function now() {
+  if (t < T0) return { loop: -1, tau: -1, b: T0 };
+  const tt = t - T0, loop = Math.floor(tt / PER);
+  return { loop, tau: tt - loop * PER, b: T0 + loop * PER };
+}
+function probeIndex(st) {                    // the position the probe is at (or heading to)
+  if (st.tau < SCAN0) return -1;
+  const s = st.tau - SCAN0, ts = G.tstep;
+  let lo = 0, hi = ts.length - 1;
+  if (s >= ts[hi]) return hi;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] > s) hi = m; else lo = m; }
+  return lo;
+}
+const fadeOut = st => st.loop < 0 ? 1 : 1 - seg(st.b + SCAN1 + HOLD, FADE);
+const POSTER_T = T0 + PER + SCAN0 + G.poster_scan;
+
+/* ------------------------------------------------------------ helpers */
+function offscreen(w, h) { const cvs = document.createElement('canvas'); cvs.width = w; cvs.height = h; const g = cvs.getContext('2d'); return { cvs, g, img: g.createImageData(w, h) }; }
+const FIM = offscreen(NX, 3), BAR = offscreen(256, 1), BIM = offscreen(BNX, BNZ);
+for (let i = 0; i < 256; i++) BAR.img.data.set([LUT_STEEL[3 * i], LUT_STEEL[3 * i + 1], LUT_STEEL[3 * i + 2], 255], 4 * i);
+BAR.g.putImageData(BAR.img, 0, 0);
+for (let q = 0; q < BNX * BNZ; q++) { const li = Math.round(BEAM[q] / 127 * 255) * 3; BIM.img.data.set([BLUT[li], BLUT[li + 1], BLUT[li + 2], 255], 4 * q); }
+BIM.g.putImageData(BIM.img, 0, 0);
+function cutEdge(x, y0, y1, o = {}) {
+  const pts = [], n = 6, a = 4;
+  for (let i = 0; i <= n; i++) pts.push([x + (i % 2 ? a : -a) * (i > 0 && i < n ? 1 : 0), lerp(y0 - 3, y1 + 3, i / n)]);
+  line(pts, { color: C.ink, width: 1.3, ...o });
+}
+function plate(py, prog, fillA) {
+  const x0 = XU(0), x1 = XU(G.xend);
+  ctx.save(); ctx.globalAlpha *= fillA; ctx.fillStyle = C.steel; ctx.fillRect(x0, py, x1 - x0, PH); ctx.restore();
+  return () => {
+    line([[x1, py], [x0, py], [x0, py + PH], [x1, py + PH]], { color: C.ink, width: 1.6, progress: prog });
+    line([[x0, py + PH], [x1, py + PH]], { color: C.ink, width: 2.4, progress: prog });
+    cutEdge(x1, py, py + PH, { alpha: clamp(prog * 3 - 2) });
+  };
+}
+function lengthAxis(py, t0) {
+  const ya = py + PH + 16;
+  line([[XU(0), ya], [XU(2), ya]], { color: C.ink, width: 1.3, progress: seg(t0, .35) });
+  for (const v of [0, .5, 1, 1.5, 2]) {
+    const a = seg(t0 + .08 + v * .1, .25);
+    line([[XU(v), ya], [XU(v), ya - 5]], { color: C.ink, width: 1.1, alpha: a });
+    math(fmt(v), XU(v), ya + 19, { size: 15, align: 'center', alpha: a });
+  }
+  math('x\\ (\\rm{m})', XU(2) + 36, ya + 19, { size: 16, align: 'left', alpha: seg(t0 + .3, .25) });
+}
+/* a flaw (a lamination), drawn in the strip: dashed until found, filled after */
+function flawMark(x, py, zmm, state, alpha, glow) {
+  const cx = XU(x), cy = py + zmm * ZS, rx = 6, ry = 3;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+  if (state > 0) { ctx.fillStyle = mix(C.steel, ACC, state); ctx.fill(); }
+  ctx.strokeStyle = FLAW; ctx.lineWidth = 1.1 + 1.2 * glow; if (state < .5) ctx.setLineDash([2.5, 2]); ctx.stroke();
+  if (glow > 0) { ctx.setLineDash([]); ctx.globalAlpha *= glow; ctx.strokeStyle = C.amber; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx + 3 + 3 * glow, ry + 3 + 3 * glow, 0, 0, 2 * Math.PI); ctx.stroke(); }
+  ctx.restore();
+}
+function mix(a, b, s) { const A = _hex(a), B = _hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], s))).join(',')})`; }
+function swatchText(x, y, s, o = {}) { text(s, x, y, { size: LBL, color: C.body, ...o }); }
+/* labels the time cursor passes behind: their ink boxes, kept as they are
+   drawn; gapLine() is a vertical line broken 3 units clear of each */
+const KEEP = [];
+function keepText(s, x, y, o) {
+  text(s, x, y, o);
+  if (!(o.alpha > 0)) return;
+  ctx.save(); ctx.font = font(o); ctx.textAlign = o.align || 'left'; const q = ctx.measureText(s); ctx.restore();
+  KEEP.push([x - q.actualBoundingBoxLeft, y - q.actualBoundingBoxAscent, x + q.actualBoundingBoxRight, y + q.actualBoundingBoxDescent]);
+}
+function keepMath(s, x, y, o) {                   // left aligned math; its box from its width and size
+  const w = math(s, x, y, o);
+  if (o.alpha > 0) KEEP.push([x - 1, y - o.size * .95, x + w + 1, y + o.size * .45]);
+}
+function gapLine(x, y0, y1, o) {
+  const cuts = KEEP.filter(b => x > b[0] - 3 && x < b[2] + 3).map(b => [b[1] - 3, b[3] + 3]).sort((p, q) => p[0] - q[0]);
+  let y = y0;
+  for (const [p, q] of cuts) { if (p > y + .5) line([[x, y], [x, Math.min(p, y1)]], o); y = Math.max(y, q); if (y >= y1) return; }
+  if (y1 > y + .5) line([[x, y], [x, y1]], o);
+}
+/* the engine's dim(), its knockout as deep as the label's ink and opaque from
+   the first frame, so the line never shows through the label while both fade
+   in (as Figures 11 and 12) */
+function dimk(x1, x2, y, label, o) {
+  const { color, alpha, size } = o;
+  dim(x1, x2, y, '', { color, alpha });
+  if (alpha <= 0) return;
+  const w = math(label, 0, -1e4, { size, alpha: 0 }), bx = (x1 + x2) / 2 - w / 2 - 4, by = y - size * .62;
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, w + 8, size * 1.42); ctx.restore();
+  KEEP.push([bx, by, bx + w + 8, by + size * 1.42]);
+  math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+}
+
+/* ------------------------------------------------------------ (a) bulk wave */
+function panelA(st) {
+  panel('a', 20, 34, { alpha: seg(0, .25) });
+  text('bulk wave testing', 58, 34, { size: 16, color: C.body, alpha: settle(.05, S) });
+  const fo = fadeOut(st), ip = probeIndex(st);
+  const drawOutline = plate(PYA, seg(0, .4), seg(.05, .25));
+  // coverage: every zone so far (index below the narrowest zone: they join up)
+  let xs = null;
+  if (ip >= 0) {
+    const i0 = ip, tsI = st.b + SCAN0 + G.tstep[i0], nxt = G.tstep[i0 + 1] ?? G.tstep[i0] + .3;
+    const vis = Math.min(.32, .7 * (nxt - G.tstep[i0]));
+    const g = i0 === 0 ? 1 : settle(tsI, vis);
+    xs = i0 === 0 ? XP(0) : lerp(XP(i0 - 1), XP(i0), g);
+    const edge = xs + G.wmid_mm / 2000;
+    ctx.save(); ctx.globalAlpha *= fo; ctx.fillStyle = C.mist;
+    ctx.fillRect(XU(0), PYA, XU(Math.min(edge, G.span)) - XU(0), PH); ctx.restore();
+  }
+  // flaws: lit while a zone covers them, found afterwards
+  G.flaws.forEach((f, n) => {
+    const [a0, a1] = G.lit[n];
+    let state = 0, glow = 0;
+    if (ip >= a0) state = 1;
+    if (ip >= a0 && ip <= a1) glow = 1;
+    else if (ip > a1) glow = 1 - seg(st.b + SCAN0 + G.tstep[a1 + 1], .5);
+    flawMark(f.x, PYA, f.z_mm, state * fo, settle(.2 + .05 * n, S), glow * fo);
+  });
+  // the probe and its insonified zone (-6 dB, pulse echo) beneath it
+  if (xs !== null) {
+    const zw = G.beam.w_mm, zz = G.beam.z_mm, pts = [];
+    for (let q = 0; q < zz.length; q++) pts.push([XU(xs + zw[q] / 1000), PYA + zz[q] * ZS]);
+    for (let q = zz.length - 1; q >= 0; q--) pts.push([XU(xs - zw[q] / 1000), PYA + zz[q] * ZS]);
+    const za = seg(st.b + SCAN0, .3) * fo;
+    ctx.save(); ctx.globalAlpha *= .9 * za; ctx.fillStyle = C.blue; ctx.beginPath();
+    pts.forEach(([x, y], q) => q ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  drawOutline();
+  if (xs !== null) {
+    const pa = seg(st.b + SCAN0 - .3, .3) * fo, pw = G.probe_mm / 1000 * PPM;
+    ctx.save(); ctx.globalAlpha *= pa; ctx.fillStyle = C.navy; ctx.fillRect(XU(xs) - pw / 2, PYA - 11, pw, 11); ctx.restore();
+    text('probe', XU(xs), PYA - 17, { size: 14, color: C.body, align: 'center', alpha: pa });
+    spy(st, xs, pa);
+  }
+  lengthAxis(PYA, .05);
+  // counters: positions, coverage
+  const ca = settle(.3, S);
+  const npos = ip + 1, cov = ip < 0 ? 0 : Math.min(100, (XP(ip) + G.wmid_mm / 2000) / G.span * 100);
+  const cw = covLine(950, 34, cov, ca * fo + (ip < 0 ? ca : 0) * (1 - fo));
+  text(`probe position ${Math.max(0, npos)} of ${G.npos}`, 950 - cw - 40, 34, { size: 16, color: C.body, align: 'right', alpha: ca });
+  legend(92, 178, seg(.5, .3));
+  text(G.params_a, 92, 272, { size: 14, color: C.muted, alpha: seg(.6, .3) });
+}
+function covLine(xr, y, pct, a) {
+  const s = `coverage ${Math.round(pct)} %`;
+  const w = text(s, xr, y, { size: 16, color: C.body, align: 'right', alpha: a });
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(xr - w - 24, y - 11, 16, 11); ctx.restore();
+  line([[xr - w - 24, y - 11], [xr - w - 8, y - 11], [xr - w - 8, y], [xr - w - 24, y], [xr - w - 24, y - 11]], { color: C.ink, width: .8, alpha: a });
+  return w + 24;
+}
+function legend(x, y, a) {
+  if (a <= 0) return;
+  const w = 360, h = 70;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); ctx.restore();
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]], { color: C.ink, width: 1, alpha: a });
+  const r1 = y + 26, r2 = y + 54, c1 = x + 14, c2 = x + 170;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(c1, r1 - 11, 22, 12);
+  ctx.fillStyle = C.blue; ctx.globalAlpha *= .9; ctx.fillRect(c1 + 8, r2 - 13, 6, 16); ctx.restore();
+  swatchText(c1 + 32, r1, 'inspected', { alpha: a });
+  swatchText(c1 + 32, r2, '\u22126 dB zone', { alpha: a });
+  ctx.save(); ctx.globalAlpha *= a; ctx.beginPath(); ctx.ellipse(c2 + 10, r1 - 5, 7, 3.5, 0, 0, 2 * Math.PI); ctx.fillStyle = ACC; ctx.fill();
+  ctx.strokeStyle = FLAW; ctx.lineWidth = 1.1; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(c2 + 10, r2 - 5, 7, 3.5, 0, 0, 2 * Math.PI); ctx.setLineDash([2.5, 2]); ctx.stroke(); ctx.restore();
+  swatchText(c2 + 26, r1, 'flaw found', { alpha: a });
+  swatchText(c2 + 26, r2, 'flaw not yet found', { alpha: a });
+}
+/* the beam under the probe, to scale: the computed pulsed field and its -6 dB
+   pulse echo zone, in a window 40 mm wide moving with the probe */
+const SPY = { x: 530, y: 188, w: 360, mm: 9 };
+function spy(st, xs, a0) {
+  const a = a0 * seg(.45, .3);
+  if (a <= 0) return;
+  const hw = SPY.w / 2 / SPY.mm, h = G.thick_mm * SPY.mm, cx = SPY.x + SPY.w / 2;
+  // the window: centred on the probe, but it stops at the plate's free end
+  const wc = Math.max(xs, hw / 1000), X = x => cx + (x - wc) * 1000 * SPY.mm, px = X(xs);
+  const x0 = Math.max(SPY.x, X(0));                               // left edge of steel in the window
+  const wx0 = XU(wc - hw / 1000), wx1 = XU(wc + hw / 1000);
+  line([[wx0, PYA - 2], [wx1, PYA - 2], [wx1, PYA + PH + 2], [wx0, PYA + PH + 2], [wx0, PYA - 2]], { color: C.guide, width: 1, alpha: a });
+  line([[wx0, PYA + PH + 2], [SPY.x, SPY.y - 14]], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
+  line([[wx1, PYA + PH + 2], [SPY.x + SPY.w, SPY.y - 14]], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
+  // the pulsed field under the probe (steel to navy), then its -6 dB zone
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.steel; ctx.fillRect(x0, SPY.y, SPY.x + SPY.w - x0, h);
+  ctx.imageSmoothingEnabled = true;
+  const bx0 = px + G.beam.x0_mm * SPY.mm, bw = BNX * G.beam.dx_mm * SPY.mm;
+  ctx.beginPath(); ctx.rect(x0, SPY.y, SPY.x + SPY.w - x0, h); ctx.clip();
+  ctx.drawImage(BIM.cvs, bx0 - G.beam.dx_mm * SPY.mm / 2, SPY.y, bw, h + G.beam.dx_mm * SPY.mm);
+  ctx.restore();
+  const zw = G.beam.w_mm, zz = G.beam.z_mm;
+  for (const sg of [-1, 1]) line(zz.map((z, q) => [px + sg * zw[q] * SPY.mm, SPY.y + z * SPY.mm]), { color: C.navy, width: 1.2, dash: [5, 3], alpha: a });
+  math('\\rm{\u22126 dB}', px + zw[Math.round(zz.length * .45)] * SPY.mm + 6, SPY.y + h * .5, { size: 14, color: C.navy, alpha: a });
+  // flaws passing through the window, at their true size and depth
+  const ip = probeIndex(st);
+  G.flaws.forEach((f, n) => {
+    const fx = X(f.x);
+    if (Math.abs(f.x - wc) * 1000 > hw + f.L_mm / 2) return;
+    const [a0_, a1_] = G.lit[n], lit = ip >= a0_ && ip <= a1_, found = ip >= a0_;
+    ctx.save(); ctx.globalAlpha *= a; ctx.beginPath(); ctx.rect(SPY.x, SPY.y, SPY.w, h); ctx.clip();
+    ctx.beginPath(); ctx.ellipse(fx, SPY.y + f.z_mm * SPY.mm, f.L_mm / 2 * SPY.mm, f.h_mm / 2 * SPY.mm, 0, 0, 2 * Math.PI);
+    if (found) { ctx.fillStyle = lit ? ACC : mix(C.steel, ACC, .75); ctx.fill(); }
+    ctx.strokeStyle = FLAW; ctx.lineWidth = lit ? 1.8 : 1.1; if (!found) ctx.setLineDash([3, 2.5]); ctx.stroke(); ctx.restore();
+  });
+  // the probe positions in the window: visited ones navy, the next ones grey;
+  // shown while the steps are slow enough to follow (at speed they would strobe)
+  if (ip >= 0) {
+    const iv = (G.tstep[ip + 1] ?? G.tstep[ip] + 1) - G.tstep[ip], ta = a * clamp((iv - .12) / .2);
+    if (ta > 0) for (let j = Math.max(0, ip - 5); j <= Math.min(G.npos - 1, ip + 5); j++) {
+      const xx = X(XP(j));
+      if (xx < SPY.x + 2 || xx > SPY.x + SPY.w - 2) continue;
+      line([[xx, SPY.y], [xx, SPY.y + 7]], { color: j <= ip ? C.navy : C.guide, width: 1.4, alpha: ta });
+    }
+  }
+  // the plate's faces (its free end, when in the window), the probe (10 mm), a scale bar
+  line([[x0, SPY.y], [SPY.x + SPY.w, SPY.y]], { color: C.ink, width: 1.6, alpha: a });
+  line([[x0, SPY.y + h], [SPY.x + SPY.w, SPY.y + h]], { color: C.ink, width: 2.4, alpha: a });
+  if (X(0) >= SPY.x - .5) line([[X(0), SPY.y], [X(0), SPY.y + h]], { color: C.ink, width: 1.6, alpha: a });
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.navy; ctx.fillRect(px - G.probe_mm / 2 * SPY.mm, SPY.y - 14, G.probe_mm * SPY.mm, 14); ctx.restore();
+  const sb = SPY.x + SPY.w - 5 * SPY.mm - 4, sy = SPY.y + h + 16;
+  line([[sb, sy], [sb + 5 * SPY.mm, sy]], { color: C.ink, width: 1.4, alpha: a });
+  line([[sb, sy - 4], [sb, sy + 4]], { color: C.ink, width: 1, alpha: a }); line([[sb + 5 * SPY.mm, sy - 4], [sb + 5 * SPY.mm, sy + 4]], { color: C.ink, width: 1, alpha: a });
+  text('5 mm', sb + 2.5 * SPY.mm, sy + 17, { size: 14, color: C.body, align: 'center', alpha: a });
+  text('beam under the probe, to scale', SPY.x, SPY.y + h + 21, { size: 14, color: C.muted, alpha: a });
+}
+
+/* ------------------------------------------------------------ (b) guided wave */
+function panelB(st) {
+  const yh = YB;
+  panel('b', 20, yh, { alpha: seg(.05, .25) });
+  text('guided wave testing', 58, yh, { size: 16, color: C.body, alpha: settle(.1, S) });
+  const fo = fadeOut(st);
+  const drawOutline = plate(PYB, seg(.05, .4), seg(.1, .25));
+  let tm = null, front = 0;
+  if (st.loop >= 0 && st.tau >= SHOT0) {
+    tm = Math.min(M0 + (st.tau - SHOT0) / SLOW, G.shot_end_us * 1e-6);
+    front = clamp(G.cg * (tm - G.tc), 0, G.span);
+  }
+  // the covered length, then the field on top of it (its zero is the fill under it)
+  const covA = fo;
+  if (front > 0) { ctx.save(); ctx.globalAlpha *= covA; ctx.fillStyle = C.mist; ctx.fillRect(XU(0), PYB, XU(front) - XU(0), PH); ctx.restore(); }
+  if (tm !== null && st.tau < SHOT1 + .6) {
+    const u = fieldAt(tm), d = FIM.img.data, fa = (1 - seg(st.b + SHOT1, .5)) * fo;
+    for (let i = 0; i < NX; i++) {
+      const L = (i * DXM <= front && covA > .5) ? LUT_DONE : LUT_STEEL, li = Math.round((clamp(u[i], -1, 1) + 1) * 127.5) * 3;
+      for (let r = 0; r < 3; r++) { const o = (r * NX + i) * 4; d[o] = L[li]; d[o + 1] = L[li + 1]; d[o + 2] = L[li + 2]; d[o + 3] = 255; }
+    }
+    FIM.g.putImageData(FIM.img, 0, 0);
+    ctx.save(); ctx.globalAlpha *= fa; ctx.imageSmoothingEnabled = true;
+    ctx.beginPath(); ctx.rect(XU(0), PYB, XU(G.xend) - XU(0), PH); ctx.clip();
+    ctx.drawImage(FIM.cvs, 0, 1, NX, 1, XU(-DXM / 2), PYB, NX * DXM * PPM, PH); ctx.restore();
+  }
+  // flaws: found when the wave reaches them (its centre, at the group velocity)
+  G.flaws.forEach((f, n) => {
+    const tHit = G.tc + (f.x - f.L_mm / 2000) / G.cg, hit = tm !== null && tm >= tHit;
+    const tRealHit = st.b + SHOT0 + (tHit - M0) * SLOW;
+    const glow = hit ? 1 - seg(tRealHit + .5, .6) : 0;
+    flawMark(f.x, PYB, f.z_mm, (hit ? 1 : 0) * fo, settle(.25 + .05 * n, S), glow * fo);
+  });
+  drawOutline();
+  // the transducer at x = 0 and the next sensor position at the end of the span
+  const tIn = settle(.15, S);
+  ctx.save(); ctx.globalAlpha *= tIn; ctx.fillStyle = C.navy; ctx.fillRect(XU(0), PYB - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= tIn; ctx.setLineDash([3, 2.5]); ctx.strokeStyle = C.navy; ctx.lineWidth = 1.3;
+  ctx.strokeRect(XU(G.span) - 12, PYB - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
+  const lIn = settle(.25, S);
+  text('transducer', XU(0) - 4, PYB - 46 - 6 * (1 - lIn), { size: LBL, color: C.body, alpha: lIn });
+  text('next sensor position', XU(G.span), PYB - 46 - 6 * (1 - lIn), { size: LBL, color: C.body, align: 'right', alpha: lIn });
+  // between the two sensors, what lies between them: the span the one shot inspects, dimensioned
+  dimk(XU(0), XU(G.span), PYB - 24, G.spanlab, { size: LBL, color: C.ink, alpha: settle(.3, S) });
+  lengthAxis(PYB, .1);
+  // readouts
+  const ca = settle(.3, S);
+  const cw = covLine(950, yh, front / G.span * 100, ca * (tm === null ? 1 : fo));
+  text('one transducer position', 950 - cw - 40, yh, { size: 16, color: C.body, align: 'right', alpha: ca });
+  if (tm !== null) math(`t = ${Math.max(0, Math.round(tm * 1e6))}\\,\\rm{µs}`, 58, yh + 26, { size: LBL, alpha: fo * seg(st.b + SHOT0 - .3, .3) });
+  math('\\rm{time slowed }' + G.slowtex, 146, yh + 26, { size: 14, color: C.muted, alpha: seg(.5, .3) });
+  ascanB(st, tm, fo);
+}
+/* the received trace, on a time axis laid under the plate so that t maps to
+   the distance c_g (t - t_c)/2: each echo sits under its flaw */
+function ascanB(st, tm, fo) {
+  const y0 = PYB + 96, h = 88, tmaxu = G.tmax * 1e6;
+  const XT = tu => XU(G.cg * (tu * 1e-6 - G.tc) / 2);
+  const ax = XT(0), aw = XT(tmaxu) - XT(0);
+  const A = axes({ x: ax, y: y0, w: aw, h, xlim: [0, tmaxu], ylim: [-1.15, 1.15], xticks: [0, 100, 200, 300, 400, 500, 600, 700],
+                   yticks: [-1, 0, 1], xlabel: 't\\ (\\rm{µs})', ylabel: 'u/u_0', ylabelGap: 34, progress: seg(.1, .4) });
+  A.inside(() => line([[A.X(0), A.Y(0)], [A.X(tmaxu), A.Y(0)]], { color: C.rule, width: 1 }));
+  // guides from each flaw down to where its echo is expected, burst centre + 2x/c_g
+  const la = seg(.55, .3);
+  G.flaws.forEach((f, n) => {
+    const te = (G.tc + 2 * f.x / G.cg) * 1e6, x = A.X(te);
+    line([[XU(f.x), PYB + PH + 22], [XU(f.x), y0]], { color: C.guide, width: 1, dash: [5, 4], alpha: la * .8 });
+    A.inside(() => line([[x, y0], [x, y0 + h]], { color: C.guide, width: 1, dash: [5, 4], alpha: la }));
+    keepText(`flaw ${n + 1} echo`, x + 6, y0 + 16, { size: 14, color: ACC, alpha: la });
+  });
+  keepText('initial pulse', A.X(64), A.Y(-.6), { size: 14, color: C.body, alpha: la });
+  if (tm !== null && tm > 0) {
+    const n = TRACE.length, dtu = G.dt_tr * 1e6, k1 = Math.min(n, Math.floor(tm * 1e6 / dtu) + 1);
+    const cuts = [0];
+    for (const [wa, wb] of G.win_us) cuts.push(Math.round(wa / dtu), Math.round(wb / dtu));
+    cuts.push(n - 1);
+    for (let q = 0; q + 1 < cuts.length; q++) {
+      const i0 = cuts[q], i1 = Math.min(cuts[q + 1] + 1, k1), pts = [];
+      for (let i = i0; i < i1; i++) pts.push([A.X(i * dtu), A.Y(TRACE[i])]);
+      if (pts.length > 1) A.inside(() => line(pts, { color: q % 2 ? ACC : C.navy, width: 1.8, alpha: fo }));
+    }
+    // once both echoes are in: where the echo times put the flaws
+    const ra = seg(st.b + SHOT1 - .2, .6) * fo;
+    G.flaws.forEach((f, n) => {
+      const tpk = G.echo_us[n], xl = G.cg * (tpk * 1e-6 - G.tc) / 2;
+      keepMath(`x = c_{\\rm{g}}t/2 = ${xl.toFixed(2)}\\,\\rm{m}`, A.X(tpk) + 6, y0 + h - 10, { size: 14, color: C.body, alpha: ra });
+    });
+    if (st.tau < SHOT1) {
+      const cx = A.X(tm * 1e6);
+      gapLine(cx, y0, y0 + h, { color: C.ink, width: 1, alpha: .55 * fo });   // behind the labels
+      const inEcho = G.win_us.some(([wa, wb]) => tm * 1e6 >= wa && tm * 1e6 <= wb);
+      dot(cx, A.Y(TRACE[k1 - 1]), 3, { color: inEcho ? ACC : C.navy, fill: inEcho ? ACC : C.navy, alpha: fo });
+    }
+  }
+  // colour bar of the field in the plate
+  const cb = seg(.45, .3), bx = 400, by = YB + 26;
+  ctx.save(); ctx.globalAlpha *= cb; ctx.imageSmoothingEnabled = true; ctx.drawImage(BAR.cvs, bx, by - 8, 90, 8); ctx.restore();
+  line([[bx, by - 8], [bx + 90, by - 8], [bx + 90, by], [bx, by], [bx, by - 8]], { color: C.ink, width: .8, alpha: cb });
+  math('u_x/u_0', bx - 8, by, { size: 14, align: 'right', alpha: cb });
+  for (const [v, s] of [[0, '-1'], [.5, '0'], [1, '1']]) { line([[bx + v * 90, by], [bx + v * 90, by + 3]], { color: C.ink, width: .8, alpha: cb }); math(s, bx + v * 90, by + 17, { size: 14, align: 'center', alpha: cb }); }
+}
+
+function draw() {
+  const st = now();
+  KEEP.length = 0;
+  panelA(st);
+  panelB(st);
+  text(G.params, 500, H - 12, { size: 14, color: C.muted, align: 'center', alpha: seg(.6, .3) });
+}
+boot();
+</script>
+</body>
+</html>

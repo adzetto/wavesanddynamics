@@ -1,0 +1,18 @@
+# his words inside his picture (build/r10-deck/his/s056-pic1.png)
+# panel 1: the count in a 2-hour window
+1  How many in 2 hours?  Expected λt = 4
+Probability
+Number of trucks in a 2-hour window
+1.8%
+14.7%
+19.5%
+10.4%
+3.0%
+# panel 2: the wait for the next truck
+2  How long until the next one?
+Probability density (per h)
+Waiting time to the next truck (h)
+waiting times, simulated
+model: λe^(−λw)
+mean wait 1/λ = 0.5 h
+P(wait > 1 h) = e^(−2) = 13.5%

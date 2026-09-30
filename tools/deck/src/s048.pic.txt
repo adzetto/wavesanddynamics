@@ -1,0 +1,9 @@
+# his words inside his two panels (build/r10-deck/his/s048-pic1.png)
+Record: 100 s at 20 Hz (N = 2000)
+x
+Time (s)
+One periodogram: right on average, jagged
+PSD (x² per Hz)
+Frequency (Hz)
+Periodogram (one FFT of the whole record)
+True spectrum

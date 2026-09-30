@@ -1,0 +1,67 @@
+Figure 2 (nf-snd-kalman): how the Kalman filter estimates the next location of the target.
+Generator: tools/numfig/snd_kalman.py
+
+MODEL
+  target: along a line at 40 m/s from 30 m; position measured every Dt = 0.5 s
+  filter: constant velocity, state (position, velocity), white-noise acceleration q = 58.8 m^2/s^3:
+    F = [[1, Dt], [0, 1]], Q = q [[Dt^3/3, Dt^2/2], [Dt^2/2, Dt]], H = [1, 0]
+  first estimate x^_(0|0) = (0.566 m, 32.398 m/s), standard deviations (28 m, 21 m/s); the target starts at 30 m
+  measurement noise, standard deviation per step: 10, 16, 42, 16 m (R_n its square)
+  the draw: numpy default_rng(60) gives the first estimate's error and the measurement noise;
+  it is the first seed whose four innovations lie within 0.6 to 1.6 of their standard
+  deviation (a visible gap at every step) and whose estimates land nearer the target than
+  their measurements after the first step. Its values, unaltered:
+    n = 1: target 50.000 m, z_n = 58.116 m (error +8.116 m)
+    n = 2: target 70.000 m, z_n = 49.980 m (error -20.020 m)
+    n = 3: target 90.000 m, z_n = 36.412 m (error -53.588 m)
+    n = 4: target 110.000 m, z_n = 127.180 m (error +17.180 m)
+
+THE STEPS (position part; the figure draws these numbers)
+  n = 1: previous estimate   16.765 m, sd 29.945 m | measured   58.116 m, sd 10.00 m
+         K_n = 0.8997 | present estimate   53.967 m, sd  9.485 m | target 50.000 m, error +3.967 m
+  n = 2: previous estimate   74.893 m, sd 14.828 m | measured   49.980 m, sd 16.00 m
+         K_n = 0.4620 | present estimate   63.383 m, sd 10.876 m | target 70.000 m, error -6.617 m
+  n = 3: previous estimate   78.043 m, sd 18.202 m | measured   36.412 m, sd 42.00 m
+         K_n = 0.1581 | present estimate   71.460 m, sd 16.701 m | target 90.000 m, error -18.540 m
+  n = 4: previous estimate   83.142 m, sd 24.743 m | measured  127.180 m, sd 16.00 m
+         K_n = 0.7051 | present estimate  114.195 m, sd 13.436 m | target 110.000 m, error +4.195 m
+
+CHECK 1: the present estimate is the normalised product of the two Gaussians (the
+  previous estimate and the measurement), integrated on a grid of 400001 points:
+    n = 1: mean 53.967427 m, sd 9.485088 m
+    n = 2: mean 63.382863 m, sd 10.875546 m
+    n = 3: mean 71.459797 m, sd 16.701379 m
+    n = 4: mean 114.195254 m, sd 13.435636 m
+    largest difference from the filter's numbers 2.8e-14 m
+  and K_n = P_{n|n-1} / (P_{n|n-1} + R_n) with the position's variance puts it there: largest |x^_(n|n) - (x^_(n|n-1) + K_n d_n)| = 0.0e+00 m
+
+CHECK 2: batch least squares. The whole trajectory x_0 ... x_n estimated at once from the
+  first estimate, the process model and the measurements (information form, one linear
+  solve); its last state and that state's marginal covariance against the filter:
+    largest difference in the state 2.7e-12, in the covariance 6.8e-12
+
+CHECK 3: Monte Carlo, 40000 flights drawn from the filter's own model (start around the
+  first estimate with its uncertainty, random acceleration of density q, measurement noise
+  R_n), filtered with the same gains: the errors' spread is the filter's P, the
+  innovations' spread its S (sampling error of a standard deviation here: 0.35 %):
+    n = 1: sd of the estimate's error 9.432 m against sqrt(P_n|n) = 9.485 m; sd of the innovation 31.373 m against sqrt(S) = 31.571 m
+    n = 2: sd of the estimate's error 10.831 m against sqrt(P_n|n) = 10.876 m; sd of the innovation 21.733 m against sqrt(S) = 21.814 m
+    n = 3: sd of the estimate's error 16.654 m against sqrt(P_n|n) = 16.701 m; sd of the innovation 45.836 m against sqrt(S) = 45.775 m
+    n = 4: sd of the estimate's error 13.500 m against sqrt(P_n|n) = 13.436 m; sd of the innovation 29.392 m against sqrt(S) = 29.465 m
+    largest relative difference 0.63 %
+  (the flight the figure draws is one such flight without random acceleration: straight
+   at 40 m/s, which the model allows)
+
+DISPLAY
+  one filter step (Dt = 0.5 s) every 2.7 s of the page: the last estimate moves on with the
+  model and widens (predict), the measurement arrives, the gain's pointer slides from 0 to
+  K_n while the estimate moves and narrows with it (update), then the picture rests. The
+  shapes between two steps are a transition; where each step lands is the filter's numbers,
+  and the K_n printed is always the step's own. His names sit under their Gaussians' means,
+  pushed apart only as far as they must be; the uncertainties, his words, are listed with
+  their values under them. The airplane is the target, at its true position at each step.
+
+OVERLAP (engine.js ?overlap, through common.overlaps)
+  the poster and every 0.1 s from 0.1 to 12.4 s (125 moments, the intro
+  and a whole loop of the motion): no label meets another, no stroke crosses a label;
+  nothing is excused (common.still is called with no allow list).

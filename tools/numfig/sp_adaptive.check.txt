@@ -1,0 +1,35 @@
+Figure 2, adaptive filtering used for system identification: check of tools/numfig/sp_adaptive.py
+
+MODEL
+  Unknown system: the resonator of Figure 1 (f_n = 1 Hz, zeta = 0.1) sampled at
+  fs = 8 Hz over its first 48 samples (6 s): h_k = r^k sin(k theta), r = 0.924465,
+  theta = 0.781461 rad; the response left out after 6 s starts at r^M = 0.0231 of the first peak.
+  Input: white Gaussian, sigma_x = 0.56355, so the system's output has unit power.
+  d(n) = (h * x)(n) + v(n), v white Gaussian 30 dB below: sigma_v^2 = 0.001.
+  Adaptive filter: 48 taps from w = 0, NLMS w <- w + mu e u / (delta + |u|^2), mu = 0.5,
+  delta = 1e-06; the input runs before n = 0 so u(0) is full. The run shown: seed 12; the
+  mean learning curve: 400 runs, seeds 1000 to 1399 (numpy default_rng).
+
+VALIDATION
+  1. h_k against the resonator h(k / fs): largest difference 1.9e-16.
+  2. The page runs the same NLMS itself (float32 input and d, double arithmetic); against
+     numpy on the same numbers: weights at n = 1, 100, 300, 600 within 2.2e-16, errors
+     e(n) within 1.6e-15.
+  3. Wiener solution: with white input R = sigma_x^2 I and p = sigma_x^2 h, so w_o = h and
+     J_min = sigma_v^2 = -30.00 dB. The run shown ends at |w(600) - h| / |h| = -34.0 dB.
+  4. NLMS independence theory (Gaussian input) against 200 runs of 3000 samples (seeds 5000 on),
+     averages over n = 1500 to 3000:
+     weight error E|w - h|^2 = 1.1030e-03 against mu sigma_v^2 M / ((2 - mu) sigma_x^2 (M - 2)) =
+     1.0952e-03 (+0.7 %);
+     mean square error -28.71 dB against J_min + sigma_x^2 E|w - h|^2 = -28.70 dB
+     (-0.01 dB).
+     Rate: E|w - h|^2 falls -0.0767 dB per sample (n = 40 to 250); the theory's
+     10 log10(1 - mu(2 - mu)/M) = -0.0684 dB per sample. The runs converge 12 % faster:
+     successive regressors of the delay line share all but one sample, which the
+     independence assumption leaves out.
+  5. The page's |H(f)| (a direct sum at 161 frequencies) against numpy: 5.9e-08; its peak
+     6.193 at 1.000 Hz (the damped natural frequency is 0.995 Hz).
+
+DISPLAY
+  600 samples at 8 Hz (75 s of the record) play in 7.5 s: time sped up 10 times. In (b)
+  this run is e^2 averaged over the last 8 samples (one period of the resonance).

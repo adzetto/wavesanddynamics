@@ -1,0 +1,3 @@
+# his words inside his chart (build/r10-deck/his/s005-pic1.png)
+Mean waiting time (min)
+Utilization = arrival rate / service rate

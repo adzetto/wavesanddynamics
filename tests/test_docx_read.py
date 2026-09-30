@@ -6,6 +6,7 @@ the style has to be read off the XML here and proved here. The same goes for the
 marks and links a run carries: Ricos stores them as decorations on the text, so
 whatever is lost or invented here cannot be recovered downstream.
 """
+
 import pytest
 
 from tools.ricos.blocks import Para
@@ -39,9 +40,11 @@ def test_reads_heading_style(docx_factory, para_factory):
         ("Heading 1", 1, ""),
         ("heading 2", 2, ""),
         ("HEADING3", 3, ""),
-        # Not a heading we make a HEADING node out of, and it was not one
-        # before this vocabulary was written down either.
-        ("Heading5", 0, ""),
+        # Ricos draws six levels, as HTML does. Word offers nine; the three
+        # past the sixth keep their outline at the deepest level there is.
+        ("Heading5", 5, ""),
+        ("Heading6", 6, ""),
+        ("Heading9", 6, ""),
         ("HeadingChar", 0, ""),
         ("TOC1", 0, "TOC"),
         ("toc 9", 0, "TOC"),
@@ -54,7 +57,8 @@ def test_reads_heading_style(docx_factory, para_factory):
     ],
 )
 def test_the_style_vocabulary_is_decoded_once_and_tolerantly(
-        docx_factory, para_factory, style, heading, role):
+    docx_factory, para_factory, style, heading, role
+):
     """Word's style ids, turned into what the rest of the code actually asks.
 
     Four modules used to decode the raw id, each its own way and each exactly

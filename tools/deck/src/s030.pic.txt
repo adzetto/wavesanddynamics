@@ -1,0 +1,8 @@
+# his words inside his chart (build/r10-deck/his/s030-pic1.png)
+Y = 100 / k (curve)
+First order: tangent at k = 20
+Average of k = 18 and 22: 5.05 mm
+k = 18: 5.56 mm (+0.56)
+k = 22: 4.55 mm (−0.45)
+Y (mm)
+Stiffness k (N/mm), fixed F = 100 N

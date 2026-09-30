@@ -1,0 +1,36 @@
+nf-mlb-cnn: Figure 21, a convolutional network on handwritten digits
+
+MODEL
+  data: scikit-learn load_digits, 1797 images 8 x 8, grey levels 0..16, 10 classes;
+  1437 train, 360 held out (stratified, random_state 0); raw grey levels in.
+  conv 3 filters 3 x 3, padding 1, bias, ReLU -> max pool 2 x 2 -> flatten 48 ->
+  dense 16 ReLU -> dense 10 softmax; 984 parameters; cross-entropy;
+  Adam (lr 0.005), batch 64, 40 epochs, seed 0.
+
+CHECK 1: the numpy network against PyTorch (float64), 20 training images, untrained weights
+  conv2d output max |difference| 8.9e-16; max_pool2d 7.8e-16; every gradient (autograd) 1.1e-16
+
+CHECK 2: a filter response by hand: digit 1 shown, filter 1 at its strongest position
+  row 5, column 4: sum(patch x filter) + b = 22.006016; the network's value 22.006016
+
+CHECK 3: pooling keeps the largest value of each 2 x 2 block
+  max |pooled - block maximum| = 0.0e+00
+
+RESULT
+  training loss by epoch 10, 20, 30, 40: [0.1293, 0.045, 0.0292, 0.0172]
+  accuracy: training 1429 of 1437, held out 340 of 360 (94.4%)
+  digit shown: label 9, predicted 9 with p = 0.8168; probabilities sum to 1.000000000000
+  digit shown: label 0, predicted 0 with p = 1.0000; probabilities sum to 1.000000000000
+  digit shown: label 4, predicted 4 with p = 0.7695; probabilities sum to 1.000000000000
+  learned filters (rows of 3), bias: [[[-0.337, -0.115, 0.33], [-0.479, -0.521, 0.368], [0.394, 0.623, 0.222]], [[-0.204, 0.178, 0.649], [-0.385, -0.475, -0.057], [0.529, -0.093, -0.444]], [[0.187, 0.562, 0.034], [0.312, -0.094, -0.63], [0.044, -0.344, -0.342]]], [-0.013, 0.338, 0.376]
+
+MOTION (round 3, 30 Sep 2026: the client asked for Figures 21 and 23 slower; round 2 in brackets)
+  intro unchanged; each digit on its own clock from 0 (the first digit's starts at t = 0.3 s):
+  the digit fades in over 0.40 s [0.25]; the filter window lands on its first position at 0.50 [0.30]
+  first row, where the arithmetic is shown: 8 positions x 0.32 s [0.16], each held 0.18 s, then a 0.14 s glide [a 0.16 s glide, no hold]
+  the other 56 positions x 0.044 s [0.022]; the scan ends at 5.52 [2.81] and the window fades in where filter 1 responds most over 0.60 s [0.30]
+  pooling from 5.76 [2.93]: 16 blocks x 0.07 s [0.035], and 0.40 s more on the block shown below [none], which appears then [at the start]; done at 7.28 [3.49]
+  flatten 0.60 s [0.30]; on to the dense neurons 0.70 s [0.35], to the class probabilities 0.70 s [0.35]
+  the prediction at 9.76 [4.73] over 0.50 s [0.28], held 3.14 s [1.64], faded out over 0.50 s [0.30]
+  one digit 14.0 s [7.0]; the three in turn loop every 42.0 s [21.0]
+  poster (reduced motion, print) at t = 11.80 s [6.30]: the first digit complete

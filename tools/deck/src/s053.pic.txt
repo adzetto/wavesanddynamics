@@ -1,0 +1,36 @@
+# his words inside his picture (build/r10-deck/his/s053-pic1.png)
+# panel 1: the rules
+1  The rules (one inspection interval)
+stays: 0.8
+stays: 0.7
+stays: 1.0
+Good
+Degraded
+Failed
+0.2
+0.3
+Each year, a section stays or moves one state worse.
+The numbers on arrows are the transition probabilities.
+# panel 2: the tree, Year 0 to Year 2
+2  Follow every path for two intervals, starting Good
+Good
+Good
+Degr.
+Good
+Degr.
+Degr.
+Failed
+0.8
+0.2
+0.8
+0.2
+0.7
+0.3
+0.8 × 0.8 = 0.64
+0.8 × 0.2 = 0.16
+0.2 × 0.7 = 0.14
+0.2 × 0.3 = 0.06
+0.30
+Year 0
+Year 1
+Year 2

@@ -1,0 +1,10 @@
+# his words inside his chart (build/r10-deck/his/s021-pic1.png)
+observed
+x̄ = 32
+p = 4.8% + 4.8%
+= 9.6% (two-sided)
+if H₀ is true:
+x̄ ~ N(33, 0.6²)
+4.8%
+4.8%
+Sample mean of 25 tests (MPa)

@@ -1,0 +1,57 @@
+nf-periodic: Figure 6, propagation zones of a beam on periodic pin supports
+
+MODEL
+  Euler-Bernoulli beam, infinite, pin supports every L; harmonic e^{i w t}.
+  Exact span transfer matrix on (rotation, moment) between two pins, from the
+  closed form field matrix (Krylov functions); propagation constant mu per span
+  from cosh mu = T11 = S - T U / V at z = k L (Mead 1970, monocoupled periodic).
+  steel bar 40 x 10 mm, E = 210 GPa, rho = 7850 kg/m^3: EI = 700.0 N m^2, m = 3.140 kg/m, L = 0.5 m (L/h = 50, EB valid)
+  No mesh: every quantity is closed form; roots by Brent's method to 1e-15 in z.
+
+CHECK 1: zone edges against single span frequencies (closed form)
+  edge        z computed          z closed form        |dz|       f (Hz)
+  SS1 (n pi)   3.141592653590  3.141592653590  4.4e-16      93.813   cosh mu = -1
+  CC1 (4.7300) 4.730040744863  4.730040744863  0.0e+00     212.664   cosh mu = +1
+  SS2 (2 pi)   6.283185307180  6.283185307180  6.2e-15     375.253   cosh mu = +1
+  CC2 (7.8532) 7.853204624096  7.853204624096  9.8e-14     586.217   cosh mu = -1
+  SS3 (3 pi)   9.424777960769  9.424777960769  8.3e-14     844.319   cosh mu = -1
+  CC3 (10.996) 10.995607838003  10.995607838002  9.3e-13    1149.219   cosh mu = +1
+  worst |dz| = 9.3e-13; f(z) = (z/L)^2 sqrt(EI/m)/(2 pi), so df/f = 2 dz/z
+  zone 1 = [SS1, CC1], zone 2 = [SS2, CC2]: bounded by the simply supported and
+  fixed fixed span frequencies, as the text states.
+
+CHECK 2: static limit (continuous beam carry over)
+  cosh mu(z -> 0) = -2.000000 (closed form -2); e^mu = -(2 - sqrt 3) = -0.267949, Re mu = 1.316958
+
+CHECK 3: transfer matrix is reciprocal (det T = 1) and symmetric (T11 = T22)
+  max |det T - 1| over z in [0.2, 9.5]: 2.2e-12
+
+CHECK 4: band edge waves (a) against the closed form span modes
+  SS wave  vs sin(pi x/L):          max |dw| = 1.5e-15
+  CC wave  vs clamped clamped mode: max |dw| = 8.9e-15
+  SS2 mode vs sin(2 pi x/L):        max |dw| = 3.3e-14
+  CC2 mode vs clamped clamped mode: max |dw| = 1.1e-13
+  T at SS1 maps (1,0) to [-1.  0.] (lam = -1: adjacent spans alternate)
+  T at CC1 maps (0,1) to [1.07299398e-18 1.00000000e+00] (lam = +1: all spans alike)
+
+CHECK 5: Bloch wave (d), direct transfer across one span and one support
+  w(L) = 2.4e-20 (pin); |[theta, M](L) - lam [theta, M](0)| = 2.6e-15 (relative to |M| 1.00e+00)
+  lam = exp(0.000000+1.570796j), |lam| - 1 = 2.9e-15; power flow P = 6.090e-02 > 0 (to +x)
+
+CHECK 6: a finite beam of 10 equal spans has 10 modes in each zone (Mead)
+  first 20 frequencies (Hz): [ 93.8  96.5 104.1 115.7 130.2 146.6 163.9 181.2 196.8 208.3 375.3 381.  396.7 419.1 445.8 474.9 505.  534.2 560.2 579.1]
+  in zone 1: 10 of 10, in zone 2: 10 of 10; FE cross check (Hermite, 16 el/span):
+  max relative difference exact vs FE: 3.9e-05
+
+OPERATING POINTS
+  (d) f = 146.554 Hz (z = 3.926602, the pinned clamped span root 3.926602), cosh mu = 0, mu = i pi/2 per span, no decay
+  (e) f = 288.489 Hz (z = 5.509127), the strongest attenuation in the first stop band: Re mu = 0.8733, e^(-Re mu) = 0.4176 per span, lam = +0.4176
+  attenuation below zone 1 tends to Re mu = 1.3170 at f -> 0
+
+(c) THREE SPANS, EACH WITH ITS OWN FIRST ZONE
+  span 1: L = 0.52 m, zone 1 = [86.7, 196.6] Hz
+  span 2: L = 0.50 m, zone 1 = [93.8, 212.7] Hz
+  span 3: L = 0.48 m, zone 1 = [101.8, 230.8] Hz
+  common zone = [101.8, 196.6] Hz
+
+TIME: slowed 200 x: every wave oscillates at f/200 on screen (0.47 Hz for SS1 up to 2.93 Hz for CC2).

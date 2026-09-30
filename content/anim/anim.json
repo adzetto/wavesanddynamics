@@ -1,0 +1,22 @@
+{
+ "dynamical-behavior-of-engineering-structures-and-acoustic-wave-propagation": {
+  "image12": "nf-building.html",
+  "image13": "nf-resonance.html",
+  "image14": "nf-standing.html",
+  "image15": "nf-dispersion.html",
+  "image17": "nf-safe.html",
+  "image18": "nf-periodic.html",
+  "image19": "nf-multispan.html",
+  "image23": "nf-bulk-ut.html",
+  "image24": "nf-guided-ut.html",
+  "image25": "nf-coverage.html"
+ },
+ "understanding-shm-and-ndt": {
+  "image2": "nf-shm-sensors.html",
+  "image4": "nf-shm-ndt.html",
+  "image5": "nf-standing.html"
+ },
+ "brochure-shm-and-ndt-2-pages": {
+  "image5": "nf-shm-sensors.html"
+ }
+}

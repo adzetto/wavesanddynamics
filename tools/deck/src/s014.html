@@ -1,0 +1,29 @@
+<section class="slide">
+ <style>
+  .ask{margin-top:6px;grid-template-rows:auto auto auto auto}
+  .ask .qt{margin-top:30px;font-size:40px;font-weight:600;line-height:1.3}
+  .ask .qt>span:first-child{margin-left:-.42em}
+  .ask .say{margin-top:64px}
+  .ask .end{margin-top:64px}
+ </style>
+ <header class="head">
+  <h1 class="title">Frequentist and Bayesian: what are we asking?</h1>
+  <p class="lede">Suppose we tested 25 concrete cylinders. We want to learn the unknown population mean strength <m>μ</m>.</p>
+ </header>
+ <main class="body">
+  <div class="g ask">
+   <h2 class="h s6 r1">FREQUENTIST: evaluate a procedure</h2>
+   <p class="p qt c-navy lines s6 r2"><span>“If we repeated this sampling process,</span><span>how often would our method succeed?”</span></p>
+   <p class="p say lines s6 r3"><span>Imagine many possible samples of 25 tests.</span><span>Each gives a different mean and interval.</span><span>Assess the method across those samples.</span></p>
+   <p class="p b c-navy end lines s6 r4"><span>The population mean stays fixed.</span><span>The data and our estimates vary.</span></p>
+   <h2 class="h s6 o7 r1">BAYESIAN: update uncertainty</h2>
+   <p class="p qt c-blue lines s6 o7 r2"><span>“Given these measurements, which</span><span>values of <m>μ</m> are now more plausible?”</span></p>
+   <p class="p say lines s6 o7 r3"><span>Start with a prior over plausible <m>μ</m> values.</span><span>Use the data likelihood to reweight them.</span><span>The posterior describes updated uncertainty.</span></p>
+   <p class="p b c-blue end lines s6 o7 r4"><span><m>μ</m> can be physically fixed in both frameworks.</span><span>The Bayesian distribution represents what</span><span>we do not yet know about it.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Both use a data model. They differ in how they describe uncertainty about the unknown.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: two frameworks for reasoning from a finite sample</span><span class="src">Sources: [6], [10]</span><span class="num">14</span></p>
+ </footer>
+</section>

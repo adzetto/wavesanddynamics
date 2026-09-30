@@ -1,0 +1,6 @@
+# his words inside his chart (build/r10-deck/his/s065-pic1.png)
+sensor readings (noise SD 3 mm)
+true displacement (unknown)
+Kalman estimate ±2 SD
+Displacement (mm)
+Time step (e.g. hour)

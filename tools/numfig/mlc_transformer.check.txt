@@ -1,0 +1,40 @@
+nf-mlc-transformer: Figure 24, a transformer on 'The cat sat'
+
+MODEL (mlc_text.tiny_transformer): token embedding (8) + sinusoidal position,
+  2 blocks of [2 head scaled dot-product attention -> add and norm -> feed forward
+  (8 -> 16 -> 8, ReLU) -> add and norm], a linear read out of the last position.
+  Trained on every prefix of the 88 sentences (442 examples, 169 words),
+  cross entropy, Adam 0.01, 3000 full batch steps, torch seed 0.
+  final loss 0.6110; next word right 0.778 of the time (the corpus is
+  ambiguous: after 'The cat sat' three words follow).
+
+CHECK 1: the predicted next word against the corpus's own counts
+  corpus after 'The cat sat': {'on': 7, 'by': 2, 'near': 1} of 10
+  model:  on 0.701, by 0.200, near 0.100, all other words 0.0001
+  (cross entropy is minimised by the empirical frequencies: 0.7, 0.2, 0.1)
+  and after 'The dog sat' (corpus: on 1, by 1): on 0.501, by 0.499
+  so the model has to look back at the subject: in block 1 head 1 'sat' attends
+  to 'cat' with weight 0.806.
+
+CHECK 2: every attention row sums to 1
+  max |row sum - 1| = 1.2e-07
+
+CHECK 3: the input vectors are embedding + position
+  max |x0 - (e + pe)| = 9.6e-08
+
+ATTENTION WEIGHTS (rows: The, cat, sat attending; columns: The, cat, sat)
+  block 1 head 1: [0.001, 0.989, 0.010]  [0.869, 0.016, 0.115]  [0.062, 0.806, 0.131]
+  block 1 head 2: [0.263, 0.380, 0.356]  [0.972, 0.000, 0.028]  [0.388, 0.283, 0.328]
+  block 2 head 1: [0.191, 0.000, 0.809]  [0.000, 1.000, 0.000]  [0.255, 0.000, 0.745]
+  block 2 head 2: [0.002, 0.996, 0.002]  [0.081, 0.021, 0.897]  [0.134, 0.565, 0.301]
+
+VECTORS (8 numbers per token)
+  x0 The  -0.22 -1.81 -0.32 +1.16 +0.71 +1.44 -0.37 +0.76
+  x0 cat  +1.79 +1.68 +0.90 +1.51 -0.03 +2.94 +0.27 +2.59
+  x0 sat  +0.82 +0.03 +0.02 +2.13 +0.34 +1.24 -1.22 +0.17
+  x1 The  -1.25 -1.66 +1.03 +1.67 +1.42 -0.95 -0.66 -0.18
+  x1 cat  +1.92 +0.34 -0.14 -0.09 -2.35 +1.30 -0.74 +0.38
+  x1 sat  -0.17 +0.68 +0.91 +1.58 +1.06 -1.66 -2.03 -0.79
+  x2 The  -5.66 +0.90 +3.33 +4.43 +4.77 -0.37 -2.45 -0.96
+  x2 cat  +3.85 +1.58 -2.18 +0.29 -5.83 +5.45 +0.70 -0.18
+  x2 sat  +0.33 +3.28 +1.52 +4.09 +3.83 -2.85 -6.61 +0.90

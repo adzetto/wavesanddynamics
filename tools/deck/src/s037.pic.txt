@@ -1,0 +1,19 @@
+# his words inside his 2 x 3 picture (build/r10-deck/his/s037-pic1.png), column by column
+A: ρ = −0.6
+Demand S (kN)
+Capacity R (kN)
+SD = 16.12 kN; failure = 3.141%
+Density
+Resulting margin G (kN)
+B: ρ = 0
+Demand S (kN)
+Capacity R (kN)
+SD = 12.81 kN; failure = 0.957%
+Density
+Resulting margin G (kN)
+C: ρ = +0.6
+Demand S (kN)
+Capacity R (kN)
+SD = 8.25 kN; failure = 0.014%
+Density
+Resulting margin G (kN)

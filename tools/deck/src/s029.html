@@ -1,0 +1,46 @@
+<section class="slide">
+ <style>
+  .n{display:inline-block;width:1.05em}
+  .big{margin-top:14px;font-size:40px}
+  .big .qq{margin-left:1.9em}
+  .one .p{margin-top:12px}
+  .cut{margin:34px 0 30px}
+  .steps2{row-gap:34px}
+  .steps2 .eqs{margin-top:12px}
+  .lede .l{display:block}
+ </style>
+ <header class="head">
+  <h1 class="title">Nonlinear <m>f</m>, method 1: first order (tangent line)</h1>
+  <p class="lede"><span class="l">For a curved <m>f</m>, replace it by its tangent at the input means, then apply the linear formulas.</span> <span class="l">If <m>f</m> is already linear, this is exact.</span></p>
+ </header>
+ <main class="body">
+  <div class="one">
+   <h2 class="h"><span class="n">1</span> Approximate the function near the input means</h2>
+   <p class="eq big c-navy"><m>δᵢ = Xᵢ − μᵢ       cᵢ = ∂f/∂Xᵢ at X = μ       Y ≈ f(μ) + Σᵢ cᵢδᵢ</m></p>
+   <p class="p"><m>δᵢ</m> is a deviation; <m>cᵢ</m> is the local slope. <m>f(μ)</m> means evaluate <m>f</m> with every input set to its mean.</p>
+  </div>
+  <div class="hair cut"></div>
+  <div class="g steps2">
+   <div class="s6">
+    <h2 class="h"><span class="n">2</span> Take the expectation</h2>
+    <div class="eqs">
+     <p class="eq">Each deviation has mean zero: <m>E[δᵢ] = 0</m>.</p>
+     <p class="eq">Therefore <m>μʏ = E[Y] ≈ f(μ)</m>.</p>
+    </div>
+   </div>
+   <div class="s6 o7">
+    <h2 class="h"><span class="n">3</span> Square the deviations and average</h2>
+    <div class="eqs c-blue">
+     <p class="eq"><m>Var(Y) ≈ E[(Σᵢ cᵢδᵢ)²]</m></p>
+     <p class="eq"><m>= Σᵢ cᵢ²σᵢ² + 2Σᵢ&lt;ⱼ cᵢcⱼ Cov(Xᵢ, Xⱼ)</m></p>
+    </div>
+   </div>
+   <p class="p lines s6 o1 r2"><span>For a linear model, the tangent is the model.</span><span>For a curved model, this mean can be biased.</span></p>
+   <p class="p lines s6 o7 r2"><span>Squared terms give the individual variances.</span><span>Cross terms describe joint movement.</span><span>For independent inputs, cross terms vanish.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Sensitivity coefficients appear because they are the slopes in a Taylor expansion.</p>
+  <p class="run"><span class="map">NONLINEAR CASE, METHOD 1 <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: approximate f by its tangent</span><span class="src">Sources: [1], [17], [43]</span><span class="num">29</span></p>
+ </footer>
+</section>

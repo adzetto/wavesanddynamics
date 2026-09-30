@@ -1,0 +1,29 @@
+nf-mla-features: Figure 6, the three feature engineering steps
+
+(a) EXTRACTION from 2024-12-05 14:32 (previous purchase 2024-11-29 09:10)
+  hour                       14
+  weekday                    Thursday
+  weekend                    no (0)
+  season                     winter
+  days since last purchase   6
+  CHECK: weekday index 3 (Monday 0); 2024-12-05 is a Thursday; calendar days between the purchases 6 (elapsed 6.224 days)
+
+(b) TRANSFORMATION: 2000 incomes ~ lognormal(ln 45, 0.55) k$, seed 6
+  median 46.33 k$, mean 53.04 k$, max 338.6 k$
+  sample skewness raw 1.961, after log10 -0.044 (a normal sample's is 0; lognormal theory for sigma 0.55: 1.993)
+  CHECK: every value inside the drawn ranges: 7.2..338.6 in [0, 350] k$, 0.858..2.530 in [0.8, 2.66]; counts 2000 and 2000 of 2000
+
+(c) ENCODING: one-hot of diagnosis group cardiac, renal, respiratory, cardiac, renal
+  CHECK: scikit-learn OneHotEncoder gives [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]]; each row sums to 1: True
+
+TIMING (30 Sep 2026, the client: slow Figure 6 down so each step can be followed): every step
+  about twice as slow, old values in brackets; the intro unchanged (readable by 0.6 s, all in by 1.2 s)
+  round 27 s (13.5 s): each step an 8 s window (4 s) from 0.6 s, then 3 s at rest (1.5 s); poster 25.6 s (13.6 s)
+  (a) each feature in turn every 1.56 s (0.78 s): its source and value light up in 0.3 s (0.15 s),
+      hold 0.94 s (0.47 s) and dim in 0.3 s (0.15 s); first at 0.8 s (0.6 s)
+  (b) the probe fades in at 18 k$ (it used to appear at 45 k$ and leave mid-glide), then glides to 45, 110
+      and 230 k$ with a 0.8 s spring (0.5 s), one stop every 2 s (0.95 s), so each value holds still about
+      0.7 s (it never came to rest before), and fades out; timed from its own window (the old cycle of
+      4.55 s ran on the page clock and drifted against the 13.5 s round)
+  (c) the table's values clear in 0.4 s (at once) and each record takes 1.4 s (0.7 s): it lights up in
+      0.24 s (0.12 s), its ones and zeros appear 0.5 s in, in 0.3 s (0.25 s in, 0.15 s), and it dims

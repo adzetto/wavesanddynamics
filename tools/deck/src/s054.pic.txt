@@ -1,0 +1,13 @@
+# his words inside his chart (build/r10-deck/his/s054-pic1.png)
+Share of sections in each state
+Years (inspection intervals)
+Good
+Degraded
+Failed
+# his labels on the slices at year 2 and year 10
+6%
+30%
+64%
+73%
+16%
+11%

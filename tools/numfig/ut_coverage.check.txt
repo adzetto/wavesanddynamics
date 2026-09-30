@@ -1,0 +1,58 @@
+Figure 13, coverage of bulk and guided wave testing: check of tools/numfig/ut_coverage.py
+
+MODEL (a): BULK WAVE PROBE
+  Circular piston, D = 10 mm, centre frequency 5 MHz, in the steel of Figure 12
+  (c_L = 5920.9 m/s): lambda = 1.184 mm, k a = 26.53.
+  Field: the Rayleigh integral in edge wave form (direct plane wave under the face minus the
+  rim's diffracted wave), a 4096 point sum round the rim.
+  Pulsed beam: RMS over a Gaussian band, 60 % at -6 dB, 25 frequencies over +-3 sigma;
+  grid 0.25 mm, 40 mm wide by the plate's 10 mm depth.
+  Insonified zone: at each depth, where the pulse echo response (field squared) is within
+  -6 dB of that depth's maximum; the zone's outer edge is drawn.
+
+VALIDATION (a)
+  1. Edge wave form against the Rayleigh surface integral itself (200 x 400 point
+     Gauss-Legendre by trapezoid quadrature) at 7 points from z = 1 to 30 mm:
+     largest relative difference 3.6e-14.
+  2. On axis against 2|sin(k (sqrt(z^2 + a^2) - z)/2)|, z = 0.5 to 80 mm: largest difference 5.0e-14.
+     Last on-axis maximum (near field length): 20.816 mm against (D^2 - lambda^2)/(4 lambda) =
+     20.816 mm (+0.000 mm, the grid step is 0.004 mm);
+     D^2 f/(4c) = 21.11 mm.
+  3. Far field (R = 0.4 m, 19 near field lengths), -6 dB half angle: one way 4.790 deg against
+     asin(2.2151/(k a)) = 4.789 deg (2 J1(u)/u = 1/2); pulse echo
+     3.492 deg against asin(1.6163/(k a)) = 3.493 deg (0.514 lambda/D).
+  4. Pulsed beam with 49 frequencies instead of 25: zone edge moves at most 0.00 um.
+
+COVERAGE (a)
+  Zone width over the depth: 6.41 to 9.29 mm (7.40 mm at mid depth).
+  Scan index 5 mm, below the narrowest zone: 400 positions over the 2 m span,
+  the first with the probe flush with the free end (centre at 5 mm), the last at 2 m.
+  Union of all zones: the weakest pulse echo response anywhere in the plate is -4.90 dB
+  (above -6 dB: the span is covered completely).
+  Flaw 1 (lamination 24 mm long, at x = 0.6 m, 6 mm deep) lies in a zone
+  at positions 117 to 123 only.
+  Flaw 2 (lamination 24 mm long, at x = 1.4 m, 3.5 mm deep) lies in a zone
+  at positions 277 to 283 only.
+  The scan's pace on the page is designed (slow first steps, then fast, easing while a flaw
+  is under the probe; 7.8 s in all); the positions and what each covers are the model's.
+
+MODEL (b): GUIDED WAVE
+  The S0 mode of Figure 12 (guided_ut.py): Rayleigh-Lamb roots, 3 cycle Hann burst at 50 kHz,
+  353 spectral lines each with its own k(omega); c_p = 5391.3 m/s, c_g = 5364.2 m/s.
+  Two flaws, each reflecting 0.25 and transmitting sqrt(1 - R^2) = 0.9682 (frequency
+  independent, schematic), single scattering: the echo from flaw 2 passes flaw 1 twice.
+
+VALIDATION (b)
+  Echo 1: envelope peak (Hilbert) 253.8 us against burst centre + 2x/c_g = 253.7 us (+0.10 us);
+     the flaw placed at c_g (t - t_c)/2 = 0.6003 m (true 0.6 m).
+  Echo 2: envelope peak (Hilbert) 552.3 us against burst centre + 2x/c_g = 552.0 us (+0.32 us);
+     the flaw placed at c_g (t - t_c)/2 = 1.4009 m (true 1.4 m).
+  Coverage front: the burst centre, at c_g, reaches the next sensor position (2 m) at
+  402.8 us.
+  The page's own sum against numpy at three moments: largest difference 7.8e-06.
+
+DISPLAY
+  Both strips on one scale, 400 units/m; the plate's thickness drawn 8.5 times enlarged, the
+  inset under the probe drawn to scale (9 units/mm). Guided wave time slowed 5000 times.
+  (b): between the transducer and the next sensor position, a dimension of the span one shot
+  inspects, 2 m (x = 0 to 2 m on the strip's own scale), on a white knockout.

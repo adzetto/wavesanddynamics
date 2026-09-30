@@ -1,0 +1,27 @@
+<section class="slide">
+ <style>
+  .defs .d{display:inline-block;margin-right:72px}
+  .defs .d:last-child{margin-right:0}
+  .ex .gap{display:inline-block;width:56px}
+  .ex{margin-top:36px}
+  .hists{margin-top:40px}
+  .take .l{display:block}
+ </style>
+ <header class="head">
+  <h1 class="title">Uncertainty propagation: what goes in, what comes out</h1>
+  <p class="lede">A deterministic equation gives one output per input combination. Uncertain inputs create a distribution of outputs.</p>
+ </header>
+ <main class="body">
+  <p class="p defs"><span class="d"><m>Xᵢ =</m> uncertain input <m>i</m></span> <span class="d"><m>μᵢ = E[Xᵢ]</m>, its mean</span> <span class="d"><m>σᵢ =</m> its standard deviation</span></p>
+  <p class="p defs"><span class="d"><m>Y = f(X₁, …, Xₙ)</m>: uncertain output</span> <span class="d"><m>f</m>: the known calculation or physical model</span></p>
+  <div class="ex">
+   <h2 class="h">A simple example with a simple equation: spring displacement <m>Y = F/k</m></h2>
+   <p class="p lines"><span><m>X₁ =</m> force <m>F</m>: mean 100 N, SD 10 N <span class="gap"></span> <m>X₂ =</m> stiffness <m>k</m>: mean 20 N/mm, SD: 2 N/mm</span><span>Assume normal <m>F</m>, positive lognormal <m>k</m>, and independence. At the mean inputs, <m>Y = 5</m> mm.</span></p>
+  </div>
+  <div data-fig="histograms" class="hists"></div>
+ </main>
+ <footer class="foot">
+  <p class="take"><span class="l">We know how to calculate <m>Y</m>.</span> <span class="l">Propagation tells us how uncertain <m>Y</m> is; the method depends on whether <m>f</m> is linear (next slide).</span></p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: propagate uncertainty before asking about failure</span><span class="src">Sources: [1], [17]</span><span class="num">26</span></p>
+ </footer>
+</section>

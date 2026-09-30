@@ -1,0 +1,6 @@
+# his words inside his chart (build/r10-deck/his/s019-pic1.png)
+Prior: mean 30, SD 2
+Likelihood (scaled to unit area)
+Posterior: mean 31.83, SD 0.575
+Density / scaled likelihood
+Unknown population mean μ (MPa)

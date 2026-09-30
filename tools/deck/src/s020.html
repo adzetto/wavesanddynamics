@@ -1,0 +1,34 @@
+<section class="slide">
+ <style>
+  .iv{margin-top:2px}
+  .iv th{font-size:28px}
+  .iv td{padding-top:15px;padding-bottom:15px}
+  .iv td:first-child{padding-right:36px}
+  .target{margin-top:34px}
+  .lede .l{display:block}
+ </style>
+ <header class="head">
+  <h1 class="title">Similar intervals, different meanings</h1>
+  <p class="lede"><span class="l">Same example: 25 tests, sample mean 32 MPa, known population SD 3 MPa.</span> <span class="l">Bayesian prior: mean 30 MPa, SD 2 MPa.</span></p>
+ </header>
+ <main class="body">
+  <table class="tab iv">
+   <colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup>
+   <thead><tr><th>Question</th><th>Frequentist confidence interval</th><th>Bayesian credible interval</th></tr></thead>
+   <tbody>
+    <tr><td>Numerical answer</td><td><m>[30.82, 33.18]</m> MPa</td><td><m>[30.71, 32.96]</m> MPa</td></tr>
+    <tr><td>What does 95% mean?</td><td>Across repeated samples, 95% of intervals built this way contain the fixed true mean.</td><td>Given these data, model and prior, 95% posterior probability lies within this interval.</td></tr>
+    <tr><td>Where is uncertainty represented?</td><td>In the sampling distribution of the estimator and the behavior of the procedure.</td><td>In the posterior distribution over the unknown mean.</td></tr>
+    <tr><td>Why are the numbers close?</td><td>The data locate the mean fairly precisely.</td><td>The data receive about 92% weight; the prior supplies about 8%.</td></tr>
+   </tbody>
+  </table>
+  <div class="target">
+   <h2 class="h">Different target: one future cylinder</h2>
+   <p class="ps">Individual strengths still have SD 3 MPa. A prediction interval must include that variability.</p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Neither interval describes the range containing 95% of individual cylinder strengths.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: interpret the answer before using it</span><span class="src">Sources: [6], [10]</span><span class="num">20</span></p>
+ </footer>
+</section>

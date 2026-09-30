@@ -1,0 +1,43 @@
+nf-mlb-fit: Figure 20, underfitting, a good fit and overfitting on the same 22 points
+
+MODEL
+  22 training points, x_i = (i + 1/2 + 0.6 u_i)/22 with u_i uniform in [-1/2, 1/2] (seed 11), y_i = sin(2 pi x_i) + e_i, e_i ~ N(0, 0.25^2).
+  x from 0.0126 to 0.9692, smallest gap 0.0221.
+  Least squares polynomials of degree d (Legendre basis mapped from [0, 1]); new data:
+  20000 points, x uniform in [0, 1], same noise. Errors are root mean square (RMS).
+
+CHECK 1: the least squares solution against a direct solve of the normal equations
+  d = 1: max |p(x) - p_normal(x)| on the grid = 4.4e-16; residual orthogonal to the basis, max |V^T r| = 2.6e-15
+  d = 4: max |p(x) - p_normal(x)| on the grid = 4.2e-15; residual orthogonal to the basis, max |V^T r| = 1.7e-15
+  d = 9: max |p(x) - p_normal(x)| on the grid = 6.5e-12; residual orthogonal to the basis, max |V^T r| = 2.6e-15
+
+CHECK 2: known limits
+  degree 0 is the mean: p0 = -0.051904328771, mean(y) = -0.051904328771
+  degree 21 interpolates all 22 points: max |p(x_i) - y_i| = 1.2e-12
+  training RMS never rises with the degree (nested models): True
+  new data RMS can not fall below the noise: min over d = 0.2867 >= sigma = 0.25
+
+CHECK 3: degree by degree (RMS)
+  d   training   leave one out   new data
+   0   0.6261        0.6559        0.7559
+   1   0.4180        0.4633        0.5217  underfitting
+   2   0.4158        0.4957        0.5230
+   3   0.2046        0.2906        0.2867
+   4   0.1935        0.3243        0.2937
+   5   0.1594        0.2479        0.2880  good fit (smallest leave one out error)
+   6   0.1578        0.2771        0.2904
+   7   0.1503        0.3219        0.3022
+   8   0.1401        0.3653        0.3286
+   9   0.1265        0.7274        0.3871
+  10   0.1265        2.1365        0.3896
+  11   0.1205        4.3406        0.3401
+  12   0.1052        4.4064        0.5055
+  13   0.0988        3.5727        0.4376
+  14   0.0902       25.1645        0.9327
+  15   0.0584       31.9840        2.4283
+  16   0.0569      210.3466        3.1652
+  17   0.0249       93.3291        7.0192
+  18   0.0233      237.9165        6.2500  overfitting
+
+PANELS: degree 1, 5, 18. Degree 18 on 22 points: training RMS 0.023 (it passes through the noise), new data RMS 6.25.
+  curves sampled at 401 points on [0, 1], values clipped to +-60 (the axes show +-2).

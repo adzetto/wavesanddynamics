@@ -1,0 +1,30 @@
+<section class="slide">
+ <style>
+  .welch{row-gap:22px;align-content:start}
+  .welch .panel{align-self:stretch;padding:18px 24px 20px}
+  .welch .panel .ps{font-size:28px;line-height:1.4}
+  .welch .span2{grid-row:1 / span 2}
+  .nb{white-space:nowrap}
+ </style>
+ <header class="head">
+  <h1 class="title">Estimating a spectrum (2): Welch's method</h1>
+  <p class="lede">Cut the record into overlapping segments, taper each with a window, compute a periodogram for each, and average. Averaging removes most of the jaggedness.</p>
+ </header>
+ <main class="body g welch">
+  <div data-fig="segments" class="s4 r1"></div>
+  <div data-fig="periodograms" class="s4 o5 r1"></div>
+  <div data-fig="average" class="s4 o9 span2"></div>
+  <div class="panel s4 o1 r2">
+   <h2 class="h">Welch average</h2>
+   <p class="ps"><m>P<span class="mk">_</span><sub>W</sub>(f) = (1/K) · Σ P<span class="mk">_</span><sub>k</sub>(f)</m>,  <span class="nb"><m>K</m> windowed segments</span></p>
+  </div>
+  <div class="panel s4 o5 r2">
+   <h2 class="h c-accent">Here</h2>
+   <p class="ps"><m>L = 256</m> samples = 12.8 s, 50% overlap, <m>K = 14</m>. Frequency step <span class="nb">1/12.8 s <m>≈</m> 0.08 Hz.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">More segments: smoother spectrum. Longer segments: finer frequency detail. Welch balances the two.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: dependence over time</span><span class="src">Sources: [23], [24]</span><span class="num">49</span></p>
+ </footer>
+</section>

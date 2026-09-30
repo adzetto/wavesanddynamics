@@ -1,0 +1,8 @@
+# his words inside his two charts (build/r10-deck/his/s025-pic1.png)
+Observed variability
+Annual peak flow (m³/s)
+Year of observation
+Model-based extrapolation
+Flow quantile (m³/s)
+Return period (years)
+1% annual exceedance

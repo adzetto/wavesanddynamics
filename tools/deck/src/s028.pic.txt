@@ -1,0 +1,8 @@
+# his words inside his chart (build/r10-deck/his/s028-pic1.png)
+Y = F / 20 (straight line)
+Y: normal
+mean 5.0, SD 0.5
+F: normal
+mean 100, SD 10
+Y (mm)
+Force F (N), fixed k = 20 N/mm

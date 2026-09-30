@@ -1,0 +1,68 @@
+<section class="slide">
+ <style>
+  .road{display:grid;grid-template-columns:400px 80px 320px 112px 784px;align-items:start}
+  .road .node{padding:22px 26px 24px}
+  .road .node>.h{font-size:32px}
+  .road .node .ps{margin-top:10px;font-size:28px}
+  .road .node .eq{font-size:30px}
+  .road .node .h+.eq{margin-top:10px}
+  #inp{grid-column:1;grid-row:1}
+  #eqn{grid-column:1;grid-row:2;margin-top:44px}
+  #q{grid-column:3;grid-row:1/3;align-self:center;margin-top:28px}
+  .yn{grid-column:4;grid-row:1/3;margin-top:28px}
+  .yn .edge{font-size:28px}
+  .yn .edge.c-navy{color:var(--navy)}
+  .yn .edge.c-blue{color:var(--blue)}
+  .yn .above{bottom:calc(50% + 80px);text-align:left;padding-left:4px}
+  .yn .below{top:calc(50% + 82px);text-align:left;padding-left:4px}
+  #lin{grid-column:5;grid-row:1}
+  #meth{grid-column:5;grid-row:2/4;margin-top:36px;display:flex;flex-direction:column;gap:14px}
+  #meth .node{padding:18px 26px 19px}
+  #meth .h{font-size:30px}
+  .road .panel{grid-column:1/5;grid-row:3;margin-top:26px;padding:16px 28px 17px}
+  .road .panel .ps{margin-top:0;font-size:28px}
+ </style>
+ <header class="head">
+  <h1 class="title">Propagation roadmap: is <m>f</m> linear in the uncertain inputs?</h1>
+  <p class="lede">This one question decides the method. Linear: exact formulas. Nonlinear: approximate (first or second order) or simulate (Monte Carlo).</p>
+ </header>
+ <main class="body road">
+  <div class="node k-navy" id="inp">
+   <h2 class="h">Uncertain inputs</h2>
+   <p class="ps lines"><span><m>X₁ … Xₙ</m>: means, SDs,</span><span>correlations</span></p>
+  </div>
+  <div class="node k-navy" id="eqn">
+   <h2 class="h">Equation</h2>
+   <p class="eq"><m>Y = f(X₁ … Xₙ)</m></p>
+  </div>
+  <div class="node k-accent" id="q">
+   <h2 class="h">Is <m>f</m> linear</h2>
+   <p class="ps lines"><span>in the uncertain</span><span>inputs?</span></p>
+  </div>
+  <div class="cell yn"><p class="edge above c-navy">YES</p><p class="edge below c-blue">NO</p></div>
+  <div class="node k-navy" id="lin">
+   <h2 class="h">Linear: exact formulas (slide 28)</h2>
+   <p class="eq"><m>μʏ = a₀ + Σ aᵢμᵢ</m></p>
+   <p class="eq"><m>σʏ² = Σ aᵢ²σᵢ² + covariance terms</m></p>
+  </div>
+  <div id="meth">
+   <div class="node k-blue"><h2 class="h">Method 1: first order, tangent (slides 29–30)</h2></div>
+   <div class="node k-blue"><h2 class="h">Method 2: second order, curvature (slides 31–32)</h2></div>
+   <div class="node k-blue"><h2 class="h">Method 3: Monte Carlo (slides 33–34)</h2></div>
+  </div>
+  <div class="panel">
+   <p class="ps b c-navy">Linear: inputs are only added and scaled by constants.</p>
+   <p class="ps"><m>W = D + L</m>,  <m>G = R − S</m>,  <m>Y = F/20</m> (<m>k</m> fixed)</p>
+   <p class="ps b c-blue">Nonlinear: products, ratios, powers of inputs.</p>
+   <p class="ps"><m>Y = F/k</m>;  <m>M = w<span></span>L²/8</m> is linear in <m>w</m> but not in <m>L</m></p>
+  </div>
+  <i class="wire" data-from="#inp" data-to="#eqn" data-color="muted"></i>
+  <i class="wire" data-from="#eqn" data-to="#q" data-color="muted"></i>
+  <i class="wire" data-from="#q" data-to="#lin" data-from-side="right" data-to-side="left" data-at="0.5" data-at-to="0.5" data-color="navy"></i>
+  <i class="wire" data-from="#q" data-to="#meth" data-from-side="right" data-to-side="left" data-at="0.5" data-at-to="0.5" data-color="blue"></i>
+ </main>
+ <footer class="foot">
+  <p class="take">First check linearity, then choose the method. The rest of this section follows this map.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: choose the propagation route before calculating</span><span class="src">Sources: [1], [17]</span><span class="num">27</span></p>
+ </footer>
+</section>

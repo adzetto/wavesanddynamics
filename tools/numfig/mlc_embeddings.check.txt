@@ -1,0 +1,42 @@
+nf-mlc-embeddings: Figure 25, NLP embeddings
+
+MODEL (mlc_text.py): 88 sentences, 169 lower case words; counts X_ij of word j within
+  4 positions of word i; PPMI_ij = max(0, log(X_ij N / (X_i. X_.j))); factorised as
+  PPMI ~ W C^T with 4 columns by plain gradient descent (rate 0.02, 400 iterations) from
+  N(0, 0.01) vectors; a word's vector is (W + C)/2, rotated (orthogonal Procrustes) onto
+  the SVD basis. Map: the SHOWN words on their first two principal axes, which carry
+  0.81 of their spread (0.44 + 0.37).
+
+CHECK 1: gradient descent reaches the best rank 4 factorisation (Eckart and Young)
+  loss after 400 iterations 3095.4898; SVD floor 0.5 sum_(k>4) s_k^2 = 3095.4898
+  max |vector - SVD vector| = 1.5e-03 (after rotation)
+
+CHECK 2: the counts shown in (a) are the model's counts (asserted) and the reading order
+  only changes when they arrive, not what they add up to.
+
+CHECK 3: similarity (cosine of the 4 number vectors)
+  cat    nearest: dog 0.994, pet 0.862
+  dog    nearest: cat 0.994, pet 0.854
+  river  nearest: boat 0.998, water 0.972
+  bank   nearest: money 0.871, credit 0.785
+  loan   nearest: credit 0.967, interest 0.946
+  cat . dog 0.994;  bank . loan 0.609;  bank . river 0.544;  cat . bank 0.041
+  'bank' lies between its two senses, nearer the money words (19 money, 13 river uses).
+
+VECTORS
+  cat       +0.324 +0.477 +0.365 +0.978   map +0.562 +0.524
+  dog       +0.413 +0.706 +0.345 +1.159   map +0.613 +0.452
+  river     +0.520 -0.647 +1.067 -0.251   map -0.699 +0.188
+  bank      +0.939 -0.139 +0.091 -0.228   map -0.162 -0.528
+  loan      +0.892 -0.407 -0.775 +0.264   map +0.520 -0.607
+  kitten    +0.155 -0.039 +0.176 +0.247   map +0.222 +0.554
+  puppy     +0.155 -0.033 +0.176 +0.252   map +0.237 +0.556
+  pet       +0.384 +0.059 -0.038 +0.705   map +0.743 +0.263
+  water     +0.398 -0.750 +1.134 +0.036   map -0.590 +0.377
+  stream    +0.265 -0.517 +0.738 +0.174   map -0.465 +0.461
+  boat      +0.129 -0.137 +0.233 -0.064   map -0.697 +0.145
+  fish      +0.265 -0.254 +0.549 -0.354   map -0.842 -0.024
+  money     +1.197 +0.290 -0.236 -0.675   map -0.079 -0.828
+  interest  +0.428 -0.290 -0.366 +0.354   map +0.623 -0.315
+  credit    +0.880 -0.362 -0.453 +0.091   map +0.324 -0.615
+  account   +0.859 +0.914 +0.267 -1.014   map -0.310 -0.602

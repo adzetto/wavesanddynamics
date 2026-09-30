@@ -1,0 +1,92 @@
+nf-mlb-neuron: Figure 18, one neuron of Figure 17, and many neurons approximating a function
+
+(a) ONE NEURON FROM FIGURE 17
+  Figure 17's network imported from mlb_mlp.py: [4, 5, 5, 3], tanh, softmax, seed 0,
+  learning rate 0.3, 300 epochs of full batch gradient descent on the cross-entropy.
+  training replayed here from its epoch 0 weights with its own grads(): final weights and biases
+  equal mlb_mlp's bit for bit: True; its 31 snapshots (every 10 epochs) equal: True
+  (mlb_mlp's own check: back propagation against central differences, largest relative error 1.2e-08)
+  small copy laid out as Figure 17's LX = [196.0, 392.0, 588.0, 760.0]
+  flower: Figure 17's held out flower 2 of 3, versicolor, [5.7, 2.8, 4.5, 1.3] cm,
+  standardized with the training mean and deviation: [-0.185, -0.5597, 0.416, 0.1211]
+  this forward pass against Figure 17's for the same flower (h1, h2, p): largest difference 0.0e+00
+  the page carries 89 epochs: 0 to 19, every 2nd to 58, every 5th to 300
+
+  every neuron at epoch 300 (trained) and epoch 0 (untrained), for this flower:
+  hidden 1 neuron 1   w = [0.272, 0.156, -0.696, -1.013], b = +0.964; x = [-0.185, -0.56, 0.416, 0.121]
+                      z = +0.4137, tanh: +0.3916 (formula 0e+00); epoch 0: z = -0.2868, output -0.2792
+  hidden 1 neuron 2   w = [-0.425, 0.67, -0.462, -0.69], b = -0.548; x = [-0.185, -0.56, 0.416, 0.121]
+                      z = -1.1201, tanh: -0.8076 (formula 0e+00); epoch 0: z = -0.3771, output -0.3602
+  hidden 1 neuron 3   w = [0.297, 0.553, -1.256, -0.277], b = +0.032; x = [-0.185, -0.56, 0.416, 0.121]
+                      z = -0.8880, tanh: -0.7104 (formula 0e+00); epoch 0: z = -0.8271, output -0.6789
+  hidden 1 neuron 4   w = [0.031, -0.319, 0.246, 0.778], b = -0.605; x = [-0.185, -0.56, 0.416, 0.121]
+                      z = -0.2353, tanh: -0.2310 (formula 0e+00); epoch 0: z = +0.1667, output +0.1651
+  hidden 1 neuron 5   w = [-0.144, -0.142, -0.871, -0.123], b = +0.807; x = [-0.185, -0.56, 0.416, 0.121]
+                      z = +0.5360, tanh: +0.4899 (formula 0e+00); epoch 0: z = +0.2077, output +0.2047
+  hidden 2 neuron 1   w = [-0.682, -0.1, -0.764, 0.513, -0.768], b = -0.293; x = [0.392, -0.808, -0.71, -0.231, 0.49]
+                      z = -0.4323, tanh: -0.4072 (formula 0e+00); epoch 0: z = +0.2184, output +0.2150
+  hidden 2 neuron 2   w = [1.814, -0.049, 0.433, -1.048, 0.965], b = +0.527; x = [0.392, -0.808, -0.71, -0.231, 0.49]
+                      z = +1.6849, tanh: +0.9335 (formula 0e+00); epoch 0: z = +0.1030, output +0.1026
+  hidden 2 neuron 3   w = [-0.646, -0.92, -0.646, 0.156, 0.455], b = +0.183; x = [0.392, -0.808, -0.71, -0.231, 0.49]
+                      z = +1.3187, tanh: +0.8665 (formula 0e+00); epoch 0: z = +0.3935, output +0.3744
+  hidden 2 neuron 4   w = [-0.198, -0.871, -0.468, 0.608, 0.319], b = +0.246; x = [0.392, -0.808, -0.71, -0.231, 0.49]
+                      z = +1.2208, tanh: +0.8399 (formula 0e+00); epoch 0: z = -0.0049, output -0.0049
+  hidden 2 neuron 5   w = [0.734, 0.795, 0.807, 0.405, 0.042], b = -0.331; x = [0.392, -0.808, -0.71, -0.231, 0.49]
+                      z = -1.3318, tanh: -0.8697 (formula 0e+00); epoch 0: z = -0.0789, output -0.0788
+  output setosa       w = [-0.834, 1.105, -1.536, -1.308, 1.206], b = -0.069; x = [-0.407, 0.933, 0.866, 0.84, -0.87]
+                      z = -2.1763, softmax: +0.0020 (formula 4e-19); epoch 0: z = -0.1715, output +0.2396
+  output versicolor   w = [0.136, 2.242, 0.592, 0.635, -0.875], b = +0.202; x = [-0.407, 0.933, 0.866, 0.84, -0.87]
+                      z = +4.0469, softmax: +0.9912 (formula 1e-16); epoch 0: z = +0.2406, output +0.3619
+  output virginica    w = [2.087, -1.794, 0.695, 0.466, -0.845], b = -0.132; x = [-0.407, 0.933, 0.866, 0.84, -0.87]
+                      z = -0.9281, softmax: +0.0068 (formula 3e-18); epoch 0: z = +0.3372, output +0.3985
+  the three output probabilities sum to 1.000000000000000
+  the page prints what it decodes (float32, JavaScript toFixed) as float64 would print it:
+  19491 of 19491 numbers the same (0 differ); inputs, weights, products, biases and z
+  to 2 decimals, tanh outputs to 2, probabilities to 3
+
+(b) MANY NEURONS: f(x) = c + sum_j v_j tanh(w_j (x - m_j)), least squares on 400 points of [0, 1]
+  target g(x) = 0.6 sin(4.4 pi x) exp(-0.8 x) + 0.3 sin(10 pi x + 0.3)
+  bounded (trust region): |v_j| <= 0.4, 0.5 <= w_j <= 150, -0.1 <= m_j <= 1.1, |c| <= 6;
+  20 starts per N, the best kept; fits read from C:\Users\lenovo\AppData\Local\Temp\nf-mlb-neuron-fits-d6b7901d8728.json (--refit fits again)
+  analytic Jacobian against central differences: largest relative error 5.0e-10
+  N =  1: RMS error 0.3003, max error 0.6967; first order optimality 2.6e-03 (0 bounds active); level and pieces add up to f within 1e-16
+  N =  2: RMS error 0.2371, max error 0.5814; first order optimality 1.0e-04 (1 bounds active); level and pieces add up to f within 2e-16
+  N =  3: RMS error 0.1768, max error 0.5079; first order optimality 6.8e-04 (1 bounds active); level and pieces add up to f within 2e-16
+  N =  4: RMS error 0.1401, max error 0.3655; first order optimality 1.2e-03 (2 bounds active); level and pieces add up to f within 2e-16
+  N =  5: RMS error 0.1157, max error 0.4249; first order optimality 1.5e-04 (2 bounds active); level and pieces add up to f within 4e-16
+  N =  6: RMS error 0.0975, max error 0.4250; first order optimality 5.9e-04 (2 bounds active); level and pieces add up to f within 3e-16
+  N =  7: RMS error 0.0831, max error 0.3661; first order optimality 5.1e-05 (3 bounds active); level and pieces add up to f within 3e-16
+  N =  8: RMS error 0.0699, max error 0.1426; first order optimality 6.7e-05 (3 bounds active); level and pieces add up to f within 3e-16
+  N =  9: RMS error 0.0511, max error 0.1471; first order optimality 3.4e-05 (5 bounds active); level and pieces add up to f within 3e-16
+  N = 10: RMS error 0.0436, max error 0.1563; first order optimality 9.4e-06 (5 bounds active); level and pieces add up to f within 4e-16
+  N = 11: RMS error 0.0331, max error 0.0853; first order optimality 6.6e-05 (5 bounds active); level and pieces add up to f within 6e-16
+  N = 12: RMS error 0.0250, max error 0.0622; first order optimality 2.7e-05 (2 bounds active); level and pieces add up to f within 6e-16
+  N = 13: RMS error 0.0114, max error 0.0364; first order optimality 3.3e-06 (5 bounds active); level and pieces add up to f within 6e-16
+  N = 14: RMS error 0.0030, max error 0.0252; first order optimality 2.5e-06 (5 bounds active); level and pieces add up to f within 4e-16
+  the page switches the neurons on one at a time, left to right: a neuron off gives -1, so its piece
+  v (1 + tanh(w (x - m))) rises from 0 to 2v, and the sum starts at the level c - sum v (all off);
+  every partial sum stays inside the plot: largest |value| 1.22 (axis +-1.3)
+CHECK: the error falls with every neuron added, 1 -> 14: True
+CHECK: tanh(u) = 2 sigma(2u) - 1, so these are the sigmoid networks of the earlier figure: its fits gave
+  RMS 0.1768, 0.0831, 0.0030 for N = 3, 7, 14; these give 0.1768, 0.0831, 0.0030
+
+THE PAGE
+  W = 1000, H = 970. POSTER_T = 21 s: in (b) 14 neurons added up, in (a) the first neuron computed.
+  (a) tours hidden 1 neuron 1, hidden 2 neuron 5 and the versicolor output, 24 s each. A neuron's
+  computation takes 4.3 s (4 inputs) or 4.6 s (5): each input's arrow grows along its weight in
+  0.75 s, 0.3 s after the one before; its product arrives and goes on to the sum; the bias joins;
+  z goes to the activation, where the operating point glides along the curve (Motion spring, 0.4 s,
+  no bounce); the output node fills. The small copy's connections flow with the large diagram.
+  (b) keeps its own clock: 3, 7 and 14 neurons in turn, 24.55 s a round; a neuron switches on every
+  min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.
+  A click on a neuron of the small copy, a chip or a marker of the error plot chooses (the click
+  stops before the engine's pause); paused, or with less motion, the choice is made at once. Pointing
+  at a weight (large diagram or plot) shows it before and after training; at the plot, the whole
+  network at that epoch (the page carries 89); at the neuron itself, the neuron before training.
+  Keyboard: a radio group of the 13 neurons, one stop per weight and the bias, a slider of epochs on
+  the plot, a radio group of 1 to 14 neurons. Touch: a tap chooses, a drag on the plot scrubs.
+  overlap check (engine.js ?overlap) at the poster and every 0.25 s up to it: clean (common.still)
+  --verify: the page's POSTER_T and tour period read back: 21 s, 24 s
+  --verify: 800 states: every neuron at epochs trained, 0, 10, 40, 160 and 300 with weights and
+  the bias pointed at, every number of neurons at 30, 70 and 100 per cent built, three neuron
+  switches frame by frame (0.1 s), and both tours every 0.25 s for 72 s: 0 with collisions

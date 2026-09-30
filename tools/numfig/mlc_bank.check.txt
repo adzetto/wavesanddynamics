@@ -1,0 +1,28 @@
+nf-mlc-bank: Figure 26, attention reads 'bank' by its context
+
+MODEL (mlc_text.sense_head): the 4 number word vectors of Figure 25 (e_j);
+  a = softmax_j((W_q e_bank) . (W_k e_j) / sqrt(4)) over every word j of the sentence,
+  c = sum_j a_j e_j (the new vector of 'bank'), p(river sense) = sigmoid(u . c + b).
+  trained on the 32 corpus sentences with 'bank' (13 river sense, 19 money),
+  cross entropy + 0.001 (|W_q - I|^2 + |W_k - I|^2 + |u|^2), Adam 0.03, 1500 steps, seed 0.
+  training sentences read right: 0.969 (wrong: ['the bank is steep'])
+  the two sentences below are not in the corpus.
+
+  'The bank is near the river':
+    weights  the 0.038  bank 0.111  is 0.169  near 0.059  the 0.038  river 0.586
+    strongest link from 'bank' to another word: 'river' (0.586)
+    p(river sense) = 0.9378;  p(money sense) = 0.0622
+    new vector of 'bank' nearest to: boat 0.976, river 0.972, water 0.953
+  'The bank approved the loan':
+    weights  the 0.012  bank 0.034  approved 0.089  the 0.012  loan 0.853
+    strongest link from 'bank' to another word: 'loan' (0.853)
+    p(river sense) = 0.0024;  p(money sense) = 0.9976
+    new vector of 'bank' nearest to: loan 0.999, credit 0.978, interest 0.937
+
+CHECKS
+  weights sum to 1: 1.1e-16
+  softmax(W_k e . W_q e_bank / sqrt 4), sum a e, sigmoid(u . c + b) recomputed in numpy from the
+  fitted parameters: max differences 2.2e-16 (weights), 2.2e-16 (vector), 8.7e-18 (p)
+  static 'bank' (no context): nearest money 0.871, credit 0.785
+  the query is the same vector in both sentences; only the keys differ, so every
+  difference between the two readings comes from the context words.

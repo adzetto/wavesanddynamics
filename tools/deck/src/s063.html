@@ -1,0 +1,35 @@
+<section class="slide">
+ <style>
+  .disc{font-size:26px;line-height:1.3}
+  .disc th{padding-top:12px;padding-bottom:10px}
+  .disc td{padding-top:8px;padding-bottom:8px;text-wrap:balance}
+  .same{margin-top:18px}
+  .same .h{font-size:34px}
+  .same .ps{margin-top:8px}
+ </style>
+ <header class="head">
+  <h1 class="title">Estimation theory across disciplines</h1>
+  <p class="lede">The common task is to infer an unknown quantity from imperfect observations. The field changes the target and the data.</p>
+ </header>
+ <main class="body">
+  <table class="tab disc">
+   <colgroup><col style="width:17%"><col style="width:31%"><col style="width:27%"><col style="width:25%"></colgroup>
+   <thead><tr><th>Field</th><th>Unknown target</th><th>Observed data</th><th>Shared methods</th></tr></thead>
+   <tbody>
+    <tr><td>Statistics</td><td>Population mean, variance or regression coefficients</td><td>A sample of strength tests</td><td>Moments, MLE, Bayesian estimates</td></tr>
+    <tr><td>Signal processing</td><td>Hidden displacement, velocity or a clean signal</td><td>Noisy sensor measurements over time</td><td>Least squares, MMSE, Kalman filtering</td></tr>
+    <tr><td>Machine learning</td><td>Predictive model weights or a latent representation</td><td>Training inputs and observed outcomes</td><td>Likelihood, regularized loss, MAP</td></tr>
+    <tr><td>Data science</td><td>Parameters and predictions used in an analysis</td><td>Collected, cleaned and combined datasets</td><td>Regression, MLE, Bayesian estimation</td></tr>
+    <tr><td>Optimization</td><td>The parameter value that minimizes an objective</td><td>A loss function, constraints and possibly data</td><td>Numerical solver for LS, MLE or MAP</td></tr>
+   </tbody>
+  </table>
+  <div class="same">
+   <h2 class="h">Same calculation, different language</h2>
+   <p class="ps lines"><span>Gaussian noise: least squares = MLE.&emsp;&emsp;Add a Gaussian prior: quadratic regularization = MAP.</span><span>Assumptions: independent Gaussian errors of equal, fixed variance.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Optimization computes many estimates; the statistical model and loss explain what those estimates mean.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: estimation methods, connected to models in box 4</span><span class="src">Sources: [6], [38], [39]</span><span class="num">63</span></p>
+ </footer>
+</section>

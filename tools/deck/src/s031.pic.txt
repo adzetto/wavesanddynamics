@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s031-pic1.png)
+Exact and second order: Y = X²
+First order at μ = 0: Y ≈ 0
+Y = X²
+X (standardized, dimensionless)

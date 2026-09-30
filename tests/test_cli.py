@@ -16,6 +16,7 @@ drawings with no picture in them, text the author left under no heading. None of
 that is the conversion going wrong, and the status that means it did is another
 one. A test that only asserted "non-zero" would not know the difference either.
 """
+
 import json
 
 import pytest
@@ -52,7 +53,11 @@ def _docx(tmp_path, docx_factory, body, rels=None, media=None):
 
 def _tbl(*cells):
     """A Word table of one row; one cell makes it a Callout, two a Table."""
-    return "<w:tbl><w:tr>" + "".join(f"<w:tc>{c}</w:tc>" for c in cells) + "</w:tr></w:tbl>"
+    return (
+        "<w:tbl><w:tr>"
+        + "".join(f"<w:tc>{c}</w:tc>" for c in cells)
+        + "</w:tr></w:tbl>"
+    )
 
 
 def _fig(number, filename):
@@ -61,23 +66,53 @@ def _fig(number, filename):
 
 def _manifest(**counts):
     """A manifest with everything quiet, so a test says what it is about."""
-    base = {"blocks": 0, "figures": 0, "figures_without_caption": 0,
-            "figures_without_file": 0, "tables": 0, "callouts": 0,
-            "media_in_zip": 0, "drawings": 0, "drawings_without_picture": 0,
-            "drawings_without_picture_kinds": {}, "headings": 1,
-            "untitled_preamble_bytes": 0}
+    base = {
+        "blocks": 0,
+        "figures": 0,
+        "figures_without_caption": 0,
+        "figures_without_file": 0,
+        "tables": 0,
+        "callouts": 0,
+        "media_in_zip": 0,
+        "drawings": 0,
+        "drawings_without_picture": 0,
+        "drawings_without_picture_kinds": {},
+        "headings": 1,
+        "untitled_preamble_bytes": 0,
+        "rules": 0,
+        "equations": 0,
+        "objects": 0,
+        "object_kinds": {},
+        "footnotes": 0,
+        "internal_links": 0,
+        "strikethrough_runs": 0,
+        "unmapped_symbols": 0,
+        "text_boxes": 0,
+        "colored_runs": 0,
+    }
     base.update(counts)
     if "drawings" not in counts:
         base["drawings"] = base["figures"] + base["drawings_without_picture"]
     if base["drawings_without_picture"] and not base["drawings_without_picture_kinds"]:
-        base["drawings_without_picture_kinds"] = {"shape": base["drawings_without_picture"]}
-    return {"source": "D.docx", "slug": "d", "unreferenced_media": [],
-            "missing_media": [], "records": [], "counts": base}
+        base["drawings_without_picture_kinds"] = {
+            "shape": base["drawings_without_picture"]
+        }
+    return {
+        "source": "D.docx",
+        "slug": "d",
+        "unreferenced_media": [],
+        "missing_media": [],
+        "records": [],
+        "colors": {},
+        "counts": base,
+    }
 
 
 def test_slugify_reduces_a_filename_to_a_folder_name():
-    assert (slugify("content/source/Brochure - SHM and NDT - 2 pages.docx")
-            == "brochure-shm-and-ndt-2-pages")
+    assert (
+        slugify("content/source/Brochure - SHM and NDT - 2 pages.docx")
+        == "brochure-shm-and-ndt-2-pages"
+    )
     assert slugify("/x/From_Bridges_to_Photons.docx") == "from-bridges-to-photons"
 
 
@@ -95,23 +130,26 @@ def test_a_name_with_nothing_ascii_in_it_is_refused():
 
 
 def test_two_names_that_share_a_slug_are_found_before_anything_is_written():
-    """"A B.docx" and "A-B.docx" claim one directory, and the directory is
+    """ "A B.docx" and "A-B.docx" claim one directory, and the directory is
     emptied before it is written, so the first document's parts would be gone
     by the time anyone could notice. A name with no slug at all is left to
     `slugify` to refuse rather than grouped under "".
     """
     assert colliding_slugs(["/x/A B.docx", "/y/A-B.docx", "/z/C.docx"]) == {
-        "a-b": ["/x/A B.docx", "/y/A-B.docx"]}
+        "a-b": ["/x/A B.docx", "/y/A-B.docx"]
+    }
     assert colliding_slugs(["/x/A.docx", "/y/B.docx"]) == {}
     assert colliding_slugs(["/x/ŞĞÜ.docx", "/y/ÇÖİ.docx"]) == {}
 
 
 def test_figures_in_finds_the_pictures_inside_tables_and_asides():
     """The 16 a flat scan of the body misses, and the reader numbers anyway."""
-    blocks = [_fig(1, "a.png"),
-              Table(rows=[[[_fig(2, "b.png")], [Para()]]]),
-              Callout(blocks=[_fig(3, "c.png")]),
-              _fig(4, "d.png")]
+    blocks = [
+        _fig(1, "a.png"),
+        Table(rows=[[[_fig(2, "b.png")], [Para()]]]),
+        Callout(blocks=[_fig(3, "c.png")]),
+        _fig(4, "d.png"),
+    ]
     assert [f.number for f in figures_in(blocks)] == [1, 2, 3, 4]
 
 
@@ -120,10 +158,12 @@ def test_the_numbering_and_the_manifest_walk_the_same_tree(docx_factory):
     figures and the manifest counts them, and while each had its own copy of the
     recursion the count stopped at the top level while the numbers ran past it.
     """
-    body = (f"<w:p>{picture('rId5')}</w:p>"
-            + _tbl(f"<w:p>{picture('rId6')}</w:p>", f"<w:p>{picture('rId7')}</w:p>")
-            + _tbl(f"<w:p>{picture('rId8')}</w:p>")
-            + f"<w:p>{picture('rId9')}</w:p>")
+    body = (
+        f"<w:p>{picture('rId5')}</w:p>"
+        + _tbl(f"<w:p>{picture('rId6')}</w:p>", f"<w:p>{picture('rId7')}</w:p>")
+        + _tbl(f"<w:p>{picture('rId8')}</w:p>")
+        + f"<w:p>{picture('rId9')}</w:p>"
+    )
     rels = {f"rId{i}": f"media/image{i}.png" for i in range(5, 10)}
     blocks = read_blocks(docx_factory(body, rels=rels))
 
@@ -143,17 +183,22 @@ def test_figures_in_counts_one_picture_used_twice_as_two_figures():
 
 def test_title_candidates_takes_the_title_style_and_nothing_else():
     """Candidates, not a title: Sound Detection styles its byline this way too."""
-    blocks = [Para(runs=[Run(text="Understanding Sound Classification")], role="TITLE"),
-              Para(runs=[Run(text="Dr. Korkut Kaynardag")], role="TITLE"),
-              Para(runs=[Run(text="   ")], role="TITLE"),
-              Para(runs=[Run(text="Three Main Stages")], heading=1),
-              Para(runs=[Run(text="body")])]
-    assert title_candidates(blocks) == ["Understanding Sound Classification",
-                                        "Dr. Korkut Kaynardag"]
+    blocks = [
+        Para(runs=[Run(text="Understanding Sound Classification")], role="TITLE"),
+        Para(runs=[Run(text="Dr. Korkut Kaynardag")], role="TITLE"),
+        Para(runs=[Run(text="   ")], role="TITLE"),
+        Para(runs=[Run(text="Three Main Stages")], heading=1),
+        Para(runs=[Run(text="body")]),
+    ]
+    assert title_candidates(blocks) == [
+        "Understanding Sound Classification",
+        "Dr. Korkut Kaynardag",
+    ]
 
 
 def test_a_document_that_spells_heading_with_a_space_still_has_sections(
-        docx_factory, para_factory):
+    docx_factory, para_factory
+):
     """What the normalised fields buy, across all four modules that used to
     decode the raw style id themselves.
 
@@ -163,44 +208,62 @@ def test_a_document_that_spells_heading_with_a_space_still_has_sections(
     emitted every heading as a plain paragraph, produced no section seam and no
     title candidate, and said nothing about any of it.
     """
-    body = (para_factory("Opening", style="title")
-            + para_factory("One", style="Heading 1")
-            + para_factory("body")
-            + para_factory("Two", style="heading 1")
-            + para_factory("1. Contents\t2", style="toc 1"))
+    body = (
+        para_factory("Opening", style="title")
+        + para_factory("One", style="Heading 1")
+        + para_factory("body")
+        + para_factory("Two", style="heading 1")
+        + para_factory("1. Contents\t2", style="toc 1")
+    )
     blocks = read_blocks(docx_factory(body))
 
     assert [title for title, _ in split_at_headings(blocks)] == ["", "One", "Two"]
     assert title_candidates(blocks) == ["Opening"]
     assert [n["type"] for n in emit(blocks)["nodes"]] == [
-        "PARAGRAPH", "HEADING", "PARAGRAPH", "HEADING"]
+        "PARAGRAPH",
+        "HEADING",
+        "PARAGRAPH",
+        "HEADING",
+    ]
 
 
 def test_drawing_counts_separates_a_drawing_with_a_picture_from_one_without(
-        tmp_path, docx_factory):
+    tmp_path, docx_factory
+):
     """And names what the blind one holds, off a:graphicData/@uri, rather than
     calling it a connector line because the corpus's four happen to be."""
-    path = _docx(tmp_path, docx_factory,
-                 f"<w:p>{picture('rId5')}</w:p><w:p>{shape()}</w:p>",
-                 rels={"rId5": "media/image1.png"})
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        f"<w:p>{picture('rId5')}</w:p><w:p>{shape()}</w:p>",
+        rels={"rId5": "media/image1.png"},
+    )
     assert drawing_counts(path) == (2, {"shape": 1})
 
 
 def test_a_drawing_of_an_unknown_kind_is_counted_without_being_named(
-        tmp_path, docx_factory):
-    body = ('<w:p><w:r><w:drawing><wp:inline><a:graphic>'
-            '<a:graphicData uri="urn:something:else"/>'
-            "</a:graphic></wp:inline></w:drawing></w:r></w:p>")
+    tmp_path, docx_factory
+):
+    body = (
+        "<w:p><w:r><w:drawing><wp:inline><a:graphic>"
+        '<a:graphicData uri="urn:something:else"/>'
+        "</a:graphic></wp:inline></w:drawing></w:r></w:p>"
+    )
     assert drawing_counts(_docx(tmp_path, docx_factory, body)) == (1, {"other": 1})
 
 
 def test_save_media_copies_the_pictures_and_skips_the_directory_entry(
-        tmp_path, docx_factory):
+    tmp_path, docx_factory
+):
     """From_Bridges_to_Photons stores a `word/media/` entry of its own. Its
     basename is the empty string, so copying it as though it were a file opens
     the output directory for writing and the whole run dies on one document."""
-    path = _docx(tmp_path, docx_factory, "<w:p/>",
-                 media={"word/media/": b"", "word/media/image1.png": b"PNG"})
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        "<w:p/>",
+        media={"word/media/": b"", "word/media/image1.png": b"PNG"},
+    )
     out = tmp_path / "figures"
     assert save_media(path, str(out)) == ["image1.png"]
     assert (out / "image1.png").read_bytes() == b"PNG"
@@ -209,9 +272,13 @@ def test_save_media_copies_the_pictures_and_skips_the_directory_entry(
 def test_preamble_bytes_measures_the_preamble_and_not_the_record_holding_it():
     """`pack` puts every document in this corpus into one record, so the
     record's size is the whole document and says nothing about the preamble."""
-    sections = split_at_headings([Para(runs=[Run(text="opening line")]),
-                                  Para(runs=[Run(text="One")], heading=1),
-                                  Para(runs=[Run(text="x" * 2000)])])
+    sections = split_at_headings(
+        [
+            Para(runs=[Run(text="opening line")]),
+            Para(runs=[Run(text="One")], heading=1),
+            Para(runs=[Run(text="x" * 2000)]),
+        ]
+    )
     assert 0 < preamble_bytes(sections) < pack(sections)[0]["bytes"] - 2000
 
 
@@ -221,10 +288,18 @@ def test_preamble_bytes_measures_against_the_media_ids_it_is_given():
     compared with were measured against Wix ids - and a media id is not the
     length of the name it stands in for.
     """
-    sections = [("", [Para(runs=[Run(text="opening line")]),
-                      Figure(filename="i.png", width=1, height=1)])]
-    assert (preamble_bytes(sections, media_ids={"i.png": "ce0a40_9f3b21~mv2.png"})
-            == preamble_bytes(sections) + len("ce0a40_9f3b21~mv2.png") - len("i.png"))
+    sections = [
+        (
+            "",
+            [
+                Para(runs=[Run(text="opening line")]),
+                Figure(filename="i.png", width=1, height=1),
+            ],
+        )
+    ]
+    assert preamble_bytes(
+        sections, media_ids={"i.png": "ce0a40_9f3b21~mv2.png"}
+    ) == preamble_bytes(sections) + len("ce0a40_9f3b21~mv2.png") - len("i.png")
 
 
 def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
@@ -234,9 +309,14 @@ def test_preamble_bytes_is_zero_when_the_document_opens_on_a_heading():
 
 def test_a_drawing_with_no_picture_is_reported_as_dropped_on_purpose():
     """Four of the 105, and the line names the kind instead of asserting one."""
-    (line,) = warnings_for(_manifest(drawings=4, figures=3,
-                                     drawings_without_picture=1,
-                                     drawings_without_picture_kinds={"chart": 1}))
+    (line,) = warnings_for(
+        _manifest(
+            drawings=4,
+            figures=3,
+            drawings_without_picture=1,
+            drawings_without_picture_kinds={"chart": 1},
+        )
+    )
     assert "1 drawing with no picture file (1 chart)" in line
     assert "dropped rather than lost" in line
     assert "defect" not in line
@@ -257,16 +337,24 @@ def test_the_kinds_in_the_parenthetical_are_plural_when_there_are_several():
     guess - add an "s" - gets two of the five kinds wrong: "2 SmartArts" and
     "1 others" are not what anyone writes.
     """
-    (one,) = warnings_for(_manifest(drawings_without_picture=1,
-                                    drawings_without_picture_kinds={"shape": 1}))
+    (one,) = warnings_for(
+        _manifest(
+            drawings_without_picture=1, drawings_without_picture_kinds={"shape": 1}
+        )
+    )
     assert "(1 shape)" in one
-    (many,) = warnings_for(_manifest(drawings_without_picture=2,
-                                     drawings_without_picture_kinds={"shape": 2}))
+    (many,) = warnings_for(
+        _manifest(
+            drawings_without_picture=2, drawings_without_picture_kinds={"shape": 2}
+        )
+    )
     assert "(2 shapes)" in many
     (mixed,) = warnings_for(
-        _manifest(drawings_without_picture=4,
-                  drawings_without_picture_kinds={"SmartArt": 2, "chart": 1,
-                                                  "other": 1}))
+        _manifest(
+            drawings_without_picture=4,
+            drawings_without_picture_kinds={"SmartArt": 2, "chart": 1, "other": 1},
+        )
+    )
     assert "(2 SmartArt graphics, 1 chart, 1 other)" in mixed
 
 
@@ -339,16 +427,24 @@ def test_an_over_limit_record_is_reported_by_part_number():
 
 
 def test_convert_writes_the_parts_the_figures_and_the_manifest(
-        tmp_path, monkeypatch, docx_factory, para_factory):
+    tmp_path, monkeypatch, docx_factory, para_factory
+):
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    body = (para_factory("Opening", style="Title")
-            + f"<w:p>{picture('rId5')}</w:p>"
-            + para_factory("Figure 1. A caption.")
-            + para_factory("One", style="Heading1")
-            + para_factory("body")
-            + f"<w:p>{shape()}</w:p>")
-    path = _docx(tmp_path, docx_factory, body, rels={"rId5": "media/image1.png"},
-                 media={"word/media/image1.png": png(640, 480)})
+    body = (
+        para_factory("Opening", style="Title")
+        + f"<w:p>{picture('rId5')}</w:p>"
+        + para_factory("Figure 1. A caption.")
+        + para_factory("One", style="Heading1")
+        + para_factory("body")
+        + f"<w:p>{shape()}</w:p>"
+    )
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        body,
+        rels={"rId5": "media/image1.png"},
+        media={"word/media/image1.png": png(640, 480)},
+    )
 
     manifest = convert(path)
     out = tmp_path / "ricos" / "doc"
@@ -361,9 +457,15 @@ def test_convert_writes_the_parts_the_figures_and_the_manifest(
     # numbers. The fixture used to be bytes Pillow cannot open, so `width` and
     # `height` were 0 - the same value a failure produces, which made the
     # assertion agree with the code whatever the code did.
-    assert manifest["figures"] == [{"number": 1, "filename": "image1.png",
-                                    "width": 640, "height": 480,
-                                    "caption": "Figure 1. A caption."}]
+    assert manifest["figures"] == [
+        {
+            "number": 1,
+            "filename": "image1.png",
+            "width": 640,
+            "height": 480,
+            "caption": "Figure 1. A caption.",
+        }
+    ]
     assert manifest["counts"]["drawings"] == 2
     assert manifest["counts"]["drawings_without_picture"] == 1
     assert manifest["counts"]["headings"] == 1
@@ -371,7 +473,8 @@ def test_convert_writes_the_parts_the_figures_and_the_manifest(
 
 
 def test_a_stored_picture_no_paragraph_anchors_reaches_the_manifest(
-        tmp_path, monkeypatch, docx_factory, para_factory):
+    tmp_path, monkeypatch, docx_factory, para_factory
+):
     """Both media lists, measured through `convert` rather than built by hand.
 
     Hard-coding `unreferenced_media` to `[]` left every test green: the only
@@ -380,12 +483,13 @@ def test_a_stored_picture_no_paragraph_anchors_reaches_the_manifest(
     is asserted here too, empty, which is what this corpus produces.
     """
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    path = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1")
-                 + f"<w:p>{picture('rId5')}</w:p>",
-                 rels={"rId5": "media/image1.png"},
-                 media={"word/media/image1.png": png(4, 4),
-                        "word/media/image9.png": png(5, 5)})
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
+        rels={"rId5": "media/image1.png"},
+        media={"word/media/image1.png": png(4, 4), "word/media/image9.png": png(5, 5)},
+    )
 
     manifest = convert(path)
     assert manifest["media_files"] == ["image1.png", "image9.png"]
@@ -394,7 +498,8 @@ def test_a_stored_picture_no_paragraph_anchors_reaches_the_manifest(
 
 
 def test_a_figure_pointing_outside_word_media_is_in_the_manifest_as_missing(
-        tmp_path, monkeypatch, docx_factory, para_factory):
+    tmp_path, monkeypatch, docx_factory, para_factory
+):
     """The direction that breaks Phase 2's upload, end to end.
 
     `_figure` resolves whatever the relationship names, so a target outside
@@ -404,11 +509,13 @@ def test_a_figure_pointing_outside_word_media_is_in_the_manifest_as_missing(
     first time a picture is linked rather than embedded.
     """
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    path = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1")
-                 + f"<w:p>{picture('rId5')}</w:p>",
-                 rels={"rId5": "../customXml/elsewhere.png"},
-                 media={"word/customXml/elsewhere.png": png(4, 4)})
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
+        rels={"rId5": "../customXml/elsewhere.png"},
+        media={"word/customXml/elsewhere.png": png(4, 4)},
+    )
 
     manifest = convert(path)
     assert manifest["figures"][0]["filename"] == "elsewhere.png"
@@ -418,7 +525,8 @@ def test_a_figure_pointing_outside_word_media_is_in_the_manifest_as_missing(
 
 
 def test_convert_clears_what_an_earlier_run_left_behind(
-        tmp_path, monkeypatch, docx_factory, para_factory):
+    tmp_path, monkeypatch, docx_factory, para_factory
+):
     """The directory is the published contract, so a part or a picture that no
     longer belongs to the document must not survive into the next run."""
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
@@ -427,8 +535,13 @@ def test_convert_clears_what_an_earlier_run_left_behind(
     (out / "part-09.json").write_text("{}", encoding="utf-8")
     (out / "figures" / "renamed-since.png").write_bytes(b"old")
 
-    convert(_docx(tmp_path, docx_factory,
-                  para_factory("One", style="Heading1") + para_factory("body")))
+    convert(
+        _docx(
+            tmp_path,
+            docx_factory,
+            para_factory("One", style="Heading1") + para_factory("body"),
+        )
+    )
 
     assert not (out / "part-09.json").exists()
     assert not (out / "figures" / "renamed-since.png").exists()
@@ -436,7 +549,8 @@ def test_convert_clears_what_an_earlier_run_left_behind(
 
 
 def test_a_directory_that_will_not_clear_is_not_written_into(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     """One part file held open - an editor, an indexer, a virus scanner, all
     routine on Windows - used to be swallowed: the clearing failed, `makedirs`
     carried on, and the stale part survived into the published directory. The
@@ -449,14 +563,18 @@ def test_a_directory_that_will_not_clear_is_not_written_into(
         raise PermissionError(13, "used by another process")
 
     monkeypatch.setattr(docx2ricos.shutil, "rmtree", held_open)
-    path = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1") + para_factory("body"))
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + para_factory("body"),
+    )
     assert main([path]) == FAILED
     assert "PermissionError" in capsys.readouterr().out
 
 
 def test_a_name_that_leaves_no_directory_stops_that_document_and_not_the_run(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
     body = para_factory("One", style="Heading1") + para_factory("body")
     bad = tmp_path / "ŞĞÜ.docx"
@@ -471,7 +589,8 @@ def test_a_name_that_leaves_no_directory_stops_that_document_and_not_the_run(
 
 
 def test_two_documents_claiming_one_directory_stop_the_run(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     """Before anything is written: the first document's parts would already be
     deleted by the time the second one reached them."""
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
@@ -487,22 +606,30 @@ def test_two_documents_claiming_one_directory_stop_the_run(
 
 
 def test_a_run_with_nothing_to_report_exits_clean(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    path = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1") + para_factory("body"))
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + para_factory("body"),
+    )
     assert main([path]) == OK
     assert "!" not in capsys.readouterr().out
 
 
 def test_a_run_that_converted_everything_and_found_something_is_not_a_failure(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     """This is what all seven documents do, and it is the report working."""
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    path = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
-                 rels={"rId5": "media/image1.png"},
-                 media={"word/media/image1.png": b"PNG"})
+    path = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + f"<w:p>{picture('rId5')}</w:p>",
+        rels={"rId5": "media/image1.png"},
+        media={"word/media/image1.png": b"PNG"},
+    )
     assert main([path]) == WARNINGS
     out = capsys.readouterr().out
     assert "findings about the documents, not errors in the conversion" in out
@@ -510,7 +637,8 @@ def test_a_run_that_converted_everything_and_found_something_is_not_a_failure(
 
 
 def test_a_document_that_cannot_be_converted_exits_differently(
-        tmp_path, monkeypatch, capsys):
+    tmp_path, monkeypatch, capsys
+):
     bad = tmp_path / "broken.docx"
     bad.write_bytes(b"not a zip at all")
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
@@ -521,12 +649,16 @@ def test_a_document_that_cannot_be_converted_exits_differently(
 
 
 def test_one_document_failing_does_not_stop_the_others(
-        tmp_path, monkeypatch, docx_factory, para_factory, capsys):
+    tmp_path, monkeypatch, docx_factory, para_factory, capsys
+):
     bad = tmp_path / "broken.docx"
     bad.write_bytes(b"not a zip at all")
     monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
-    good = _docx(tmp_path, docx_factory,
-                 para_factory("One", style="Heading1") + para_factory("body"))
+    good = _docx(
+        tmp_path,
+        docx_factory,
+        para_factory("One", style="Heading1") + para_factory("body"),
+    )
     assert main([str(bad), good]) == FAILED
     assert "doc.docx" in capsys.readouterr().out
 
@@ -542,3 +674,93 @@ def test_help_is_recognised_wherever_it_appears(capsys):
     """It is the answer to the whole command line, not to its first word."""
     assert main(["some.docx", "-h"]) == OK
     assert "python tools/docx2ricos.py" in capsys.readouterr().out
+
+
+# --- what the manifest says about the marks and objects the reader now sees -----
+
+
+def test_the_manifest_counts_what_the_page_cannot_hold_and_what_it_now_carries(
+    tmp_path, monkeypatch, docx_factory, para_factory
+):
+    """Every new key, measured through `convert` on one document rather than
+    handed to `warnings_for` by hand, so that a count hard-coded to zero
+    would show. The colours are the ones that reach the page: a heading's
+    colour and white text are not among them, by the emitter's own rule."""
+    monkeypatch.setattr(docx2ricos, "OUT", str(tmp_path / "ricos"))
+    body = (
+        '<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:color w:val="2E74B5"/></w:rPr>'
+        "<w:t>One</w:t></w:r></w:p>"
+        '<w:p><w:r><w:rPr><w:color w:val="7A0000"/></w:rPr><w:t>red</w:t></w:r>'
+        '<w:r><w:rPr><w:color w:val="FFFFFF"/></w:rPr><w:t>white</w:t></w:r>'
+        "<w:r><w:rPr><w:strike/></w:rPr><w:t>struck</w:t></w:r>"
+        '<w:r><w:t>a </w:t><w:sym w:font="Webdings" w:char="F041"/><w:t> b</w:t></w:r>'
+        '<w:hyperlink w:anchor="_Ref1"><w:r><w:t>Figure 2</w:t></w:r></w:hyperlink>'
+        '<w:r><w:footnoteReference w:id="1"/></w:r>'
+        "</w:p>"
+        '<w:p><w:pPr><w:pStyle w:val="TOC1"/></w:pPr><w:hyperlink w:anchor="_Toc1">'
+        "<w:r><w:t>One\t2</w:t></w:r></w:hyperlink></w:p>"
+        "<w:p><m:oMath><m:r><m:t>E=mc</m:t></m:r></m:oMath></w:p>"
+        '<w:p><w:r><w:object><v:shape><v:imagedata r:id="rId8"/></v:shape>'
+        '<o:OLEObject ProgID="Equation.DSMT4" r:id="rId9"/></w:object></w:r></w:p>'
+        '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6"/></w:pBdr></w:pPr></w:p>'
+        '<w:p><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:inline>'
+        "<a:graphic><a:graphicData><wps:wsp><wps:txbx><w:txbxContent><w:p><w:r><w:t>boxed</w:t>"
+        "</w:r></w:p></w:txbxContent></wps:txbx></wps:wsp></a:graphicData></a:graphic></wp:inline>"
+        "</w:drawing></mc:Choice></mc:AlternateContent></w:r></w:p>"
+    )
+    footnotes = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:footnote w:id="1"><w:p><w:r><w:t>a note</w:t></w:r></w:p></w:footnote></w:footnotes>'
+    ).encode()
+    path = _docx(tmp_path, docx_factory, body, media={"word/footnotes.xml": footnotes})
+
+    manifest = convert(path)
+    c = manifest["counts"]
+    assert c["equations"] == 1
+    assert c["objects"] == 1 and c["object_kinds"] == {"Equation.DSMT4": 1}
+    assert c["footnotes"] == 1
+    assert c["internal_links"] == 1  # the contents-list link is not one
+    assert c["strikethrough_runs"] == 1
+    assert c["unmapped_symbols"] == 1
+    assert c["text_boxes"] == 1
+    assert c["rules"] == 1
+    assert c["colored_runs"] == 1
+    assert manifest["colors"] == {"#7a0000": 1}
+    assert c["drawings"] == 1 and c["figures"] == 0
+    lines = "\n".join(warnings_for(manifest))
+    assert "1 equation" in lines and "1 embedded object (1 Equation.DSMT4)" in lines
+    assert "1 footnote" in lines and "1 link" in lines and "1 run struck" in lines
+    assert "1 symbol" in lines and "1 text box" in lines
+    assert "defect" not in lines
+
+
+def test_an_embedded_object_is_reported_as_content_the_page_lost():
+    """MathType is the one the author is told to convert before exporting.
+    An OLE object cannot be read, and nothing is put on the page for it, so
+    the line has to say what to do about it."""
+    (line,) = warnings_for(_manifest(objects=2, object_kinds={"Equation.DSMT4": 2}))
+    assert "2 embedded objects (2 Equation.DSMT4)" in line
+    assert "OMML" in line and "nothing of it reaches the page" in line
+
+
+def test_the_new_findings_agree_with_themselves_about_one_and_many():
+    (one,) = warnings_for(_manifest(equations=1))
+    (many,) = warnings_for(_manifest(equations=2))
+    assert "1 equation " in one and "2 equations " in many
+    (one,) = warnings_for(_manifest(footnotes=1))
+    assert "1 footnote " in one
+    (one,) = warnings_for(_manifest(internal_links=1))
+    assert "1 link points inside" in one
+    (many,) = warnings_for(_manifest(internal_links=3))
+    assert "3 links point inside" in many
+    (one,) = warnings_for(_manifest(strikethrough_runs=1))
+    assert "1 run struck through" in one
+    (one,) = warnings_for(_manifest(unmapped_symbols=1))
+    assert "1 symbol character" in one and "�" in one
+    (one,) = warnings_for(_manifest(text_boxes=1))
+    assert "1 text box " in one
+
+
+def test_a_quiet_manifest_still_reports_nothing():
+    assert warnings_for(_manifest()) == []

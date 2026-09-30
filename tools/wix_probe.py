@@ -7,6 +7,7 @@ never printed. Nothing here writes to the account or to the live site: every cal
 is a query. What we are after is the site id, and above all where the domain is
 registered and when the subscription renews.
 """
+
 import json
 import os
 import sys
@@ -31,16 +32,21 @@ def token() -> str:
 
 def call(method, url, body, tok):
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": tok,
-        "Content-Type": "application/json",
-    })
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method=method,
+        headers={
+            "Authorization": tok,
+            "Content-Type": "application/json",
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", "replace")[:400]
-    except Exception as e:                                    # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         return 0, str(e)[:200]
 
 

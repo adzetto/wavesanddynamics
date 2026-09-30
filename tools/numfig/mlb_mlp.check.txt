@@ -1,0 +1,24 @@
+nf-mlb-mlp: Figure 17, a multi-layer perceptron trained on the iris flowers
+
+MODEL
+  Fisher's iris data (scikit-learn): 150 flowers, sepal and petal length and width in cm,
+  three species. 120 train, 30 held out (stratified, random_state 0); standardized with the
+  training mean [5.857, 3.049, 3.759, 1.207] and deviation [0.851, 0.445, 1.781, 0.764].
+  network [4, 5, 5, 3], tanh, softmax, 60 weights and 13 biases; weights N(0, 1/fan in), seed 0.
+  cross-entropy, full batch gradient descent, learning rate 0.3, 300 epochs; weights saved every 10.
+
+CHECK 1: back propagation against central differences, every weight at the start
+  largest relative error 1.2e-08
+
+CHECK 2: the error only falls (gradient descent with a small step)
+  cross-entropy 0.8169 -> 0.1905 (epoch 50) -> 0.0913 (100) -> 0.0552 (300); rises in 0 of 300 epochs
+  a network that knows nothing scores ln 3 = 1.0986
+
+CHECK 3: accuracy
+  training 118 of 120, held out 30 of 30
+
+THE THREE FLOWERS SHOWN (held out)
+  setosa     [5.1, 3.5, 1.4, 0.2] cm -> p = [0.9947, 0.0053, 0.0]
+  versicolor [5.7, 2.8, 4.5, 1.3] cm -> p = [0.002, 0.9912, 0.0068]
+  virginica  [6.3, 2.9, 5.6, 1.8] cm -> p = [0.0, 0.0111, 0.9888]
+  their probabilities sum to [1.0, 1.0, 1.0]

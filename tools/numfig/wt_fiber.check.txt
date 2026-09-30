@@ -1,0 +1,27 @@
+nf-wt-fiber: the fun table, 'Guided light' (image6)
+
+MODEL
+  unclad glass fibre: n1 = 1.5 in air (n2 = 1.0), 1.0 mm across, geometric optics;
+  number of guided modes of a slab this thick at 633 nm ~ 2 V / pi = 3532, so rays are the exact limit.
+  total internal reflection needs the angle to the face normal above asin(n2/n1) = 41.81 deg, i.e. rays within 48.19 deg of the axis.
+
+CHECK 1: every ray reflects totally, and the reflection loses nothing (Fresnel, TE and TM)
+  ray at 0 deg: never meets a face
+  ray at 22.0 deg: incidence 68.0 deg > critical 41.8 deg; |r_TE| = 1.000000000000, |r_TM| = 1.000000000000
+  ray at 38.0 deg: incidence 52.0 deg > critical 41.8 deg; |r_TE| = 1.000000000000, |r_TM| = 1.000000000000
+
+CHECK 2: time along the fibre, traced ray by ray against n z / (c cos theta)
+   0.0 deg: 0 reflections, traced 28.019384 ps, closed form 28.019384 ps (+0.0e+00)
+  22.0 deg: 2 reflections, traced 30.219879 ps, closed form 30.219879 ps (+2.2e-16)
+  38.0 deg: 4 reflections, traced 35.557109 ps, closed form 35.557109 ps (-2.2e-16)
+  spread between the axial and the steepest pulse over 5.6 mm: 7.538 ps (modal dispersion n L / c (1 / cos theta - 1))
+
+CHECK 3: a ray is the limit of a guided mode: the exact TE mode of the slab with the ray's transverse
+  wavenumber, its group velocity d w / d beta against the ray's speed along the axis (c / n) cos theta
+  TE1775 (its ray at 22.0036 deg): v_g = 1.853092e+08 m/s, (c / n) cos theta = 1.853037e+08 m/s (+2.9e-05)
+  TE2918 (its ray at 38.0085 deg): v_g = 1.574940e+08 m/s, (c / n) cos theta = 1.574749e+08 m/s (+1.2e-04)
+  the difference is the Goos-Hanchen shift at each reflection, of order the wavelength over the thickness.
+
+DRAWING
+  1000 units = 5.6 mm, the same scale across (rod 1 mm = 179 units): no stretch.
+  time slowed 5.0e+10 x: the axial pulse crosses the cell in 1.40 s on screen.

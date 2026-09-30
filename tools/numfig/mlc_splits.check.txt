@@ -1,0 +1,25 @@
+nf-mlc-splits: Figure 32, training, validation and test sets; 5-fold cross-validation
+
+DATA: 100 examples, x uniform on [0, 10], y = 2 sin(0.8 x) + 0.15 x + N(0, 0.45^2), seed 11.
+MODEL: polynomial of degree 5 in x/10, least squares (numpy.polyfit). SCORE: RMSE.
+
+(a) ONE RANDOM SPLIT (a permutation of the 100, seed 11): 60 training, 20 validation, 20 test
+  training RMSE 0.3779, validation RMSE 0.4344
+
+(b) 5-FOLD CROSS-VALIDATION over the 80 training and validation examples, folds of 16
+  round 1: trained on 64, validation RMSE 0.3510 (training 0.3972)
+  round 2: trained on 64, validation RMSE 0.4755 (training 0.3701)
+  round 3: trained on 64, validation RMSE 0.4824 (training 0.3769)
+  round 4: trained on 64, validation RMSE 0.4761 (training 0.3819)
+  round 5: trained on 64, validation RMSE 0.4182 (training 0.3854)
+  mean 0.4406, standard deviation 0.0565; spread of the rounds 0.351 to 0.482
+  every one of the 80 examples is held out exactly once: True
+
+TEST, ONCE, AT THE END: refit on all 80, test RMSE 0.4971
+
+CHECK: the true curve itself scores 0.4458 on the validation 20 and 0.4817 on the test
+  20 (the noise those examples happen to carry); the model's 0.4344 and 0.4971 sit
+  -0.0114 and +0.0154 from these floors.
+CHECK: an exact model would score the noise standard deviation, 0.45, on average;
+  the rounds scatter round it (mean 0.441), so the model fits the pattern, not the noise.
+  With only 16 examples a fold, one round alone could read anywhere from 0.35 to 0.48: the average is the reliable number.

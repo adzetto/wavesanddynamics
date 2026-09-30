@@ -1,0 +1,55 @@
+<section class="slide">
+ <style>
+  .six{row-gap:22px;margin-top:2px;grid-auto-rows:1fr}
+  .six .node{padding:18px 26px 22px;align-self:stretch}
+  .six .f{font-size:42px;line-height:1.2}
+  .six .ps{margin-top:10px}
+  .six .note{margin-top:2px;text-wrap:balance}
+  .core{margin-top:22px}
+ </style>
+ <header class="head">
+  <h1 class="title">One core idea: every model is a probability distribution</h1>
+  <p class="lede">Yes: at the core there is one model, the probability distribution. Regression, Bayesian models, processes and state-space models are distributions of different things.</p>
+ </header>
+ <main class="body">
+  <div class="g six">
+   <div class="node k-navy s4">
+    <h2 class="h f"><m>p(x)</m></h2>
+    <p class="ps"><b>One quantity</b></p>
+    <p class="note">Distribution: Concrete strength</p>
+   </div>
+   <div class="node k-navy s4">
+    <h2 class="h f"><m>p(x, y)</m></h2>
+    <p class="ps"><b>Several together</b></p>
+    <p class="note">Joint distribution: Load and capacity</p>
+   </div>
+   <div class="node k-navy s4">
+    <h2 class="h f"><m>p(y | x)</m></h2>
+    <p class="ps"><b><m>y</m> given predictors <m>x</m></b></p>
+    <p class="note">Regression: Strength given w/c ratio</p>
+   </div>
+   <div class="node k-blue s4">
+    <h2 class="h f"><m>p(θ | data)</m></h2>
+    <p class="ps"><b>Unknown parameters</b></p>
+    <p class="note">Bayesian model: Mean strength after 25 tests</p>
+   </div>
+   <div class="node k-blue s4">
+    <h2 class="h f"><m>p(x₁, x₂, …, xₜ)</m></h2>
+    <p class="ps"><b>A whole history</b></p>
+    <p class="note">Stochastic process: Traffic over one day</p>
+   </div>
+   <div class="node k-blue s4">
+    <h2 class="h f"><m>p(xₜ | z₁ … zₜ)</m></h2>
+    <p class="ps"><b>Hidden state from sensors</b></p>
+    <p class="note">Kalman filter: Displacement now</p>
+   </div>
+  </div>
+  <div class="panel core">
+   <p class="ps"><b class="c-navy">So distributions and regression are not two separate kinds of model:</b> regression is a distribution whose mean moves with <m>x</m>. The rest add more variables, uncertain parameters, time or hidden states.</p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Every probabilistic model answers one question: how is probability spread, and over what?</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–5: the common core behind every model</span><span class="src">Sources: [6], [10], [22]</span><span class="num">10</span></p>
+ </footer>
+</section>

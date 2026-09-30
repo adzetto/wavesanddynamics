@@ -4,6 +4,7 @@ A .docx is a zip with a fixed skeleton; only word/document.xml carries content.
 Tests hand this helper a body fragment and get real bytes back, so the reader is
 exercised against the same XML Word actually writes.
 """
+
 import io
 import struct
 import zipfile
@@ -22,22 +23,28 @@ A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
 PIC = 'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
 WP = 'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
 MC = 'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
-WP14 = 'xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"'
+WP14 = (
+    'xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"'
+)
 W14 = 'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"'
 VML = 'xmlns:v="urn:schemas-microsoft-com:vml"'
 OFFICE = 'xmlns:o="urn:schemas-microsoft-com:office:office"'
 MATH = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
+WPS = 'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
+W16SE = 'xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex"'
 # Word wraps drawings in mc:AlternateContent and marks its 2010 namespaces
 # ignorable, so a snippet pasted out of a real file needs these declarations.
 NAMESPACES = (
-    f"{XMLNS_W} {R} {A} {PIC} {WP} {MC} {WP14} {W14} {VML} {OFFICE} {MATH} "
+    f"{XMLNS_W} {R} {A} {PIC} {WP} {MC} {WP14} {W14} {VML} {OFFICE} {MATH} {WPS} {W16SE} "
     'mc:Ignorable="w14 wp14"'
 )
 
 SHAPE_URI = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 
 IMAGE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-HYPERLINK_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+HYPERLINK_REL = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+)
 
 CONTENT_TYPES = (
     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -114,19 +121,40 @@ def para(text, style=None, bold=False):
     return f"<w:p>{ppr}<w:r>{rpr}<w:t>{escape(text)}</w:t></w:r></w:p>"
 
 
-def picture(rel_id="rId5"):
-    """One run holding an inline picture that points at `rel_id`.
+EMU_PER_PX = 9525  # DrawingML measures in EMU: 914400 an inch, 96 CSS px an inch
+
+
+def picture(rel_id="rId5", size=None, crop=None, anchor=False):
+    """One run holding a picture that points at `rel_id`.
 
     It lives here with NAMESPACES because it is only well-formed inside them:
     the prefixes it uses are declared once, on the document element above, and a
     second copy of this XML would go stale against them unnoticed.
+
+    With no keywords it is the bare inline picture every older test uses, with
+    no size of its own. `size` is the (width, height) Word draws it at, in CSS
+    px at 96 dpi, written as `wp:extent` in EMU. `crop` is `a:srcRect` as Word
+    writes it: {"l": ..., "t": ..., "r": ..., "b": ...} in thousandths of a
+    percent, a negative inset being padding. `anchor` floats it (`wp:anchor`)
+    instead of setting it in the line.
     """
+    host = "wp:anchor" if anchor else "wp:inline"
+    extent = (
+        f'<wp:extent cx="{size[0] * EMU_PER_PX}" cy="{size[1] * EMU_PER_PX}"/>'
+        if size
+        else ""
+    )
+    src = (
+        "<a:srcRect " + " ".join(f'{k}="{v}"' for k, v in crop.items()) + "/>"
+        if crop
+        else ""
+    )
     return (
-        '<w:r><w:drawing><wp:inline>'
-        '<a:graphic><a:graphicData><pic:pic><pic:blipFill>'
-        f'<a:blip r:embed="{rel_id}"/>'
+        f"<w:r><w:drawing><{host}>{extent}"
+        "<a:graphic><a:graphicData><pic:pic><pic:blipFill>"
+        f'<a:blip r:embed="{rel_id}"/>{src}'
         "</pic:blipFill></pic:pic></a:graphicData></a:graphic>"
-        "</wp:inline></w:drawing></w:r>"
+        f"</{host}></w:drawing></w:r>"
     )
 
 
@@ -147,7 +175,7 @@ def shape(name="Straight Connector 1"):
     on the document element, and a second copy would go stale against them.
     """
     return (
-        '<w:r><w:drawing><wp:inline>'
+        "<w:r><w:drawing><wp:inline>"
         f'<wp:docPr id="1" name="{escape_attr(name)}"/>'
         f'<a:graphic><a:graphicData uri="{SHAPE_URI}"/></a:graphic>'
         "</wp:inline></w:drawing></w:r>"
@@ -156,8 +184,12 @@ def shape(name="Straight Connector 1"):
 
 def _chunk(tag, data):
     """One PNG chunk: length, tag, payload, CRC."""
-    return (struct.pack(">I", len(data)) + tag + data
-            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+    return (
+        struct.pack(">I", len(data))
+        + tag
+        + data
+        + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+    )
 
 
 def png(width, height):
@@ -171,9 +203,12 @@ def png(width, height):
     passes whatever the code does, and pinning it proves nothing.
     """
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr)
-            + _chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
-            + _chunk(b"IEND", b""))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", ihdr)
+        + _chunk(b"IDAT", zlib.compress(b"\x00" * (width * 3 + 1) * height))
+        + _chunk(b"IEND", b"")
+    )
 
 
 def oversized_png():
@@ -185,8 +220,12 @@ def oversized_png():
     a few dozen bytes however many pixels it claims.
     """
     ihdr = struct.pack(">IIBBBBB", 30_000, 30_000, 8, 2, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr)
-            + _chunk(b"IDAT", zlib.compress(b"\x00" * 16)) + _chunk(b"IEND", b""))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk(b"IHDR", ihdr)
+        + _chunk(b"IDAT", zlib.compress(b"\x00" * 16))
+        + _chunk(b"IEND", b"")
+    )
 
 
 @pytest.fixture

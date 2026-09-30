@@ -1,0 +1,7 @@
+# his words inside his figure (build/r10-deck/his/s044-pic1.png), left panel then right
+Independent zero-mean samples
+Time average
+Record length
+Random constant: X(t) = Z
+Time average
+Record length

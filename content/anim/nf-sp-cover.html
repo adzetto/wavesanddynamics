@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Input, system, output, and the system identified from them</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="A swept sine enters a damped resonator and its output is measured with noise. Gradient descent on the squared error between the measured output and a model's output walks across the contours of that error, from a first guess to the estimated natural frequency and damping ratio, while the model's impulse response and output settle onto the system's."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 253;
+const DATA = {"dt":0.01,"T":12.0,"fn":1.0,"zeta":0.1,"x":"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","ym":"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","path":[[0.85,0.27],[0.86996,0.26756],[0.8883,0.26272],[0.90514,0.25579],[0.92056,0.247],[0.93464,0.23653],[0.94741,0.22451],[0.95888,0.21103],[0.96904,0.19623],[0.97784,0.18027],[0.98519,0.16346],[0.991,0.14636],[0.99517,0.13],[0.99775,0.11607],[0.99899,0.10654],[0.99942,0.10204],[0.99952,0.10073],[0.99953,0.10047],[0.99954,0.10042]],"contours":[[[[1.0,0.0905],[0.99791,0.09083],[0.995,0.09157],[0.99116,0.09477],[0.99,0.09666],[0.98922,0.09872],[0.98905,0.10267],[0.99,0.10612],[0.99025,0.10661],[0.99433,0.11056],[0.995,0.111],[1.0,0.11194],[1.005,0.11062],[1.00509,0.11056],[1.00884,0.10661],[1.01,0.104],[1.01035,0.10267],[1.01018,0.09872],[1.01,0.09825],[1.00801,0.09477],[1.005,0.09207],[1.00151,0.09083],[1.0,0.0905]]],[[[0.99,0.08581],[0.98835,0.08688],[0.985,0.08983],[0.98415,0.09083],[0.98183,0.09477],[0.98038,0.09872],[0.98,0.10144],[0.97986,0.10267],[0.98,0.10499],[0.98014,0.10661],[0.98134,0.11056],[0.98342,0.11451],[0.985,0.11665],[0.98699,0.11845],[0.99,0.12067],[0.99423,0.1224],[0.995,0.12268],[1.0,0.12321],[1.005,0.12253],[1.00534,0.1224],[1.01,0.12036],[1.01257,0.11845],[1.015,0.11619],[1.01626,0.11451],[1.01839,0.11056],[1.01961,0.10661],[1.01993,0.10267],[1.01935,0.09872],[1.01789,0.09477],[1.01551,0.09083],[1.015,0.09025],[1.01119,0.08688],[1.01,0.08611],[1.005,0.084],[1.0,0.0832],[0.995,0.08382],[0.99,0.08581]]],[[[1.0,0.07494],[0.99847,0.07504],[0.995,0.07533],[0.99,0.07661],[0.985,0.07868],[0.98445,0.07899],[0.98,0.08209],[0.979,0.08293],[0.97522,0.08688],[0.975,0.08717],[0.97264,0.09083],[0.97063,0.09477],[0.97,0.09651],[0.96929,0.09872],[0.96849,0.10267],[0.96814,0.10661],[0.96824,0.11056],[0.96879,0.11451],[0.9698,0.11845],[0.97,0.11901],[0.9715,0.1224],[0.97378,0.12635],[0.975,0.1281],[0.97697,0.13029],[0.98,0.13321],[0.98146,0.13424],[0.985,0.13652],[0.98883,0.13819],[0.99,0.13867],[0.995,0.13985],[1.0,0.14024],[1.005,0.13984],[1.01,0.13866],[1.0112,0.13819],[1.015,0.13658],[1.01881,0.13424],[1.02,0.13343],[1.02348,0.13029],[1.025,0.1287],[1.02679,0.12635],[1.02924,0.1224],[1.03,0.12083],[1.03095,0.11845],[1.03205,0.11451],[1.03265,0.11056],[1.03275,0.10661],[1.03237,0.10267],[1.03149,0.09872],[1.03011,0.09477],[1.03,0.09456],[1.02796,0.09083],[1.0252,0.08688],[1.025,0.08666],[1.02122,0.08293],[1.02,0.08197],[1.01552,0.07899],[1.015,0.07871],[1.01,0.07669],[1.005,0.07539],[1.00134,0.07504],[1.0,0.07494]]],[[[0.99,0.06674],[0.98839,0.06715],[0.985,0.06818],[0.98,0.07022],[0.97824,0.07109],[0.975,0.07302],[0.97204,0.07504],[0.97,0.07668],[0.96742,0.07899],[0.965,0.0815],[0.96372,0.08293],[0.96071,0.08688],[0.96,0.08799],[0.95829,0.09083],[0.95628,0.09477],[0.955,0.09779],[0.95462,0.09872],[0.95339,0.10267],[0.95244,0.10661],[0.95178,0.11056],[0.95141,0.11451],[0.95132,0.11845],[0.95153,0.1224],[0.95202,0.12635],[0.95281,0.13029],[0.95389,0.13424],[0.955,0.13743],[0.95531,0.13819],[0.95718,0.14213],[0.9594,0.14608],[0.96,0.14704],[0.96222,0.15003],[0.965,0.15338],[0.96559,0.15397],[0.96985,0.15792],[0.97,0.15805],[0.975,0.16159],[0.97551,0.16187],[0.98,0.16427],[0.98387,0.16581],[0.985,0.16625],[0.99,0.16763],[0.995,0.16845],[1.0,0.16876],[1.005,0.16858],[1.01,0.16789],[1.015,0.16669],[1.01756,0.16581],[1.02,0.16495],[1.025,0.16261],[1.02626,0.16187],[1.03,0.15956],[1.03218,0.15792],[1.035,0.15565],[1.03676,0.15397],[1.04,0.15058],[1.04046,0.15003],[1.0434,0.14608],[1.045,0.14363],[1.04585,0.14213],[1.0478,0.13819],[1.04938,0.13424],[1.05,0.13228],[1.05056,0.13029],[1.05138,0.12635],[1.05188,0.1224],[1.05206,0.11845],[1.05194,0.11451],[1.05151,0.11056],[1.05078,0.10661],[1.05,0.10373],[1.04971,0.10267],[1.04826,0.09872],[1.04647,0.09477],[1.045,0.09211],[1.04427,0.09083],[1.04158,0.08688],[1.04,0.08493],[1.03832,0.08293],[1.035,0.07957],[1.03439,0.07899],[1.03,0.07547],[1.02942,0.07504],[1.025,0.07232],[1.02275,0.07109],[1.02,0.06985],[1.015,0.06798],[1.01207,0.06715],[1.01,0.06667],[1.005,0.06595],[1.0,0.06571],[0.995,0.06598],[0.99,0.06674]]],[[[0.99,0.05513],[0.989,0.05531],[0.985,0.05614],[0.98,0.05752],[0.975,0.0592],[0.97485,0.05925],[0.97,0.0615],[0.96662,0.0632],[0.965,0.06415],[0.96019,0.06715],[0.96,0.06728],[0.955,0.07104],[0.95493,0.07109],[0.95045,0.07504],[0.95,0.07549],[0.94656,0.07899],[0.945,0.08075],[0.9431,0.08293],[0.94,0.08685],[0.93998,0.08688],[0.93727,0.09083],[0.935,0.09443],[0.93478,0.09477],[0.93262,0.09872],[0.93064,0.10267],[0.93,0.10413],[0.92891,0.10661],[0.92738,0.11056],[0.92603,0.11451],[0.925,0.11795],[0.92485,0.11845],[0.92388,0.1224],[0.92307,0.12635],[0.92241,0.13029],[0.92192,0.13424],[0.92158,0.13819],[0.92139,0.14213],[0.92137,0.14608],[0.92151,0.15003],[0.9218,0.15397],[0.92226,0.15792],[0.92288,0.16187],[0.92367,0.16581],[0.92463,0.16976],[0.925,0.1711],[0.9258,0.17371],[0.92717,0.17765],[0.92873,0.1816],[0.93,0.18449],[0.93051,0.18555],[0.93258,0.18949],[0.93485,0.19344],[0.935,0.19368],[0.93751,0.19739],[0.94,0.20079],[0.94045,0.20133],[0.94384,0.20528],[0.945,0.20656],[0.94772,0.20923],[0.95,0.21137],[0.95218,0.21317],[0.955,0.21542],[0.95745,0.21712],[0.96,0.21884],[0.96383,0.22107],[0.965,0.22173],[0.97,0.22415],[0.97214,0.22501],[0.975,0.22616],[0.98,0.22778],[0.98467,0.22896],[0.985,0.22904],[0.99,0.22998],[0.995,0.2306],[1.0,0.23091],[1.005,0.23093],[1.01,0.23065],[1.015,0.23008],[1.02,0.22921],[1.02109,0.22896],[1.025,0.22805],[1.03,0.22658],[1.03435,0.22501],[1.035,0.22478],[1.04,0.22264],[1.04315,0.22107],[1.045,0.22012],[1.05,0.2172],[1.05012,0.21712],[1.055,0.21382],[1.05585,0.21317],[1.06,0.2099],[1.06077,0.20923],[1.065,0.20534],[1.06506,0.20528],[1.06879,0.20133],[1.07,0.19997],[1.0721,0.19739],[1.075,0.19353],[1.07506,0.19344],[1.07763,0.18949],[1.07994,0.18555],[1.08,0.18544],[1.08193,0.1816],[1.08368,0.17765],[1.085,0.17424],[1.08519,0.17371],[1.08645,0.16976],[1.0875,0.16581],[1.08834,0.16187],[1.08898,0.15792],[1.08942,0.15397],[1.08967,0.15003],[1.08972,0.14608],[1.08958,0.14213],[1.08925,0.13819],[1.08874,0.13424],[1.08804,0.13029],[1.08715,0.12635],[1.08607,0.1224],[1.085,0.11908],[1.0848,0.11845],[1.08332,0.11451],[1.08163,0.11056],[1.08,0.10715],[1.07975,0.10661],[1.07761,0.10267],[1.07526,0.09872],[1.075,0.09833],[1.07263,0.09477],[1.07,0.09116],[1.06976,0.09083],[1.06655,0.08688],[1.065,0.08516],[1.06301,0.08293],[1.06,0.07991],[1.05909,0.07899],[1.055,0.07531],[1.05469,0.07504],[1.05,0.07133],[1.04969,0.07109],[1.045,0.0679],[1.04387,0.06715],[1.04,0.06493],[1.03687,0.0632],[1.035,0.06232],[1.03,0.06013],[1.02778,0.05925],[1.025,0.05833],[1.02,0.05689],[1.015,0.05571],[1.01265,0.05531],[1.01,0.05493],[1.005,0.0545],[1.0,0.05439],[0.995,0.0546],[0.99,0.05513]]],[[[1.17917,0.3],[1.18,0.29815],[1.18092,0.29605],[1.18252,0.29211],[1.18399,0.28816],[1.185,0.28519],[1.18532,0.28421],[1.18652,0.28027],[1.18759,0.27632],[1.18854,0.27237],[1.18936,0.26843],[1.19,0.26484],[1.19006,0.26448],[1.19064,0.26053],[1.19111,0.25659],[1.19146,0.25264],[1.1917,0.24869],[1.19183,0.24475],[1.19185,0.2408],[1.19175,0.23685],[1.19155,0.23291],[1.19125,0.22896],[1.19083,0.22501],[1.19031,0.22107],[1.19,0.21912],[1.18969,0.21712],[1.18896,0.21317],[1.18813,0.20923],[1.18719,0.20528],[1.18615,0.20133],[1.185,0.19739],[1.185,0.19738],[1.18376,0.19344],[1.1824,0.18949],[1.18094,0.18555],[1.18,0.1832],[1.17938,0.1816],[1.17771,0.17765],[1.17593,0.17371],[1.175,0.17179],[1.17405,0.16976],[1.17206,0.16581],[1.17,0.16197],[1.16995,0.16187],[1.16774,0.15792],[1.1654,0.15397],[1.165,0.15334],[1.16296,0.15003],[1.1604,0.14608],[1.16,0.14551],[1.15772,0.14213],[1.155,0.13831],[1.15491,0.13819],[1.15199,0.13424],[1.15,0.1317],[1.14894,0.13029],[1.14575,0.12635],[1.145,0.12548],[1.14243,0.1224],[1.14,0.11966],[1.13897,0.11845],[1.13537,0.11451],[1.135,0.11413],[1.13162,0.11056],[1.13,0.10896],[1.12772,0.10661],[1.125,0.10401],[1.12366,0.10267],[1.12,0.09928],[1.11942,0.09872],[1.11501,0.09477],[1.115,0.09476],[1.11042,0.09083],[1.11,0.0905],[1.10563,0.08688],[1.105,0.0864],[1.10063,0.08293],[1.1,0.08248],[1.09539,0.07899],[1.095,0.07872],[1.09,0.07511],[1.08991,0.07504],[1.085,0.07171],[1.08413,0.07109],[1.08,0.06847],[1.078,0.06715],[1.075,0.06537],[1.07146,0.0632],[1.07,0.0624],[1.065,0.05961],[1.06437,0.05925],[1.06,0.05708],[1.05647,0.05531],[1.055,0.05466],[1.05,0.0525],[1.04731,0.05136],[1.045,0.05052],[1.04,0.04878],[1.03584,0.04741],[1.035,0.04718],[1.03,0.04592],[1.025,0.04481],[1.02,0.04386],[1.01735,0.04347],[1.015,0.04317],[1.01,0.04273],[1.005,0.04249],[1.0,0.04246],[0.995,0.04265],[0.99,0.04307],[0.98694,0.04347],[0.985,0.04377],[0.98,0.0448],[0.975,0.04605],[0.97021,0.04741],[0.97,0.04748],[0.965,0.04937],[0.96,0.05134],[0.95995,0.05136],[0.955,0.05375],[0.95183,0.05531],[0.95,0.05633],[0.945,0.05913],[0.94479,0.05925],[0.94,0.06232],[0.93861,0.0632],[0.935,0.06576],[0.93301,0.06715],[0.93,0.06949],[0.92789,0.07109],[0.925,0.07353],[0.92316,0.07504],[0.92,0.0779],[0.91877,0.07899],[0.915,0.08262],[0.91466,0.08293],[0.91083,0.08688],[0.91,0.0878],[0.90722,0.09083],[0.905,0.09342],[0.90381,0.09477],[0.90058,0.09872],[0.9,0.09949],[0.89754,0.10267],[0.895,0.10614],[0.89464,0.10661],[0.89191,0.11056],[0.89,0.11348],[0.88931,0.11451],[0.88685,0.11845],[0.885,0.12159],[0.88451,0.1224],[0.8823,0.12635],[0.88019,0.13029],[0.88,0.13068],[0.8782,0.13424],[0.87632,0.13819],[0.875,0.14111],[0.87453,0.14213],[0.87284,0.14608],[0.87125,0.15003],[0.87,0.15331],[0.86974,0.15397],[0.86834,0.15792],[0.86701,0.16187],[0.86576,0.16581],[0.865,0.16842],[0.8646,0.16976],[0.86352,0.17371],[0.86252,0.17765],[0.86159,0.1816],[0.86074,0.18555],[0.86,0.1893],[0.85996,0.18949],[0.85926,0.19344],[0.85864,0.19739],[0.85808,0.20133],[0.8576,0.20528],[0.85718,0.20923],[0.85684,0.21317],[0.85656,0.21712],[0.85636,0.22107],[0.85623,0.22501],[0.85617,0.22896],[0.85618,0.23291],[0.85626,0.23685],[0.85642,0.2408],[0.85664,0.24475],[0.85695,0.24869],[0.85733,0.25264],[0.85778,0.25659],[0.85831,0.26053],[0.85892,0.26448],[0.8596,0.26843],[0.86,0.2705],[0.86038,0.27237],[0.86124,0.27632],[0.8622,0.28027],[0.86323,0.28421],[0.86435,0.28816],[0.865,0.29029],[0.86558,0.29211],[0.86692,0.29605],[0.86835,0.3]]],[[[1.2,0.08821],[1.19646,0.08688],[1.195,0.08638],[1.19,0.0846],[1.18554,0.08293],[1.185,0.08275],[1.18,0.08098],[1.175,0.07913],[1.17464,0.07899],[1.17,0.07736],[1.165,0.07552],[1.16374,0.07504],[1.16,0.07374],[1.155,0.07192],[1.15282,0.07109],[1.15,0.07013],[1.145,0.06833],[1.14187,0.06715],[1.14,0.06651],[1.135,0.06474],[1.13091,0.0632],[1.13,0.0629],[1.125,0.06114],[1.12,0.05927],[1.11995,0.05925],[1.115,0.05753],[1.11,0.05567],[1.10907,0.05531],[1.105,0.0539],[1.1,0.05205],[1.09822,0.05136],[1.095,0.05026],[1.09,0.04844],[1.08733,0.04741],[1.085,0.04663],[1.08,0.04487],[1.07618,0.04347],[1.075,0.04309],[1.07,0.04145],[1.065,0.03976],[1.0643,0.03952],[1.06,0.03827],[1.055,0.03682],[1.05058,0.03557],[1.05,0.03543],[1.045,0.03429],[1.04,0.03323],[1.035,0.03225],[1.03136,0.03163],[1.03,0.03143],[1.025,0.03081],[1.02,0.03031],[1.015,0.02993],[1.01,0.02968],[1.005,0.02958],[1.0,0.02962],[0.995,0.02983],[0.99,0.0302],[0.985,0.03074],[0.98,0.03144],[0.97889,0.03163],[0.975,0.03242],[0.97,0.03358],[0.965,0.03485],[0.96234,0.03557],[0.96,0.03631],[0.955,0.03796],[0.95027,0.03952],[0.95,0.03962],[0.945,0.04156],[0.94,0.04343],[0.93991,0.04347],[0.935,0.04558],[0.93052,0.04741],[0.93,0.04766],[0.925,0.04996],[0.92182,0.05136],[0.92,0.05227],[0.915,0.05468],[0.91366,0.05531],[0.91,0.05723],[0.90595,0.05925],[0.905,0.05978],[0.9,0.06247],[0.89858,0.0632],[0.895,0.06525],[0.89149,0.06715],[0.89,0.06804],[0.885,0.0709],[0.88464,0.07109],[0.88,0.07388],[0.87797,0.07504],[0.875,0.0769],[0.87149,0.07899],[0.87,0.07996],[0.8652,0.08293],[0.865,0.08307],[0.86,0.08632],[0.85909,0.08688],[0.855,0.08964],[0.85316,0.09083],[0.85,0.09304],[0.84742,0.09477],[0.845,0.09653],[0.84187,0.09872],[0.84,0.10013],[0.8365,0.10267],[0.835,0.10383],[0.83129,0.10661],[0.83,0.10765],[0.82625,0.11056],[0.825,0.1116],[0.82137,0.11451],[0.82,0.11567],[0.81662,0.11845],[0.815,0.11987],[0.81202,0.1224],[0.81,0.12421],[0.80754,0.12635],[0.805,0.12867],[0.80318,0.13029],[0.8,0.13326]]],[[[1.2,0.0512],[1.195,0.05051],[1.19,0.0498],[1.185,0.04905],[1.18,0.04829],[1.175,0.04749],[1.1745,0.04741],[1.17,0.04676],[1.165,0.04602],[1.16,0.04525],[1.155,0.04446],[1.15,0.04363],[1.14904,0.04347],[1.145,0.04286],[1.14,0.04207],[1.135,0.04124],[1.13,0.04036],[1.12554,0.03952],[1.125,0.03943],[1.12,0.03856],[1.115,0.03761],[1.11,0.03659],[1.10545,0.03557],[1.105,0.03549],[1.1,0.03446],[1.095,0.03333],[1.09,0.03212],[1.0881,0.03163],[1.085,0.03094],[1.08,0.02976],[1.075,0.02852],[1.07171,0.02768],[1.07,0.0273],[1.065,0.0262],[1.06,0.02509],[1.055,0.024],[1.05371,0.02373],[1.05,0.02309],[1.045,0.02227],[1.04,0.02153],[1.035,0.02088],[1.03,0.02032],[1.025,0.01986],[1.02391,0.01979],[1.02,0.01956],[1.015,0.01935],[1.01,0.01924],[1.005,0.01923],[1.0,0.01933],[0.995,0.01953],[0.99116,0.01979],[0.99,0.01988],[0.985,0.02042],[0.98,0.02112],[0.975,0.02194],[0.97,0.02286],[0.9657,0.02373],[0.965,0.0239],[0.96,0.02518],[0.955,0.02647],[0.95028,0.02768],[0.95,0.02776],[0.945,0.02927],[0.94,0.03071],[0.93665,0.03163],[0.935,0.03216],[0.93,0.03372],[0.925,0.03518],[0.92361,0.03557],[0.92,0.03676],[0.915,0.03833],[0.911,0.03952],[0.91,0.03987],[0.905,0.04153],[0.9,0.0431],[0.89878,0.04347],[0.895,0.04477],[0.89,0.0464],[0.88668,0.04741],[0.885,0.048],[0.88,0.04965],[0.875,0.05118],[0.87437,0.05136],[0.87,0.0528],[0.865,0.05433],[0.86162,0.05531],[0.86,0.05584],[0.855,0.05739],[0.85,0.05886],[0.84862,0.05925],[0.845,0.06041],[0.84,0.06195],[0.83582,0.0632],[0.835,0.06347],[0.83,0.06511],[0.825,0.06671],[0.82363,0.06715],[0.82,0.06842],[0.815,0.07014],[0.81221,0.07109],[0.81,0.07192],[0.805,0.07377],[0.80153,0.07504],[0.8,0.07565]]]],"fl":[0.8,1.2],"zl":[0.0,0.3]};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+const D = DATA;
+const X = b64f32(D.x), YM = b64f32(D.ym), NS = X.length, DT = D.dt, TT = D.T;
+const PATH = D.path, KN = PATH.length - 1, FL = D.fl, ZL = D.zl;
+const lab = t0 => settle(t0, .28), rise = s => 4 * (1 - s);
+
+/* the model: y = x * h(t; f_n, zeta), exact for x linear between samples
+   (the first order hold recursion of sp_model.foh_filter), in complex numbers */
+function cexp(re, im) { const m = Math.exp(re); return [m * Math.cos(im), m * Math.sin(im)]; }
+function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
+function cdiv(a, b) { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; }
+const _mem = {};
+function modelOut(fn, z) {
+  const key = fn.toFixed(7) + ',' + z.toFixed(7);
+  if (_mem[key]) return _mem[key];
+  const wn = 2 * Math.PI * fn, p = [-z * wn, wn * Math.sqrt(1 - z * z)];
+  const e = cexp(p[0] * DT, p[1] * DT), ei = cdiv([1, 0], e), pp = cmul(p, p), den = [pp[0] * DT, pp[1] * DT];
+  const a0 = cdiv([e[0] - 1 - p[0] * DT, e[1] - p[1] * DT], den);
+  const cc = cdiv([e[0] + ei[0] - 2, e[1] + ei[1]], den);
+  const b1 = cmul([cc[0] - a0[0], cc[1] - a0[1]], e);
+  const y = new Float64Array(NS);
+  let Y = [0, 0], xp = 0;
+  for (let n = 0; n < NS; n++) {
+    const xn = X[n], ye = cmul(e, Y);
+    Y = [ye[0] + a0[0] * xn + b1[0] * xp, ye[1] + a0[1] * xn + b1[1] * xp];
+    y[n] = Y[1]; xp = xn;
+  }
+  const ks = Object.keys(_mem); if (ks.length > 64) delete _mem[ks[0]];
+  return (_mem[key] = y);
+}
+const hAt = (u, fn, z) => { const wn = 2 * Math.PI * fn; return u < 0 ? 0 : Math.exp(-z * wn * u) * Math.sin(wn * Math.sqrt(1 - z * z) * u); };
+
+/* ------------------------------------------------------------ clock
+   Intro (README, round 2): strokes by .9 s, labels by 1.2 s. The descent
+   starts at .6 s, one step every .16 s, each a Motion spring glide; it
+   rests on the estimate, glides back to the first guess and starts again. */
+const T0 = .6, STEP = .16, HOLD = 2.6, BACK = 1.0, REST = .4;
+const RUNT = KN * STEP, PER = RUNT + HOLD + BACK + REST;
+function clock() {
+  if (t < T0) return {k: 0, s: 0, back: 0, trail: 1};
+  const c = Math.floor((t - T0) / PER), u = t - T0 - c * PER, b0 = T0 + c * PER;
+  if (u < RUNT) { const k = Math.floor(u / STEP); return {k, s: settle(b0 + k * STEP, .14), back: 0, trail: 1}; }
+  if (u < RUNT + HOLD) return {k: KN, s: 0, back: 0, trail: 1};
+  return {k: KN, s: 0, back: settle(b0 + RUNT + HOLD, BACK * .8), trail: 1 - seg(b0 + RUNT + HOLD, .35)};
+}
+function theta(st) {
+  if (st.back > 0) return [lerp(PATH[KN][0], PATH[0][0], st.back), lerp(PATH[KN][1], PATH[0][1], st.back)];
+  if (st.k >= KN) return PATH[KN];
+  const a = PATH[st.k], b = PATH[st.k + 1];
+  return [lerp(a[0], b[0], st.s), lerp(a[1], b[1], st.s)];
+}
+const POSTER_T = T0 + RUNT + 1.2;
+
+/* ------------------------------------------------------------ layout */
+const PY = 44, PH = 120;
+const IN = {x: 60, w: 152}, SB = {x: 262, w: 152}, OUT = {x: 496, w: 152}, OP = {x: 740, w: 160}, XF = 880;
+function header(s, x, t0) { const a = lab(t0); math(s, x, 30 + rise(a), {size: 17, align: 'center', alpha: a}); }
+function signal(ax, vals, o) {
+  const pts = []; for (let n = 0; n < NS; n += 2) pts.push([ax.X(n * DT), ax.Y(vals[n])]);
+  ax.inside(() => line(pts, o));
+}
+
+function draw() {
+  const st = clock(), th = theta(st), fn = th[0], z = th[1];
+  // input
+  header('\\rm{input}\\quad x(t)', IN.x + IN.w / 2, .1);
+  const A1 = axes({x: IN.x, y: PY, w: IN.w, h: PH, xlim: [0, TT], ylim: [-1.25, 1.25], xticks: [0, 6, 12],
+                   yticks: [-1, 0, 1], xlabel: 't\\ (\\rm{s})', tickSize: 14, labelSize: 15, progress: seg(0, .3)});
+  signal(A1, X, {color: C.navy, width: 1.4, progress: seg(.05, .4)});
+  arrow(IN.x + IN.w + 8, PY + PH / 2, SB.x - 6, PY + PH / 2, {width: 1.6, head: 9, alpha: seg(.15, .25)});
+
+  // system: the model's impulse response, and the true one it is after
+  header('\\rm{system}\\quad h(t)', SB.x + SB.w / 2, .14);
+  line([[SB.x, PY], [SB.x + SB.w, PY], [SB.x + SB.w, PY + PH], [SB.x, PY + PH], [SB.x, PY]], {color: C.ink, width: 1.8, progress: seg(.04, .4)});
+  const hx0 = SB.x + 10, hx1 = SB.x + SB.w - 10, hy = PY + PH / 2 + 6, hs = 44, HT = 6;
+  const tru = [], mod = [];
+  for (let i = 0; i <= 200; i++) {
+    const u = HT * i / 200, X_ = hx0 + (hx1 - hx0) * i / 200;
+    tru.push([X_, hy - hs * hAt(u, D.fn, D.zeta)]); mod.push([X_, hy - hs * hAt(u, fn, z)]);
+  }
+  line([[hx0, hy], [hx1, hy]], {color: C.rule, width: 1, alpha: seg(.2, .3)});
+  line(mod, {color: C.blue, width: 2.2, progress: seg(.2, .4)});
+  line(tru, {color: C.ink, width: 1.1, dash: [4, 3], alpha: .7, progress: seg(.26, .4)});
+  arrow(SB.x + SB.w + 6, PY + PH / 2, OUT.x - 34, PY + PH / 2, {width: 1.6, head: 9, alpha: seg(.2, .25)});
+
+  // output: the measurement, and the model's output for the current guess
+  header('\\rm{output}\\quad y(t)', OUT.x + OUT.w / 2, .18);
+  const A2 = axes({x: OUT.x, y: PY, w: OUT.w, h: PH, xlim: [0, TT], ylim: [-.85, .85], xticks: [0, 6, 12],
+                   yticks: [-0.5, 0, 0.5], xlabel: 't\\ (\\rm{s})', tickSize: 14, labelSize: 15, progress: seg(.08, .3)});
+  signal(A2, YM, {color: C.mist, width: 1.1, progress: seg(.14, .4)});
+  const yh = modelOut(fn, z);
+  signal(A2, yh, {color: C.navy, width: 1.6, progress: seg(.22, .4)});
+  const la = seg(.4, .25), lx = A2.X(.45), l1 = A2.Y(.68), l2 = A2.Y(.47);
+  line([[lx, l1 - 4], [lx + 16, l1 - 4]], {color: C.mist, width: 1.6, alpha: la});
+  text('data', lx + 21, l1, {size: 14, color: C.body, alpha: la});
+  line([[lx, l2 - 4], [lx + 16, l2 - 4]], {color: C.navy, width: 1.6, alpha: la});
+  text('model', lx + 21, l2, {size: 14, color: C.body, alpha: la});
+  arrow(OUT.x + OUT.w + 8, PY + PH / 2, OP.x - 36, PY + PH / 2, {width: 1.6, head: 9, alpha: seg(.25, .25)});
+
+  // estimation and optimization: J(f_n, zeta), the descent, the estimate
+  header('\\rm{estimation and optimization}', OP.x + OP.w / 2, .22);
+  const A3 = axes({x: OP.x, y: PY, w: OP.w, h: PH, xlim: FL, ylim: ZL, xticks: [0.8, 0.9, 1, 1.1, 1.2],
+                   yticks: [0, 0.1, 0.2, 0.3], xfmt: v => v.toFixed(1), yfmt: v => v === 0 ? '0' : v.toFixed(1),
+                   xlabel: 'f_{\\rm{n}}\\ (\\rm{Hz})', tickSize: 14, labelSize: 15, progress: seg(.1, .3)});
+  math('\\zeta', OP.x - 34, PY + 30, {size: 16, alpha: seg(.3, .2)});
+  A3.inside(() => {
+    D.contours.forEach((lv, i) => {
+      const pr = seg(.16 + .03 * i, .35);
+      for (const pl of lv) line(pl.map(q => [A3.X(q[0]), A3.Y(q[1])]), {color: C.sky, width: 1, progress: pr});
+    });
+    // the steps taken so far, and the marker on its way to the next
+    if (t >= T0) {
+      const k = Math.min(st.k, KN), pts = PATH.slice(0, k + 1).map(q => [A3.X(q[0]), A3.Y(q[1])]);
+      if (st.back <= 0) pts.push([A3.X(fn), A3.Y(z)]);
+      if (pts.length > 1) line(pts, {color: C.navy, width: 1.4, alpha: st.trail});
+      for (let j = 0; j <= k; j++) dot(A3.X(PATH[j][0]), A3.Y(PATH[j][1]), 1.9, {color: C.navy, fill: C.navy, width: .6, alpha: st.trail});
+    }
+  });
+  dot(A3.X(PATH[0][0]), A3.Y(PATH[0][1]), 3.6, {color: C.navy, fill: '#fff', width: 1.3, alpha: seg(.4, .2)});
+  dot(A3.X(fn), A3.Y(z), 4.6, {color: '#fff', fill: C.accent, width: 1.3, alpha: seg(.45, .15)});
+
+  // identification: the estimate goes back into the system
+  const fb = seg(.3, .4), yl = 232;
+  line([[XF, PY + PH], [XF, yl], [SB.x + SB.w / 2, yl]], {width: 1.6, progress: fb});
+  arrow(SB.x + SB.w / 2, yl, SB.x + SB.w / 2, PY + PH + 3, {width: 1.6, head: 9, alpha: seg(.6, .2)});
+  const ia = lab(.44), ix = 600;
+  const s1 = `\\rm{identification}\\quad f_{\\rm{n}} = ${fn.toFixed(4)}\\ \\rm{Hz},\\quad \\zeta\\ = ${z.toFixed(4)}`;
+  const w1 = math(s1, 0, -100, {size: 15, alpha: 0});
+  ctx.save(); ctx.globalAlpha *= ia; ctx.fillStyle = '#fff'; ctx.fillRect(ix - w1 / 2 - 8, yl - 11, w1 + 16, 20); ctx.restore();
+  math(s1, ix, yl + 5 + rise(ia), {size: 15, align: 'center', alpha: ia});
+}
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+HOW IT WORKS, step 1 (nf-hw-structure): Structure(s), the brochure's image1
+generator: tools/numfig/hw_structure.py (model: hw_lib.building)
+
+MODEL
+  a uniform shear building: 6 floors of m = 400 t on 6 storeys of h = 3.2 m (H = 19.2 m), fixed at the ground
+  first period from EN 1998-1 4.3.3.2.2(3): T1 = C_t H^(3/4), C_t = 0.075 (concrete frames)
+    T1 = 0.6879 s, f1 = 1.4537 Hz (the rule of thumb 0.1 N gives 0.6 s)
+  storey stiffness from the closed form below: k = 574.2 MN/m
+  damping: 5% in every mode (EN 1998-1's reference value), classical
+
+MODES: numerical (scipy eigh of K, M) against the closed form of the uniform shear building,
+  w_r = 2 sqrt(k/m) sin((2r - 1) pi / (2 (2N + 1))), phi_jr = sin((2r - 1) j pi / (2N + 1))
+  mode 1: f =   1.4537 Hz, closed form   1.4537 Hz
+  mode 2: f =   4.2765 Hz, closed form   4.2765 Hz
+  mode 3: f =   6.8508 Hz, closed form   6.8508 Hz
+  largest relative error of w_r: 1.2e-15; of the shapes (max 1): 1.8e-15
+  first mode, floors 1..6, roof 1: 0.2411, 0.4681, 0.6680, 0.8290, 0.9419, 1.0000
+  Rayleigh's quotient with a straight line shape: w = 9.7286 rad/s against w1 = 9.1336 (+6.51%, an upper bound, as it must be)
+
+THE SWAY
+  the first mode alone, set moving by a velocity in its shape: u_j(t) = phi_j q(t),
+  q(t) = exp(-zeta w1 t) sin(wd t), zeta w1 = 0.45668 1/s, wd = 9.12219 rad/s
+  the whole frame integrated (DOP853, rtol 1e-11) from that velocity, classical damping in all
+  6 modes: largest difference from phi q(t) over 5.17 s: 1.4e-11 (q peaks at 0.9255)
+  log decrement over a damped period: 0.31455 = 2 pi zeta / sqrt(1 - zeta^2) = 0.31455
+
+DISPLAY
+  real time: the period drawn is T1 = 0.688 s; the roof's first peak (t = 0.1667 s) is
+  drawn at 2.2 px (the amplitude of a free vibration is arbitrary; the shape and the decay are not)
+  each storey's columns: the shear frame's cubic between rigid floors, u_(j-1) + (u_j - u_(j-1))(3s^2 - 2s^3)
+  the sway starts 0.5 s into the icon (its frame drawn) and stops at its 15th zero crossing,
+  t = 5.166 s, where the envelope is below 0.25 px and the displacement is exactly zero
+  timing: the icon is step 1, it starts as the flow is seen (0 s); drawn by 0.47 s
+
+OVERLAP (common.overlaps, 672 px wide)
+  moments: still, 0.2 s, 0.4 s, 0.8 s, 1.2 s, 2 s, 3 s
+  labels [] and crossings [] at every moment: nothing collides (the icon sets no type)

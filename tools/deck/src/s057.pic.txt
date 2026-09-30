@@ -1,0 +1,13 @@
+# his words inside his picture (build/r10-deck/his/s057-pic1.png)
+# left panel
+Short correlation length ℓ = 0.6 m: rough
+±2 SD (95%)
+prior mean 6 MPa
+Cone resistance qc (MPa)
+Distance along the site (m)
+# right panel
+Long correlation length ℓ = 2.5 m: smooth
+±2 SD (95%)
+prior mean 6 MPa
+Cone resistance qc (MPa)
+Distance along the site (m)

@@ -1,0 +1,51 @@
+Figure 3 (nf-snd-denoise): a background noise-reduction algorithm.
+Generator: tools/numfig/snd_denoise.py
+
+SIGNALS
+  sampling 16000 Hz, 1.6 s (25600 samples)
+  speech audio: harmonics k f0(t) of a gliding pitch, amplitude (1/k) times the vocal
+  tract's resonances at the current formants, times the syllable envelope; fricatives are
+  band-passed noise (4th order Butterworth, forward and backward)
+    pitch f0: 117.5 to 210.8 Hz
+    syllable 0.10 to 0.42 s: vowel u to a, formants [300, 870, 2240, 3300] to [730, 1090, 2440, 3400] Hz
+    syllable 0.56 to 0.84 s: vowel e to e, formants [530, 1840, 2480, 3500] to [530, 1840, 2480, 3500] Hz
+    syllable 0.95 to 1.19 s: vowel i to i, formants [270, 2290, 3010, 3700] to [270, 2290, 3010, 3700] Hz
+    syllable 1.33 to 1.55 s: vowel o to u, formants [570, 840, 2410, 3400] to [300, 870, 2240, 3300] Hz
+    fricative 0.440 to 0.545 s: band 3800 to 7600 Hz
+    fricative 1.215 to 1.315 s: band 2000 to 6000 Hz
+    formant bandwidths [90.0, 110.0, 160.0, 220.0] Hz
+  background noise: pink (amplitude spectrum 1/sqrt(f) above 20 Hz), numpy default_rng(8)
+  audio mixing: x = speech + noise, SNR = 10 log10(sum s^2 / sum n^2) = 10.0000 dB
+  visual transformation representation: STFT, Hann 512 samples (32 ms), hop 128 (8 ms);
+    257 frequencies (0 to 8000 Hz, 31.25 Hz apart) by 201 frames; |X| in dB
+    of the mixed audio's largest value, 60 dB shown, one scale for both pictures
+
+CHECKS
+  1. The transform is linear: max |X_mix - X_speech - X_noise| / max |X_mix| = 1.5e-16;
+     mixing adds the signals, and their transforms add (their magnitudes do not)
+  2. The picture keeps the signal: the inverse STFT gives the mixed audio back to 4.4e-16 (Hann at 75 % overlap sums to a constant)
+  3. The speech picture's harmonics are the synthesised pitch: in 34 voiced frames the
+     harmonic sum's best pitch is within 0.28 % (median), 0.90 % (worst) of f0 at the frame's centre
+  4. The vowel i at 1.072 s (formants 270, 2290 Hz; f0 = 151.2 Hz): with the source's
+     1/k undone, the strongest harmonic below 1 kHz is at 302 Hz and between 1.5 and
+     3.5 kHz at 2267 Hz: the harmonics nearest F1 and F2 are 302 and 2267 Hz
+  5. The noise is pink: its power spectrum (Welch) falls -3.01 dB per octave (pink: -3.01)
+  6. The pictures: the mixed audio's spectrogram spans -97 to 0 dB; the speech audio's silences are exactly zero, so its floor is white
+
+THE MODEL BOX
+  His caption: the VAE, trained on pairs made this way, estimates the clean spectrogram.
+  The picture on its right is what his lower path computes, the speech audio's own
+  spectrogram: the target the network learns to reproduce. No trained network is claimed:
+  the VAE is a block (encoder, latent z, decoder) with no output of its own. A Wiener mask
+  or spectral subtraction would be a different algorithm from the one his caption names;
+  drawing its output under the VAE's name would say something that is not true.
+
+DISPLAY
+  a cursor sweeps the 1.6 s in real time; the waveforms are drawn up to it (each column's
+  minimum and maximum), and each spectrogram column appears when its window's centre
+  has passed; then the picture rests and the sweep starts again.
+
+OVERLAP (engine.js ?overlap, through common.overlaps)
+  the poster and every 0.1 s from 0.1 to 4.6 s (47 moments, the intro
+  and a whole loop of the motion): no label meets another, no stroke crosses a label;
+  nothing is excused (common.still is called with no allow list).

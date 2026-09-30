@@ -1,0 +1,37 @@
+<section class="slide">
+ <style>
+  .ptab td{padding-top:14px;padding-bottom:14px}
+  .pis{margin-top:30px}
+  .pis .eq{font-size:30px;line-height:1.5}
+  .pis .ps{margin-top:16px}
+ </style>
+ <header class="head">
+  <h1 class="title">Markov chains (2): the same calculation, year after year</h1>
+  <p class="lede">Writing the rules as a table <m>P</m> lets us repeat the tree calculation for any number of years with one line: <m>π(next) = π(now) × P</m>.</p>
+ </header>
+ <main class="body g">
+  <div class="s5">
+   <table class="tab ptab">
+    <colgroup><col style="width:31%"><col style="width:21%"><col style="width:27%"><col style="width:21%"></colgroup>
+    <thead><tr><th>From / to</th><th>Good</th><th>Degraded</th><th>Failed</th></tr></thead>
+    <tbody>
+     <tr><td>Good</td><td>0.8</td><td>0.2</td><td>0</td></tr>
+     <tr><td>Degraded</td><td>0</td><td>0.7</td><td>0.3</td></tr>
+     <tr><td>Failed</td><td>0</td><td>0</td><td>1</td></tr>
+    </tbody>
+   </table>
+   <div class="pis">
+    <p class="eq">Start Good:&ensp;<m>π₀ = [1, 0, 0]</m></p>
+    <p class="eq c-navy"><m>π₁ = π₀P = [0.80, 0.20, 0]</m></p>
+    <p class="eq c-accent"><m>π₂ = π₁P = [0.64, 0.30, 0.06]</m></p>
+    <p class="eq c-blue"><m>π₁₀ = [0.11, 0.16, 0.73]</m></p>
+    <p class="ps">Each vertical slice of the chart is one <m>π</m>. At year 2 it reads 64 / 30 / 6%, the tree result.</p>
+   </div>
+  </div>
+  <div data-fig="shares" class="s7 o6"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">The chart is the tree calculation repeated each year: without repair, 73% of sections fail within 10 years.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: state transitions</span><span class="src">Sources: [4], [36]</span><span class="num">54</span></p>
+ </footer>
+</section>

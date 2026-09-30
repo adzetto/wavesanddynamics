@@ -12,6 +12,7 @@ same caption underneath. Sixteen of the corpus's pictures live in cells and were
 unreachable until this task, so every rule the body already had has to reach
 them too.
 """
+
 from conftest import para, picture
 
 from tools.ricos.blocks import Callout, Figure, Para, Table
@@ -32,11 +33,14 @@ def _span_cell(content, n):
 
 
 def _table(rows):
-    body = "".join("<w:tr>" + "".join(_cell(c) for c in row) + "</w:tr>" for row in rows)
+    body = "".join(
+        "<w:tr>" + "".join(_cell(c) for c in row) + "</w:tr>" for row in rows
+    )
     return f"<w:tbl>{body}</w:tbl>"
 
 
 # --- the shape rule -------------------------------------------------------
+
 
 def test_one_cell_table_becomes_callout(docx_factory):
     blocks = read_blocks(docx_factory(_table([["How to use this guide"]])))
@@ -70,15 +74,23 @@ def test_a_single_row_of_many_cells_is_a_table_not_a_callout(docx_factory):
 
 
 def test_header_row_when_every_cell_of_the_first_row_is_bold(docx_factory):
-    body = _table([[para("Category", bold=True), para("Schematic figure", bold=True)],
-                   ["Structural dynamics", "Bridge vibration"]])
+    body = _table(
+        [
+            [para("Category", bold=True), para("Schematic figure", bold=True)],
+            ["Structural dynamics", "Bridge vibration"],
+        ]
+    )
     blocks = read_blocks(docx_factory(body))
     assert blocks[0].header_row is True
 
 
 def test_no_header_row_when_one_cell_of_the_first_row_is_plain(docx_factory):
-    body = _table([[para("Category", bold=True), "Schematic figure"],
-                   ["Structural dynamics", "Bridge vibration"]])
+    body = _table(
+        [
+            [para("Category", bold=True), "Schematic figure"],
+            ["Structural dynamics", "Bridge vibration"],
+        ]
+    )
     blocks = read_blocks(docx_factory(body))
     assert blocks[0].header_row is False
 
@@ -89,14 +101,21 @@ def test_an_empty_cell_does_not_veto_a_header_row(docx_factory):
     An empty cell carries no evidence either way, whether the author left it
     empty or flattening a merged cell put it there.
     """
-    body = _table([["", para("Predicted Positive", bold=True),
-                    para("Predicted Negative", bold=True)],
-                   [para("Actual Positive", bold=True), "5", "2"]])
+    body = _table(
+        [
+            [
+                "",
+                para("Predicted Positive", bold=True),
+                para("Predicted Negative", bold=True),
+            ],
+            [para("Actual Positive", bold=True), "5", "2"],
+        ]
+    )
     assert read_blocks(docx_factory(body))[0].header_row is True
 
 
 def test_a_first_row_of_nothing_but_empty_cells_is_not_a_header_row(docx_factory):
-    """"Every cell that speaks is bold" must not pass a row that says nothing."""
+    """ "Every cell that speaks is bold" must not pass a row that says nothing."""
     body = _table([["", ""], ["Ada", "Eng"]])
     assert read_blocks(docx_factory(body))[0].header_row is False
 
@@ -106,8 +125,10 @@ def test_a_bold_blank_does_not_make_a_cell_count_as_bold(docx_factory):
 
     The cell speaks, so it is consulted, and what it says is not bold.
     """
-    cell = ('<w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve"> </w:t></w:r>'
-            "<w:r><w:t>Category</w:t></w:r></w:p>")
+    cell = (
+        '<w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve"> </w:t></w:r>'
+        "<w:r><w:t>Category</w:t></w:r></w:p>"
+    )
     blocks = read_blocks(docx_factory(_table([[cell], ["Ada"]])))
     assert blocks[0].header_row is False
 
@@ -120,6 +141,7 @@ def test_bold_switched_off_does_not_make_a_header_row(docx_factory):
 
 
 # --- every row the same length ---------------------------------------------
+
 
 def test_a_merged_cell_becomes_the_columns_it_covers(docx_factory):
     """Ricos has rows of cells and no reliable colspan, so a span is flattened."""
@@ -176,9 +198,12 @@ def test_empty_cell_still_contributes_a_block(docx_factory):
 
 def test_table_of_contents_is_still_skipped(docx_factory, para_factory):
     """Word's generated ToC is a w:sdt, and walking every body child now reaches it."""
-    toc = ("<w:sdt><w:sdtPr/><w:sdtContent>"
-           + para_factory("Table of Contents") + para_factory("1. What is ML?")
-           + "</w:sdtContent></w:sdt>")
+    toc = (
+        "<w:sdt><w:sdtPr/><w:sdtContent>"
+        + para_factory("Table of Contents")
+        + para_factory("1. What is ML?")
+        + "</w:sdtContent></w:sdt>"
+    )
     blocks = read_blocks(docx_factory(toc + para_factory("body")))
     assert [type(b).__name__ for b in blocks] == ["Para"]
     assert blocks[0].runs[0].text == "body"
@@ -192,6 +217,7 @@ def test_line_break_in_a_cell_reads_as_a_newline(docx_factory):
 
 
 # --- a cell is a document in miniature ------------------------------------
+
 
 def test_reads_a_picture_inside_a_cell(docx_factory):
     """Sixteen pictures in the corpus live in cells; none was reachable before."""
@@ -210,9 +236,11 @@ def test_keeps_prose_written_around_a_picture_in_a_cell(docx_factory):
     was anchored in; emitting the picture *instead of* the paragraph would drop
     the sentence, and in this cell that is 541 characters of real prose.
     """
-    cell = ("<w:p><w:r><w:t>Acoustic emission-based monitoring: </w:t></w:r>"
-            + picture()
-            + "<w:r><w:t>sensors listen for cracking.</w:t></w:r></w:p>")
+    cell = (
+        "<w:p><w:r><w:t>Acoustic emission-based monitoring: </w:t></w:r>"
+        + picture()
+        + "<w:r><w:t>sensors listen for cracking.</w:t></w:r></w:p>"
+    )
     blocks = read_blocks(docx_factory(_table([[cell, "other"]])))
     cell_blocks = blocks[0].rows[0][0]
     assert [type(b) for b in cell_blocks] == [Figure, Para]
@@ -240,10 +268,14 @@ def test_a_caption_never_reaches_back_into_the_cell_before_it(docx_factory):
 
 
 def test_a_caption_after_a_table_is_not_the_caption_of_a_picture_before_it(
-        docx_factory):
+    docx_factory,
+):
     """A table between the two breaks the adjacency the pairing rule relies on."""
-    body = (f"<w:p>{picture()}</w:p>" + _table([["a", "b"]])
-            + para("Figure 3. Bridge vibration."))
+    body = (
+        f"<w:p>{picture()}</w:p>"
+        + _table([["a", "b"]])
+        + para("Figure 3. Bridge vibration.")
+    )
     blocks = read_blocks(docx_factory(body))
     assert [type(b) for b in blocks] == [Figure, Table, Para]
     assert blocks[0].caption == ""
@@ -256,10 +288,12 @@ def test_numbers_figures_inside_tables_in_reading_order(docx_factory):
     pictures count on around it, and nothing anywhere reports the collision.
     """
     pic_cell = f"<w:p>{picture()}</w:p>"
-    body = (f"<w:p>{picture()}</w:p>"
-            + _table([[pic_cell, "b"], ["c", pic_cell]])
-            + _table([[pic_cell]])
-            + f"<w:p>{picture()}</w:p>")
+    body = (
+        f"<w:p>{picture()}</w:p>"
+        + _table([[pic_cell, "b"], ["c", pic_cell]])
+        + _table([[pic_cell]])
+        + f"<w:p>{picture()}</w:p>"
+    )
     blocks = read_blocks(docx_factory(body))
     table, callout = blocks[1], blocks[2]
     assert [b.number for b in blocks if isinstance(b, Figure)] == [1, 5]
@@ -280,3 +314,18 @@ def test_nested_table_is_flattened_into_the_cell(docx_factory):
     cell_blocks = blocks[0].rows[0][0]
     assert all(isinstance(b, Para) for b in cell_blocks)
     assert [b.runs[0].text for b in cell_blocks] == ["outer", "inner a", "inner b"]
+
+
+def test_a_nested_tables_empty_cells_leave_no_blank_paragraphs_behind(docx_factory):
+    """The placeholder that keeps a grid rectangular belongs to the outer
+    cell. Flattening an inner table used to inject one for every empty inner
+    cell, and the outer cell then emitted each as a blank line."""
+    inner = _table([["inner a", ""], ["", "inner d"]])
+    body = _table([[f"{para('outer')}{inner}", "right"]])
+    cell_blocks = read_blocks(docx_factory(body))[0].rows[0][0]
+    assert [b.runs[0].text for b in cell_blocks] == ["outer", "inner a", "inner d"]
+
+
+def test_a_cell_holding_only_an_empty_nested_table_keeps_one_placeholder(docx_factory):
+    body = _table([[_table([["", ""]]), "right"]])
+    assert read_blocks(docx_factory(body))[0].rows[0][0] == [Para()]

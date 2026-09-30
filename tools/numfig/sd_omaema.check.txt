@@ -1,0 +1,67 @@
+Figure 2 (nf-sd-omaema): OMA and EMA workflow
+generator: tools/numfig/sd_omaema.py
+
+MODEL
+  shear frame, 3 floors, rigid floor slabs: m = 25 t each floor, k = 9.5 MN/m each
+  storey, damping 2 % in every mode (C = M Phi diag(2 zeta w) Phi^T M)
+  natural frequencies (eigenvalues of K, M) against the closed form of a uniform shear building,
+  w_n = 2 sqrt(k/m) sin((2n - 1) pi / (2(2N + 1))), N = 3:
+    f_1 = 1.380743 Hz, closed form 1.380743 Hz (+8.9e-16)
+    f_2 = 3.868755 Hz, closed form 3.868755 Hz (+0.0e+00)
+    f_3 = 5.590514 Hz, closed form 5.590514 Hz (+0.0e+00)
+  mode shapes (roof = 1): 0.4450, 0.8019, 1.0000; -1.2470, -0.5550, 1.0000; 1.8019, -2.2470, 1.0000
+
+OMA (top row): output only
+  ambient force: independent white noise on the 3 floors, 100 N rms, samples at 40 Hz,
+  linear between them; response by the exact first order hold discretization (scipy lsim)
+  record 2 h at 40 Hz, three floor accelerations (seed 6)
+  spectrum: Welch, Hann, 4096 samples (102.4 s, df = 0.0098 Hz), half overlap, 139 averages;
+  the 3 x 3 output spectral matrix, its first singular value s1(f) (frequency domain decomposition)
+  the plot builds up through 1, 2, 4, 8, 16, 32, 64, 139 averages (the record so far)
+  identification: covariance driven stochastic subspace identification, order 6, 30 block rows
+    mode 1: f = 1.38045 Hz (-0.29 mHz, -2.1e-04), zeta = 2.03 %, MAC with the model's shape 1.00000
+    mode 2: f = 3.86717 Hz (-1.59 mHz, -4.1e-04), zeta = 1.97 %, MAC with the model's shape 1.00000
+    mode 3: f = 5.59048 Hz (-0.03 mHz, -5.5e-06), zeta = 2.08 %, MAC with the model's shape 0.99999
+  CHECK: the same identification on 8 records of 2 h (seeds 0 to 7, this one among them):
+    the frequencies scatter 0.9, 1.3, 2.5 mHz rms about the model's (modes 1, 2, 3), largest error 1.7, 2.1, 3.7 mHz;
+    this record's errors are within that scatter, and the two decimals the figure prints hold for 8 of the 8 records
+
+EMA (bottom row): input and output
+  a shaker on the roof: linear sine sweep 0.4 to 7 Hz in 12 s, cosine tapered 0.4 s at both ends,
+  2 kN; simulated from rest at 400 Hz (first order hold, exact), recorded 200 s
+  frequency response a3/F: the transforms of the roof acceleration and the force, divided
+  CHECK: against the exact accelerance -w^2 (K - w^2 M + i w C)^-1 over 0.55 to 6.85 Hz:
+    largest difference 2.9e-04 of its largest value
+  modal parameters: a driving point model of 3 modes, -w^2 sum a_r / (w_r^2 - w^2 + 2i zeta_r w_r w),
+  fitted by least squares (start: the mobility's peaks and half power widths);
+  largest misfit 1.4e-05
+    mode 1: f = 1.380743 Hz (-2.3e-08), zeta = 2.0000 %, MAC (residues of the three floors) 1.0000000
+    mode 2: f = 3.868754 Hz (-2.6e-07), zeta = 2.0000 %, MAC (residues of the three floors) 1.0000000
+    mode 3: f = 5.590511 Hz (-5.3e-07), zeta = 2.0000 %, MAC (residues of the three floors) 1.0000000
+  (peak picking alone would read 1.380, 3.875, 5.630 Hz: at 2 % damping the modes' tails move the peaks)
+
+BOTH FIND THE SAME FREQUENCIES (as the figure prints them, two decimals)
+  model 1.38, 3.87, 5.59 Hz; OMA 1.38, 3.87, 5.59 Hz; EMA 1.38, 3.87, 5.59 Hz
+
+THE PAGE
+  one loop of 22 s, both rows periodic (seamless): the steady state of the loop's forces, the
+  period simulated 8 times from rest at 120 Hz, kept at 60 Hz; against 16 periods: largest difference 6.0e-13
+  top row: another realization (seed 11) of the same ambient process, a 8 s window scrolling in real time;
+    the spectrum builds up once, over the first 5.6 s, then the modes are marked
+  bottom row: the sweep from loop time 7 s, in real time; a3/F drawn as the sweep passes each
+    frequency; a mode is marked once the sweep has passed its half power band and the cursor its value
+  frames drawn 30 units a storey; sway x 38 units/mm (top: ambient), x 3.0 units/mm (bottom: the sweep)
+  the traces are scaled to their largest values: ambient force 362 N, accelerations 33.3 mm/s^2 (top), roof 0.468 m/s^2 (bottom)
+  poster (printed frame) at t = 21.6 s: both rows complete, the sweep just over
+
+THE PAGE'S OWN MOTION (evaluated in the browser)
+  the frames' sway: the page's Catmull-Rom interpolation of its 60 Hz samples, half way between them,
+  against the simulation's 120 Hz samples there (both rows, all floors, the first 21.7 s):
+  largest difference 0.007 drawing units (the sway reaches 7 and 9 units)
+  the page's sweep formula against this generator's, every 13 ms: largest difference 1.1e-16 (amplitude 1)
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.1 s from 0.1 to 44.6 s (two loops, 447 moments): nothing collides
+  no knockout is relied on and nothing is allowed (still(allow=()))

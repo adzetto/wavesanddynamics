@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s024-pic1.png)
+95% prediction interval
+95% confidence interval for mean
+Daily trips
+Persons per household

@@ -1,0 +1,26 @@
+nf-mlb-activation: Figure 16, the three most common activation functions
+
+MODEL
+  ReLU(z) = max(0, z); sigmoid(z) = 1 / (1 + e^-z); tanh(z). Closed forms,
+  sampled at 337 points on z in [-4.2, 4.2] (step 0.0250).
+
+CHECK 1: values the text states
+  sigmoid(0) = 0.500000000000000 (0.5), tanh(0) = 0.0e+00 (centred at 0)
+  sigmoid range on the grid: [0.01477, 0.98523] inside (0, 1)
+  tanh range on the grid:    [-0.99955, 0.99955] inside (-1, 1)
+  ReLU: max |ReLU(z) - z| for z >= 0 = 0.0e+00, max |ReLU(z)| for z < 0 = 0.0e+00
+
+CHECK 2: identities (closed form against closed form)
+  tanh(z) = 2 sigmoid(2z) - 1:   max error 3.3e-16
+  sigmoid(-z) = 1 - sigmoid(z):  max error 2.2e-16
+  ReLU(z) = (z + |z|)/2:         max error 0.0e+00
+
+CHECK 3: slopes at 0 by central differences against 1/4 and 1
+  sigmoid'(0) = 0.2500000000 (0.25, error 6.7e-12); tanh'(0) = 1.0000000000 (1, error 3.3e-11)
+
+CHECK 4: sampling. The largest gap between the curve and its polyline,
+  in drawing units at the page's scale (plot 196 high):
+  sigmoid  0.0012 units
+  tanh     0.0049 units
+
+MOTION: z(t) = 3.6 sin(2 pi t / 7 s) after an eased start; whole periods, seamless.

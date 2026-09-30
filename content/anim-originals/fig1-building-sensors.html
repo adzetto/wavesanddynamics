@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 1: Example of a building's dynamic response</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #bdbdbd;background:#fff;color:#333;
+  font:12px/1 Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button:focus-visible{outline:2px solid #2b5f9e;outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Animation of a building vibrating with sensors along its height. The measured total vibration equals the 1st vibration mode plus the 2nd vibration mode plus higher modes, each oscillating at its own frequency."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation">&#8634;</button></div>
+</div>
+<script>
+const W = 1000, H = 470;
+/* ---- shared engine: canvas scaling, play/pause, restart, offscreen pause ---- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const SANS = 'Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const SERIF = '"Cambria Math", Cambria, "STIX Two Text", "Times New Roman", serif';
+let t = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, visible = true, last = null;
+cv.style.aspectRatio = W + ' / ' + H;
+
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  render();
+}
+function render() { ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); draw(); }
+
+const pp = document.getElementById('pp');
+function setPlay(p) { playing = p; pp.textContent = p ? '\u275A\u275A' : '\u25B6'; pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation'); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => { e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); render(); });
+cv.addEventListener('click', () => setPlay(!playing));
+
+new ResizeObserver(fit).observe(cv);
+new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---- drawing helpers ---- */
+function txt(s, x, y, o = {}) {
+  const { size = 14, bold = false, italic = false, color = '#000', align = 'left', font = SANS, base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${font}`;
+  ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot); ctx.fillText(s, 0, 0); ctx.restore();
+}
+function line(x1, y1, x2, y2, color = '#000', lw = 1.5, dash = null) {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+function head(x, y, ang, size, color) {
+  ctx.save(); ctx.fillStyle = color; ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.42); ctx.lineTo(-size, size * 0.42); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = '#000', lw = 1.5, size = 9, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  line(x1 + (both ? Math.cos(a) * size * 0.8 : 0), y1 + (both ? Math.sin(a) * size * 0.8 : 0),
+       x2 - Math.cos(a) * size * 0.8, y2 - Math.sin(a) * size * 0.8, color, lw, dash);
+  head(x2, y2, a, size, color); if (both) head(x1, y1, a + Math.PI, size, color);
+}
+function poly(pts, color = '#000', lw = 1.5, dash = null, alpha = 1) {
+  if (!pts.length) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); ctx.restore();
+}
+/* pinned support: circle on top of a triangle, with a ground line */
+function pin(x, y, s = 1, color = '#000') {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(x, y + 5 * s); ctx.lineTo(x - 10 * s, y + 20 * s); ctx.lineTo(x + 10 * s, y + 20 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 14 * s, y + 20 * s); ctx.lineTo(x + 14 * s, y + 20 * s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 5 * s, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+/* math text: letters italic, "_d" gives a subscript digit */
+function mtext(s, x, y, size = 18, align = 'center', color = '#000') {
+  const segs = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/[a-zA-Z]/.test(c) && s[i + 1] === '_') { segs.push({ t: c, it: 1 }); segs.push({ t: s[i + 2], sub: 1 }); i += 2; }
+    else if (/[a-zA-Z\u1E8B\u1E8D]/.test(c)) segs.push({ t: c, it: 1 });
+    else segs.push({ t: c });
+  }
+  const fontOf = g => `${g.it ? 'italic ' : ''}${g.sub ? size * 0.68 : size}px ${SERIF}`;
+  let wsum = 0; for (const g of segs) { ctx.font = fontOf(g); g.w = ctx.measureText(g.t).width; wsum += g.w; }
+  let cx = align === 'center' ? x - wsum / 2 : align === 'right' ? x - wsum : x;
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  for (const g of segs) { ctx.font = fontOf(g); ctx.fillText(g.t, cx, y + (g.sub ? size * 0.28 : 0)); cx += g.w; }
+  ctx.restore();
+}
+/* ordinal like 1st: number plus raised suffix */
+function ord(n, suf, rest, x, y, o = {}) {
+  const { size = 16, bold = false, align = 'center', color = '#000' } = o;
+  const f = s => `${bold ? 'bold ' : ''}${s}px ${SANS}`;
+  ctx.save(); ctx.font = f(size); const w1 = ctx.measureText(n).width, w3 = ctx.measureText(rest).width;
+  ctx.font = f(size * 0.62); const w2 = ctx.measureText(suf).width;
+  const wt = w1 + w2 + w3; let cx = align === 'center' ? x - wt / 2 : align === 'right' ? x - wt : x;
+  ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = f(size); ctx.fillText(n, cx, y); cx += w1;
+  ctx.font = f(size * 0.62); ctx.fillText(suf, cx, y - size * 0.4); cx += w2;
+  ctx.font = f(size); ctx.fillText(rest, cx, y); ctx.restore();
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+
+
+
+/* cantilever mode shapes (fixed base); frequencies in the ratio 1 : 3 : 5, typical for buildings */
+const GY = 445, TOPY = 115, HB = GY - TOPY, BW = 130;
+const W1 = 2 * Math.PI / 2.6;
+const BETA = [1.87510, 4.69409, 7.85476], SIG = [0.734096, 1.018467, 0.999224];
+const rawPhi = (n, xi) => { const b = BETA[n - 1] * xi; return Math.cosh(b) - Math.cos(b) - SIG[n - 1] * (Math.sinh(b) - Math.sin(b)); };
+const NORM = [1, 2, 3].map(n => { let m = 0; for (let i = 0; i <= 200; i++) m = Math.max(m, Math.abs(rawPhi(n, i / 200))); return m * Math.sign(rawPhi(n, 1)); });
+const phi = (n, xi) => rawPhi(n, xi) / NORM[n - 1];
+const AMPS = [1, 0.4, 0.15], PH = [0, 0.9, 2.1];
+const SENS = [0.955, 0.73, 0.5, 0.27, 0.03];
+
+function outline(cx, u, o = {}) {
+  const { color = '#000', lw = 2, dash = null } = o, N = 60, L = [], R = [];
+  for (let i = 0; i <= N; i++) { const xi = i / N, y = GY - HB * xi, d = u(xi); L.push([cx - BW / 2 + d, y]); R.push([cx + BW / 2 + d, y]); }
+  poly(L, color, lw, dash); poly(R, color, lw, dash);
+  line(cx - BW / 2 + u(1), TOPY, cx + BW / 2 + u(1), TOPY, color, lw, dash);
+}
+function draw() {
+  const c1 = 175, c2 = 468, c3 = 800;
+  txt('Vibration of', c1, 42, { size: 19, bold: true, align: 'center' });
+  txt('structure', c1, 72, { size: 19, bold: true, align: 'center' });
+  ord('1', 'st', ' vibration mode', c2, 42, { size: 19, bold: true });
+  txt('shape and frequency', c2, 72, { size: 19, bold: true, align: 'center' });
+  ord('2', 'nd', ' vibration mode', c3, 42, { size: 19, bold: true });
+  txt('shape and frequency', c3, 72, { size: 19, bold: true, align: 'center' });
+  line(70, GY, 905, GY, '#000', 2.4);
+
+  // total vibration
+  const ut = xi => 28 * AMPS.reduce((s, a, k) => s + a * phi(k + 1, xi) * Math.cos((2 * k + 1) * W1 * t + PH[k]), 0);
+  outline(c1, ut);
+  const sq = SENS.map(xi => [c1 + 12 + ut(xi), GY - HB * xi]);
+  sq.forEach(([x, y]) => { ctx.fillStyle = '#000'; ctx.fillRect(x - 10, Math.min(y - 10, GY - 20), 20, 20); });
+  const lx = c1 - 44 + ut(0.45), ly = GY - HB * 0.45;
+  txt('Sensors', lx, ly, { size: 16, rot: -Math.PI / 2, align: 'center', base: 'middle' });
+  sq.forEach(([x, y]) => { const sy = ly + (y - ly) * 0.62; arrow(lx + 10 + (ut(0.45) * 0), sy, x - 13, Math.min(y, GY - 10), { lw: 1, size: 6 }); });
+  line(292, 262, 318, 262, '#000', 4); line(292, 273, 318, 273, '#000', 4);
+
+  // 1st mode
+  const a1 = 58;
+  outline(c2, xi => a1 * phi(1, xi), { color: '#000', lw: 1.3, dash: [5, 5] });
+  outline(c2, xi => -a1 * phi(1, xi), { color: '#000', lw: 1.3, dash: [5, 5] });
+  outline(c2, xi => a1 * phi(1, xi) * Math.cos(W1 * t));
+  arrow(c2 - 22, 98, c2 + 22, 98, { both: true, lw: 1.4, size: 7 });
+  line(612, 270, 634, 270, '#000', 4.5); line(623, 259, 623, 281, '#000', 4.5);
+
+  // 2nd mode
+  const a2 = 40;
+  outline(c3, xi => a2 * phi(2, xi), { color: '#000', lw: 1.3, dash: [5, 5] });
+  outline(c3, xi => -a2 * phi(2, xi), { color: '#000', lw: 1.3, dash: [5, 5] });
+  outline(c3, xi => a2 * phi(2, xi) * Math.cos(3 * W1 * t));
+  arrow(c3 - 22, 98, c3 + 22, 98, { both: true, lw: 1.4, size: 7 });
+  line(935, 275, 957, 275, '#000', 4.5); line(946, 264, 946, 286, '#000', 4.5);
+  txt('Higher', 948, 196, { size: 17, bold: true, align: 'center' });
+  txt('modes', 948, 218, { size: 17, bold: true, align: 'center' });
+  txt('\u2026', 948, 242, { size: 20, bold: true, align: 'center' });
+}
+
+setPlay(playing); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+nf-wt-string: the fun table, 'Vibrating string' (image3)
+
+MODEL
+  ideal string, fixed ends: L = 0.648 m (guitar scale), tension T = 72.0 N, tuned to E4 f1 = 329.63 Hz,
+  so mu = T / (2 L f1)^2 = 0.3945 g/m (a plain steel string of 0.25 mm: 0.3978 g/m);
+  wave speed c = sqrt(T/mu) = 427.20 m/s. Mode 2: w = A sin(2 pi x/L) cos(w2 t), f2 = 659.26 Hz.
+
+CHECK 1: natural frequencies, finite differences (T w'' = -mu w^2 w, fixed ends) against n c / 2L
+    50 intervals: f1 = 329.5758 Hz (-1.6e-04), f2 = 658.8263 Hz (-6.6e-04), f3 = 987.4267 Hz (-1.5e-03)
+   200 intervals: f1 = 329.6266 Hz (-1.0e-05), f2 = 659.2329 Hz (-4.1e-05), f3 = 988.7985 Hz (-9.3e-05)
+   800 intervals: f1 = 329.6298 Hz (-6.4e-07), f2 = 659.2583 Hz (-2.6e-06), f3 = 988.8843 Hz (-5.8e-06)
+  second order convergence to f_n = n f1, as the central difference must.
+
+CHECK 2: the standing wave is the sum of two travelling waves (d'Alembert)
+  max |sin(kx) cos(wt) - [sin(kx - wt) + sin(kx + wt)]/2| over a period = 5.6e-16
+  and each travelling wave moves at w/k = 427.20 m/s = c: the dispersion relation of the string.
+
+DRAWING
+  string 0.648 m = 800 units; amplitude drawn 112 units (a real amplitude of 1.4 mm drawn x 65).
+  time slowed 1000 x: mode 2 (659.3 Hz) shows at 0.659 Hz, a seamless loop of one period, 1.517 s.

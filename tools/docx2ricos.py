@@ -22,6 +22,7 @@ The exit status reports; it does not pass judgement:
     2  a document could not be converted. This is the only status that means
        the tool did not do its job, and the run names the file and the error.
 """
+
 import glob
 import json
 import os
@@ -38,14 +39,18 @@ import zipfile
 # removing this would still not import. One entry causes both faults, so it is
 # replaced rather than added to. Run as `python -m tools.docx2ricos`, or
 # imported by a test, sys.path[0] is something else and is left alone.
-if sys.path and os.path.abspath(sys.path[0]) == os.path.dirname(os.path.abspath(__file__)):
+if sys.path and os.path.abspath(sys.path[0]) == os.path.dirname(
+    os.path.abspath(__file__)
+):
     sys.path[0] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from lxml import etree
+from PIL import Image
 
-from tools.ricos.blocks import Callout, Figure, Para, Table, walk
-from tools.ricos.docx_read import read_blocks
-from tools.ricos.emit import emit
+from tools.ricos.blocks import Callout, Figure, Para, Rule, Table, walk
+from tools.ricos.docx_read import crop_box, read_blocks, text_width
+from tools.ricos.emit import color_on_page, emit
+from tools.ricos.glyphs import UNMAPPED
 from tools.ricos.split import LIMIT, doc_bytes, pack, split_at_headings
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -54,6 +59,9 @@ OUT = os.path.join(HERE, "build", "ricos")
 SOURCE = os.path.join(HERE, "content", "source")
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+M = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
+MC = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+OFFICE = "{urn:schemas-microsoft-com:office:office}"
 DRAW = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
@@ -64,13 +72,19 @@ REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 # a person. The manifest is keyed on the singular.
 GRAPHIC_KIND = {
     "http://schemas.openxmlformats.org/drawingml/2006/picture": ("picture", "pictures"),
-    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape":
-        ("shape", "shapes"),
+    "http://schemas.microsoft.com/office/word/2010/wordprocessingShape": (
+        "shape",
+        "shapes",
+    ),
     "http://schemas.openxmlformats.org/drawingml/2006/chart": ("chart", "charts"),
-    "http://schemas.openxmlformats.org/drawingml/2006/diagram":
-        ("SmartArt", "SmartArt graphics"),
-    "http://schemas.openxmlformats.org/drawingml/2006/table":
-        ("drawing table", "drawing tables"),
+    "http://schemas.openxmlformats.org/drawingml/2006/diagram": (
+        "SmartArt",
+        "SmartArt graphics",
+    ),
+    "http://schemas.openxmlformats.org/drawingml/2006/table": (
+        "drawing table",
+        "drawing tables",
+    ),
 }
 UNNAMED_KIND = ("other", "of other kinds")
 KIND_PLURAL = dict([*GRAPHIC_KIND.values(), UNNAMED_KIND])
@@ -95,7 +109,8 @@ def slugify(name):
     if not slug:
         raise ValueError(
             "the file name leaves no output directory name behind - nothing in "
-            "it is an ASCII letter or digit. Rename the file to convert it")
+            "it is an ASCII letter or digit. Rename the file to convert it"
+        )
     return slug
 
 
@@ -122,7 +137,7 @@ def colliding_slugs(paths):
 
 
 def _n(count, noun, plural=None):
-    """"1 drawing" or "2 drawings". The report is read by a person.
+    """ "1 drawing" or "2 drawings". The report is read by a person.
 
     `plural` is for the nouns the "s" rule gets wrong. The kinds of drawing are
     where that happens: "SmartArt" and "other" both come out of it as something
@@ -171,6 +186,19 @@ def title_candidates(blocks):
     return out
 
 
+def _document_xml(path_or_root):
+    """The document part, parsed; a path is read, an element is passed through.
+
+    The counts below each want the same tree, and the ML guide's is ten
+    megabytes, so `convert` parses it once and hands it round. The tests hand
+    a path, which is the other thing this accepts.
+    """
+    if not isinstance(path_or_root, str):
+        return path_or_root
+    with zipfile.ZipFile(path_or_root) as z:
+        return etree.fromstring(z.read("word/document.xml"))
+
+
 def drawing_counts(path):
     """(drawings in the body, {kind: how many} for the ones holding no picture).
 
@@ -190,8 +218,7 @@ def drawing_counts(path):
     outside - no blip, nothing to publish - and the report has no business
     calling one a connector line because the other four were.
     """
-    with zipfile.ZipFile(path) as z:
-        root = etree.fromstring(z.read("word/document.xml"))
+    root = _document_xml(path)
     drawings = list(root.iter(W + "drawing"))
     kinds = {}
     for drawing in drawings:
@@ -202,6 +229,80 @@ def drawing_counts(path):
         kind = GRAPHIC_KIND.get(uri, UNNAMED_KIND)[0]
         kinds[kind] = kinds.get(kind, 0) + 1
     return len(drawings), kinds
+
+
+def content_counts(path):
+    """What the document holds that the page cannot hold as it is, counted
+    off the XML: equations, embedded objects, note references, text boxes.
+
+    Each is a count of what was there, beside the reader's answer to it. An
+    equation is read as linear text and counted so the owner knows which
+    paragraphs to look at; an embedded object - MathType above all, the one
+    the author is told to convert before exporting - cannot be read at all,
+    and the count is the only trace of it. Objects are keyed on their
+    `ProgID`, the way drawings are keyed on their kind, so the report can say
+    what they were rather than that they were.
+
+    A text box is counted once however many times Word wrote it: the `wps`
+    shape and its VML fallback under `mc:Fallback` are the same box.
+    """
+    root = _document_xml(path)
+    objects = {}
+    for obj in root.iter(W + "object"):
+        ole = obj.find(OFFICE + "OLEObject")
+        kind = (ole.get("ProgID") if ole is not None else None) or "other"
+        objects[kind] = objects.get(kind, 0) + 1
+    boxes = sum(
+        1
+        for b in root.iter(W + "txbxContent")
+        if not any(
+            a.tag in (MC + "Fallback", W + "txbxContent") for a in b.iterancestors()
+        )
+    )
+    return {
+        "equations": sum(1 for _ in root.iter(M + "oMath")),
+        "objects": sum(objects.values()),
+        "object_kinds": objects,
+        "footnotes": sum(1 for _ in root.iter(W + "footnoteReference"))
+        + sum(1 for _ in root.iter(W + "endnoteReference")),
+        "text_boxes": boxes,
+    }
+
+
+def run_counts(blocks):
+    """What the runs carry that the page changes or cannot hold, counted off
+    the blocks, and the colours that reach the page.
+
+    `internal_links` are links at a bookmark rather than a URL, outside the
+    contents list: 51 of the corpus's 52 are the entries of a contents list
+    the emitter drops, and the one left points at a bookmark the document
+    never declares. `strikethrough_runs` are published as plain text, since
+    Ricos has no strikethrough. `unmapped_symbols` are `w:sym` glyphs with no
+    entry in the table, written as U+FFFD so that they can be seen and
+    counted here. The colours are counted through the emitter's own rule,
+    so a heading's colour, a link's, and white text are not among them.
+    """
+    links = struck = unmapped = colored = 0
+    colors = {}
+    for block in walk(blocks):
+        if not isinstance(block, Para):
+            continue
+        for run in block.runs:
+            if run.anchor and block.role != "TOC":
+                links += 1
+            struck += run.strike
+            unmapped += run.text.count(UNMAPPED)
+            color = color_on_page(run, bool(block.heading))
+            if color:
+                colored += 1
+                colors[color] = colors.get(color, 0) + 1
+    counts = {
+        "internal_links": links,
+        "strikethrough_runs": struck,
+        "unmapped_symbols": unmapped,
+        "colored_runs": colored,
+    }
+    return counts, dict(sorted(colors.items()))
 
 
 def save_media(path, out_dir):
@@ -223,6 +324,77 @@ def save_media(path, out_dir):
                 fh.write(z.read(member))
             names.append(name)
     return names
+
+
+def crop_media(figures, out_dir):
+    """Cut each cropped picture's file to the part Word shows; return the names
+    of the files this writes beside the ones `save_media` copied.
+
+    The crop belongs to the drawing, not to the stored picture: Word keeps the
+    whole picture in the package and hides the edges where it draws it. Two
+    figures of the corpus crop - Dynamical Behavior's Figure 9 its top 18.75%,
+    a white slide title "Comprehensive Exam" and an empty band, the ML guide's
+    Figure 10 its bottom 33.7%, blank canvas - and the page showed both whole.
+
+    A file every one of whose figures crops it the same way is cut in place,
+    so its name does not change. A file also drawn whole somewhere, or cropped
+    two ways, keeps its whole self and each other crop is written as
+    `<name>-crop<k>`, the figure pointing at it. The size is read back off the
+    written file, so the part cannot disagree with it.
+    """
+    by_file = {}
+    for figure in figures:
+        if figure.filename:
+            by_file.setdefault(figure.filename, []).append(figure)
+    written = []
+    for name, users in by_file.items():
+        crops = []
+        for figure in users:
+            if figure.crop not in crops:
+                crops.append(figure.crop)
+        path = os.path.join(out_dir, name)
+        if crops == [()] or not os.path.isfile(path):
+            continue
+        stem, ext = os.path.splitext(name)
+        with Image.open(path) as im:
+            im.load()
+            whole, fmt = im.copy(), im.format
+        for k, crop in enumerate(crops):
+            if not crop:
+                continue
+            target = name if k == 0 else f"{stem}-crop{k}{ext}"
+            cut = whole.crop(crop_box(whole.width, whole.height, crop))
+            options = {"quality": 95} if fmt == "JPEG" else {}
+            cut.save(os.path.join(out_dir, target), fmt, **options)
+            if target != name:
+                written.append(target)
+            for figure in users:
+                if figure.crop == crop:
+                    figure.filename, (figure.width, figure.height) = target, cut.size
+    return written
+
+
+def _figure_entry(f):
+    """One figure in the manifest. The layout keys are written only where the
+    file says something, so a figure with nothing to add reads as it did."""
+    entry = {
+        "number": f.number,
+        "filename": f.filename,
+        "width": f.width,
+        "height": f.height,
+        "caption": f.caption,
+    }
+    if f.display_width:
+        entry["word_width"], entry["word_height"] = f.display_width, f.display_height
+    if f.crop:
+        entry["crop"] = [round(x, 5) for x in f.crop]
+    if f.inline:
+        entry["inline"] = True
+        if f.offset >= 0:
+            entry["offset"] = f.offset
+        elif f.joins:
+            entry["joins"] = f.joins
+    return entry
 
 
 def preamble_bytes(sections, media_ids=None):
@@ -275,6 +447,7 @@ def convert(path):
 
     blocks = read_blocks(path)
     media = save_media(path, os.path.join(out_dir, "figures"))
+    media += crop_media(figures_in(blocks), os.path.join(out_dir, "figures"))
     sections = split_at_headings(blocks)
     records = pack(sections)
 
@@ -284,18 +457,27 @@ def convert(path):
             json.dump(rec["doc"], fh, ensure_ascii=False)
 
     figures = list(figures_in(blocks))
-    drawings, blind_kinds = drawing_counts(path)
+    root = _document_xml(path)
+    drawings, blind_kinds = drawing_counts(root)
+    runs, colors = run_counts(blocks)
     referenced = {f.filename for f in figures if f.filename}
     manifest = {
         "source": os.path.basename(path),
         "slug": slug,
         "title_candidates": title_candidates(blocks),
-        "records": [{"part": i, "titles": r["titles"], "bytes": r["bytes"],
-                     "over_limit": r["over_limit"]}
-                    for i, r in enumerate(records, 1)],
-        "figures": [{"number": f.number, "filename": f.filename,
-                     "width": f.width, "height": f.height,
-                     "caption": f.caption} for f in figures],
+        # The width of Word's text column in CSS px, which each figure's
+        # word_width is a share of; 0 when the file does not say.
+        "text_width": text_width(root),
+        "records": [
+            {
+                "part": i,
+                "titles": r["titles"],
+                "bytes": r["bytes"],
+                "over_limit": r["over_limit"],
+            }
+            for i, r in enumerate(records, 1)
+        ],
+        "figures": [_figure_entry(f) for f in figures],
         "media_files": sorted(media),
         "unreferenced_media": sorted(set(media) - referenced),
         # Both directions, because they fail differently. A stored picture
@@ -303,6 +485,9 @@ def convert(path):
         # `figures/` does not hold is a hole on the published page, and it is
         # the direction the upload step breaks on.
         "missing_media": sorted(referenced - set(media)),
+        # Hex -> runs, for the colours that reach the page. What the next
+        # phase maps onto the site's palette, if it decides to.
+        "colors": colors,
         "counts": {
             "blocks": len(blocks),
             "figures": len(figures),
@@ -316,10 +501,14 @@ def convert(path):
             "drawings_without_picture_kinds": blind_kinds,
             "headings": sum(1 for title, _ in sections if title),
             "untitled_preamble_bytes": preamble_bytes(sections),
+            "rules": sum(1 for b in walk(blocks) if isinstance(b, Rule)),
+            **content_counts(root),
+            **runs,
         },
     }
-    with open(os.path.join(out_dir, "manifest.json"), "w",
-              encoding="utf-8", newline="\n") as fh:
+    with open(
+        os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8", newline="\n"
+    ) as fh:
         json.dump(manifest, fh, ensure_ascii=False, indent=1)
     return manifest
 
@@ -341,7 +530,8 @@ def warnings_for(manifest):
             f"{src}: {c['drawings']} drawings, {c['drawings_without_picture']} of them "
             f"with no picture, against {c['figures']} figures - the two do not add up, "
             f"so pictures are being lost or invented on the way through. This one is a "
-            f"defect in the reader, not in the document")
+            f"defect in the reader, not in the document"
+        )
     if manifest["missing_media"]:
         names = ", ".join(manifest["missing_media"])
         out.append(
@@ -349,44 +539,99 @@ def warnings_for(manifest):
             f"figures/ does not hold ({names}) - the relationship resolves to a "
             f"target outside word/media/, or to an external one, so the name went "
             f"into the part and no file went with it. There is nothing for the "
-            f"upload to send and the picture would be a hole on the page")
+            f"upload to send and the picture would be a hole on the page"
+        )
     if c["drawings_without_picture"]:
-        kinds = ", ".join(_n(n, kind, KIND_PLURAL.get(kind)) for kind, n
-                          in sorted(c["drawings_without_picture_kinds"].items()))
+        kinds = ", ".join(
+            _n(n, kind, KIND_PLURAL.get(kind))
+            for kind, n in sorted(c["drawings_without_picture_kinds"].items())
+        )
         out.append(
             f"{src}: {_n(c['drawings_without_picture'], 'drawing')} with no picture file "
             f"({kinds}) - drawn in Word, with no image part to carry over, so the drawing "
-            f"is dropped rather than lost. Redraw by hand where the page needs it")
+            f"is dropped rather than lost. Redraw by hand where the page needs it"
+        )
     if c["figures_without_file"]:
         out.append(
             f"{src}: {_n(c['figures_without_file'], 'figure')} pointing at a relationship "
-            f"the document never declares, so there is no file to publish")
+            f"the document never declares, so there is no file to publish"
+        )
     if manifest["unreferenced_media"]:
         names = ", ".join(manifest["unreferenced_media"])
         out.append(
             f"{src}: {_n(len(manifest['unreferenced_media']), 'stored picture')} anchored "
-            f"nowhere in the body ({names}) - copied to figures/ and used by no part")
+            f"nowhere in the body ({names}) - copied to figures/ and used by no part"
+        )
     if c["figures_without_caption"]:
         out.append(
             f"{src}: {c['figures_without_caption']} of {c['figures']} figures with no "
             f"caption, because the author wrote no caption line under them. An editorial "
-            f"gap in the document; the converter folds in every caption that is there")
+            f"gap in the document; the converter folds in every caption that is there"
+        )
     if c["untitled_preamble_bytes"] and not c["headings"]:
         out.append(
             f"{src}: no heading anywhere in the body, so the whole "
             f"{c['untitled_preamble_bytes']:,}-byte document is one untitled section - "
-            f"there is no heading here for a record title to be taken from")
+            f"there is no heading here for a record title to be taken from"
+        )
     elif c["untitled_preamble_bytes"]:
         out.append(
             f"{src}: {c['untitled_preamble_bytes']:,} bytes stand before the first of its "
             f"{c['headings']} headings, under none of them - a stretch of text the author "
-            f"never gave a section title, and a record with no title to be found by")
+            f"never gave a section title, and a record with no title to be found by"
+        )
+    if c["objects"]:
+        # A ProgID is a name, not a noun: "2 Equation.DSMT4", never with an "s".
+        kinds = ", ".join(
+            f"{n} {kind}" for kind, n in sorted(c["object_kinds"].items())
+        )
+        out.append(
+            f"{src}: {_n(c['objects'], 'embedded object')} ({kinds}) - an OLE object's "
+            f"content cannot be read out of the file, so nothing of it reaches the page. A "
+            f"MathType equation (Equation.DSMT4) is converted in Word first: MathType > "
+            f"Convert Equations > to OMML, and it is then read like any other equation"
+        )
+    if c["equations"]:
+        out.append(
+            f"{src}: {_n(c['equations'], 'equation')} written in Word's own format (OMML) "
+            f"read as linear text - Ricos has no equation node, so a/b, x^2 and √(k/m) "
+            f"stand for the layout. Read them on the page"
+        )
+    if c["footnotes"]:
+        out.append(
+            f"{src}: {_n(c['footnotes'], 'footnote')} - a single page has no foot, so each "
+            f"is a [n] mark in the text and a [n] paragraph after the body"
+        )
+    if c["internal_links"]:
+        verb = "points" if c["internal_links"] == 1 else "point"
+        out.append(
+            f"{src}: {_n(c['internal_links'], 'link')} {verb} inside the document, at a "
+            f"bookmark. The words are kept and the link is not: a Ricos link needs the page "
+            f"it points at, which the next phase assigns"
+        )
+    if c["strikethrough_runs"]:
+        out.append(
+            f"{src}: {_n(c['strikethrough_runs'], 'run')} struck through in Word, carried as "
+            f"a STRIKETHROUGH decoration the validator has not seen (devir notu 7.7). If it "
+            f"is refused the text is published plain: delete it in Word if it was deleted"
+        )
+    if c["unmapped_symbols"]:
+        out.append(
+            f"{src}: {_n(c['unmapped_symbols'], 'symbol character')} from a symbol font "
+            f"this tool has no glyph for, written as {UNMAPPED} so that it can be found"
+        )
+    if c["text_boxes"]:
+        out.append(
+            f"{src}: {_n(c['text_boxes'], 'text box')} - the words are kept, as paragraphs "
+            f"after the paragraph the box was anchored in; the box is not"
+        )
     for r in manifest["records"]:
         if r["over_limit"]:
             out.append(
                 f"{src}: part {r['part']:02d} is {r['bytes']:,} bytes, over the "
                 f"{LIMIT:,}-byte record limit, and was stored whole - where to cut a "
-                f"single section is an editorial decision and not this tool's to make")
+                f"single section is an editorial decision and not this tool's to make"
+            )
     return out
 
 
@@ -411,12 +656,16 @@ def main(argv):
         print("not converted - these are errors in the conversion:")
         for slug, names in sorted(clashes.items()):
             files = ", ".join(os.path.basename(n) for n in names)
-            print(f" x {files}: all convert to build/ricos/{slug}/, and each one "
-                  f"empties that directory before it writes, so only the last "
-                  f"would survive. Rename one of them")
+            print(
+                f" x {files}: all convert to build/ricos/{slug}/, and each one "
+                f"empties that directory before it writes, so only the last "
+                f"would survive. Rename one of them"
+            )
         return FAILED
-    print(f"{'document':46s} {'parts':>5s} {'largest':>9s} {'figs':>5s} {'nocap':>5s} "
-          f"{'tbl':>4s} {'call':>5s}")
+    print(
+        f"{'document':46s} {'parts':>5s} {'largest':>9s} {'figs':>5s} {'nocap':>5s} "
+        f"{'tbl':>4s} {'call':>5s}"
+    )
     findings, failures = [], []
     for path in paths:
         try:
@@ -426,12 +675,16 @@ def main(argv):
             continue
         largest = max((r["bytes"] for r in m["records"]), default=0)
         c = m["counts"]
-        print(f"{m['source'][:46]:46s} {len(m['records']):5d} {largest:9,d} "
-              f"{c['figures']:5d} {c['figures_without_caption']:5d} "
-              f"{c['tables']:4d} {c['callouts']:5d}")
+        print(
+            f"{m['source'][:46]:46s} {len(m['records']):5d} {largest:9,d} "
+            f"{c['figures']:5d} {c['figures_without_caption']:5d} "
+            f"{c['tables']:4d} {c['callouts']:5d}"
+        )
         findings.extend(warnings_for(m))
     if findings:
-        print("\nwarnings - findings about the documents, not errors in the conversion:")
+        print(
+            "\nwarnings - findings about the documents, not errors in the conversion:"
+        )
         for line in findings:
             print(" !", line)
     if failures:

@@ -1,0 +1,18 @@
+# his words inside his three-panel picture (build/r10-deck/his/s034-pic1.png), panel by panel
+1  Draw input pairs (F, k)
+Force F (N)
+Stiffness k (N/mm)
+y = F/k (mm)
+2  Compute y for each pair, collect
+Density
+Displacement y (mm)
+mean 5.050 mm
+SD 0.715 mm
+P(Y > 7 mm) = 0.74%
+3  More samples, smaller error
+Estimated mean (mm)
+Number of simulations N
+± 2 SE = ± 2 SD/√N
+running mean
+exact mean 5.050
+first order 5.000

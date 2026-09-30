@@ -1,0 +1,33 @@
+nf-mla-logreg: Figure 9, logistic regression
+
+DATA
+  22 benign tumors, diameter ~ N(13, 4) mm; 18 malignant ~ N(26, 6) mm;
+  clipped to [4, 44] mm, rounded to 0.1 mm; seed 3
+  benign:    21.2 4.0 14.7 10.7 11.2 12.1 4.9 12.1 9.5 26.3 13.9 11.6 11.9 10.3 8.8 11.4 14.9 12.0 16.8 12.2 13.1 19.2
+  malignant: 29.3 23.0 24.9 29.2 37.6 24.4 24.5 32.0 20.7 24.2 31.3 29.5 26.5 30.0 9.0 32.1 20.2 16.0
+
+FIT: maximum likelihood by Newton (IRLS)
+  b0 = -6.0851468928, b1 = 0.3124615167 per mm, after 8 Newton steps
+  log likelihood -13.059562; threshold (p = 0.5) at x* = -b0/b1 = 19.4749 mm
+
+CHECK 1: against scikit-learn (no penalty)
+  sklearn: b0 = -6.0851468928, b1 = 0.3124615167  |diff| 1.3e-13, 6.4e-15
+
+CHECK 2: the optimum (score equations and curvature)
+  gradient X'(y - p) = [-8.9e-16, -2.5e-14]; sum p = 18.0000000000 = number malignant 18
+  Hessian eigenvalues 0.3386, 1505.82 > 0: a maximum
+
+CHECK 3: the threshold and the slope of the S (closed form)
+  p(x*) = 0.500000000000000 (exactly 0.5)
+  dp/dx at x* = 0.07811538 per mm, b1/4 = 0.07811538
+
+CHECK 4: against the best possible boundary for the distributions the data came from
+  Bayes boundary (priors 22/40, 18/40): 19.282 mm; fitted x* = 19.475 mm
+  misclassified at p = 0.5: 4 of 40
+
+PAGE
+  the probe rests at four tumors and glides between them along the fitted curve:
+    x = 11.2 mm, p = 0.0701, label 0, classified negative
+    x = 16.8 mm, p = 0.3024, label 0, classified negative
+    x = 23.0 mm, p = 0.7505, label 1, classified positive
+    x = 31.3 mm, p = 0.9758, label 1, classified positive

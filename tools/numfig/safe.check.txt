@@ -1,0 +1,28 @@
+Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same bar
+
+(a) ANALYTICAL: Euler-Bernoulli beam, infinitely long (no boundary conditions)
+  steel bar 20 x 40 mm bending in its stiff plane: EI = 22400.00 N m^2, rho A = 6.280 kg/m
+  exact wave w = A cos(kx - wt): lambda = 1.0 m, k = 6.2832 rad/m,
+  w = k^2 sqrt(EI/(rho A)) = 2357.78 rad/s, f = 375.25 Hz, c_p = w/k = 375.25 m/s
+  element: x = 1.55 to 1.65 m (k dx = 0.6283 rad); faces carry
+  M = EI w'' = -EI k^2 A cos(kx - wt) and V = -EI w''' = -EI k^3 A sin(kx - wt),
+  drawn to scale (M / EI k^2 A, V / EI k^3 A). Sign convention: positive M clockwise on
+  the left face and counter-clockwise on the right; positive V down on the left face, up on
+  the right, so that V = -dM/dx and dV/dx = rho A w_tt give EI w'''' + rho A w_tt = 0.
+  check of the drawn element over a period: max |V(x+dx) - V(x) - int rho A w_tt dx| /
+  (EI k^3 A) = 1.6e-16 (dynamic equilibrium holds exactly)
+  N = EA u' = 0: a flexural wave carries no axial force, so N and N + dN are not drawn.
+  SAFE at the same k: f = 371.40 Hz, -1.03% from
+  Euler-Bernoulli; Timoshenko gives 371.34 Hz (+1.5e-04 from SAFE): at kh = 0.251
+  the shear and rotary inertia neglected by Euler-Bernoulli cost about one percent.
+  displayed period 3.0 s: time slowed 1.13e+03
+
+(b) SAFE: the mesh of Figure 4 (see dispersion.check.txt for its convergence)
+  10 x 20 Q9 elements, 2583 dof; fundamental vertical bending mode at
+  lambda = 50 mm, k = 125.664 rad/m: f = 54.370 kHz, c_p = 2718.5 m/s
+  (next branches of the class at this k: 100.83, 114.14 kHz)
+  eigenpair residual |(K(k) - w^2 M) V| / |K(k) V| = 1.3e-12 (full matrices)
+  beam theories at this k: Euler-Bernoulli c_p = 7505.1 m/s (-63.8%), Timoshenko 2692.7 m/s (+0.96%)
+  u(x, y, z, t) = Re{U(y, z) exp(i(kx - wt))}, U_x = i V_x: the axial part is a quarter
+  period out of phase with the transverse part, which tilts the sections as the wave passes.
+  bar drawn over 150 mm = 3 wavelengths; displayed period 2.5 s: time slowed 1.36e+05

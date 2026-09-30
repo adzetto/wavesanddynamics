@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s033-pic1.png)
+Output at mean inputs: 5.00
+Simulated mean: 5.05
+Density
+Simulated displacement Y (mm)

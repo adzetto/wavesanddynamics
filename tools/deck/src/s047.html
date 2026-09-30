@@ -1,0 +1,33 @@
+<section class="slide">
+ <style>
+  .three{row-gap:26px;align-content:start}
+  .three .panel{align-self:stretch;padding:18px 24px 20px}
+  .three .panel .ps{font-size:28px;line-height:1.4}
+  .nb{white-space:nowrap}
+ </style>
+ <header class="head">
+  <h1 class="title">From time to frequency: correlation gives the spectrum</h1>
+  <p class="lede">Three views of the same random vibration. The spectrum is the Fourier transform of the autocorrelation, so the two carry the same information, arranged differently.</p>
+ </header>
+ <main class="body g three">
+  <div data-fig="signal" class="s4"></div>
+  <div data-fig="autocorrelation" class="s4 o5"></div>
+  <div data-fig="spectrum" class="s4 o9"></div>
+  <div class="panel s4 r2">
+   <h2 class="h">1&ensp;Variance</h2>
+   <p class="ps"><m>σ² = E[x²]</m> for zero mean. The signal was divided by its SD, so <m>σ² = 1</m>.</p>
+  </div>
+  <div class="panel s4 o5 r2">
+   <h2 class="h c-accent">2&ensp;Autocorrelation</h2>
+   <p class="ps"><m>R(τ) = E[x(t)·x(t+τ)]</m>: compare <m>x</m> with a copy shifted by <m>τ</m>. <m>R(0) = σ²</m>.</p>
+  </div>
+  <div class="panel s4 o9 r2">
+   <h2 class="h c-blue">3&ensp;Spectrum</h2>
+   <p class="ps"><m>S(f) = ∫ R(τ) e<span class="mk">^(</span><sup>−i2πfτ</sup><span class="mk">)</span></m> <span class="m">d<span class="mi">𝜏</span></span>.  <span class="nb">Area: <m>∫ G(f) df = σ² = 1</m>.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">The area under the spectrum is the variance: the spectrum shows how the variance is shared among frequencies.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: dependence over time</span><span class="src">Sources: [22], [23]</span><span class="num">47</span></p>
+ </footer>
+</section>

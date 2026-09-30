@@ -1,0 +1,28 @@
+<section class="slide">
+ <style>
+  .meth{margin-top:4px}
+  .meth td{padding-top:18px;padding-bottom:18px;text-wrap:balance}
+  .meth td .eqs>*+*{margin-top:4px}
+ </style>
+ <header class="head">
+  <h1 class="title">Estimation methods: different criteria for choosing an answer</h1>
+  <p class="lede">The target, observation model and error criterion determine which estimator makes sense.</p>
+ </header>
+ <main class="body">
+  <table class="tab meth">
+   <colgroup><col style="width:21%"><col style="width:24%"><col style="width:29%"><col style="width:26%"></colgroup>
+   <thead><tr><th>Method</th><th>What it optimizes / uses</th><th>Rule or output</th><th>Typical use</th></tr></thead>
+   <tbody>
+    <tr><td>Moment estimates</td><td>Match sample summaries</td><td><div class="eqs"><p><m>μ̂ = (1/n)Σxᵢ</m></p><p><m>σ̂² = (1/n)Σ(xᵢ − x̄)²</m></p></div></td><td>Mean and variance of strength</td></tr>
+    <tr><td>Least squares</td><td>Minimize squared residuals</td><td><m>θ̂ = arg min Σᵢ[yᵢ − hᵢ(θ)]²</m></td><td>Regression and sensor calibration</td></tr>
+    <tr><td>Maximum likelihood</td><td>Maximize likelihood of observed data</td><td><m>θ̂ = arg max p(D|θ)</m></td><td>Distribution and model parameters</td></tr>
+    <tr><td>Bayesian MAP / MMSE</td><td>Use the posterior distribution</td><td>MAP: mode; MMSE: <m>E[θ|D]</m></td><td>Prior knowledge plus observations</td></tr>
+    <tr><td>Kalman filtering</td><td>Update a state as measurements arrive</td><td>Predict prior <m>→</m> update with sensor data</td><td>Tracking displacement or sensor bias</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">Several methods can give the same answer under special assumptions. Their definitions still differ.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: methods; box 4 supplies the observation model</span><span class="src">Sources: [6], [10], [38], [40]</span><span class="num">62</span></p>
+ </footer>
+</section>

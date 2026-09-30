@@ -1,0 +1,32 @@
+<section class="slide">
+ <style>
+  .cases .h{font-size:32px}
+  .cases .fig{margin-top:6px}
+  .cases .panel{margin-top:14px;padding:16px 24px 18px}
+  .cases .panel .ps{margin-top:0;font-size:28px}
+  .rule{margin-top:22px}
+ </style>
+ <header class="head">
+  <h1 class="title">One idea behind estimation: weight by precision</h1>
+  <p class="lede">Two different examples from earlier in this guide. They look unrelated, but both combine an old estimate with new data using exactly the same rule.</p>
+ </header>
+ <main class="body">
+  <div class="g cases">
+   <div class="s6">
+    <h2 class="h">Case A: concrete strength (slides 18–19)</h2>
+    <div data-fig="case_a"></div>
+    <div class="panel"><p class="ps">Old 30 MPa (variance 4), data 32 MPa (variance 0.36). <m>w = 4 / 4.36 = 0.92  →  31.83 MPa</m></p></div>
+   </div>
+   <div class="s6 o7">
+    <h2 class="h">Case B: bridge displacement (slides 65–66)</h2>
+    <div data-fig="case_b"></div>
+    <div class="panel"><p class="ps">Old 10 mm (variance 4), data 14 mm (variance 9). <m>w = 4 / 13 = 0.31  →  11.23 mm</m></p></div>
+   </div>
+  </div>
+  <p class="eq c-blue rule"><b>Same rule:</b> <m>new = old + w × (data − old),   w = var(old) / [var(old) + var(data)]</m></p>
+ </main>
+ <footer class="foot">
+  <p class="take">Different problems, same rule: each source counts in proportion to its precision.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–4: one estimation idea across methods</span><span class="src">Sources: [10], [40], [41], [47]</span><span class="num">67</span></p>
+ </footer>
+</section>

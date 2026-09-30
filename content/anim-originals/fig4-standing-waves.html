@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 4: Waves in a supported beam</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #bdbdbd;background:#fff;color:#333;
+  font:12px/1 Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button:focus-visible{outline:2px solid #2b5f9e;outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Animation of waves reflecting in a supported beam. When the wavelength fits the span, reflections add in phase and a standing wave builds up with fixed nodes. When it does not fit, nodes drift and the amplitude stays small."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation">&#8634;</button></div>
+</div>
+<script>
+const W = 1000, H = 770;
+/* ---- shared engine: canvas scaling, play/pause, restart, offscreen pause ---- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const SANS = 'Calibri, Carlito, "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const SERIF = '"Cambria Math", Cambria, "STIX Two Text", "Times New Roman", serif';
+let t = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, visible = true, last = null;
+cv.style.aspectRatio = W + ' / ' + H;
+
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  render();
+}
+function render() { ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); draw(); }
+
+const pp = document.getElementById('pp');
+function setPlay(p) { playing = p; pp.textContent = p ? '\u275A\u275A' : '\u25B6'; pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation'); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => { e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); render(); });
+cv.addEventListener('click', () => setPlay(!playing));
+
+new ResizeObserver(fit).observe(cv);
+new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---- drawing helpers ---- */
+function txt(s, x, y, o = {}) {
+  const { size = 14, bold = false, italic = false, color = '#000', align = 'left', font = SANS, base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${font}`;
+  ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot); ctx.fillText(s, 0, 0); ctx.restore();
+}
+function line(x1, y1, x2, y2, color = '#000', lw = 1.5, dash = null) {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+function head(x, y, ang, size, color) {
+  ctx.save(); ctx.fillStyle = color; ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.42); ctx.lineTo(-size, size * 0.42); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = '#000', lw = 1.5, size = 9, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  line(x1 + (both ? Math.cos(a) * size * 0.8 : 0), y1 + (both ? Math.sin(a) * size * 0.8 : 0),
+       x2 - Math.cos(a) * size * 0.8, y2 - Math.sin(a) * size * 0.8, color, lw, dash);
+  head(x2, y2, a, size, color); if (both) head(x1, y1, a + Math.PI, size, color);
+}
+function poly(pts, color = '#000', lw = 1.5, dash = null, alpha = 1) {
+  if (!pts.length) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); ctx.restore();
+}
+/* pinned support: circle on top of a triangle, with a ground line */
+function pin(x, y, s = 1, color = '#000') {
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(x, y + 5 * s); ctx.lineTo(x - 10 * s, y + 20 * s); ctx.lineTo(x + 10 * s, y + 20 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - 14 * s, y + 20 * s); ctx.lineTo(x + 14 * s, y + 20 * s); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 5 * s, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+/* math text: letters italic, "_d" gives a subscript digit */
+function mtext(s, x, y, size = 18, align = 'center', color = '#000') {
+  const segs = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/[a-zA-Z]/.test(c) && s[i + 1] === '_') { segs.push({ t: c, it: 1 }); segs.push({ t: s[i + 2], sub: 1 }); i += 2; }
+    else if (/[a-zA-Z\u1E8B\u1E8D]/.test(c)) segs.push({ t: c, it: 1 });
+    else segs.push({ t: c });
+  }
+  const fontOf = g => `${g.it ? 'italic ' : ''}${g.sub ? size * 0.68 : size}px ${SERIF}`;
+  let wsum = 0; for (const g of segs) { ctx.font = fontOf(g); g.w = ctx.measureText(g.t).width; wsum += g.w; }
+  let cx = align === 'center' ? x - wsum / 2 : align === 'right' ? x - wsum : x;
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  for (const g of segs) { ctx.font = fontOf(g); ctx.fillText(g.t, cx, y + (g.sub ? size * 0.28 : 0)); cx += g.w; }
+  ctx.restore();
+}
+/* ordinal like 1st: number plus raised suffix */
+function ord(n, suf, rest, x, y, o = {}) {
+  const { size = 16, bold = false, align = 'center', color = '#000' } = o;
+  const f = s => `${bold ? 'bold ' : ''}${s}px ${SANS}`;
+  ctx.save(); ctx.font = f(size); const w1 = ctx.measureText(n).width, w3 = ctx.measureText(rest).width;
+  ctx.font = f(size * 0.62); const w2 = ctx.measureText(suf).width;
+  const wt = w1 + w2 + w3; let cx = align === 'center' ? x - wt / 2 : align === 'right' ? x - wt : x;
+  ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = f(size); ctx.fillText(n, cx, y); cx += w1;
+  ctx.font = f(size * 0.62); ctx.fillText(suf, cx, y - size * 0.4); cx += w2;
+  ctx.font = f(size); ctx.fillText(rest, cx, y); ctx.restore();
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+
+
+
+/* Physics: a wave is launched at the left support and reflects at both supports.
+   Each reflection inverts the wave and keeps a fraction R of its amplitude.
+   Exact time-domain sum of all reflections that have arrived so far. */
+const L = 380, R = 0.78, C = 422;           // span [px], reflection factor, wave speed [px/s]
+const CYCLE = 20;                            // restart every 20 s
+const NPT = 160;
+function mkSys(fit) { const lam = L / fit, T = lam / C; return { lam, T, w: 2 * Math.PI / T, snaps: [], lastSnap: -1 }; }
+const RES = mkSys(1.5), OFF = mkSys(1.75);   // 3 half wavelengths fit / 3.5 half wavelengths (do not fit)
+
+function src(s, tau) {
+  if (tau <= 0) return 0;
+  const env = tau < s.T ? 0.5 * (1 - Math.cos(Math.PI * tau / s.T)) : 1;
+  return env * Math.sin(s.w * tau);
+}
+function field(s, x, tt) {
+  let tot = 0, ref = 0;
+  const mMax = Math.floor(C * tt / (2 * L)) + 1;
+  for (let m = 0; m <= mMax; m++) {
+    const a = Math.pow(R, 2 * m); if (a < 1e-4) break;
+    const right = a * src(s, tt - (x + 2 * m * L) / C);
+    const left = -a * R * src(s, tt - (2 * (m + 1) * L - x) / C);
+    tot += right + left; ref += left;
+  }
+  return [tot, ref];
+}
+function sample(s, tt) {
+  const tot = new Float32Array(NPT + 1), ref = new Float32Array(NPT + 1);
+  for (let i = 0; i <= NPT; i++) {
+    const [a, b] = field(s, L * i / NPT, tt);
+    const e = Math.min(i, NPT - i) / (0.07 * NPT), tp = e >= 1 ? 1 : e * e * (3 - 2 * e); // supports stay fixed
+    tot[i] = a * tp; ref[i] = b * tp;
+  }
+  return { tot, ref };
+}
+function reset() { for (const s of [RES, OFF]) { s.snaps = []; s.lastSnap = -1; } }
+function step() {
+  if (t > CYCLE) { t = 0; reset(); }
+  for (const s of [RES, OFF]) {
+    if (s.lastSnap < 0 || t - s.lastSnap >= s.T / 8) { s.snaps.push(sample(s, t).tot); if (s.snaps.length > 8) s.snaps.shift(); s.lastSnap = t; }
+  }
+}
+
+const AMP = 18;
+function curve(arr, x0, y0) { const p = []; for (let i = 0; i <= NPT; i++) p.push([x0 + L * i / NPT, y0 - AMP * arr[i]]); return p; }
+function beamFrame(x0, y0) {
+  line(x0, y0, x0 + L, y0, '#000', 1.2);
+  pin(x0, y0); pin(x0 + L, y0);
+  // small z / x axes
+  const ax = x0 - 2, ay = y0 + 52;
+  arrow(ax, ay, ax, ay - 16, { size: 5, lw: 1 }); arrow(ax, ay, ax + 16, ay, { size: 5, lw: 1 });
+  txt('z', ax - 3, ay - 19, { size: 10, align: 'center' }); txt('x', ax + 21, ay + 3, { size: 10 });
+}
+function dirArrows(y) {
+  arrow(110, y, 200, y, { lw: 2.2, size: 11 }); txt('Wave', 128, y + 20, { size: 15 });
+  arrow(450, y, 360, y, { lw: 2.2, size: 11 }); txt('Reflection', 372, y + 20, { size: 15 });
+}
+function instantPanel(s, x0, y0, reflDash) {
+  beamFrame(x0, y0);
+  const cur = sample(s, t);
+  poly(curve(cur.ref, x0, y0), '#8b1e1e', 1.4, reflDash);
+  poly(curve(cur.tot, x0, y0), '#000', 2.4);
+}
+function trailPanel(s, x0, y0, nodes) {
+  beamFrame(x0, y0);
+  const n = s.snaps.length;
+  for (let i = 0; i < n - 1; i++) {
+    const g = Math.round(215 - 120 * (i / Math.max(1, n - 2)));
+    poly(curve(s.snaps[i], x0, y0), `rgb(${g},${g},${g})`, 1.2);
+  }
+  poly(curve(sample(s, t).tot, x0, y0), '#000', 2.4);
+  if (nodes) for (let k = 0; k <= 3; k++) { ctx.fillStyle = '#9b0d0d'; ctx.beginPath(); ctx.arc(x0 + k * L / 3, y0, 4.5, 0, 7); ctx.fill(); }
+  // time axis
+  arrow(962, y0 + 80, 962, y0 - 88, { lw: 1.2, size: 7 });
+  txt('time', 975, y0, { size: 11, rot: -Math.PI / 2, align: 'center', color: '#555' });
+}
+
+function draw() {
+  // top row: wavelength that fits
+  txt('A wavelength that fits the span', 270, 32, { size: 18, bold: true, align: 'center' });
+  dirArrows(60);
+  txt('a)', 46, 120, { size: 21 }); txt('b)', 526, 120, { size: 21 });
+  instantPanel(RES, 80, 185, null);
+  trailPanel(RES, 560, 185, true);
+  txt('Every round trip lands back in phase with the last; thus, the', 95, 300, { size: 14 });
+  txt('reflected wave keeps reinforcing the same shape', 95, 318, { size: 14 });
+  txt('Same nodes at every time step; a stable, sustained', 572, 300, { size: 14 });
+  txt('resonance mode', 572, 318, { size: 14 });
+
+  // bottom row: wavelength that does not fit
+  txt('A wavelength that doesn\u2019t fit', 270, 407, { size: 18, bold: true, align: 'center' });
+  dirArrows(435);
+  txt('c)', 46, 495, { size: 21 }); txt('d)', 526, 495, { size: 21 });
+  instantPanel(OFF, 80, 560, [6, 5]);
+  trailPanel(OFF, 560, 560, false);
+  txt('Because the nodes drift, amplitude collapses due to', 95, 670, { size: 14 });
+  txt('destructive interference; thus, no build up occurs, causing the', 95, 688, { size: 14 });
+  txt('wave at this frequency to damp out quickly', 95, 706, { size: 14 });
+  txt('Each round trip lands slightly out of phase with the last, the', 572, 670, { size: 14 });
+  txt('sum never builds into one shape', 572, 688, { size: 14 });
+
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2; ctx.strokeRect(285, 722, 430, 42);
+  txt('Black shapes represent the waves at the current time step,', 500, 740, { size: 13.5, align: 'center' });
+  txt('and as time passes, the color of the shapes fades.', 500, 757, { size: 13.5, align: 'center' });
+}
+
+setPlay(playing); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

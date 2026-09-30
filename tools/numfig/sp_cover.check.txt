@@ -1,0 +1,35 @@
+The cover (input, system, output, identification): check of tools/numfig/sp_cover.py
+
+MODEL
+  System: the resonator of sp_model, h(t) = exp(-zeta w_n t) sin(w_d t), f_n = 1 Hz, zeta = 0.1.
+  Input: a linear sweep 0.3 to 1.7 Hz over 12 s, cosine tapered over 1 s at each end,
+  sampled every 0.01 s and linear between samples (float32, as the page gets it).
+  Output: y = x * h, exact for that input (sp_model.foh_filter); measured with white Gaussian
+  noise sigma = 0.02568, 20.0 dB below the output's power (seed 2026).
+  Estimation: least squares, J(f_n, zeta) = mean (y_meas - yhat(f_n, zeta))^2, the maximum
+  likelihood estimate for this Gaussian noise.
+  Optimization: gradient descent from (0.85 Hz, 0.27), step 0.12, central differences
+  (1e-7) for the gradient, stopped within 2e-5 of the least squares solution; the plane is drawn
+  at one scale for f_n and zeta, so each step is perpendicular to the contours as drawn.
+  18 steps. Contours of J at 1.6, 3, 6, 12, 25, 50, 100, 170 times its minimum, on an 81 x 76 grid.
+
+VALIDATION
+  1. The output against the equation of motion y'' + 2 zeta w_n y' + w_n^2 y = w_d x(t),
+     integrated sample by sample (DOP853, rtol 1e-12): largest difference 1.7e-14
+     (2.6e-14 of max |y|).
+  2. Least squares solver (trust region, scipy): f_n = 0.999538 Hz, zeta = 0.100412;
+     the descent ends 8.9e-06 from it. Gradient of J there: 1.7e-11 (J = 6.7191e-04,
+     sigma^2 = 6.5940e-04). Central differences 1e-5 against 1e-7 on the path: 6.2e-09 (relative).
+  3. The estimate's spread: Gauss-Newton covariance s^2 (J^T J)^-1 against 500 repeated
+     experiments (new noise, seeds 10000 on, each solved by least squares):
+     f_n: 4.04e-04 Hz against 3.85e-04 Hz (+5 %), zeta: 4.01e-04 against 3.74e-04 (+7 %);
+     mean error of the 500 estimates (bias): f_n -2.3e-05 Hz, zeta -8.0e-06, that is
+     -1.3 and -0.5 standard errors of the mean: no significant bias.
+     The estimate shown, (0.9995 Hz, 0.1004), lies 1.1 and 1.0 standard deviations from the truth.
+  4. The page computes the model's output itself (the same recursion in complex arithmetic):
+     against numpy at the first guess and at the estimate, largest difference 7.2e-14.
+
+DISPLAY
+  One descent step every 0.16 s, each a Motion spring glide; the readout on the feedback line is
+  the current (f_n, zeta). The 95 % confidence region (about +-0.001) is below one drawing unit
+  at this scale and is not drawn.

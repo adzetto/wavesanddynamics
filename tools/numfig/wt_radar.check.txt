@@ -1,0 +1,23 @@
+nf-wt-radar: the fun table, 'Radar reflection' (image8)
+
+MODEL
+  concrete slab 150 mm thick, relative permittivity 6.25 (lossless here): v = c / sqrt(eps) = 0.1199 m/ns
+  steel bar 25 mm, cover 50 mm (centre at 62.5 mm); zero offset antenna
+  echo from the bar at t(x) = 2 (sqrt(x^2 + d^2) - r) / v (the specular point faces the antenna),
+  from the underside at 2 D / v = 2.502 ns; apparent depth v t / 2.
+
+CHECK: 2D FDTD of Maxwell's equations (TMz, 1.25 mm cells, a 2 GHz Ricker pulse, the bar a
+  perfect conductor, a graded absorbing layer; the antenna's own coupling across the top face
+  left out, concrete above the underside), echo = run with the bar minus run without;
+  each echo's delay behind the zero offset echo (cross correlation) against t(x) - t(0)
+  offset    50 mm: FDTD   281.7 ps, closed form   292.5 ps (-10.8 ps, -3.7e-02)
+  offset   100 mm: FDTD   926.8 ps, closed form   924.4 ps (+2.4 ps, +2.6e-03)
+  offset   150 mm: FDTD  1669.2 ps, closed form  1667.8 ps (+1.4 ps, +8.2e-04)
+  velocity from the underside's echo moving 30 mm deeper: 0.1196 m/ns against c / sqrt(eps) = 0.1199 m/ns (-2.7e-03)
+  the bar is not large against the wavelength (k r = 1.31 at 2 GHz):
+  the travel time law is the specular (geometric) limit; the full wave run follows it within 11 ps
+  at 50 mm and 2 ps beyond, where the paths are longer against the bar.
+
+DRAWING
+  scan from -300 to 300 mm = 1000 units, depth to the same scale; the antenna moves at 0.25 m/s in real time.
+  only the part of the hyperbola above the underside is drawn (apparent depth < D).

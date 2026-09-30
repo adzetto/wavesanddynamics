@@ -1,0 +1,10 @@
+# his words inside his two pictures (build/r10-deck/his/s015-pic1.png, -pic2.png)
+# the second picture's y label is cut off in his export ("... likelihoo"); it reads "likelihood"
+Repeated sample
+Mean strength (MPa)
+Fixed true mean
+Density / scaled likelihood
+Unknown mean μ (MPa)
+Prior
+Likelihood (scaled)
+Posterior

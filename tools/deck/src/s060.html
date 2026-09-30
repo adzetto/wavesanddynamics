@@ -1,0 +1,29 @@
+<section class="slide">
+ <style>
+  .fam{margin-top:8px}
+  .fam th{font-size:28px}
+  .fam td{padding-top:30px;padding-bottom:30px}
+  .whole{margin-top:60px}
+ </style>
+ <header class="head">
+  <h1 class="title">Process families overlap</h1>
+  <p class="lede">These names describe different properties. They are not mutually exclusive bins.</p>
+ </header>
+ <main class="body">
+  <table class="tab fam">
+   <colgroup><col style="width:34%"><col style="width:17%"><col style="width:21%"><col style="width:28%"></colgroup>
+   <thead><tr><th>Example</th><th>Gaussian?</th><th>Markov?</th><th>Stationary level?</th></tr></thead>
+   <tbody>
+    <tr><td>Gaussian AR(1), <m>|φ| &lt; 1</m></td><td>Yes</td><td>Yes</td><td>Yes, with stationary start</td></tr>
+    <tr><td>Gaussian random walk</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Homogeneous Poisson count</td><td>No</td><td>Yes</td><td>No</td></tr>
+    <tr><td>General Gaussian process</td><td>Yes</td><td>Depends on kernel</td><td>Depends on mean and kernel</td></tr>
+   </tbody>
+  </table>
+  <p class="h whole">A random variable, a regression and a process can all be parts of one engineering model.</p>
+ </main>
+ <footer class="foot">
+  <p class="take">Select properties that match the question, rather than choosing a name from a menu.</p>
+  <p class="run"><span class="src">Sources: [4], [22], [37]</span><span class="num">60</span></p>
+ </footer>
+</section>

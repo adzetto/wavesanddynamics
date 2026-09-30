@@ -1,0 +1,741 @@
+{
+ "name": "Korkut Kaynardag, Ph.D.",
+ "location": "Izmir, Turkiye",
+ "email": "korkutkaynardag@iyte.edu.tr",
+ "links": [
+  {
+   "label": "Google Scholar",
+   "href": "https://scholar.google.com/citations?user=v_eQpwUAAAAJ&hl=en",
+   "kind": "scholar"
+  },
+  {
+   "label": "LinkedIn",
+   "href": "https://www.linkedin.com/in/korkutkaynardag",
+   "kind": "linkedin"
+  },
+  {
+   "label": "ResearchGate",
+   "href": "https://www.researchgate.net/profile/Korkut-Kaynardag",
+   "kind": "researchgate"
+  },
+  {
+   "label": "GitHub",
+   "href": "https://github.com/korkutphd",
+   "kind": "github"
+  },
+  {
+   "label": "YouTube",
+   "href": "https://www.youtube.com/@korkutkaynardag9147",
+   "kind": "youtube"
+  }
+ ],
+ "areas": [
+  "Structural Health Monitoring",
+  "Non-Destructive Testing",
+  "Real-Time Automated Monitoring",
+  "Contact and Non-Contact Sensing",
+  "Connected Vehicles",
+  "Vehicle and Structural Dynamics",
+  "Acoustic Wave Propagation",
+  "System Identification",
+  "Data Science and Machine Learning",
+  "Predictive Maintenance",
+  "Digital Twins and Optimization",
+  "Analytical and Numerical Modeling",
+  "Structural Reliability and Resiliency",
+  "Signal Processing and Noise Reduction",
+  "Cloud and Embedded Engineering"
+ ],
+ "sections": [
+  {
+   "id": "education",
+   "title": "Education",
+   "entries": [
+    {
+     "type": "position",
+     "org": "The University of Texas at Austin",
+     "place": "Austin, TX, USA",
+     "role": "Ph.D. in Civil Engineering",
+     "start": "09/2016",
+     "end": "08/2023"
+    },
+    {
+     "type": "position",
+     "org": "Bogazici University",
+     "place": "Istanbul, Turkey",
+     "role": "M.Sc. in Civil Engineering",
+     "start": "09/2013",
+     "end": "08/2016"
+    },
+    {
+     "type": "position",
+     "org": "Bogazici University",
+     "place": "Istanbul, Turkey",
+     "role": "B.S. in Civil Engineering",
+     "start": "09/2008",
+     "end": "08/2013"
+    }
+   ]
+  },
+  {
+   "id": "research-interests",
+   "title": "Research Interests and Areas of Expertise",
+   "entries": [
+    {
+     "type": "area",
+     "text": "Structural Health Monitoring"
+    },
+    {
+     "type": "area",
+     "text": "Non-Destructive Testing"
+    },
+    {
+     "type": "area",
+     "text": "Real-Time Automated Monitoring"
+    },
+    {
+     "type": "area",
+     "text": "Contact and Non-Contact Sensing"
+    },
+    {
+     "type": "area",
+     "text": "Connected Vehicles"
+    },
+    {
+     "type": "area",
+     "text": "Vehicle and Structural Dynamics"
+    },
+    {
+     "type": "area",
+     "text": "Acoustic Wave Propagation"
+    },
+    {
+     "type": "area",
+     "text": "System Identification"
+    },
+    {
+     "type": "area",
+     "text": "Data Science and Machine Learning"
+    },
+    {
+     "type": "area",
+     "text": "Predictive Maintenance"
+    },
+    {
+     "type": "area",
+     "text": "Digital Twins and Optimization"
+    },
+    {
+     "type": "area",
+     "text": "Analytical and Numerical Modeling"
+    },
+    {
+     "type": "area",
+     "text": "Structural Reliability and Resiliency"
+    },
+    {
+     "type": "area",
+     "text": "Signal Processing and Noise Reduction"
+    },
+    {
+     "type": "area",
+     "text": "Cloud and Embedded Engineering"
+    }
+   ]
+  },
+  {
+   "id": "experience",
+   "title": "Experience",
+   "entries": [
+    {
+     "type": "position",
+     "org": "Izmir Institute of Technology",
+     "place": "Izmir, Turkey",
+     "role": "Assistant Professor",
+     "start": "08/2026",
+     "end": "present"
+    },
+    {
+     "type": "position",
+     "org": "Renesas Electronics America",
+     "place": "Columbia, MD, USA",
+     "role": "Senior AI Engineer",
+     "start": "10/2024",
+     "end": "05/2026"
+    },
+    {
+     "type": "position",
+     "org": "Transtek International Group",
+     "place": "Orlando, FL, USA",
+     "role": "Applied Data Scientist",
+     "start": "12/2023",
+     "end": "10/2024"
+    },
+    {
+     "type": "position",
+     "org": "The University of Texas at Austin",
+     "place": "Austin, TX, USA",
+     "role": "Graduate Research Assistant",
+     "start": "09/2016",
+     "end": "08/2023"
+    },
+    {
+     "type": "position",
+     "org": "Bogazici University",
+     "place": "Istanbul, Turkey",
+     "role": "Graduate Research and Teaching Assistant",
+     "start": "09/2013",
+     "end": "08/2016"
+    }
+   ]
+  },
+  {
+   "id": "grants",
+   "title": "Grants, Funding, and Proposals",
+   "entries": [
+    {
+     "type": "grant",
+     "title": "Federal Railroad Administration (FRA), Phase I & II",
+     "amount": "$600K",
+     "start": "2017",
+     "end": "2019",
+     "line": "The University of Texas at Austin",
+     "role": "Proposal co-author; led technical methodology development"
+    },
+    {
+     "type": "grant",
+     "title": "Proof of Concept Award",
+     "amount": "$20,000",
+     "date": "2022",
+     "line": "The University of Texas at Austin, Discovery to Impact Program",
+     "role": "Proposal co-author; technical validation lead"
+    },
+    {
+     "type": "grant",
+     "title": "Inspire Commercialization Award",
+     "amount": "$5,000",
+     "date": "2022",
+     "line": "Texas Innovation Center",
+     "role": "Co-PI"
+    },
+    {
+     "type": "grant",
+     "title": "NSF SBIR/STTR (submitted)",
+     "date": "2024",
+     "line": "Structural Health Monitoring of Highway Bridges Using Connected Vehicles",
+     "role": "Lead technical author"
+    }
+   ]
+  },
+  {
+   "id": "journal-publications",
+   "title": "Journal Publications",
+   "entries": [
+    {
+     "type": "group",
+     "title": "Published",
+     "note": "* stands for equal contribution",
+     "numbered": true,
+     "entries": [
+      {
+       "type": "citation",
+       "authors": [
+        "B Uluutku*",
+        "K Kaynardag*",
+        "D Oshima",
+        "J Cotter",
+        "FN Catbas"
+       ],
+       "title": "Machine Learning-Based Road Surface Defect Detection from Signal Features Using Data from an Instrumented Vehicle Platform",
+       "venue": "Infrastructures, 11(6):200",
+       "year": "2026"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "C Yang",
+        "K Kaynardag",
+        "S Salamone"
+       ],
+       "title": "Transfer learning in LSTM autoencoders for rail anomaly detection across diverse operational conditions",
+       "venue": "Journal of Intelligent Material Systems and Structures, Journal of Intelligent Material Systems and Structures, 37(4):230-245",
+       "year": "2026"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "C Yang",
+        "K Kaynardag",
+        "S Salamone"
+       ],
+       "title": "Long short-term memory autoencoder for anomaly detection in rails using laser Doppler vibrometer measurements",
+       "venue": "ASME Journal of Nondestructive Evaluation, Diagnostics and Prognostics of Engineering Systems, 8 (3), 031003",
+       "year": "2025"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "C Yang",
+        "S Salamone"
+       ],
+       "title": "An impulsive noise filter for rail vibration measurements performed through a laser Doppler vibrometer placed on a moving platform",
+       "venue": "Mechanical Systems and Signal Processing, 223 (15), 111918",
+       "year": "2025"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "C Yang",
+        "K Kaynardag",
+        "S Salamone"
+       ],
+       "title": "Missing rail fastener detection based on laser Doppler vibrometer measurements",
+       "venue": "Journal of Nondestructive Evaluation, 42(3), 6",
+       "year": "2023"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "C Yang",
+        "K Kaynardag",
+        "S Salamone"
+       ],
+       "title": "Investigation of wave propagation and attenuation in periodic supported rails using wave finite element method",
+       "venue": "Acta Mechanica, 1-17",
+       "year": "2023"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "C Yang",
+        "S Salamone"
+       ],
+       "title": "A rail defect detection system based on laser Doppler vibrometer measurements",
+       "venue": "NDT & E International, 137, 102858",
+       "year": "2023"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "C Yang",
+        "K Kaynardag",
+        "S Salamone"
+       ],
+       "title": "Evaluation of fastening modeling approaches for dynamic assessment of rail based on finite element method",
+       "venue": "Journal of Engineering Mechanics, 148 (9), 04022048",
+       "year": "2022"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "C Yang",
+        "S Salamone"
+       ],
+       "title": "The numerical simulations to examine the interaction of train-induced guided waves with transverse cracks",
+       "venue": "Transportation Research Record, 2676 (12):166-179",
+       "year": "2022"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "G Battaglia",
+        "A Ebrahimkhanlou",
+        "A Pirotta",
+        "S Salamone"
+       ],
+       "title": "Identification of bending modes of vibration in rails by a laser Doppler vibrometer on a moving platform",
+       "venue": "Experimental Techniques, 45 (1), 13-24",
+       "year": "2021"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "G Battaglia",
+        "C Yang",
+        "S Salamone"
+       ],
+       "title": "Experimental investigation of the modal response of a rail span during and after wheel passage",
+       "venue": "Transportation Research Record, 2674 (12), 15-24",
+       "year": "2020"
+      },
+      {
+       "type": "citation",
+       "authors": [
+        "K Kaynardag",
+        "S Soyoz"
+       ],
+       "title": "Effect of identification on seismic performance assessment of a tall building",
+       "venue": "Bulletin of Earthquake Engineering, 15 (8), 3227-3243",
+       "year": "2017"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "conference-proceedings",
+   "title": "Conference Proceedings",
+   "numbered": true,
+   "entries": [
+    {
+     "type": "citation",
+     "authors": [
+      "C Yang",
+      "K Kaynardag",
+      "S Salamone"
+     ],
+     "title": "Detection of Missing Rail Fasteners Using Train-Induced Ultrasonic Guided Waves: A Numerical Study",
+     "venue": "Society for Experimental Mechanics Annual Conference and Exposition (pp. 151-154). Cham: Springer Nature Switzerland",
+     "year": "2023"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "S Soyoz",
+      "E Karcioglu",
+      "E Aytulun",
+      "K Kaynardag",
+      "S C Pevlan",
+      "A Karadeniz"
+     ],
+     "title": "Dynamic identification - model updating – seismic performance assessment of stone arch bridges",
+     "venue": "Proceedings of the 4th Conference on Smart Monitoring, Assessment, and Rehabilitation of Civil Structures",
+     "year": "2017"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "S Soyoz",
+      "U Dikmen",
+      "N Apaydin",
+      "K Kaynardag",
+      "E Aytulun",
+      "S Senkardesler",
+      "N Catbas",
+      "H Lus",
+      "E Safak",
+      "M Erdik"
+     ],
+     "title": "System identification of Bogazici suspension bridge under hanger replacement",
+     "venue": "Procedia Engineering, 199, 1026-1031, Part of X International Conference on Structural Dynamics, EURODYN 2017",
+     "year": "2017"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "H Sesigur",
+      "G Erol",
+      "S Soyoz",
+      "K Kaynardag",
+      "S Gonen"
+     ],
+     "title": "Repair and retrofit of Ketchaoua Mosque in Algeria",
+     "venue": "In Structural Analysis of Historical Constructions: Anamnesis, Diagnosis, Therapy, Controls, CRC Press, 1824-1831",
+     "year": "2016"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "S Soyoz"
+     ],
+     "title": "Seismic performance assessment of a tall building based on real-time monitoring",
+     "venue": "SECED 2015 Conference: Earthquake Risk and Engineering towards a Resilient World",
+     "year": "2015"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "S Soyoz"
+     ],
+     "title": "Structural health monitoring of a tall building",
+     "venue": "2nd European Conference on Earthquake Engineering and Seismology",
+     "year": "2014"
+    }
+   ]
+  },
+  {
+   "id": "conference-presentations",
+   "title": "Conference Presentations",
+   "numbered": true,
+   "entries": [
+    {
+     "type": "citation",
+     "authors": [
+      "C Yang",
+      "K Kaynardag",
+      "S Salamone"
+     ],
+     "title": "Missing rail fastener identification based on laser Doppler vibrometer measurements",
+     "venue": "Society of Experimental Mechanics (SEM) Annual Conference, Orlando",
+     "year": "2023"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "C Yang",
+      "S Salamone"
+     ],
+     "title": "Detection of rail defects using guided ultrasonic waves and laser Doppler vibrometry",
+     "venue": "Society for Experimental Mechanics Conference-XLI, Austin",
+     "year": "2023"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "C Yang",
+      "S Salamone"
+     ],
+     "title": "Rail defect detection by noncontact vibration measurements",
+     "venue": "Engineering Mechanics Institute Conference, Johns Hopkins, Baltimore",
+     "year": "2022"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "G Battaglia",
+      "S Salamone"
+     ],
+     "title": "Applicability of laser Doppler vibrometer placed on a moving platform for rail vibration measurements",
+     "venue": "Transportation Research Board Annual Meeting 2021, Washington DC",
+     "year": "2021"
+    },
+    {
+     "type": "citation",
+     "authors": [
+      "K Kaynardag",
+      "A Ebrahimkhanlou",
+      "S Salamone"
+     ],
+     "title": "Modal based detection of cracks in railway tracks and applicability of moving laser Doppler vibrometer",
+     "venue": "Engineering Mechanics Institute Conference, MIT, Boston",
+     "year": "2018"
+    }
+   ]
+  },
+  {
+   "id": "invited-talks",
+   "title": "Invited Talks",
+   "entries": [
+    {
+     "type": "citation",
+     "authors": [],
+     "title": "Development of a noncontact laser Doppler vibrometer based rail damage detection system",
+     "venue": "Weekly Acoustic Seminar at Mechanical Engineering Department, The University of Texas at Austin, Austin",
+     "year": "2023"
+    }
+   ]
+  },
+  {
+   "id": "patents",
+   "title": "Patents",
+   "numbered": true,
+   "entries": [
+    {
+     "type": "item",
+     "title": "Mobile Railway Track Defect Detection",
+     "detail": "patent no: US20200271543A1",
+     "date": "09/2018"
+    },
+    {
+     "type": "item",
+     "title": "Damage Detection Software for Rail Defect Identification using Moving Laser Measurements (submitted)"
+    }
+   ]
+  },
+  {
+   "id": "awards",
+   "title": "Awards and Honors",
+   "numbered": true,
+   "entries": [
+    {
+     "type": "item",
+     "title": "Second Place",
+     "detail": "Michael Sutton International Paper Competition, 2023 SEM Annual Conference",
+     "date": "07/2023"
+    },
+    {
+     "type": "item",
+     "title": "Inspire Commercialization Award",
+     "detail": "Texas Innovation Center; $5,000 (SBIR/STTR application format)",
+     "date": "05/2022"
+    },
+    {
+     "type": "item",
+     "title": "Proof of Concept Award",
+     "detail": "The Discovery to Impact Team at the University of Texas at Austin; $25,000",
+     "date": "05/2022"
+    },
+    {
+     "type": "item",
+     "title": "Kolodzey Travel Grant",
+     "detail": "Civil, Environmental and Architecture Engineering, The University of Texas at Austin",
+     "date": "04/2022"
+    },
+    {
+     "type": "item",
+     "title": "Professional Development Award",
+     "detail": "The University of Texas at Austin",
+     "date": "11/2021"
+    },
+    {
+     "type": "item",
+     "title": "John E. Breen Endowed Presidential Fellowship",
+     "detail": "Structural Engineering, The University of Texas at Austin",
+     "date": "07/2021"
+    },
+    {
+     "type": "item",
+     "title": "Graduate and Industry Networking (GAIN) 2021 Department Award",
+     "detail": "The University of Texas at Austin",
+     "date": "04/2021"
+    },
+    {
+     "type": "item",
+     "title": "John A. Focht Endowed Presidential Fellowship",
+     "detail": "Structural Engineering, The University of Texas at Austin",
+     "date": "09/2018"
+    }
+   ]
+  },
+  {
+   "id": "peer-review",
+   "title": "Peer Review Activities",
+   "numbered": true,
+   "entries": [
+    {
+     "type": "item",
+     "title": "Mechanical Systems and Signal Processing"
+    },
+    {
+     "type": "item",
+     "title": "Structural Health Monitoring"
+    },
+    {
+     "type": "item",
+     "title": "Sensors"
+    },
+    {
+     "type": "item",
+     "title": "Journal of Engineering Mechanics"
+    }
+   ]
+  },
+  {
+   "id": "workshops-and-memberships",
+   "title": "International Workshops and Memberships",
+   "entries": [
+    {
+     "type": "group",
+     "title": "Workshops",
+     "numbered": true,
+     "entries": [
+      {
+       "type": "item",
+       "title": "COST-Action: Quantifying the Value of Structural Health Monitoring the 2nd Workshop, Istanbul",
+       "date": "02/2016"
+      },
+      {
+       "type": "item",
+       "title": "Workshop On Bridge Health Monitoring, Istanbul, Turkey",
+       "date": "02/2016"
+      },
+      {
+       "type": "item",
+       "title": "4th Summer School on Smart Materials and Structures, Trento, Italy",
+       "date": "07/2015"
+      },
+      {
+       "type": "item",
+       "title": "Young Engineers and Seismologists Training Course, 2ECEES, Istanbul, Turkey",
+       "date": "08/2014"
+      }
+     ]
+    },
+    {
+     "type": "group",
+     "title": "Memberships",
+     "numbered": true,
+     "entries": [
+      {
+       "type": "item",
+       "title": "American Society of Civil Engineers (ASCE)"
+      },
+      {
+       "type": "item",
+       "title": "American Concrete Institute (ACI)"
+      },
+      {
+       "type": "item",
+       "title": "The International Society for Structural Health Monitoring of Intelligent Infrastructure (SHMII)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "certifications",
+   "title": "Certification and Additional Machine Learning Projects",
+   "entries": [
+    {
+     "type": "group",
+     "title": "Certifications",
+     "numbered": true,
+     "entries": [
+      {
+       "type": "item",
+       "title": "Exploratory Data Analysis and Feature Engineering",
+       "detail": "IBM Machine Learning Course, Coursera",
+       "date": "07/2023"
+      },
+      {
+       "type": "item",
+       "title": "Regression",
+       "detail": "IBM Machine Learning Course, Coursera",
+       "date": "07/2023"
+      },
+      {
+       "type": "item",
+       "title": "Supervised Classification",
+       "detail": "IBM Machine Learning Course, Coursera",
+       "date": "07/2023"
+      },
+      {
+       "type": "item",
+       "title": "Unsupervised Classification",
+       "detail": "IBM Machine Learning Course, Coursera",
+       "date": "07/2023"
+      },
+      {
+       "type": "item",
+       "title": "Deep Learning and Reinforcement Learning",
+       "detail": "IBM Machine Learning Course, Coursera",
+       "date": "07/2023"
+      },
+      {
+       "type": "item",
+       "title": "Introduction to Python Programming",
+       "detail": "University of Michigan Python Course, Coursera",
+       "date": "05/2022"
+      },
+      {
+       "type": "item",
+       "title": "Data Structures",
+       "detail": "University of Michigan Python Course, Coursera",
+       "date": "05/2022"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

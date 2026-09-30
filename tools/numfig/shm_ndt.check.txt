@@ -1,0 +1,85 @@
+Figure 3 (nf-shm-ndt): NDT, (a) pulse echo, (b) acoustic emission, (c) imaging
+generator: tools/numfig/shm_ndt.py, model: tools/numfig/shm_fdtd.py
+
+MODEL
+  2D plane-strain elastodynamics, velocity-stress on a staggered grid (Virieux 1986),
+  voids as cells of zero density and stiffness (EFIT, Fellinger et al. 1995); every face
+  of the steel and of a crack is traction free. P, S and Rayleigh waves and mode
+  conversion are all in it.
+  steel: c_L = 5900 m/s, c_T = 3230 m/s, rho = 7850 kg/m3
+  source: uniform normal traction on the probe or element face, 2 MHz, 3 cycles,
+  Hann window (1.5 us); receiver: the mean normal velocity over the same face
+  grid: dx = 0.1 mm (29.5 points per P wavelength, 16.1 per S), CFL 0.6
+
+(a) PULSE ECHO
+  beam 40 mm deep, modelled 110 mm long (the page draws 50 mm of it; nothing
+  returns from its ends within the 17 us recorded); probe 12 mm wide
+  crack: a void 14 x 0.5 mm, centre +6 mm from the probe's axis,
+  17 mm down, tilted 13 deg (right end up): from (-0.82, 18.57) to (+12.82, 15.43) mm
+  the recorded signal, over its peak while the probe sends (Excitation = 1):
+    Reflection (crack): envelope peak 0.450 at t = 6.369 us
+    Boundary (back wall): envelope peak 0.326 at t = 13.599 us; without the crack 1.514 at 13.634 us
+    the crack shadows the back wall: its echo keeps 22 % of its height
+    between the two echoes the signal stays below 0.047 (no other echo)
+  echo times as the grid is refined (envelope peaks, from the burst's centre):
+    dx = 0.100 mm: Reflection 6.3694 us (0.450), Boundary 13.5989 us (0.326)
+    dx = 0.050 mm: Reflection 6.3570 us (0.439), Boundary 13.5555 us (0.331)
+    dx = 0.025 mm: Reflection 6.3541 us (0.442), Boundary 13.5459 us (0.329)
+
+  CHECK 1, the scheme's P travel time: an 80 mm probe (a near plane wave), no crack,
+  back wall echo:
+    dx = 0.100 mm: 13.6158 us
+    dx = 0.050 mm: 13.5739 us
+    dx = 0.025 mm: 13.5642 us
+    Richardson (second order, 0.05 and 0.025 mm): 13.5610 us; 2d/c_L = 13.5593 us, error +0.012 %
+  CHECK 2, the figure's back wall echo: 13.5989 us against 2d/c_L = 13.5593 us (+0.29 %, the 12 mm probe's own diffraction and the grid)
+  CHECK 3, the crack echo: the crack lies 15.43 to 18.57 mm down; under the probe from 17.00
+    to 18.57 mm, so 2z/c_L = 5.763 to 6.296 us: its echo peaks at 6.369 us,
+    from the deeper, left end under the probe; the right end's diffraction comes first,
+    a small bump before it
+  the lanes on the page: 1D kinematics at c_L under the probe's right half, where the
+    crack is: down lane 0.5 mm right of the axis meets the crack 18.27 mm down (t = 3.097 us), up lane
+    4 mm right meets it 17.46 mm down; the lane's crack echo reaches the probe at 6.193 us,
+    its back wall echo at 13.559 us (recorded peaks 6.369 and 13.599 us; on the page 18 and 4 ms apart)
+    the lanes show where the waves are; the recorded signal shows how strong they are
+
+(b) ACOUSTIC EMISSION
+  beam 120 x 30 mm; his crack path from the underside, grown in four steps; sensor 8 mm wide on top at x = 26.7 mm
+  each step sends a P wave front from the new tip: radius c_L t on the page, clipped to the
+  beam (the fronts are the direct ones; the reflections from the faces are not drawn)
+    step 1: tip (36.2, 25.9) mm, nearest point of the sensor 26.48 mm away: heard 4.488 us later (449 ms on the page)
+    step 2: tip (45.3, 17.6) mm, nearest point of the sensor 22.87 mm away: heard 3.876 us later (388 ms on the page)
+    step 3: tip (53.4, 24.5) mm, nearest point of the sensor 33.40 mm away: heard 5.661 us later (566 ms on the page)
+    step 4: tip (59.8, 15.2) mm, nearest point of the sensor 32.83 mm away: heard 5.565 us later (556 ms on the page)
+  CHECK 4, the model: the crack as a void 0.3 mm wide along the whole path, a moment source
+    (a centre of dilation, rate a 0.5 us Hann pulse) at (59.95, 14.95) mm, just past the tip:
+    the sensor's signal first exceeds 2 % of its peak at 5.629 us; the P front's
+    geometric arrival at the sensor's nearest point, 32.849 mm away, is 5.568 us (+0.061 us, the
+    source pulse's rise and the threshold)
+
+(c) IMAGING
+  wall 12 mm thick, modelled 90 mm long, 40 mm drawn; crack: a void 8 x 0.5 mm, centre (24, 8) mm, tilted 20 deg
+  array: 16 elements, pitch 1.5 mm (half a P wavelength is 1.475 mm), width 1.3 mm, centres x = 8.75 ... 31.25 mm
+  full matrix capture: 16 runs, each element transmits, all receive, 8 us
+  the direct waves (under the transmitter, along the array) are taken out with a run in a
+  half space (no echo within the record) at the same element distance |i - j|
+  CHECK 5, reciprocity of the scattered data: max|h_ij - h_ji| / max|h| = 3.4e-07
+  total focusing: I(x, z) = |sum_i sum_j H[h_ij](t_i + t_j)|, t = distance / c_L, the burst's
+  centre as time zero, 0.2 mm pixels; the page shows the mean over transmitters 1 ... k
+  after the k-th firing, in dB of the complete image's peak, 24 dB range
+  CHECK 6, the image: the crack's peak at (23.60, 8.00) mm, 0.14 mm from the crack's line (the crack
+    runs from (20.24, 9.37) to (27.76, 6.63) mm); the back wall imaged at z = 12.20 mm (true 12),
+    -4.5 dB, at x = 12 mm, away from the crack's shadow
+  the fronts drawn: the incident circle c_L t about the transmitter, cut where the crack
+  shadows it; the crack's specular front, a circle about the transmitter's mirror image in
+  the crack's line, over the rays that meet the crack; its edge waves, circles about each
+  tip starting when the incident front reaches it; the back wall's echo, a circle about
+  the mirror image in the back wall, cut where the crack shadows its path. The receivers
+  light up when the first crack echo reaches them (shortest path via the crack).
+
+TIME
+  time slowed 1e+05 (10 us of the model per second) in all three panels; the loop is 8.4 s:
+  (a) a shot every 4.2 s from t = 0.5 s; (b) growth steps at t = 0.55, 2.55, 4.55, 6.55 s;
+  (c) a firing every 0.4 s from t = 0.6 s (4.0 us each); the crack's first echo reaches a receiver 2.25 to 5.03 us
+      after the burst starts (57 of 256 pairs later than the firing's 4.0 us: those receivers are not lit)
+  poster (printed frame) at t = 7.166 s: (a) recorded, (b) the last step heard, (c) the image complete

@@ -1,0 +1,7 @@
+# his words inside his two plots (build/r10-deck/his/s012-pic1.png)
+Normal Q–Q plot
+Theoretical normal quantiles
+Observed strength (MPa)
+Regression residuals
+Fitted trips
+Observed minus fitted

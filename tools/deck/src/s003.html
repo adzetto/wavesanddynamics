@@ -1,0 +1,47 @@
+<section class="slide">
+ <style>
+  .learn{margin:20px 0 64px;gap:64px}
+  .learn .node{padding:22px 26px 24px}
+  .learn .h{font-size:34px}
+  .learn .ps{margin-top:8px;font-size:28px}
+  .pairs{row-gap:52px}
+ </style>
+ <header class="head">
+  <h1 class="title">How to read the big-picture map</h1>
+  <p class="lede">Keep slide 2 as your reference. We will build its tools in a learning order, then connect them in applications.</p>
+ </header>
+ <main class="body">
+  <h2 class="h">Learning route</h2>
+  <div class="route learn">
+   <div class="node k-navy" id="r1"><h3 class="h">Probability</h3><p class="ps">Calculate with a model</p></div>
+   <div class="node k-navy" id="r2"><h3 class="h">Statistics</h3><p class="ps">Learn from observations</p></div>
+   <div class="node k-navy" id="r3"><h3 class="h">Stochastic models</h3><p class="ps">Describe time or space</p></div>
+   <div class="node k-navy" id="r4"><h3 class="h">Estimation</h3><p class="ps">Update unknowns; act</p></div>
+  </div>
+  <i class="wire" data-from="#r1" data-to="#r2"></i>
+  <i class="wire" data-from="#r2" data-to="#r3"></i>
+  <i class="wire" data-from="#r3" data-to="#r4"></i>
+  <div class="g pairs">
+   <div class="s6">
+    <h2 class="h">Fitting and checking form a loop</h2>
+    <p class="p lines"><span>An existing model may save new fitting.</span><span>Its assumptions still need justification.</span></p>
+   </div>
+   <div class="s6 o7">
+    <h2 class="h">Estimation is part of inference</h2>
+    <p class="p lines"><span>Inference includes estimating unknowns,</span><span>quantifying uncertainty and testing claims.</span></p>
+   </div>
+   <div class="s6 o1 r2">
+    <h2 class="h">Point values can encode probability</h2>
+    <p class="p lines"><span>A quantile or reliability index is one number</span><span>with a probabilistic meaning.</span></p>
+   </div>
+   <div class="s6 o7 r2">
+    <h2 class="h">A model gives conditional conclusions</h2>
+    <p class="p lines"><span>A probability is only as credible as the model.</span><span>FOSM generally approximates the response.</span></p>
+   </div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Use the map to locate a question. Return to the data and revise the model when needed.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> The whole map: a guide, with a few important distinctions</span><span class="src">Sources: [1], [2]</span><span class="num">3</span></p>
+ </footer>
+</section>

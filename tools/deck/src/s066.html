@@ -1,0 +1,35 @@
+<section class="slide">
+ <style>
+  .kal .h + .ps{margin-top:8px}
+  .kal .eqs{margin-top:10px}
+ </style>
+ <header class="head">
+  <h1 class="title">One Kalman update, step by step</h1>
+  <p class="lede">Zoom into one hour of the previous slide. The model predicts 10&nbsp;mm (SD&nbsp;2&nbsp;mm); the sensor reads 14&nbsp;mm (noise SD&nbsp;3&nbsp;mm). Where is the displacement?</p>
+ </header>
+ <main class="body g">
+  <div class="s5 stack kal">
+   <div>
+    <h2 class="h">The two sources</h2>
+    <p class="ps lines"><span>Prior = model prediction: 10 mm, SD 2 mm</span><span>Sensor reading: 14 mm, SD 3 mm</span></p>
+   </div>
+   <div>
+    <h2 class="h c-blue">Combine them</h2>
+    <div class="eqs">
+     <p class="eq">Gain <m>K = 2² / (2² + 3²) = 4/13 = 0.31</m></p>
+     <p class="eq c-blue"><b>Estimate</b> <m>= 10 + 0.31 × 4 = 11.23 mm</m></p>
+     <p class="eq">New SD <m>= √((1 − K) × 4) = 1.66 mm</m></p>
+    </div>
+   </div>
+   <div>
+    <h2 class="h c-accent">Why not just trust the sensor?</h2>
+    <p class="ps">Its error (SD 3) is larger than the model's (SD 2), so the model gets more weight.</p>
+   </div>
+  </div>
+  <div data-fig="update" class="s7 o6"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">Prior = model prediction. The update moves toward the sensor by <m>K</m> and ends more certain than either source.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–4: one prediction-correction cycle</span><span class="src">Sources: [40], [41], [47]</span><span class="num">66</span></p>
+ </footer>
+</section>

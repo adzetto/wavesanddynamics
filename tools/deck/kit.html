@@ -1,0 +1,43 @@
+<section class="slide" data-min="20">
+ <style>
+  .kit{row-gap:26px}
+  .kit .cap{font:600 20px/1.3 var(--sans);color:var(--muted);margin-bottom:6px}
+  .sw{display:flex;gap:12px;flex-wrap:wrap}
+  .sw span{display:inline-block;width:150px;padding:8px 10px;font:600 20px/1.3 var(--sans);color:#fff}
+ </style>
+ <header class="head">
+  <h1 class="title">The deck's kit: a sampler, never published</h1>
+  <p class="lede">.lede under .title. Every piece below is a class in deck.css or a call in fig.py (DECK_BRIEF.md).</p>
+ </header>
+ <main class="body g kit">
+  <div class="s4">
+   <p class="cap">.h + .p, .ps, .note, .eq</p>
+   <h2 class="h">A heading, .h</h2>
+   <p class="p">Body text, .p, 34 px.</p>
+   <p class="ps">Smaller body, .ps, 30 px.</p>
+   <p class="note">A note, .note, 28 px, muted.</p>
+   <p class="eq"><m>Z = (X̄ − μ)/SE  ∼  N(0, 1)</m></p>
+   <p class="eq"><m>SE(X̄) = σ/√n = 3/√25</m></p>
+   <p class="eq"><m>σʏ² = a₁²σ₁² + a₂²σ₂²</m></p>
+  </div>
+  <div class="s4">
+   <p class="cap">.node .k-navy / .k-accent / .k-blue / .k-sky / .k-deep</p>
+   <div class="node k-blue"><h2 class="h"><m>p(θ | data)</m></h2><p class="ps"><b>Unknown parameters</b> in a node</p></div>
+   <p class="cap" style="margin-top:18px">.panel, .list</p>
+   <div class="panel"><p class="ps"><b>A lead-in:</b> the rest.</p>
+    <ul class="list ps"><li>First point</li><li>Second point</li></ul></div>
+  </div>
+  <div class="s4">
+   <p class="cap">his colours, mapped</p>
+   <div class="sw"><span style="background:var(--navy)">navy</span><span style="background:var(--accent)">accent</span><span style="background:var(--blue)">blue</span><span style="background:var(--sky)">sky</span><span style="background:var(--deep)">deep</span><span style="background:var(--amber)">amber (fill)</span></div>
+   <p class="cap" style="margin-top:18px">.c-accent, .c-blue, .c-sky, .c-deep</p>
+   <p class="ps"><span class="c-accent">orange text</span>, <span class="c-blue">purple text</span>, <span class="c-sky">teal text</span>, <span class="c-deep">red text</span></p>
+  </div>
+  <div data-fig="axes_demo" class="s6 r2"></div>
+  <div data-fig="marks_demo" class="s6 o7 r2"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">.take: his take-away line, over the accent rule.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> .run .map</span><span class="src">.run .src</span><span class="num">0</span></p>
+ </footer>
+</section>

@@ -1,0 +1,19 @@
+nf-wt-laser: the fun table, 'Noncontact vibration sensing' (image9)
+
+MODEL
+  steel cantilever 150 x 20 x 2 mm, E = 210 GPa, rho = 7850 kg/m^3: first mode f1 = beta1^2 / (2 pi L^2) sqrt(EI/m) = 74.268 Hz
+  tip amplitude 2.2 um; laser spot at 0.82 L, where the mode moves 1.656 um
+  He-Ne 632.8 nm: 10.47 fringes per half period; peak Doppler shift 2 v_max / lambda = 2.442 kHz
+
+CHECK 1: f1 of the cantilever, closed form against Hermite FE (clamped root, free tip)
+    4 elements: f1 = 74.27057 Hz (+3.3e-05); nodal mode shape off the closed form by 9.7e-08
+   16 elements: f1 = 74.26815 Hz (+1.3e-07); nodal mode shape off the closed form by 2.9e-11
+   64 elements: f1 = 74.26814 Hz (-9.9e-09); nodal mode shape off the closed form by 2.1e-10
+
+CHECK 2: the drawn fringe signal carries the velocity: demodulate it and compare
+  velocity from the fringe phase: max error 9.1e-09 of v_max = 0.773 mm/s
+  zero crossings of the fringe signal in one half period: 20 = 2 x 10 fringes; 4 U / lambda = 10.47
+
+DRAWING
+  cantilever 150 mm = 300 units; its motion drawn x 9091 (tip 2.2 um = 40 units)
+  time slowed 148.5 x: the mode (74.27 Hz) shows at 0.5 Hz; the strip holds one period.

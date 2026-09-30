@@ -1,0 +1,317 @@
+{
+ "entries": [
+  {
+   "find": "K",
+   "after": "-Means",
+   "tex": "K",
+   "count": 5,
+   "why": "K is the number of clusters (4.8: 'find K natural groups'); set as Bishop and ESL set K-means; the hyphen and the name stay text"
+  },
+  {
+   "find": "K",
+   "after": "-Nearest",
+   "tex": "K",
+   "count": 3,
+   "why": "K is the number of neighbours (4.7: 'the K most similar neighbors')"
+  },
+  {
+   "find": "K",
+   "after": "-nearest",
+   "tex": "K",
+   "count": 1,
+   "why": "3.3, K-nearest-neighbors imputation"
+  },
+  {
+   "find": "Z",
+   "after": "-score",
+   "tex": "Z",
+   "count": 2,
+   "why": "the standard score is named after its variable; his capital Z kept"
+  },
+  {
+   "find": "Z",
+   "after": "-Score",
+   "tex": "Z",
+   "count": 1,
+   "why": "Figure 5 column head"
+  },
+  {
+   "find": "F1",
+   "tex": "F_1",
+   "count": 4,
+   "why": "the F-measure with beta = 1, set F_1 as LaTeX papers do; 'Score' stays text"
+  },
+  {
+   "find": "age = 42",
+   "tex": "{\\text{age} = 42}",
+   "count": 1,
+   "why": "Figure 5 is a table of feature assignments; each one is set alone, so the spaces between them can wrap in a narrow cell, and braced, since TeX never breaks inside a group: no line ends at its = sign"
+  },
+  {
+   "find": "income = 87,000",
+   "tex": "{\\text{income} = 87{,}000}",
+   "count": 1,
+   "why": "the inner braces keep the thousands comma from taking a punctuation space"
+  },
+  {
+   "find": "credit_score = 742",
+   "tex": "{\\text{credit\\_score} = 742}",
+   "count": 1,
+   "why": "his underscore kept inside the upright name"
+  },
+  {
+   "find": "age = 0.47",
+   "tex": "{\\text{age} = 0.47}",
+   "count": 1
+  },
+  {
+   "find": "income = 0.34",
+   "tex": "{\\text{income} = 0.34}",
+   "count": 1
+  },
+  {
+   "find": "credit_score = 0.61",
+   "tex": "{\\text{credit\\_score} = 0.61}",
+   "count": 1
+  },
+  {
+   "find": "age = −0.21",
+   "tex": "{\\text{age} = -0.21}",
+   "count": 1,
+   "why": "his minus is already U+2212"
+  },
+  {
+   "find": "income = −0.22",
+   "tex": "{\\text{income} = -0.22}",
+   "count": 1
+  },
+  {
+   "find": "credit_score = +0.18",
+   "tex": "{\\text{credit\\_score} = +0.18}",
+   "count": 1
+  },
+  {
+   "find": "[0,1]",
+   "tex": "[0,1]",
+   "count": 1,
+   "why": "Figure 5 caption; the closed interval"
+  },
+  {
+   "find": "age × risk score",
+   "tex": "\\text{age} \\times \\text{risk score}",
+   "count": 1,
+   "why": "3.4, an interaction term; his × kept"
+  },
+  {
+   "find": "L1",
+   "tex": "L_1",
+   "count": 4,
+   "why": "the L1 penalty; his letter kept, not renamed to \\ell_1; in 'L1/L2' and 'L1/Lasso' the slash means 'or', so it stays text"
+  },
+  {
+   "find": "L2",
+   "tex": "L_2",
+   "count": 1
+  },
+  {
+   "find": "(weight1 × square footage) + (weight2 × number of bedrooms) + bias",
+   "tex": "(\\text{weight}_1 \\times \\text{square footage}) + (\\text{weight}_2 \\times \\text{number of bedrooms}) + \\text{bias}",
+   "count": 1,
+   "why": "4.1, the linear-regression prediction; indices down, words upright, his × kept; the products are not braced: a braced product is 17em that cannot break, wider than a 360px phone's column"
+  },
+  {
+   "find": "K",
+   "before": "looks at the ",
+   "after": " most similar",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K=3",
+   "tex": "K=3",
+   "count": 2,
+   "why": "4.7 text and the Figure 14 caption"
+  },
+  {
+   "find": "X",
+   "before": "liked ",
+   "after": ")",
+   "tex": "X",
+   "count": 1,
+   "why": "4.7, 'users similar to you liked X': a placeholder for an item, a variable in prose"
+  },
+  {
+   "find": "K",
+   "before": "find ",
+   "after": " natural groups",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K",
+   "before": "choose ",
+   "tex": "K",
+   "count": 2,
+   "why": "4.8, 'The user must choose K' and 'no principled way to choose K'"
+  },
+  {
+   "find": "z = w1*x1 + w2*x2 + w3*x3 + bias → output = activation(z)",
+   "tex": "z = w_1 x_1 + w_2 x_2 + w_3 x_3 + \\text{bias} \\;\\rightarrow\\; \\text{output} = \\text{activation}(z)",
+   "count": 1,
+   "display": true,
+   "why": "the client's example; it is a line of its own in the 5.1 callout, so it is set as a display equation"
+  },
+  {
+   "find": "−1",
+   "before": "between ",
+   "tex": "-1",
+   "count": 1,
+   "why": "tanh's range; a signed value is set in math, as $-1$ is in LaTeX; the unsigned 0 and 1 of the sigmoid row stay text"
+  },
+  {
+   "find": "+1",
+   "tex": "+1",
+   "count": 5,
+   "why": "the tanh bound (1) and reward values in 7.4 (4)"
+  },
+  {
+   "find": "Q",
+   "after": "-learning",
+   "tex": "Q",
+   "count": 6,
+   "why": "Q is the action-value function (7.4: 'a value, almost always written Q'); set as Sutton and Barto set Q-learning"
+  },
+  {
+   "find": "Q",
+   "after": "-Network",
+   "tex": "Q",
+   "count": 2,
+   "why": "Deep Q-Network, the same Q"
+  },
+  {
+   "find": "Q",
+   "after": "-Learning",
+   "tex": "Q",
+   "count": 1,
+   "why": "the 7.4 heading"
+  },
+  {
+   "find": "Q",
+   "before": "written ",
+   "tex": "Q",
+   "count": 1
+  },
+  {
+   "find": "Q",
+   "after": "-value",
+   "tex": "Q",
+   "count": 4,
+   "why": "three Q-value in 7.4 and Q-values in Table 2"
+  },
+  {
+   "find": "5x5",
+   "tex": "5 \\times 5",
+   "count": 1,
+   "why": "Figure 30 caption; the grid's size, his x as the times sign"
+  },
+  {
+   "find": "0",
+   "before": ", ",
+   "after": ", or",
+   "tex": "0",
+   "count": 1,
+   "why": "7.4, 'a single value like +1, 0, or -0.02': the whole list of reward values is set, so the 0 matches its neighbours"
+  },
+  {
+   "find": "-0.02",
+   "tex": "-0.02",
+   "count": 2,
+   "why": "his hyphen becomes the minus sign"
+  },
+  {
+   "find": "-1",
+   "before": "winning, ",
+   "tex": "-1",
+   "count": 1,
+   "why": "7.4, the chess reward; his hyphen becomes the minus sign"
+  },
+  {
+   "find": "0",
+   "before": ", ",
+   "after": " for a draw",
+   "tex": "0",
+   "count": 1
+  },
+  {
+   "find": "0",
+   "before": "exactly ",
+   "after": " for every",
+   "tex": "0",
+   "count": 1
+  },
+  {
+   "find": "K",
+   "after": "-fold",
+   "tex": "K",
+   "count": 4,
+   "why": "the number of folds (9.3: 'divided into K equal-sized folds'); Figure 32 caption and 9.3"
+  },
+  {
+   "find": "K",
+   "before": "into ",
+   "after": " equal-sized",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K",
+   "before": "trained ",
+   "after": " separate",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K",
+   "before": "After ",
+   "after": " rounds",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K",
+   "before": "the ",
+   "after": " resulting",
+   "tex": "K",
+   "count": 1
+  },
+  {
+   "find": "K=5",
+   "tex": "K=5",
+   "count": 1
+  },
+  {
+   "find": "TP",
+   "before": "(",
+   "after": " divided by",
+   "tex": "\\mathrm{TP}",
+   "count": 2,
+   "why": "9.4, precision and recall in words; the counts are set upright as \\mathrm so + keeps its binary spacing; 'divided by' is his prose"
+  },
+  {
+   "find": "TP+FP",
+   "tex": "\\mathrm{TP}+\\mathrm{FP}",
+   "count": 1
+  },
+  {
+   "find": "TP+FN",
+   "tex": "\\mathrm{TP}+\\mathrm{FN}",
+   "count": 1
+  },
+  {
+   "find": "[age=0.47, income=0.34, credit=0.61]",
+   "tex": "[{\\text{age}=0.47},\\;\\allowbreak {\\text{income}=0.34},\\;\\allowbreak {\\text{credit}=0.61}]",
+   "count": 1,
+   "why": "Glossary, Feature Vector; a thick space after each comma so the items read apart from their own = signs; each item braced, with \\allowbreak after its comma, so a narrow line breaks between items, never inside one"
+  }
+ ]
+}

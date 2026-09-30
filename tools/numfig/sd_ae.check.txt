@@ -1,0 +1,38 @@
+nf-sd-ae: the brochure's image6 (acoustic emission), redrawn from a model
+generator: tools/numfig/sd_ae.py (helpers: sd_ndtlib.py);
+model: shm_ndt.main(), imported (tools/numfig/shm_ndt.py and shm_fdtd.py, Figure 3 of the SHM article);
+  the model's own validation is tools/numfig/shm_ndt.check.txt
+his words in the picture, kept verbatim: "Acoustic Emission (sensor is only listening)", "Steel beam"
+
+MODEL
+  2D plane-strain elastodynamics, velocity-stress on a staggered grid (Virieux 1986), voids as
+  cells of zero density and stiffness (EFIT, Fellinger et al. 1995); every face traction free.
+  steel: c_L = 5900 m/s, c_T = 3230 m/s, rho = 7850 kg/m3
+
+THE PICTURE
+  beam 120 x 30 mm (drawn 6.5 units/mm), his crack path from the underside:
+    (19.9, 30), (29.9, 21.7), (36.2, 25.9), (45.3, 17.6), (53.4, 24.5), (59.8, 15.2) mm
+  sensor 8 mm wide on top at x = 26.7 mm
+  the crack grows in four steps; each step sends a P wave front from the new tip, radius c_L t,
+  clipped to the beam (the direct fronts; the faces' reflections are not drawn), its stroke fading
+  as 1/sqrt(r) (2D spreading); a front is not drawn through his words "Steel beam"
+    step 1 at t = 0.55 s: tip (36.2, 25.9) mm, nearest point of the sensor 26.48 mm away: heard 4.488 us later (449 ms on the page)
+    step 2 at t = 2.55 s: tip (45.3, 17.6) mm, nearest point of the sensor 22.87 mm away: heard 3.876 us later (388 ms on the page)
+    step 3 at t = 4.55 s: tip (53.4, 24.5) mm, nearest point of the sensor 33.40 mm away: heard 5.661 us later (566 ms on the page)
+    step 4 at t = 6.55 s: tip (59.8, 15.2) mm, nearest point of the sensor 32.83 mm away: heard 5.565 us later (556 ms on the page)
+  the fronts travel at c_L: CHECK 1 (shm_ndt.check.txt, CHECK 1), the scheme's own P travel time, an
+    80 mm probe's back wall echo through 40 mm, Richardson extrapolated: 13.5610 us against 2d/c_L = 13.5593 us (+0.012 %)
+  CHECK 2 (shm_ndt.check.txt, CHECK 4): the model with the crack as a 0.3 mm void along the whole path
+    and a moment source just past the tip: the sensor's signal first exceeds 2 % of its peak at 5.629 us;
+    the P front's geometric arrival at the sensor's nearest point, 32.849 mm away, is 5.568 us (+0.061 us: the source pulse's rise and the threshold)
+
+TIME
+  time slowed 1e5 (10 us of the model a second); the loop is 8.4 s, growth steps at t = 0.55, 2.55, 4.55, 6.55 s
+  poster (printed frame) at t = 7.166 s: the fourth step heard, the crack grown
+  drawn at his picture's proportions: 1000 x 317 (his 691 x 219)
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.05 s from 0.05 to 16.8 s (two loops, 337 moments): nothing collides
+  no knockout is relied on and nothing is allowed (still(allow=()))

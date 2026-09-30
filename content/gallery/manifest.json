@@ -1,0 +1,657 @@
+{
+ "source": "https://www.wavesanddata.com/gallery",
+ "captured": "2026-09-23",
+ "note": "The live page, in its order. 'sets' are its rows: one caption, in his words and his line breaks, and the photos or video beside it (item numbers). 'items' lists every file once, in order of first appearance, with the caption of the set it first appears in. A set with 'repeat_of' shows the same files as an earlier set. Files are the originals Wix serves; width and height are as displayed (EXIF orientation applied). The photos have no captions of their own on the live page and no links; 'upload_name' and 'alt_on_wix' are his upload file names, not text he wrote for visitors.",
+ "sets": [
+  {
+   "order": 1,
+   "caption": "Field tests of our damage detection prototype\nat TX in collaboration with BNSF Railroad Company\n(during my Ph.D.)",
+   "lines": [
+    "Field tests of our damage detection prototype",
+    "at TX in collaboration with BNSF Railroad Company",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    1,
+    2
+   ]
+  },
+  {
+   "order": 2,
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTC\n(during my Ph.D.)",
+   "lines": [
+    "Field tests of our damage detection prototype",
+    "and rail vibration measurements at TTC",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    3,
+    4,
+    5
+   ]
+  },
+  {
+   "order": 3,
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "lines": [
+    "Field tests of our damage detection prototype",
+    "and rail vibration measurements at TTCI",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    3,
+    4,
+    5
+   ],
+   "repeat_of": 2
+  },
+  {
+   "order": 4,
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "lines": [
+    "Field tests of our damage detection prototype",
+    "and rail vibration measurements at TTCI",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    3,
+    4,
+    5
+   ],
+   "repeat_of": 2
+  },
+  {
+   "order": 5,
+   "caption": "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "lines": [
+    "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  {
+   "order": 6,
+   "caption": "Laboratory tests on the developed test-bed\n(during my Ph.D.)",
+   "lines": [
+    "Laboratory tests on the developed test-bed",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    10,
+    11,
+    12
+   ]
+  },
+  {
+   "order": 7,
+   "caption": "Rail vibration measurements in Temple, TX\n(during my Ph.D.)",
+   "lines": [
+    "Rail vibration measurements in Temple, TX",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    13,
+    14,
+    15
+   ]
+  },
+  {
+   "order": 8,
+   "caption": "Scanning laser Doppler vibrometer tests to understand speckle noise\n(during my Ph.D.)",
+   "lines": [
+    "Scanning laser Doppler vibrometer tests to understand speckle noise",
+    "(during my Ph.D.)"
+   ],
+   "items": [
+    16,
+    17
+   ]
+  },
+  {
+   "order": 9,
+   "caption": "Instrumentation of a tall building with accelerometers\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of a tall building with accelerometers",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    18,
+    19
+   ]
+  },
+  {
+   "order": 10,
+   "caption": "Instrumentation of an industrial chimney\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of an industrial chimney",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    20
+   ]
+  },
+  {
+   "order": 11,
+   "caption": "Instrumentation of twelve masonry arch bridges\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of twelve masonry arch bridges",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    21,
+    22
+   ]
+  },
+  {
+   "order": 12,
+   "caption": "Instrumentation of a cold-form steel structure\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of a cold-form steel structure",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    23
+   ]
+  },
+  {
+   "order": 13,
+   "caption": "Instrumentation of a wind turbine\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of a wind turbine",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    24,
+    25
+   ]
+  },
+  {
+   "order": 14,
+   "caption": "Instrumentation of a suspension bridge\n(during my M.Sc.)",
+   "lines": [
+    "Instrumentation of a suspension bridge",
+    "(during my M.Sc.)"
+   ],
+   "items": [
+    26,
+    27
+   ]
+  }
+ ],
+ "items": [
+  {
+   "order": 1,
+   "set": 1,
+   "type": "video",
+   "file": "video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88.mp4",
+   "caption": "Field tests of our damage detection prototype\nat TX in collaboration with BNSF Railroad Company\n(during my Ph.D.)",
+   "width": 1080,
+   "height": 1920,
+   "duration": 29.55,
+   "bytes": 39435923,
+   "sha256": "ed001e3e2cf9136c89df4bdb60307a5272dc5c216635751c28099a18a61c839a",
+   "wix_id": "ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88",
+   "source": "https://video.wixstatic.com/video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88/file",
+   "renditions": {
+    "480p": "https://video.wixstatic.com/video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88/480p/mp4/file.mp4",
+    "720p": "https://video.wixstatic.com/video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88/720p/mp4/file.mp4",
+    "1080p": "https://video.wixstatic.com/video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88/1080p/mp4/file.mp4"
+   },
+   "poster": {
+    "file": "video/ce0a40_338c1c5cfd504efd8a5f1136c4e3eb88f000.jpg",
+    "width": 1080,
+    "height": 1920,
+    "bytes": 540573,
+    "sha256": "9c0fdb0d458982e1db6783e8d1f71a9f09edea1fe0d098aa562bde7242fe34e3"
+   },
+   "wix_title": "Your Video Title"
+  },
+  {
+   "order": 2,
+   "set": 1,
+   "type": "photo",
+   "file": "photos/ce0a40_96bbb3d2529f42e88a9d853bac26bbf5_mv2.png",
+   "caption": "Field tests of our damage detection prototype\nat TX in collaboration with BNSF Railroad Company\n(during my Ph.D.)",
+   "width": 489,
+   "height": 673,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 854666,
+   "sha256": "b07d2947a0e252a6b5e194e787c542018ebb4fe14d14b682ce4ec7543f62fac1",
+   "wix_id": "ce0a40_96bbb3d2529f42e88a9d853bac26bbf5~mv2.png",
+   "upload_name": "Picture4.png",
+   "alt_on_wix": "Picture4.png",
+   "same_as_reference": true
+  },
+  {
+   "order": 3,
+   "set": 2,
+   "type": "photo",
+   "file": "photos/ce0a40_322d32b85f7b482d8739a40ae002ca78_mv2.jpg",
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTC\n(during my Ph.D.)",
+   "width": 3024,
+   "height": 4032,
+   "exif_orientation": 6,
+   "gps_in_file": true,
+   "bytes": 4011135,
+   "sha256": "eb69980862205ee552acb8a30bbd8021c8b4a9fb58f9accb6ae0e38d26c41ddf",
+   "wix_id": "ce0a40_322d32b85f7b482d8739a40ae002ca78~mv2.jpg",
+   "upload_name": "IMG_1887.JPG",
+   "alt_on_wix": "IMG_1887.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 4,
+   "set": 2,
+   "type": "photo",
+   "file": "photos/ce0a40_7533641491844047967d5adf692cabf8_mv2.jpg",
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTC\n(during my Ph.D.)",
+   "width": 640,
+   "height": 480,
+   "exif_orientation": 1,
+   "gps_in_file": true,
+   "bytes": 118046,
+   "sha256": "0bd7de9cf37952aab092534e8d4556ef53acb51439f13aafa10b0ebc032fd832",
+   "wix_id": "ce0a40_7533641491844047967d5adf692cabf8~mv2.jpg",
+   "upload_name": "IMG_8373.jpg",
+   "alt_on_wix": "IMG_8373.jpg",
+   "same_as_reference": true
+  },
+  {
+   "order": 5,
+   "set": 2,
+   "type": "photo",
+   "file": "photos/ce0a40_3727fe77b6a347c69c2864dee815fe4c_mv2.jpg",
+   "caption": "Field tests of our damage detection prototype\nand rail vibration measurements at TTC\n(during my Ph.D.)",
+   "width": 4032,
+   "height": 3024,
+   "exif_orientation": 3,
+   "gps_in_file": true,
+   "bytes": 3376068,
+   "sha256": "0577a98468ea3efab835d66a5abed97834d11af6693b0935c969f1381a7d7761",
+   "wix_id": "ce0a40_3727fe77b6a347c69c2864dee815fe4c~mv2.jpg",
+   "upload_name": "IMG_1950.JPG",
+   "alt_on_wix": "IMG_1950.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 6,
+   "set": 5,
+   "type": "photo",
+   "file": "photos/ce0a40_7e8288080bf4425eb0302f7fb6096216_mv2.jpg",
+   "caption": "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "width": 3024,
+   "height": 4032,
+   "exif_orientation": 6,
+   "gps_in_file": false,
+   "bytes": 3708586,
+   "sha256": "5a18b0ff8f56272db6bee909ccf34e36a330ddda7e85525f8bab95411bd868da",
+   "wix_id": "ce0a40_7e8288080bf4425eb0302f7fb6096216~mv2.jpg",
+   "upload_name": "IMG_2910.JPG",
+   "alt_on_wix": "IMG_2910.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 7,
+   "set": 5,
+   "type": "photo",
+   "file": "photos/ce0a40_b0be1cdcf01f42908057c3b6e1c7550a_mv2.jpg",
+   "caption": "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "width": 4032,
+   "height": 3024,
+   "exif_orientation": 3,
+   "gps_in_file": false,
+   "bytes": 2947314,
+   "sha256": "6db1c53b9a3c0fa7b9c8d57783913995b7d7788a1f3a9b7a24abaeecdd70e910",
+   "wix_id": "ce0a40_b0be1cdcf01f42908057c3b6e1c7550a~mv2.jpg",
+   "upload_name": "IMG_2920.JPG",
+   "alt_on_wix": "IMG_2920.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 8,
+   "set": 5,
+   "type": "photo",
+   "file": "photos/ce0a40_c64c603ccdb1464284da4a212ecd15b5_mv2.jpg",
+   "caption": "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "width": 4032,
+   "height": 3024,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 4950090,
+   "sha256": "cf961e360ec2bfacaf11855752485792743bfde513eda32fca0ac1c80c783113",
+   "wix_id": "ce0a40_c64c603ccdb1464284da4a212ecd15b5~mv2.jpg",
+   "upload_name": "IMG_2726.JPG",
+   "alt_on_wix": "IMG_2726.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 9,
+   "set": 5,
+   "type": "photo",
+   "file": "photos/ce0a40_75ca050545b7425a8887a9465feff0fb_mv2.jpg",
+   "caption": "Initial tests of a moving laser Doppler vibrometer over rail and rail vibration measurements at TTCI\n(during my Ph.D.)",
+   "width": 4032,
+   "height": 3024,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 2922064,
+   "sha256": "c63f556a591a673e45ca39bd230bda9faed65744ccb8ad6b1cffe9100e72e318",
+   "wix_id": "ce0a40_75ca050545b7425a8887a9465feff0fb~mv2.jpg",
+   "upload_name": "IMG_2806.JPG",
+   "alt_on_wix": "IMG_2806.JPG",
+   "same_as_reference": true
+  },
+  {
+   "order": 10,
+   "set": 6,
+   "type": "photo",
+   "file": "photos/ce0a40_826b4b24b3094a1bae01847c7199c1de_mv2.png",
+   "caption": "Laboratory tests on the developed test-bed\n(during my Ph.D.)",
+   "width": 1775,
+   "height": 991,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 4043548,
+   "sha256": "a7e501bf30a4679193b3e78600b8180255506bdf95a248307a3a37cc2be9abb4",
+   "wix_id": "ce0a40_826b4b24b3094a1bae01847c7199c1de~mv2.png",
+   "upload_name": "Capture23232.PNG",
+   "alt_on_wix": "Capture23232.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 11,
+   "set": 6,
+   "type": "photo",
+   "file": "photos/ce0a40_25268ffd3d44480d9b33d150c66edcdd_mv2.jpg",
+   "caption": "Laboratory tests on the developed test-bed\n(during my Ph.D.)",
+   "width": 480,
+   "height": 640,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 119998,
+   "sha256": "b77c82d9be8ea1f411ac259a1b30cbfc099e7f57252606bc3430d1145f472fc5",
+   "wix_id": "ce0a40_25268ffd3d44480d9b33d150c66edcdd~mv2.jpg",
+   "upload_name": "-fzA-yhvTzmkU1knwbVBWg.jpg",
+   "alt_on_wix": "-fzA-yhvTzmkU1knwbVBWg.jpg",
+   "same_as_reference": true
+  },
+  {
+   "order": 12,
+   "set": 6,
+   "type": "photo",
+   "file": "photos/ce0a40_cd33a973d36243a7b98dfdabcc003f1d_mv2.jpg",
+   "caption": "Laboratory tests on the developed test-bed\n(during my Ph.D.)",
+   "width": 640,
+   "height": 480,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 109424,
+   "sha256": "6706cd7d288091424a3bc3b8d7bee18b53338cdb94ffc4de9b7aba1ef73985a1",
+   "wix_id": "ce0a40_cd33a973d36243a7b98dfdabcc003f1d~mv2.jpg",
+   "upload_name": "eoNbJKLGTB2Ul8Kjk-sF8g.jpg",
+   "alt_on_wix": "eoNbJKLGTB2Ul8Kjk-sF8g.jpg",
+   "same_as_reference": true
+  },
+  {
+   "order": 13,
+   "set": 7,
+   "type": "photo",
+   "file": "photos/ce0a40_fc554fdfb21e45ed86da50e3692d8712_mv2.png",
+   "caption": "Rail vibration measurements in Temple, TX\n(during my Ph.D.)",
+   "width": 1567,
+   "height": 756,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 2713732,
+   "sha256": "9d5a5391fe8b2d53c8a232d0ce95a9a8fa5bd6681eb1245471dda5db38a39527",
+   "wix_id": "ce0a40_fc554fdfb21e45ed86da50e3692d8712~mv2.png",
+   "upload_name": "1.PNG",
+   "alt_on_wix": "1.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 14,
+   "set": 7,
+   "type": "photo",
+   "file": "photos/ce0a40_97e43d75c52f4d268f4f61bf39c9abc6_mv2.png",
+   "caption": "Rail vibration measurements in Temple, TX\n(during my Ph.D.)",
+   "width": 1236,
+   "height": 600,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 1633894,
+   "sha256": "49051415b427b042fb403dee9237faca1a3b609f1331f32a33ce47f05da35f91",
+   "wix_id": "ce0a40_97e43d75c52f4d268f4f61bf39c9abc6~mv2.png",
+   "upload_name": "Capture2.PNG",
+   "alt_on_wix": "Capture2.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 15,
+   "set": 7,
+   "type": "photo",
+   "file": "photos/ce0a40_fbf326352c6c413b95a4d39c9f00c610_mv2.png",
+   "caption": "Rail vibration measurements in Temple, TX\n(during my Ph.D.)",
+   "width": 888,
+   "height": 593,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 923221,
+   "sha256": "039c412d9ad0f296a20a88910fa91b22d06c32bec74da1298fdba1f0371d630e",
+   "wix_id": "ce0a40_fbf326352c6c413b95a4d39c9f00c610~mv2.png",
+   "upload_name": "Capture3.PNG",
+   "alt_on_wix": "Capture3.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 16,
+   "set": 8,
+   "type": "photo",
+   "file": "photos/ce0a40_7cdf33fb466c4d559ac61a43647863cd_mv2.png",
+   "caption": "Scanning laser Doppler vibrometer tests to understand speckle noise\n(during my Ph.D.)",
+   "width": 1054,
+   "height": 1244,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 2326856,
+   "sha256": "fcff45af232ab5f817bbc88a14640fae2e1b43a75acba80c63c89ea89876816c",
+   "wix_id": "ce0a40_7cdf33fb466c4d559ac61a43647863cd~mv2.png",
+   "upload_name": "ldv1.PNG",
+   "alt_on_wix": "ldv1.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 17,
+   "set": 8,
+   "type": "photo",
+   "file": "photos/ce0a40_02e6fd83fc724c12b6bd4217a03182a3_mv2.png",
+   "caption": "Scanning laser Doppler vibrometer tests to understand speckle noise\n(during my Ph.D.)",
+   "width": 1799,
+   "height": 1235,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 4123649,
+   "sha256": "1e64ef7091ef64277734c85b39b7d21a42f2cdd0ce58bfe51bb5e539e103a421",
+   "wix_id": "ce0a40_02e6fd83fc724c12b6bd4217a03182a3~mv2.png",
+   "upload_name": "ldv2.PNG",
+   "alt_on_wix": "ldv2.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 18,
+   "set": 9,
+   "type": "photo",
+   "file": "photos/ce0a40_d38305782d684d1fbe2e5f6a126285c5_mv2.png",
+   "caption": "Instrumentation of a tall building with accelerometers\n(during my M.Sc.)",
+   "width": 636,
+   "height": 457,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 723111,
+   "sha256": "5a646af705513b32a4068f56aad33194b300536f939067d3109a728f7e5fbc76",
+   "wix_id": "ce0a40_d38305782d684d1fbe2e5f6a126285c5~mv2.png",
+   "upload_name": "2e32.PNG",
+   "alt_on_wix": "2e32.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 19,
+   "set": 9,
+   "type": "photo",
+   "file": "photos/ce0a40_d358a55fc83942e99a3db35f5e8bd4f2_mv2.png",
+   "caption": "Instrumentation of a tall building with accelerometers\n(during my M.Sc.)",
+   "width": 510,
+   "height": 466,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 395878,
+   "sha256": "74106933d93bb4e888eaf61f1e53fddb229b306ab09bb6defcb57756b45e0b38",
+   "wix_id": "ce0a40_d358a55fc83942e99a3db35f5e8bd4f2~mv2.png",
+   "upload_name": "wfwfw.PNG",
+   "alt_on_wix": "wfwfw.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 20,
+   "set": 10,
+   "type": "photo",
+   "file": "photos/ce0a40_11da7cfe60934dd2bd6fda98a0778a1e_mv2.png",
+   "caption": "Instrumentation of an industrial chimney\n(during my M.Sc.)",
+   "width": 1339,
+   "height": 1054,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 2414616,
+   "sha256": "df15fd7265630d0875e2f3126acb96efe17f4a14630143b883a95283fbef64a8",
+   "wix_id": "ce0a40_11da7cfe60934dd2bd6fda98a0778a1e~mv2.png",
+   "upload_name": "Capture346346.PNG",
+   "alt_on_wix": "Capture346346.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 21,
+   "set": 11,
+   "type": "photo",
+   "file": "photos/ce0a40_e69dc2cd3a7349e5b5cced127087e8c0_mv2.jpg",
+   "caption": "Instrumentation of twelve masonry arch bridges\n(during my M.Sc.)",
+   "width": 1280,
+   "height": 720,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 450145,
+   "sha256": "771469aba742475646564c0fa79d11a1a1c1bd4ddc99f7b73a7608c4a5a2d6a1",
+   "wix_id": "ce0a40_e69dc2cd3a7349e5b5cced127087e8c0~mv2.jpg",
+   "upload_name": "k1.jpg",
+   "alt_on_wix": "k1.jpg",
+   "same_as_reference": true
+  },
+  {
+   "order": 22,
+   "set": 11,
+   "type": "photo",
+   "file": "photos/ce0a40_4566ede54e874fc2ac5313cff176c479_mv2.jpg",
+   "caption": "Instrumentation of twelve masonry arch bridges\n(during my M.Sc.)",
+   "width": 1280,
+   "height": 720,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 493170,
+   "sha256": "f729a9bad70a768263b27830ce7ad684cd228acbfda26bb2736abcf9e5e059cc",
+   "wix_id": "ce0a40_4566ede54e874fc2ac5313cff176c479~mv2.jpg",
+   "upload_name": "k5.jpg",
+   "alt_on_wix": "k5.jpg",
+   "same_as_reference": true
+  },
+  {
+   "order": 23,
+   "set": 12,
+   "type": "photo",
+   "file": "photos/ce0a40_49fd8561244f4b4caadd73bb35fa80e3_mv2.png",
+   "caption": "Instrumentation of a cold-form steel structure\n(during my M.Sc.)",
+   "width": 800,
+   "height": 880,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 1515278,
+   "sha256": "e08ca818d884a78926c161673a0a7e81387a4e1a031bd7b2ddd74a18c9deb1c5",
+   "wix_id": "ce0a40_49fd8561244f4b4caadd73bb35fa80e3~mv2.png",
+   "upload_name": "Capture24.PNG",
+   "alt_on_wix": "Capture24.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 24,
+   "set": 13,
+   "type": "photo",
+   "file": "photos/ce0a40_f1bfacf523e141c191405ea7e74d5df1_mv2.png",
+   "caption": "Instrumentation of a wind turbine\n(during my M.Sc.)",
+   "width": 600,
+   "height": 997,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 663487,
+   "sha256": "412d34357fedd3fb0c21fea8baa699d7d8e09d5af4ae93086e98ef8e847b2c86",
+   "wix_id": "ce0a40_f1bfacf523e141c191405ea7e74d5df1~mv2.png",
+   "upload_name": "Capture24242.PNG",
+   "alt_on_wix": "Capture24242.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 25,
+   "set": 13,
+   "type": "photo",
+   "file": "photos/ce0a40_e77a749c248b4a99b80a38990064ba02_mv2.png",
+   "caption": "Instrumentation of a wind turbine\n(during my M.Sc.)",
+   "width": 1208,
+   "height": 1371,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 3720183,
+   "sha256": "ab0cba55f6c04126380bafad4faba9611d67c0e6da596dbf0e36e557cbee66a5",
+   "wix_id": "ce0a40_e77a749c248b4a99b80a38990064ba02~mv2.png",
+   "upload_name": "Capturerwrwrwrq.PNG",
+   "alt_on_wix": "Capturerwrwrwrq.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 26,
+   "set": 14,
+   "type": "photo",
+   "file": "photos/ce0a40_a171f21c22204d5f8516583391dfd9f6_mv2.png",
+   "caption": "Instrumentation of a suspension bridge\n(during my M.Sc.)",
+   "width": 2147,
+   "height": 1226,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 4980661,
+   "sha256": "7d0d3830654ba01099ff0b3f1b3a678e6238ee22f764417c3a9d48db8a42fd43",
+   "wix_id": "ce0a40_a171f21c22204d5f8516583391dfd9f6~mv2.png",
+   "upload_name": "Captureewewe.PNG",
+   "alt_on_wix": "Captureewewe.PNG",
+   "same_as_reference": true
+  },
+  {
+   "order": 27,
+   "set": 14,
+   "type": "photo",
+   "file": "photos/ce0a40_f1cc8de446b34e4a95027532640d56b5_mv2.png",
+   "caption": "Instrumentation of a suspension bridge\n(during my M.Sc.)",
+   "width": 2160,
+   "height": 1222,
+   "exif_orientation": 1,
+   "gps_in_file": false,
+   "bytes": 6436842,
+   "sha256": "f1cae850d252035021ae8fcaaf6e62f2129412a8534afcf9a61f54b5a8162e66",
+   "wix_id": "ce0a40_f1cc8de446b34e4a95027532640d56b5~mv2.png",
+   "upload_name": "Captureqcqcqcqce.PNG",
+   "alt_on_wix": "Captureqcqcqcqce.PNG",
+   "same_as_reference": true
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+HOW IT WORKS, step 2 (nf-hw-sensors): Sensors on structure(s), the brochure's image2
+generator: tools/numfig/hw_sensors.py
+
+MODEL
+  the sensor sends a burst; its crests are drawn as a point source's wavefronts in the plane:
+  one wavelength apart, lambda = 6.0 px, the first sent the farthest out; at rest their radii are
+  20, 14, 8 px, within +-50 degrees of the vertical
+  strength of a crest: the far field of the 2D Green's function, |H0(kr)| ~ sqrt(2/(pi kr)), so
+  1/sqrt(r), normalised to the nearest crest at rest and drawn through the figures' sequential
+  scale seq(); on its way out a crest is drawn as strong as its radius gives (at most 1)
+
+CHECKS
+  the far field against the exact |H0^(1)(kr)| (scipy hankel1) at the three radii at rest:
+  r =  20.0 px, kr = 20.944: |H0| = 0.17432, sqrt(2/(pi kr)) = 0.17435 (+0.014%); drawn as seq(0.6325), exact ratio 0.6329
+  r =  14.0 px, kr = 14.661: |H0| = 0.20832, sqrt(2/(pi kr)) = 0.20838 (+0.029%); drawn as seq(0.7559), exact ratio 0.7564
+  r =   8.0 px, kr =  8.378: |H0| = 0.27542, sqrt(2/(pi kr)) = 0.27566 (+0.087%); drawn as seq(1.0000), exact ratio 1.0000
+  the 1/sqrt(r) law between the nearest and the farthest crest: 0.6325, |H0| gives 0.6329
+  spacing: 6 and 6 px, one wavelength each
+
+DISPLAY
+  the icon is step 2: it starts 0.35 s after the flow is seen; the member, the post and the box
+  are drawn by 0.26 s of its own start, the sensing element arrives (settle), and the burst leaves
+  at 0.34 s: its lead crest runs out to its radius on an ease out over 0.55 s, the others one
+  wavelength behind, all coming to rest together at 0.89 s
+
+OVERLAP (common.overlaps, 672 px wide)
+  moments: still, 0.2 s, 0.5 s, 0.8 s, 1 s, 1.2 s
+  labels [] and crossings [] at every moment: nothing collides (the icon sets no type)

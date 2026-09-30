@@ -1,0 +1,24 @@
+nf-mla-cleaning: Figure 4, the five data cleaning steps
+
+(a) IMPUTATION: glucose (mg/dL) 98, 142, ?, 115, 104, 131, 88
+  observed sorted [88.0, 98.0, 104.0, 115.0, 131.0, 142.0]; median = (104 + 115) / 2 = 109.5 (numpy 109.5); mean 113
+
+(b) FORMATS AND UNITS: dates parsed as US month/day, ISO, day month-name; 1 in = 2.54 cm
+  12/05/2024   -> 2024-12-05;  172 cm     -> 172.00 cm
+  2024-12-09   -> 2024-12-09;  68 in      -> 172.72 cm
+  11 Dec 2024  -> 2024-12-11;  5 ft 9 in  -> 175.26 cm
+
+(c) OUTLIERS: ages [34, 45, 29, 51, 38, 62, 47, 55, 41, 430, 58, 36, 96, 49]
+  Q1 38.75, median 48, Q3 57.25, IQR 18.5; fences 11 and 85
+  outside: [430, 96]; whiskers to 29 and 62
+  investigated: 96 real (kept); 430 a slip for 43 (corrected)
+
+(d) STANDARDIZATION: z = (x - mean) / sd, sd with ddof 0
+  age      mean   48.667, sd   16.398; z = -1.57, -0.71, -0.22, +0.20, +0.75, +1.54
+  income   mean   94.667, sd   59.407; z = -1.12, -0.68, -0.57, +0.01, +0.43, +1.94
+  glucose  mean  121.333, sd   34.639; z = -1.14, -0.73, -0.50, -0.10, +0.57, +1.90
+  CHECK: against StandardScaler, max |diff| = 0.0e+00; each z column mean 1.9e-16, sd [1.0, 1.0, 1.0]
+
+(e) SMOTE: 196 normal ~ N(0, diag(1, 0.64)) (seed 21), 4 frauds; k = 3; 192 synthetic frauds
+  CHECK: every synthetic point lies on its segment: max |cross product| 4.4e-16, fraction in [0.006, 0.997]
+  CHECK: classes after SMOTE: normal 196, fraud 196 (50 % : 50 %)

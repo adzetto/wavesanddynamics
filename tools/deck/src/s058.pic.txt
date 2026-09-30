@@ -1,0 +1,17 @@
+# his words inside his picture (build/r10-deck/his/s058-pic1.png)
+# left panel
+After 3 CPT measurements: curves must pass near the data
+A
+B
+Cone resistance qc (MPa)
+Distance along the site (m)
+±2 SD (95%)
+best estimate (posterior mean)
+CPT measurements
+# right panel
+Predictions where we did not test
+Probability density
+Predicted qc (MPa)
+before data (any location)
+A: 3.7 m (near a test): 5.0 ± 0.7
+B: 6.0 m (far from tests): 5.9 ± 1.9

@@ -1,0 +1,4 @@
+# his words inside his chart (build/r10-deck/his/s046-pic1.png)
+Decay envelope
+Normalized autocorrelation
+Lag τ (s)

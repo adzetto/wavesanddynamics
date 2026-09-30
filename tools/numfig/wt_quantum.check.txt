@@ -1,0 +1,20 @@
+nf-wt-quantum: the fun table, 'Discrete states / modes' (image7)
+
+MODEL
+  left: electron in an infinite well, L = 1 nm: E_n = n^2 h^2 / (8 m L^2), E_1 = 0.3760 eV, f_1 = E_1 / h = 9.0924e+13 Hz
+  right: steel bar 20 x 20 mm, 1 m, pinned both ends: w_n = (n pi / L)^2 sqrt(EI/m), f_1 = 46.907 Hz
+  both: eigenfunctions sin(n pi x / L), eigenvalues in the ratio n^2 (E_n and w_n).
+
+CHECK 1: the well by finite differences, -hbar^2/2m psi'' = E psi, psi = 0 at the walls
+    100 intervals: E_n / E_1 = 1.000000, 3.999013, 8.994080; E_1 -8.2e-05; shapes off sin by 3.5e-14
+    400 intervals: E_n / E_1 = 1.000000, 3.999938, 8.999630; E_1 -5.1e-06; shapes off sin by 3.2e-13
+   1600 intervals: E_n / E_1 = 1.000000, 3.999996, 8.999977; E_1 -3.2e-07; shapes off sin by 5.7e-12
+
+CHECK 2: the beam by Hermite finite elements, pinned ends
+    8 elements: w_n / w_1 = 1.000000, 4.000973, 9.011431; w_1 +1.6e-05
+   32 elements: w_n / w_1 = 1.000000, 4.000004, 9.000046; w_1 +6.5e-08
+  both converge to 1, 4, 9: the same spectrum.
+
+DRAWING
+  levels at heights in proportion to n^2, the same on both sides; both ground states shown at 0.2 Hz, the others at n^2 times that,
+  so one loop of 5 s holds whole periods of all three. Time slowed 4.5e+14 x (left) and 235 x (right).

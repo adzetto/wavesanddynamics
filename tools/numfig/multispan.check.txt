@@ -1,0 +1,106 @@
+nf-multispan: Figure 7, vibrational modes of two span beams
+
+MODEL
+  A partially continuous two span Euler-Bernoulli girder: pins at the three
+  supports (w = 0; moment free at the two ends); over the middle pin the two
+  spans keep their own end rotation, joined by a rotational spring k. Exact: the
+  dynamic stiffness of the four support rotations from the closed form span
+  transfer matrix plus the spring; natural frequencies by the Wittrick-Williams
+  count (bisection to 1e-13; the spring has no frequencies of its own, so J0 is
+  the spans' clamped-clamped count); mode shapes from the null vector. No mesh.
+  One uniform girder, one frequency scale: EI = 1.0e+11 N m^2, m = 10000 kg/m, EI/m = 1.0e+07 m^4/s^2
+
+FIT (python multispan.py --fit)
+  His values are 'approximate frequency values from experience'; each span obeys
+  f2 = 4 f1 to within 2 % (a: 1.3 -> 5.2, 1.45 -> 5.8 vs his 5.92; b: 1.23 -> 4.92
+  vs 4.95, 5.8 -> 23.2 vs 22.90), which is two nearly independent simply supported
+  spans: a weak joint. Free: the two span lengths and k (EI/m fixed; only c/L^2
+  and k L/EI enter). For each k the lengths are refitted to his four values
+  (minimax); k is then the stiffest joint for which every residual is within 2 %.
+  Least squares alone takes (a) to k = 0 (two independent spans), because his
+  5.92/1.45 = 4.08 exceeds the simply supported 4 and any joint only lowers it.
+  Per span sections (right span EI and m both x r, r = 0.25 to 4) were tried: at the
+  stiffest joint within 2 % some row still moves the other span only 1 to 5 % (a) and
+  0.5 to 2.4 % (b), the 22.90 Hz row about 2 % for every r; no clearer, so one girder.
+  Rounded: lengths to 0.1 m, k to two figures (down); residuals rechecked below.
+
+CASE (a): left span L1 = 58.6 m, right span L2 = 62.5 m, joint k = 3.50e+08 N m/rad (k L1/EI = 0.205, k L2/EI = 0.219)
+  uncoupled spans (k = 0, simply supported, (n pi/L)^2 sqrt(EI/m)/2 pi):
+    left : 1.447, 5.786, 13.019, 23.144, 36.163 Hz
+    right: 1.272, 5.087, 11.445, 20.346, 31.791 Hz
+  coupled modes (exact); dominating span by amplitude and by kinetic energy:
+    mode 1:   1.2937 Hz  amp R  energy R  other span  15.3 %  lobes L,R = [1, 1]  <- his 1.3 Hz
+    mode 2:   1.4784 Hz  amp L  energy L  other span  14.6 %  lobes L,R = [1, 1]  <- his 1.45 Hz
+    mode 3:   5.1126 Hz  amp R  energy R  other span   4.4 %  lobes L,R = [2, 2]  <- his 5.2 Hz
+    mode 4:   5.8162 Hz  amp L  energy L  other span   4.1 %  lobes L,R = [2, 2]  <- his 5.92 Hz
+    mode 5:  11.4717 Hz  amp R  energy R  other span   2.1 %  lobes L,R = [3, 3]
+    mode 6:  13.0485 Hz  amp L  energy L  other span   1.9 %  lobes L,R = [3, 3]
+    mode 7:  20.3735 Hz  amp R  energy R  other span   1.2 %  lobes L,R = [4, 4]
+    mode 8:  23.1741 Hz  amp L  energy L  other span   1.2 %  lobes L,R = [4, 4]
+  null vector residual (smallest/largest singular value): max 1.3e-11
+  RESIDUALS against his labels (computed / his - 1):
+       1.3 Hz: computed   1.294 Hz, residual  -0.48 %
+      1.45 Hz: computed   1.478 Hz, residual  +1.96 %
+       5.2 Hz: computed   5.113 Hz, residual  -1.68 %
+      5.92 Hz: computed   5.816 Hz, residual  -1.75 %
+
+CASE (b): left span L1 = 64.3 m, right span L2 = 29.4 m, joint k = 7.90e+08 N m/rad (k L1/EI = 0.508, k L2/EI = 0.232)
+  uncoupled spans (k = 0, simply supported, (n pi/L)^2 sqrt(EI/m)/2 pi):
+    left : 1.201, 4.806, 10.813, 19.223, 30.036 Hz
+    right: 5.747, 22.987, 51.721, 91.949, 143.670 Hz
+  coupled modes (exact); dominating span by amplitude and by kinetic energy:
+    mode 1:   1.2541 Hz  amp L  energy L  other span   1.9 %  lobes L,R = [1, 1]  <- his 1.23 Hz
+    mode 2:   4.8556 Hz  amp L  energy L  other span  12.1 %  lobes L,R = [2, 1]  <- his 4.95 Hz
+    mode 3:   5.8777 Hz  amp R  energy R  other span   6.1 %  lobes L,R = [2, 1]  <- his 5.8 Hz
+    mode 4:  10.8721 Hz  amp L  energy L  other span   2.9 %  lobes L,R = [3, 2]
+    mode 5:  19.2803 Hz  amp L  energy L  other span   3.7 %  lobes L,R = [4, 2]
+    mode 6:  23.1183 Hz  amp R  energy R  other span   2.0 %  lobes L,R = [5, 2]  <- his 22.90 Hz
+    mode 7:  30.0963 Hz  amp L  energy L  other span   2.1 %  lobes L,R = [5, 3]
+    mode 8:  43.3109 Hz  amp L  energy L  other span   1.8 %  lobes L,R = [6, 3]
+  null vector residual (smallest/largest singular value): max 3.7e-09
+  RESIDUALS against his labels (computed / his - 1):
+      1.23 Hz: computed   1.254 Hz, residual  +1.96 %
+      4.95 Hz: computed   4.856 Hz, residual  -1.91 %
+       5.8 Hz: computed   5.878 Hz, residual  +1.34 %
+     22.90 Hz: computed  23.118 Hz, residual  +0.95 %
+
+CHECK 1: finite element cross check, same spring (Hermite cubic, consistent mass)
+  (a) elements per span, max relative difference over the first 8 modes:
+      5: 2.31e-02
+     10: 1.66e-03
+     20: 1.07e-04
+     40: 6.76e-06
+  (b) elements per span, max relative difference over the first 8 modes:
+      5: 1.14e-01
+     10: 7.96e-03
+     20: 5.36e-04
+     40: 3.41e-05
+  (about 16 x per halving: the h^4 rate of Hermite elements)
+
+CHECK 2: the two limits of the joint, through the same code
+  (a) k x 1e2, 1e4, 1e6 against the continuous girder: 4.1e-02, 4.6e-04, 4.6e-06
+      k x 1e-2, 1e-4, 0 against the simply supported spans: 2.2e-04, 2.2e-06, 1.1e-13
+  (b) k x 1e2, 1e4, 1e6 against the continuous girder: 2.2e-02, 2.4e-04, 2.4e-06
+      k x 1e-2, 1e-4, 0 against the simply supported spans: 5.1e-04, 5.1e-06, 2.3e-12
+  (errors fall as 1/k and as k: both limits are reached)
+  continuous, two equal spans: k L against pi, 3.926602 (pinned clamped), 2 pi,
+  7.068583: 3.141592654 (5e-14), 3.926602312 (6e-14), 6.283185307 (2e-14), 7.068582746 (3e-14)
+
+HIS TEXT'S RULES, CHECKED ON THE COMPUTED MODES
+  (a)    1.3 Hz: closest uncoupled  1.272 Hz (R span); computed dominating R (energy R): yes; lobes L,R = [1, 1]; his drawing marks R
+  (a)   1.45 Hz: closest uncoupled  1.447 Hz (L span); computed dominating L (energy L): yes; lobes L,R = [1, 1]; his drawing marks L
+  (a)    5.2 Hz: closest uncoupled  5.087 Hz (R span); computed dominating R (energy R): yes; lobes L,R = [2, 2]; his drawing marks R
+  (a)   5.92 Hz: closest uncoupled  5.786 Hz (L span); computed dominating L (energy L): yes; lobes L,R = [2, 2]; his drawing marks L
+  (b)   1.23 Hz: closest uncoupled  1.201 Hz (L span); computed dominating L (energy L): yes; lobes L,R = [1, 1]; his drawing marks L
+  (b)   4.95 Hz: closest uncoupled  4.806 Hz (L span); computed dominating L (energy L): yes; lobes L,R = [2, 1]; his drawing marks R  <- drawing differs
+  (b)    5.8 Hz: closest uncoupled  5.747 Hz (R span); computed dominating R (energy R): yes; lobes L,R = [2, 1]; his drawing marks L  <- drawing differs
+  (b)  22.90 Hz: closest uncoupled 22.987 Hz (R span); computed dominating R (energy R): yes; lobes L,R = [5, 2]; his drawing marks R
+  (a) same lobe count in both spans in every mode: yes ([1, 1], [1, 1], [2, 2], [2, 2])
+  (b) at 22.90 Hz: short span 2 lobes, long span 5 lobes (mode 6; modes 4 and 5, the long span's third and fourth, lie between and are not in his figure)
+
+DRAWING
+  Solid: the exact mode, one scale for both spans (the kink over the middle pin is
+  the joint). Dashed: the other span alone, magnified by the factor printed beside
+  it, where it moves less than a quarter of the dominating span.
+  Labels: his values (every residual within 2 %: yes).
+TIME: slowed 6 x; each mode oscillates at its computed frequency / 6.

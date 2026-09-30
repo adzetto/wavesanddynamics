@@ -1,0 +1,36 @@
+Figure 1 (nf-building): lateral natural vibration of a five storey shear building
+
+MODEL (floor 1 at the bottom, storey 1 at the ground; the matrices of the figure)
+  m_1 .. m_5 = 200, 200, 200, 200, 150 t
+  k_1 .. k_5 = 350, 330, 300, 260, 210 MN/m, storey height 3.2 m
+  M = diag(m), K = [k1 + k2, -k2; -k2, k2 + k3, -k3; ...; -k5, k5]; C = 0 in the animation
+  K (MN/m):
+        680     -330        0        0        0
+       -330      630     -300        0        0
+          0     -300      560     -260        0
+          0        0     -260      470     -210
+          0        0        0     -210      210
+
+EIGENPROBLEM K phi = w^2 M phi (scipy.linalg.eigh, mass-normalised)
+  mode 1: f =  1.8914 Hz, T = 0.5287 s, phi (floor 1..5, roof = 1) = +0.2516, +0.4969, +0.7200, +0.8991, +1.0000
+  mode 2: f =  5.1382 Hz, T = 0.1946 s, phi (floor 1..5, roof = 1) = -0.6066, -0.8667, -0.5507, +0.2555, +1.0000
+  mode 3: f =  7.9048 Hz, T = 0.1265 s, phi (floor 1..5, roof = 1) = +0.8775, +0.4962, -0.7392, -0.7620, +1.0000
+  mode 4: f =  9.9906 Hz, T = 0.1001 s, phi (floor 1..5, roof = 1) = -1.5229, +0.4988, +1.4124, -1.8146, +1.0000
+  mode 5: f = 11.8131 Hz, T = 0.0847 s, phi (floor 1..5, roof = 1) = +6.9469, -8.8802, +6.3251, -2.9351, +1.0000
+  residual max |K phi - w^2 M phi| / |K phi| = 7.5e-15
+  orthogonality max |Phi^T M Phi - I| = 3.5e-16, max |Phi^T K Phi - W^2| / w5^2 = 3.3e-16
+  the same solver on a uniform building (m = 200 t, k = 400 MN/m) against the closed form
+  w_j = 2 sqrt(k/m) sin((2j - 1) pi / 22):
+    f_1 2.025887 Hz (-1.1e-15), f_2 5.913537 Hz (+0.0e+00), f_3 9.322107 Hz (-2.2e-16), f_4 11.975455 Hz (+2.2e-16), f_5 13.658623 Hz (+0.0e+00)
+  Rayleigh quotient of the static shape under floor inertia loads: f = 1.9062 Hz >= f_1 (+7.82e-03)
+  effective modal masses (t): 814.4, 92.7, 26.8, 10.6, 5.5; sum 950.000 t = total mass 950 t
+
+THE MOTION
+  a lateral impulse at the roof, x(0) = 0, x'(0) = 56.734 mm/s at floor 5, chosen so that
+  the 1st mode's roof amplitude is 1.5 mm; q_j(t) = Q_j sin(w_j t), Q_j = phi_j^T M x'(0) / w_j
+  roof amplitude of each term (mm): 1.5000, 0.5890, 0.2961, 0.0788, 0.0032
+  roof amplitude of each term, relative to the 1st: 1.000, 0.393, 0.197, 0.053, 0.002
+  the sum of the modal terms against the exact state-space solution expm(A t): max relative error 5.9e-14
+  displacements drawn x 800; the 2nd mode panel x 2 more and the higher modes x 4 more (stated in the figure)
+  time slowed 5: on screen f_1 = 0.378 Hz ... f_5 = 2.363 Hz; the impulse at t = 0.45 s of the page's clock
+  poster (printed frame) at t = 6.073 s

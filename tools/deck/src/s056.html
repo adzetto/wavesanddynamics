@@ -1,0 +1,30 @@
+<section class="slide">
+ <style>
+  .pan .h{font-size:34px}
+  .pan .fig{margin-top:18px}
+  .pan .panel{margin-top:18px}
+  .pan .panel{padding-left:24px;padding-right:22px}
+  .pan .panel .ps{font-size:27px;margin:0}
+  .nw{white-space:nowrap}
+ </style>
+ <header class="head">
+  <h1 class="title">Poisson processes (2): two questions the model answers</h1>
+  <p class="lede">The single number <m>λ = 2</m> per hour answers both: how many trucks arrive in a time window, and how long we wait for the next one.</p>
+ </header>
+ <main class="body g">
+  <div class="s6 pan">
+   <h2 class="h">1&ensp;How many in 2 hours?&ensp;Expected <m>λt = 4</m></h2>
+   <div data-fig="counts"></div>
+   <div class="panel"><p class="ps"><m>P(N = k) = e<span class="mk">^</span><sup>(−λt)</sup>(λt)<span class="mk">^</span><sup>k</sup> / k!</m>,&ensp;<m>λt = 4</m>.&ensp;<span class="nw"><m>P(0) = 1.8%</m>, <m>P(4) = 19.5%</m>, <m>P(≥ 8) = 5.1%</m>.</span> Bars add up to 1.</p></div>
+  </div>
+  <div class="s6 o7 pan">
+   <h2 class="h">2&ensp;How long until the next one?</h2>
+   <div data-fig="gaps"></div>
+   <div class="panel"><p class="ps"><m>f(w) = λe<span class="mk">^</span><sup>(−λw)</sup></m>, mean <m>1/λ = 0.5</m> h.&ensp;<span class="nw"><m>P(</m>wait <m>&gt; 1</m> h<m>) = e<span class="mk">^</span><sup>(−2)</sup> = 13.5%</m></span> (shaded area).</p></div>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take">Counts are Poisson, gaps are exponential: two faces of the same process.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: event counts over time</span><span class="src">Sources: [4], [22]</span><span class="num">56</span></p>
+ </footer>
+</section>

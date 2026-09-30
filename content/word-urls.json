@@ -1,0 +1,58 @@
+{
+ "brochure-shm-and-ndt-2-pages": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_92008e07328240fab6e01b7d219ff46d.docx",
+  "bytes": 110890,
+  "name": "Brochure - SHM and NDT - 2 pages.docx",
+  "sha256": "7895b2c643044edb34266185a1088ec174f64889c9f4a8089dd0388e56865b75",
+  "id": "ce0a40_92008e07328240fab6e01b7d219ff46d.docx"
+ },
+ "dynamical-behavior-of-engineering-structures-and-acoustic-wave-propagation": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_5cab5ec155de4e36a04522e28650f2dd.docx",
+  "bytes": 3963732,
+  "name": "Dynamical_Behavior_of_Engineering_Structures_and_Acoustic_Wave_Propagation.docx",
+  "sha256": "4dcb1b3d0eb31af9ddc59265f7c8ab6d3f1be44e2a188ec1d4f1c56267722ddb",
+  "id": "ce0a40_5cab5ec155de4e36a04522e28650f2dd.docx"
+ },
+ "from-bridges-to-photons": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_f9c3696c4af5481bb08e6ac623745e48.docx",
+  "bytes": 487938,
+  "name": "From_Bridges_to_Photons.docx",
+  "sha256": "843b1457482793f3555267505d3118b3730734b3b1eb53c6766c8478a16fdad3",
+  "id": "ce0a40_f9c3696c4af5481bb08e6ac623745e48.docx"
+ },
+ "machine-learning-the-complete-picture-and-guide-5": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_78d84be949da4be49fee6dc59ee26e26.docx",
+  "bytes": 10283789,
+  "name": "Machine Learning - The Complete Picture and Guide_5.docx",
+  "sha256": "54dd5949c56340679e04387d5a0ce86421f86e68dce9e67e220c161ffed63bfd",
+  "id": "ce0a40_78d84be949da4be49fee6dc59ee26e26.docx"
+ },
+ "signal-processing-system-identification-and-optimization": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_a9b8450171034ea3bb32e7fc7ff76194.docx",
+  "bytes": 1269099,
+  "name": "Signal Processing, System Identification, and Optimization.docx",
+  "sha256": "f2e4e49056ad147f908dba873777dedd30b6d8fc7eeadd84cb4043fcbf1354ac",
+  "id": "ce0a40_a9b8450171034ea3bb32e7fc7ff76194.docx"
+ },
+ "sound-detection-and-tracking": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_b9fb50925c0e45f4947c6644cef5b982.docx",
+  "bytes": 267174,
+  "name": "Sound Detection and Tracking.docx",
+  "sha256": "8673b02ca973fdedccf409237f6912138707d9816b7ace2823069f500cc507c4",
+  "id": "ce0a40_b9fb50925c0e45f4947c6644cef5b982.docx"
+ },
+ "understanding-shm-and-ndt": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_5e6fe90ecfd8454e91631f425863c35c.docx",
+  "bytes": 950673,
+  "name": "Understanding_SHM_and_NDT.docx",
+  "sha256": "234515236436379bbcd46a672edb9605b673629c8b88aead6b7deae4fdd6375a",
+  "id": "ce0a40_5e6fe90ecfd8454e91631f425863c35c.docx"
+ },
+ "post-wind-turbine-super-extensive-literature-review": {
+  "url": "https://329f83ff-0d8f-4188-8f9f-e842991e9d2a.usrfiles.com/ugd/ce0a40_767fb3c026324fa395ff26b98e4861d3.docx",
+  "bytes": 115711,
+  "name": "WT Literature - Final Summary.docx",
+  "sha256": "7eb362fb2c682e85f527b0426497d096093aa6817694aeb195303d382cb4e3f1",
+  "id": "ce0a40_767fb3c026324fa395ff26b98e4861d3.docx"
+ }
+}

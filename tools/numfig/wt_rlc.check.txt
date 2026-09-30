@@ -1,0 +1,21 @@
+nf-wt-rlc: the fun table, 'RLC and mechanical resonance' (image11)
+
+MODEL
+  series RLC: R = 12.0 ohm, L = 10 mH, C = 1 uF: w0 = 1/sqrt(LC) = 10000.0 rad/s (1591.5 Hz), zeta = (R/2) sqrt(C/L) = 0.0600
+  mass spring dashpot: m = 2.0 kg, k = 800 N/m, c = 4.8 N s/m: w0 = sqrt(k/m) = 20.0 rad/s (3.18 Hz), zeta = c / (2 sqrt(k m)) = 0.0600
+  the map: q <-> x, L <-> m, R <-> c, 1/C <-> k, v <-> f. Q = 1 / (2 zeta) = 8.333
+  a unit kick every 4 damped cycles; periodic response = sum of earlier ring downs (40 back: residue e^(-zeta 40 P) = 5.7e-27)
+
+CHECK 1: ring down, closed form against direct integration of each system (RK45, rtol 1e-11)
+  circuit   : max |closed form - RK45| / max = 4.2e-11
+  mechanical: max |closed form - RK45| / max = 8.5e-12
+
+CHECK 2: resonance: the frequency response of each, computed, against w0 and the half power
+  bandwidth w0 / Q
+  circuit   : peak at 0.996392 w0 (closed form sqrt(1 - 2 zeta^2) = 0.996393), half power bandwidth 0.12044 w0 (light damping value 2 zeta = 0.12000, +3.6e-03)
+  mechanical: peak at 0.996393 w0 (closed form sqrt(1 - 2 zeta^2) = 0.996393), half power bandwidth 0.12043 w0 (light damping value 2 zeta = 0.12000, +3.6e-03)
+
+DRAWING
+  both drawn against w0 t: the damped oscillation at 0.72 Hz on screen, so time is slowed 2207 x (circuit) and 4.41 x (mass);
+  a kick every 5.56 s. The dots move along the wire by q, the mass by x, one scale.
+  loop closure |x(P) - x(0)| = 2.8e-13

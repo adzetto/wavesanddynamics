@@ -6,6 +6,7 @@ The author said he pasted screenshots of Word pages into the blog. This counts,
 for every saved post, the words that are actually in the HTML and the images the
 post carries, so we know which posts have to be read out of pictures.
 """
+
 import glob
 import os
 import re

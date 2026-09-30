@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s061-pic1.png)
+Density
+Estimation error θ̂ − θ
+A: unbiased, SD = 1
+B: bias = 0.5, SD = 0.5

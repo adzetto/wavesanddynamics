@@ -1,0 +1,58 @@
+nf-pr-overview: the probability deck's slide 1, four connected questions in motion
+generator: tools/numfig/pr_overview.py; used as the deck's card on the Big Picture page
+(tools/bp_art.py); in no document, so no fragment
+
+MODEL (his running examples)
+  Probability: one cylinder's strength X ~ N(32, 3^2) MPa (slides 16 to 21: sigma = 3 MPa,
+    mean 32 MPa). Its lower 5% (slide 13): x < mu + sigma z_0.05 = 27.0654 MPa.
+  The tests: N = 1000 draws from the model, numpy default_rng(seed=2).normal(32, 3),
+    the same every run. The seed is the first from 1 (the slide's number) whose running
+    95% interval holds the true mean at every n up to N, so the one path the reader sees
+    shows the rule and not its 5% exception; seed 1 misses it for 93 of its 1000 n.
+    Such paths are common: 46 % of seeds 1 to 200 hold the mean at every n <= 1000.
+  Statistics: the same tests as they land, a histogram in his 2 MPa bins (19 to 45 MPa),
+    as a density (count / (n x 2 MPa)) on the model's axes, and the normal model fitted to
+    them (sample mean, sample SD with n - 1), drawn from n = 5: the first n from which
+    neither the fit nor the bars reach the words at the top right, so the fit and its name
+    arrive together.
+  Stochastic processes: his random walk of sensor bias (slide 51): 4 paths,
+    X_n = X_(n-1) + e_n, e_n ~ N(0, 0.3^2) mm, X_0 = 0, 160 steps, default_rng(5101),
+    in his pointwise 95% band +-1.9600 x 0.3 sqrt(n) mm about E[X_n] = X_0.
+  Estimation: the unknown mean from the same tests, the running mean xbar_n and its 95%
+    interval xbar_n +- 1.9600 sigma / sqrt(n), sigma = 3 MPa known (slide 17), on a log n
+    axis (his slide 34 draws its running mean so).
+
+VALIDATION
+  1. The lower 5 % point: scipy 27.065439 MPa against mu + sigma z_0.05 = 27.065439
+     (z_0.05 = -1.644854); the model's mass below it 0.050000.
+     Share of the 1000 tests below it: 5.7 % (the model: 5 %, binomial SE 0.69 %, so +1.0 SE).
+  2. The tests against their model: Kolmogorov-Smirnov D = 0.0326, p = 0.23;
+     histogram chi-square 12.3 on 9 degrees of freedom, p = 0.20
+     (tail bins merged to 5 expected). Mean 31.933 MPa, SD 3.040 MPa (the model: 32, 3).
+  3. The interval at n = 25: SE = sigma / sqrt(25) = 0.600 MPa and half width 1.176 MPa (with 1.96),
+     his slide 17's 0.6 and 1.176; with z = 1.959964: 1.1760 MPa. At n = 1000: 0.1859 MPa.
+     Coverage over 20000 repeated samples: n = 1: 95.18 %, n = 25: 95.14 %, n = 1000: 94.91 % (95 %).
+     The figure's path: xbar_n within its interval of mu at all 1000 n: True.
+  4. The walks are his: slide 51's four paths (tools/deck/src/s051.py) against these, largest
+     difference 0.0e+00 mm; his band's end +-1.96 x 0.3 sqrt(160) = 7.438 mm (his 7.4).
+     Var(X_40) over 100000 walks 3.5925 mm^2 against n sigma^2 = 3.6000 (-0.21%); inside the band 95.11 %.
+     Var(X_160) over 100000 walks 14.2596 mm^2 against n sigma^2 = 14.4000 (-0.98%); inside the band 95.13 %.
+  5. The page: it computes the running mean and SD (Welford) and the histogram from the tests
+     it carries (float32): against numpy on the same values, largest differences 2.8e-14 and 2.7e-15 MPa;
+     its counts at n = 1000 equal numpy's: True; float32 against the draws: 1.9e-06 MPa.
+     Its clock: test i leaves at RUN ln i / ln N and the count reached there is i (i - 1 just before), all 1000: True.
+
+DISPLAY
+  The clock: the first test leaves the model at 0.6 s; test i leaves 9 ln i / ln 1000 s later,
+  so Estimation's log n axis is crossed at one speed, one test at a time at first and
+  768 a second at the end. Each drops from the density curve at its value to the
+  axis in 0.45 s, so the tests in the air lie evenly under the curve, as draws from the
+  model do; it lands, leaves a tick for 1 s, and joins Statistics and Estimation. The walks
+  take the same 9.45 s for their 160 steps. The finished picture holds 2.4 s, fades in 0.5 s,
+  and the loop starts again after 0.3 s: 12.65 s a loop. Its intro is done by 1.0 s.
+  The printed frame, t = 7.878 s: 188 tests landed, the rest falling, the walks 7.28 s along.
+
+OVERLAPS (engine.js ?overlap, common.overlaps)
+  checked at the poster and every 0.25 s from 0.25 to 13.25 s (53 moments, a whole
+  loop and its intro): label pairs that meet 0, strokes through a label 0.
+  No label sits on a knockout; the falling tests stay under the curve, below its words.

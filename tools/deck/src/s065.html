@@ -1,0 +1,37 @@
+<section class="slide">
+ <style>
+  .steps>*+*{margin-top:34px}
+  .steps .h + .ps{margin-top:8px}
+  .steps .res{margin-top:46px}
+  .steps .res .h{font-size:32px}
+ </style>
+ <header class="head">
+  <h1 class="title">Kalman filtering: prediction meets a new measurement</h1>
+  <p class="lede">A bridge displacement is estimated every hour. The sensor is noisy (SD 3 mm). The filter combines a simple model of how the displacement evolves with each new reading.</p>
+ </header>
+ <main class="body g">
+  <div class="s5 steps">
+   <div>
+    <h2 class="h">1&ensp;Predict</h2>
+    <p class="ps">The model moves the estimate one step ahead: <m>x̂⁻ = F x̂</m>. Uncertainty grows.</p>
+   </div>
+   <div>
+    <h2 class="h c-accent">2&ensp;Observe</h2>
+    <p class="ps">A noisy reading arrives: <m>z = H x + v</m>.</p>
+   </div>
+   <div>
+    <h2 class="h c-blue">3&ensp;Update</h2>
+    <p class="ps">Move toward the reading by the gain <m>K</m>; uncertainty shrinks. Repeat every hour.</p>
+   </div>
+   <div class="res">
+    <h2 class="h">Result over 40 hours</h2>
+    <p class="ps">Typical error: sensor alone 3.1 mm, Kalman estimate 1.6 mm.</p>
+   </div>
+  </div>
+  <div data-fig="track" class="s7 o6"></div>
+ </main>
+ <footer class="foot">
+  <p class="take">Predict, observe, update, repeat: the estimate tracks the truth better than the raw readings.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–4: estimate a hidden state using a process model</span><span class="src">Sources: [40], [41], [47]</span><span class="num">65</span></p>
+ </footer>
+</section>

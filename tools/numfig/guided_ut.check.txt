@@ -1,0 +1,61 @@
+Figure 12, guided wave ultrasonic testing: check of tools/numfig/guided_ut.py
+
+MODEL
+  Lamb waves in a free steel plate (plane strain), thickness d = 10 mm;
+  E = 210 GPa, nu = 0.29, rho = 7850 kg/m3 (as Figures 4 and 5).
+  c_L = 5920.9 m/s, c_T = 3220.1 m/s, c_plate = sqrt(E/(rho(1-nu^2))) = 5404.4 m/s,
+  c_R = 2981.28 m/s (root of the Rayleigh equation).
+  Rayleigh-Lamb equations, symmetric and antisymmetric, written real and pole free for
+  real or imaginary p, q. Roots in phase velocity: a 6000 point log scan from 40 m/s to
+  60 km/s, each sign change refined by Brent (1e-12 m/s). Branches S0, A0, A1 followed by
+  continuation on a 0.5 kHz grid from 0.5 to 280 kHz, and checked against a full rescan
+  at 10, 100, 200 and 275 kHz. Group velocity: central differences of exact roots, df = 2 Hz.
+  Scan twice as fine: largest change of a root 9.1e-14 (relative).
+
+OPERATING POINTS (f = 50 kHz, f d = 0.5 MHz mm)
+  S0: c_p = 5391.3 m/s, c_g = 5364.2 m/s, dc_p/df = -0.544 (m/s)/kHz  (flat, non dispersive)
+  A0: c_p = 1892.0 m/s, c_g = 2954.6 m/s, dc_p/df = +13.609 (m/s)/kHz  (steep, dispersive)
+
+VALIDATION AGAINST CLOSED FORMS
+  1. S0 as f d -> 0 (f = 1 kHz): c_p = 5404.436 m/s against the plate velocity
+     5404.441 m/s: -0.0001 %
+  2. A0 as f d -> 0 against Kirchhoff bending, c_p = (omega^2 D/(rho d))^(1/4), c_g = 2 c_p
+     (the error falls as (k d)^2, ten times per decade of f: shear and rotary inertia):
+     f = 1 kHz: c_p = 311.9877 m/s against 313.0906 m/s (-0.3522 %), c_g = 619.6139 against 626.1812 m/s (-1.0488 %)
+     f = 0.1 kHz: c_p = 98.9729 m/s against 99.0079 m/s (-0.0354 %), c_g = 197.7961 against 198.0159 m/s (-0.1110 %)
+  3. f d = 20 MHz mm: S0 c_p = 2981.2770 m/s, A0 c_p = 2981.2766 m/s against the
+     Rayleigh speed 2981.2768 m/s: S0 +0.0000 %, A0 -0.0000 %
+  4. A1 cut-off (k -> 0): 161.0034 kHz against f d = c_T/2, 161.0034 kHz:
+     +0.0000 %
+  5. Echo arrival, envelope peak (Hilbert) of the synthesized echo against the burst
+     centre (30 us) + 2D/c_g:
+     S0: 589.6 us against 589.3 us (+0.3 us)
+     A0: 1031.8 us against 1045.4 us (-13.6 us)
+     (A0, by stationary phase: the upper half of the band, where c_g is higher and changes
+     more slowly, spreads less, so the smeared envelope peaks before the centre frequency's
+     group delay.)
+
+MODE SHAPES AT 50 kHz (traction free null vector; |det| scaled 1.9e-15)
+  S0: u_x varies -1.80 % from mid-plane to surface; |u_z(h)|/|u_x(0)| = 0.121
+  A0: u_z varies -7.25 % from mid-plane to surface; |u_x(h)|/|u_z(0)| = 0.532
+  The page colours the plate with each mode's dominant component (u_x for S0, u_z for
+  A0), taken uniform through the thickness, as these numbers allow.
+
+SYNTHESIS
+  Burst: 3 cycle Hann window at 50 kHz, sampled every 0.05 us on one period of
+  2.5 ms (line spacing 400 Hz); lines above 0.001 of the largest kept:
+  353 lines, 0.40 to 158.80 kHz, each with its own k(omega) on S0 or A0.
+  Error against a 10 ms period and lines down to 1e-6 (x = 0 to 3 m, t = -20 to 1400 us),
+  as a share of the burst amplitude: S0 8.0e-04, A0 1.1e-03.
+  The page sums the same lines (float32) at 861 points (2.5 mm) along the plate
+  for every frame; against numpy at three moments: largest difference 4.5e-06.
+  Echo widths (-6 dB of the envelope): burst 30.0 us, S0 echo 29.9 us,
+  A0 echo 113.5 us (3.8 times the burst).
+  Burst band (-6 dB of the spectrum): 33.6 to 66.4 kHz.
+  Defect at D = 1.5 m: reflection 0.5, transmission sqrt(1 - R^2) = 0.866, frequency
+  independent, no mode conversion; the transducer end does not reflect (the record stops
+  once the echo is back).
+
+DISPLAY
+  Model time slowed 7000 times (1.4 x the 5000 of Figure 13). Plate 2.15 m long drawn at 400 units/m; its thickness
+  is drawn 8.5 times enlarged (said in the parameter line).

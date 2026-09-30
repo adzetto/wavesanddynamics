@@ -1,0 +1,36 @@
+What the old regex heuristics in site/preview.py (inline_math, INLINE_EQ, CONV_EQ and
+the letters rule) set as math, listed by agent mathinfra on 28 Sep 2026 before removing them.
+
+Scope: every TEXT node of every document in build/ricos/*/part-01.json was run through
+inline_math(). Only the signal processing guide changes; the other six documents get
+nothing from them. In that guide they make 8 <math class="im"> in 3 text nodes:
+
+1. The caption under Figure 1 (text node starting "Figure 1. The input, system, output
+   relationship ..."):
+     "x(t) * h(t) = y(t)"   (CONV_EQ: his * is convolution)  -> x(t) ∗ h(t) = y(t)
+     "Ax = b"               (INLINE_EQ)                      -> A x = b
+
+2. The estimation paragraph ("Two core ideas come up constantly ... solving the Ax = b
+   problem from Figure 1 ..."):
+     "Ax = b"               (INLINE_EQ)
+
+3. The closing paragraph ("Everything above, in my opinion, can be boiled down to Ax = b,
+   where A is the system, x is the input, and b is the output, ... So, in a sense, it
+   really does all come down to Ax = b."):
+     "Ax = b"  twice        (INLINE_EQ)
+     "A"  in "where A is the system"   (letters rule)
+     "x"  in ", x is the input"        (letters rule)
+     "b"  in "and b is the output"     (letters rule)
+
+Map entries that reproduce all 8 (counts checked against the SP guide's part-01.json;
+"Ax = b" occurs 4 times in the document, all four listed above):
+
+  {"find": "x(t) * h(t) = y(t)", "tex": "x(t) \\ast h(t) = y(t)", "count": 1},
+  {"find": "Ax = b", "tex": "Ax = b", "count": 4},
+  {"find": "A", "before": "where ", "after": " is the system", "tex": "A", "count": 1},
+  {"find": "x", "before": ", ", "after": " is the input", "tex": "x", "count": 1},
+  {"find": "b", "before": "and ", "after": " is the output", "tex": "b", "count": 1}
+
+Status, 28 Sep 2026: content/math/signal-processing-system-identification-and-optimization.json
+(math-sp) carries all five, and more; `python site/mathtex.py check` matches it against the
+guide. So the heuristics are gone from preview.py: the maps alone decide what is math.

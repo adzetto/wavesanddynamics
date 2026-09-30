@@ -1,0 +1,27 @@
+<section class="slide">
+ <style>
+  .targets{margin-top:8px}
+  .targets th{font-size:28px}
+  .targets td{padding-top:40px;padding-bottom:40px}
+ </style>
+ <header class="head">
+  <h1 class="title">Estimation: what exactly is unknown?</h1>
+  <p class="lede">The target and the available data determine whether we fit a model, filter a state, smooth a history or predict a future value.</p>
+ </header>
+ <main class="body">
+  <table class="tab targets">
+   <colgroup><col style="width:24%"><col style="width:44%"><col style="width:32%"></colgroup>
+   <thead><tr><th>Target</th><th>Example</th><th>Typical output</th></tr></thead>
+   <tbody>
+    <tr><td>Parameter</td><td>Material mean, regression slope, stiffness</td><td>Point estimate and uncertainty</td></tr>
+    <tr><td>Current hidden state</td><td>Bridge displacement from noisy sensors</td><td>Filtered state estimate</td></tr>
+    <tr><td>Past hidden state</td><td>Reconstruct yesterday’s response using later data</td><td>Smoothed history</td></tr>
+    <tr><td>Future response</td><td>Traffic demand or displacement at the next step</td><td>Predictive distribution</td></tr>
+   </tbody>
+  </table>
+ </main>
+ <footer class="foot">
+  <p class="take">“Batch versus recursive” describes computation. “Parameter versus state” describes the target.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: targets of estimation</span><span class="src">Sources: [38], [41]</span><span class="num">64</span></p>
+ </footer>
+</section>

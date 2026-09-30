@@ -1,0 +1,60 @@
+nf-mlc-qlearning: Figure 30, tabular Q-learning on a 5 x 5 grid world
+
+MODEL
+  5 x 5 grid, start (0, 0) bottom left, goal (4, 4) top right; actions up, down,
+  left, right; a move into the wall stays put. Reward +1 on reaching the goal
+  (episode ends), -0.02 for every other step (the text's own numbers).
+  Q-learning, Q = 0 at first: Q(s,a) += alpha [r + gamma max Q(s',.) - Q(s,a)],
+  alpha = 0.5, gamma = 0.95; epsilon-greedy with epsilon falling linearly from
+  0.5 (episode 1) to 0.2 (episode 300); ties broken at random; numpy seed 21.
+  300 episodes, 3803 steps; episode lengths 1..10: [12, 121, 37, 16, 25, 45, 20, 22, 14, 19];
+  last 10: [16, 9, 8, 9, 10, 8, 12, 8, 10, 8] (8 is the shortest route).
+  The page replays the transcript (state, action per step) with the same update in
+  double precision; the replay is checked against this run below.
+
+WHAT THE CAPTION SAYS, CHECKED ON THE RUN
+  value V(s) = max_a Q(s, a); a square 'has value' when V(s) > 0.
+  after 1 episode, squares with value: [(4, 3)] (the square beside the goal),
+    V = 0.500 = alpha x 1; every other square 0 or below.
+  after 10 episodes:
+    -0.020  -0.020   0.222>  0.750>   goal 
+     0.120>  0.405>  0.651>  0.860>  0.996^
+    -0.003   0.204^  0.201>  0.544>  0.878^
+    -0.042  -0.029  -0.015  -0.015   0.300^
+    -0.049  -0.035  -0.030  -0.015  -0.024 
+    12 squares with value, along the route the agent took; the rest
+    of what it visited has only paid the step cost (negative).
+  after 300 episodes:
+     0.799>  0.863>  0.930>  1.000>   goal 
+     0.740>  0.800>  0.863>  0.930>  1.000^
+     0.683>  0.740^  0.800>  0.863>  0.930^
+     0.629>  0.683^  0.740>  0.800>  0.863^
+     0.578^  0.629^  0.683^  0.718^  0.787^
+    squares with value: 24 of 24; squares whose arrow does not lead one
+    square closer to the goal: 0 
+
+CHECK 1: learned values against the exact optimal values
+  closed form V*(d) = gamma^(d-1) - 0.02 (1 - gamma^(d-1)) / (1 - gamma), d the
+  Manhattan distance to the goal; value iteration agrees to
+  1.1e-16.
+  after 300 episodes: max |V - V*| = 0.0222 at (3, 0) (V = 0.7181,
+  V* = 0.7403); mean |V - V*| = 0.0015; 22 of 24 squares within 0.001.
+  start square: V = 0.5777, V* = 0.5777 (8 steps: 0.95^7 - 0.4 (1 - 0.95^7))
+
+CHECK 2: the first positive value is alpha times the goal reward
+  first rewarding step: episode 1, from (4, 3) up: Q 0.000 -> 0.500 (= 0 + 0.5 (1 - 0))
+
+CHECK 3: the greedy policy after 300 episodes walks start -> goal in 8 steps
+  route: [(0, 0), (0, 1), (1, 1), (1, 2), (1, 3), (2, 3), (3, 3), (4, 3), (4, 4)] (8 steps; the shortest is 8)
+
+TIMING (Round 3, 30 Sep 2026: the client asked for the figure slowed down; about 2 x)
+  learning starts at 0.75 s (was 0.55; the agent of (a) appears in the 0.3 s before it).
+  (a) walks its episode's 12 steps in 3.8 s, 0.32 s a step (was 1.9 s, 0.16 s); the value
+  its rewarding step earns eases in over 0.45 s (was 0.07); its agent rests at the goal 0.7 s
+  (was 0.35), then fades out in 0.8 s (was 0.4). (b) plays its 10 episodes in 5.0 s (was 2.5), (c)
+  its 300 in 6.2 s (was 3.1): the three finish 1.2 s apart (was 0.6).
+  0.7 s after (c) has learned (was 0.35), its greedy policy walks from the start, again and
+  again: 0.56 s a step (was 0.28), at the goal 1.8 s (was 0.9), fading in 0.4 s and out 0.6 s
+  (was 0.2 and 0.3), 1.0 s between walks (was 0.5): every 8.28 s (was 4.14 s).
+  Poster (reduced motion, print): 15.43 s (was 7.89), between two walks: the tables
+  alone, the same frame as before.

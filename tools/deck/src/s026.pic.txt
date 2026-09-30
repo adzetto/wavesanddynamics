@@ -1,0 +1,8 @@
+# his words inside his three histograms (build/r10-deck/his/s026-pic1.png); his
+# letters F, k and Y over them are his text boxes
+Density
+Density
+Density
+Force F (N)
+Stiffness k (N/mm)
+Displacement Y (mm)

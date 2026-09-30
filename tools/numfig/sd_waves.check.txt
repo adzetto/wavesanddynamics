@@ -1,0 +1,45 @@
+Figure 5 (nf-sd-waves): (a) guided wave testing, (b) bulk wave, pulse echo ultrasonic testing
+generator: tools/numfig/sd_waves.py; models imported: guided_ut.py (Figure 12 of the waves guide),
+bulk_ut.py (Figure 11); their own checks are in guided_ut.check.txt and bulk_ut.check.txt
+
+(a) GUIDED WAVES
+  steel plate d = h = 10 mm, E = 210 GPa, nu = 0.29, rho = 7850 kg/m3; c_L = 5920.9, c_T = 3220.1 m/s
+  A0 at 50 kHz (Rayleigh-Lamb, exact roots): c_p = 1892.0 m/s, c_g = 2954.6 m/s,
+  wavelength c_p / f = 37.84 mm: 3.8 times the thickness (his lambda ~ h)
+  burst: 3 cycle Hann window at 50 kHz, 353 spectral lines, each with its own k on A0
+  defect at 1.5 m, reflection 0.5, transmission 0.866
+  CHECK 1: the echo's envelope peak 1031.8 us against the burst centre + 2D/c_g = 1045.4 us (-13.6 us: the upper half of the band travels faster
+    and spreads less, guided_ut.check.txt)
+  CHECK 2, the dispersion: the echo's -6 dB width 113 us against the burst's 30 us (3.8 times): his "spread out by dispersion"
+  the inset: the A0 mode shape at 50 kHz (guided_ut.mode_shape, |det| scaled 1.9e-16),
+    Re{u(z) e^(ikx)} over 2 wavelengths, true scale (4 units/mm); the largest displacement drawn 5.0 units
+    u_z varies -7.2 % through the thickness; |u_x| at the faces 0.532 of |u_z|: the whole section moves (his "wave occupies the full cross section")
+  the plate: 1.8 m drawn at 230 units/m, its thickness drawn 11 times enlarged (said on the page);
+    the field is guided_ut's Fourier sum, evaluated by the page every frame on 721 points
+  the arrows under the plate ride the packets' centres at c_g; time slowed 5000 times
+
+(b) BULK WAVES
+  bulk_ut's EFIT model: steel block 50 x 25 mm, c_L = 5900 m/s, c_T = 3230 m/s;
+  probe 10 mm at x = 29 mm, 5 MHz, 3 cycles; flaw: elliptical void at (29, 12) mm
+  wavelength c_L / f = 1.180 mm: 1/21 of the thickness (his lambda << h)
+  CHECK 3: back wall echo 8.488 us against 2d/c_L = 8.475 us (+0.16 %)
+  CHECK 4: flaw echo 3.841 us against 2 z_f/c_L = 3.843 us, z_f = 11.34 mm the top of the void under the probe (-0.05 %)
+  the echoes stay compact: flaw echo 0.254, back wall 0.554 of the initial pulse, no spreading (the grid convergence and the plane wave check: bulk_ut.check.txt)
+  the field: p = -(s_xx + s_zz)/2 over p0, every 0.050 us, 0.2 mm pixels, colour range +-0.5
+    (the page's own copy: nf-sd-waves-field-0..3.png, 15, 108, 373, 681 kB)
+  the words ride the fronts at c_L (as bulk_ut's page); time slowed 800000 times
+
+TIME
+  (a)'s cycle 6.90 s, a 0.6 s gap, (b)'s cycle 8.00 s, a 1.5 s hold: the loop is 17.00 s; each panel rests at its idle moment (the still's) while the other runs
+  (a) idle at t = 724 us of its clock (the echo 0.95 m from the transducer), (b) at 3.35 us
+  poster (printed frame) at t = 16.75 s: both idle, both signals whole
+
+THE PAGE'S OWN SUM
+  (a)'s field, the page's fieldAt() (float32 lines, every frame) against guided_ut.field() (numpy) at t = 366, 724, 1100 us:
+  largest difference 5.1e-07 (the burst's amplitude is 1)
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.1 s from 0.1 to 34.3 s (two loops, 344 moments): nothing collides
+  no knockout is relied on and nothing is allowed (still(allow=()))

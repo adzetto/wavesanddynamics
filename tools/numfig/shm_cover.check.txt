@@ -1,0 +1,73 @@
+nf-shm-cover: the SHM and NDT guide's cover (image1)
+generator: tools/numfig/shm_cover.py; models imported: shm_sensors.py (Figure 1's building),
+guided_ut.py (Figure 5 (a)'s guided waves, the waves guide's Figure 12); their own checks are in
+shm_sensors.check.txt and guided_ut.check.txt; those that bear on this page are rerun here.
+
+THE BUILDING (left): Figure 1's model, run by shm_sensors.compute()
+  Miranda and Taghavi (2005) walls and frames continuum, H = 80 m, m = 150 t/m, alpha = 6, EI = 3.1938e+11 N m^2
+  (so that T1 = 2.4 s), 40 Hermite elements, consistent mass.
+  CHECK 1: frequencies against the closed form (eq. 6, roots by brentq):
+    f1 = 0.416667 Hz, closed form 0.416667 Hz (+7.8e-08)
+    f2 = 1.426604 Hz, closed form 1.426604 Hz (+2.4e-07)
+    f3 = 2.935063 Hz, closed form 2.935060 Hz (+1.1e-06)
+    (f1's error falls 16 x per halving of the elements: 20 elements +1.2e-06, 40 elements +7.8e-08)
+  CHECK 2: the 1st mode's shape against the closed form (eq. 7), both 1 at the roof:
+    phi(xi) = sin(g xi) - (g/b) sinh(b xi) + eta (cosh(b xi) - cos(g xi)), g = 1.830490,
+    b^2 = alpha^2 + g^2; largest difference at the 41 nodes drawn: 3.0e-08
+  CHECK 3: the same code at alpha = 0 against the Euler-Bernoulli cantilever, beta_n H:
+    1.875104 vs 1.875104 (-4.1e-08), 4.694091 vs 4.694091 (-7.2e-09), 7.854757 vs 7.854757 (-6.6e-10)
+  drawn: mode 1 alone, u(x, t) = phi_1(x) U cos(2 pi f1 (t - 0.35)), let go from full sway at
+  t = 0.35 s of the page's clock, in real time (f1 = 0.4167 Hz, a sway every 2.400 s);
+  80 m drawn 136 units (1.7 per m), 30 m wide (3 bays), 24 storeys; the roof's sway drawn 8 units
+  (the displacements enlarged: the mode's shape is exact, its size is not a prediction); its rest
+  outline in the rule's grey, as Figure 1 draws it; accelerometers on floors 6, 12, 18 and the roof;
+  spot A (the detail) on floor 12.
+
+DETAIL A (middle): guided_ut's A0 pulse echo, as Figure 5 (a) shows it
+  steel plate d = 10 mm (a flange of one of the frame's members), E = 210 GPa, nu = 0.29, rho = 7850 kg/m3;
+  c_L = 5920.9, c_T = 3220.1, c_R = 2981.28 m/s
+  a 3 cycle Hann burst at 50 kHz from the transducer at x = 0: 353 spectral lines, 0.4 to 158.8 kHz,
+  each with its own k(omega) on the exact A0 branch; defect at D = 1.5 m, reflection R = 0.5, transmission 0.866
+  (frequency independent, no mode conversion); the transducer end does not reflect.
+  A0 at 50 kHz: c_p = 1892.0 m/s, c_g = 2954.6 m/s, wavelength 37.8 mm
+  CHECK 4: the A0 branch at low frequency against Kirchhoff bending, c_p = (omega^2 D/(rho d))^(1/4):
+    0.1 kHz: c_p = 98.9729 m/s against 99.0079 m/s (-3.5e-04; shear and rotary inertia, falling as (k d)^2)
+    1 kHz: c_p = 311.9877 m/s against 313.0906 m/s (-3.5e-03; shear and rotary inertia, falling as (k d)^2)
+  CHECK 5: at f d = 20 MHz mm, c_p = 2981.2766 m/s against the Rayleigh speed 2981.2768 m/s (-7.2e-08)
+  CHECK 6: the lines rebuild the burst at the source to 8.6e-04 of its peak (-20 to 200 us)
+  CHECK 7: the echo's envelope (Hilbert) peaks at 1031.8 us; the burst's centre + 2D/c_g = 1045.4 us
+    (A0: the faster upper half of the band spreads less, so the smeared envelope peaks first, as in
+    guided_ut.check.txt); -6 dB widths: the burst 30.0 us, the echo 113.5 us (3.8 x: dispersion)
+  the record draws the echo in the accent where its envelope is above 3 % of its peak: 944.5 to 1301.1 us
+  CHECK 8: the page's own sum (float32 lines, each line's phasor carried along x) and its record,
+    against numpy (guided_ut.field and received) at 200, 540 and 1030 us: largest difference 2.6e-08 (a unit burst)
+  the field in view (x = 0 to 1.8436 m, 420 points) peaks at 0.993; from 1355 us it stays under 0.003 of that
+    and the page draws the plate at rest (the most it leaves out: 2.4e-03 of the peak, slow low frequency A0)
+  the arrow over the echo rides the centroid of the echo's energy still in the plate (squared Hilbert
+    envelope along x, every 10 us), and fades as that energy leaves through the transducer
+
+THE RECORD (right): guided_ut.received(), u_z at the transducer, every 1 us to 1.4 ms, drawn as it
+  arrives: its pen is at the model time of the plate beside it.
+
+DRAWING AND CLOCK
+  plate 213 units per m along it; its 10 mm drawn 18 units (8.5 x thicker); u_z drawn 3.6 units at
+  the peak and coloured through the diverging palette (saturating at 1/3 of the peak; the echo,
+  spread out, peaks at 0.25 of the burst), eased into the plate's steel below 0.14 of the scale.
+  the wave's time slowed 3350 x; a cycle is 7.200 s on screen, 3 sways of the building: the burst leaves at t = 0.5 s
+  and every 7.200 s after, the record is whole from 5.19 s and fades over 0.5 s before the next burst.
+  the still (print, and a reader who asks for less motion): t = 3.950 s, 1.5 sways after the building is let go (full sway)
+  and the echo's peak reaching the transducer (1030 us; the slowing is set by it).
+
+OVERLAP (engine ?overlap, common.overlaps at 672 px; common.still also samples every 0.25 s
+  up to the poster):
+  still: labels none, crossings none
+  t=0.3: labels none, crossings none
+  t=0.8: labels none, crossings none
+  t=1.4: labels none, crossings none
+  t=2: labels none, crossings none
+  t=2.6: labels none, crossings none
+  t=3.95: labels none, crossings none
+  t=4.55: labels none, crossings none
+  t=7.4: labels none, crossings none
+  t=8.7: labels none, crossings none
+  t=11: labels none, crossings none

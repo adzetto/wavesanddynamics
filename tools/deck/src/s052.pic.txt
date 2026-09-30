@@ -1,0 +1,5 @@
+# his words inside his chart (build/r10-deck/his/s052-pic1.png)
+Limit = 2 mm
+First observed crossing
+Response (mm)
+Time (s)

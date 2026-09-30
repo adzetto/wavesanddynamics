@@ -112,10 +112,28 @@ this free on wavesanddata.com"*. Lovable "ücretsiz link" ile "Plan custom-domai
 planda olduğunu gösteriyor. Sonuç: dışarıdan erişilebilir bir URL yok, kaynak yalnız hocanın
 hesabında. "Cok ilerlemedim zaten" dediği nokta tam burası.
 
-**İki ayrı kabuk var, karıştırılmamalı.** Yedi videonun hiçbirinde sol menü yok: üstte sabit bir
-şerit, solda serif isim, sağda hamburger. Sol menü **yalnızca fotoğrafta** var. Fotoğraf sonraki
-ve onayladığı hal; videolar bileşenleri gösteriyor. Kurulacak olan: fotoğrafın kabuğu, videoların
-bileşenleri. Videolardaki üst şerit sadece dar ekran hali olarak kalır.
+**Taslakta sol menü yok — kabuk üstte.** Yedi videonun **233 karesi** yeniden tarandı
+(3 fps, hepsi): **233/233'ünde** üstte ince bir şerit var — solda serif `Korkut Kaynardag, PhD`,
+**sağ üstte** hamburger. Şerit sayfayla aynı tonda, altında saç teli çizgi. Hiçbir karede
+kalıcı sol sütun yok, hiçbirinde üst menü bağlantıları yok: gezinme yalnız hamburgerde.
+
+Fotoğraf (`image01.jpeg`) kalıcı sütun değil, **sayfanın üzerine soldan açılan çekmece**.
+Üç bağımsız ölçüm:
+
+1. Arkadaki giriş metni kelime ortasından kesiliyor ("PhD", "hings: mysel", "cs and physi")
+   ama satır sonları tam ekran ana sayfayla birebir aynı — içerik daralmamış, üzeri örtülmüş.
+2. Çekmecenin sağ kenarında x≈430'da zemin **213 → 172**'ye bir adımda düşüyor (%19).
+   Düzgün bir aydınlatma eğimi bunu yapmaz: **karartma perdesi var** (bulanıklık yok, sadece
+   karartma). Önceki "perde yok" tespiti yanlıştı.
+3. Karede iki ayrı kaydırma çubuğu var.
+
+Lovable baştan sona **masaüstü genişliğinde** açıktı; hamburger tam masaüstü genişliğinde
+görünüyor, yani duyarlı daralmadan değil tasarım gereği öyle. **Telefon davranışı hakkında
+elimizde hiçbir kare yok.**
+
+Sonuç: hocanın *"sol kısımda menü olacak hep"* cümlesinin taslaktaki tek karşılığı bu çekmece —
+menü hep solda açılıyor. Kalıcı sol sütun istiyorsa bu taslağa **ek** bir istek olur.
+Tek cümleyle sorulacak.
 
 **Sol menü (tek kaynak: fotoğraf).** Üstte dairesel fotoğraf, altında serif isim, sonra iki satır
 unvan (Assistant Professor, Department of Civil Engineering / Izmir Institute of Technology).
@@ -147,13 +165,33 @@ kare, hap biçimi değil.
 section eklemem kolay olsun" dediği şeyin birebir karşılığı bu. Astro içerik şeması bu dört
 başlığı almalı; yeni bölüm eklemek şablonu doldurmak demek olur.
 
-**Renk ve yazı.** Kullanılabilir tek bir hex yok: telefon kamerası sıcağa kaçırmış, moiré var,
-karede referans beyaz yok. Güvenilir olan sadece oranlar ve ilişkiler. Sıcak krem menü, ona göre
-daha soğuk beyaz içerik alanı, tuğla kırmızısı vurgu, serif başlık üstüne sans gövde, saç teli
-çizgiler, gölge yok, hareket yok, köşeler neredeyse kare. İlk okumaların iddia ettiği çapraz
-degrade ve keten dokusu ikisi de kamera kusuru çıktı, düz zemin. Hocanın Word belgesindeki palet
-de aynı aileden (tuğla başlıklar, pembemsi callout kutuları, şeftali tablo başlıkları), yani
-vurgu rengi kırmızı, mavi değil. Kesin değerler ancak Lovable kaynağından gelir.
+**Renk ve yazı — Word'ün beyaz sayfasıyla kalibre edildi.** Telefonla monitörden çekilmiş
+karede mutlak renk okunamaz. Ama elimizde gerçek bir kalibrasyon hedefi var: **aynı oturumda,
+aynı monitörde, iki dakika sonra çekilmiş Word videosu** (`15.49.02`) — Word'ün sayfa zemini
+saf beyaz. Ölçüm: beyaz kağıt `(215,212,189)` çıkıyor, yani kameranın/monitörün **+26 R-B
+sıcak sapması** var. Bu sapma çıkarıldığında:
+
+- **Sayfa zemini: beyazın yalnızca bir tık altında, hafif sıcak fildişi** — yaklaşık `#FBF7F1`.
+  Önceki okumadaki koyu krem (`#F5F1E7`) fazla koyu ve fazla sarıydı; **sapmanın kendisiydi.**
+  Ana sayfada düğmenin yanındaki zemin, kalibrasyondan sonra doğrudan beyaza oturuyor.
+- **Menü, üst şerit ve içerik tek ton.** Ayrı beyaz içerik paneli yok; ayrım yalnız saç teli çizgi.
+- Başlıklar: koyu, **soğuk** arduvaz/lacivert, geçiş dönemi serif, normal ağırlık (kalın değil).
+- Gövde: orta koyulukta gri, hümanist sans, satır aralığı bol (~1,75).
+- **Tek dolu düğme:** ana sayfadaki `About me →`, **çelik/kot mavisi**. Ölçülen ham değer
+  `(57,80,96)`, kalibre `#425E75`; ekran fotoğrafı doyumu düşürdüğü için gerçeği bir tık
+  daha canlı, `#2F5D8A` civarı. Yanındaki `My research areas` çerçevesiz düz yazı.
+- **Tuğla kırmızısı yalnızca küçük detayda:** iletişim ikonları (bina, zarf, iğne),
+  *At a glance* rakamları (**12 / 2 / 8**), kariyer tarihleri, çekmecedeki etkin satır çubuğu.
+- **Üst etiket kırmızı değil gri:** `ACADEMIC & RESEARCH PORTFOLIO` harf aralıklı gri sans.
+- **Bağlantılar ne mavi ne altı çizili.** Kartlar dolgu ile değil saç teli çizgilerle ayrılıyor.
+  Gölge yok, hareket yok, köşeler neredeyse kare.
+
+Güvenilmeyecek kareler: `/research` ve `/vibrations-waves` videoları ağır moiré taşıyor
+(pembe-yeşil girişim) ve kalibrasyondan sonra bile pembeye kaçıyor; renk için kullanılmadı.
+Temiz kaynaklar: `/contact` (`15.47.20`) ve ana sayfa (`15.47.16_2`).
+
+Düzeltme: PPT ikonlarının lacivert/bordosu (`#1B3A6B` / `#8C1A1A`) **Word belgelerinin**
+paleti; sayfanın paleti bu değil.
 
 **About sayfasındaki yeni veriler** (Wix'te yok):
 
@@ -187,6 +225,109 @@ yenisini adıyla istemek gerekir. Dönüştürme açısından üç şey önemli:
 
 Ayrıca metin içinde sürekli "Section 5.3", "Figure 7" göndermeleri var; sitenin Word'e göre en
 büyük kazancı bunları çalışan bağlantıya çevirmek olacak.
+
+---
+
+## 4b. KESİN KAYNAK: hocanın kendi sunumu (NEW WAVES AND DATA.pptx)
+
+22 Eylül'de fark edildi: Dropbox'taki **3 slaytlık `NEW WAVES AND DATA.pptx`** hocanın
+sitenin kendi maketi. Tahmin değil, ölçüm — OOXML'den birebir çıkarıldı. Tartışmaları bitiriyor.
+
+**Sol menü kesin.** Slaytların metni iki yerde açıkça söylüyor:
+> *"You'll find these documents under the three sections in the **Gallery menu on the left**."*
+> *"…and similar sections **on left menu**?"*
+
+Ve üç slaytın hepsinde aynı kabuk var:
+
+| öğe | ölçülen (13,33 × 7,5 inç slayt) | web karşılığı |
+|---|---|---|
+| sol menü sütunu | x 0 → 2,23 in | **genişliğin %16,7'si**, tam yükseklik |
+| menü bloğu | `accent1 lumMod 75%` | **`#104862`** beyaz, kalın, **ortalanmış** yazı |
+| etkin sayfa | `accent2 lumMod 50%` | **`#80350E`** (slayt 2'de About Me, slayt 3'te My Research Areas) |
+| kart / kutu | `bg1 lumMod 95%` + kenar `bg2 lumMod 90%` | **`#F2F2F2`** dolgu, **`#D1D1D1`** kenar, yuvarlak köşe |
+| sayfa zemini | `bg1` | **beyaz** |
+| üst şerit | 13,33 × 0,50 in, `noFill` | boş nefes payı, renkli bant değil |
+
+Menü sırası (hocanın yazdığı gibi, **Home yok** — isim/fotoğraf bloğu ana sayfaya gider):
+About Me · My Research Areas · Gallery · Vibrations and Waves ·
+Signal Processing, System Identification, Estimation, Optimization · Machine Learning ·
+Blog · Contact
+
+**Slayt 3 = "4 kutucuk".** WhatsApp'taki *"tiklayabilcegin 4 box olmustu bunlar icin, altinda da
+direk bunlari word olarak indirebilcekleri link"* isteğinin birebir maketi. y=5,57 in'de yan yana
+dört yuvarlak kutu, **etiket üstte, ikon altta**:
+
+1. Structural Health Monitoring / Non-destructive Testing (Short) — `image4.png`
+2. Extended SHM / NDT document — `image6.png`
+3. Sound Wave Tracking — `image5.png`
+4. Extensive ppt regarding my MSc and PhD Research — `image3.png`
+
+**Kesilen cümle bulundu.** Lovable videosunda ekran dışında kalan */research* paragrafının
+tamamı slayt 3'te duruyor:
+> *"Also, are you also asking about "vibrations and waves", "signal processing, system
+> identification, estimation, optimization", and "machine learning" and similar sections on left
+> menu? In this webpage, I also explain such topics in similar sense (overall picture, the
+> intuition, how different topics are connected, how to learn them) based on my research and
+> industry experience. Thus, after checking my research topics, if you are interested, and
+> especially if you are a newcomer for those topics, please give them a look."*
+
+**Önceki iki okuma geçersiz.** Lovable taslağındaki üst şerit + hamburger, hocanın istediği kabuk
+değildi; Lovable o slaytları tam karşılayamamıştı. Krem/fildişi palet de geçersiz: hocanın
+kendi paleti **beyaz zemin + `#104862` menü**.
+
+**Açık kalan:** "the three sections in the Gallery menu" hangi üç bölüm? Dört kutu var,
+metin "three documents + a presentation" diyor. Galeri alt menüsü kurulmadı, hocaya sorulacak.
+
+---
+
+## 4c. Wix'te yayın ve site üreteci
+
+**Yayın yolu.** Wix'in statik site yükleme akışı (`headless-business-setup`, Path B): anonim site
+oluştur → dosyaları yükle → release. Sınırlar: **3 MB/dosya, 20 MB/site**, yalnız statik dosya.
+Görseller WebP'ye çevriliyor (17,1 MB → ~3,3 MB).
+
+**Bir saatlik pencere.** Anonim kayıt, **oluşturulmasından 1 saat sonra** düşer; o süre içinde
+aynı id'lerle aynı URL güncellenebilir ve hesaba alınabilir (claim), sonra ikisi de çalışmaz.
+22 Eylül'de iki anonim site yayınlandı (ilki öğleden sonra, ikincisi 20:17); ikisi de hesaba
+alınmadan süresi doldu. **Bir sonraki yayın, turun en sonunda yeni bir siteye yapılacak** ve
+kullanıcıya claim için bir saat kalacak.
+
+**Kimlikler depoda değil.** `anonymousId` bir claim token'ıdır: Wix'e girişli kim açarsa site onun
+hesabına geçer. Bu yüzden `site/.wix/` altında ve `.gitignore`'da; bu dosyaya yazılmaz.
+
+**Üreteç repoda.** 22 Eylül akşamı oturum geçici dizinini kaybetti; site çalışması repoya taşındı:
+
+```
+site/build.py        üreteç. python site/build.py [--out DIR] [--strict]
+site/preview.py      Ricos JSON -> HTML (belge sayfaları)
+site/parts/*.py      bölüm modülleri: theme, hero, topics, rboxes, gallery, about, docs
+site/design/         CONTRACT.md, BRIEF2.md, DESIGN_BRIEF.md (bağlayıcı), PALETTE.css
+site/dist/           derlenmiş site (gitignore)
+site/.wix/           Wix anonim kimlikleri (gitignore)
+```
+
+`--out`, eşzamanlı çalışan ajanlar birbirinin çıktısını silmesin diye var (build önce çıktı
+dizinini siler). `--strict`, gezinme sayfalarında tek bir em dash kalırsa build'i reddeder.
+
+**Round 2 tasarım kararları** (`site/design/DESIGN_BRIEF.md`, ölçümlerle):
+- Deck'teki `#104862` / `#80350E`, **Microsoft Office'in varsayılan teması**ndan türemiş
+  (`accent1=156082`, `accent2=E97132`). Hocanın kararı "koyu mavi sütun + sıcak vurgu", hex'ler
+  değil. Palet OKLCH'de yeniden üretildi: sütun H 248, vurgu H 52, sıcak kâğıt `#FBF9F6`.
+- Eski etkin menü işareti `#80350E` üstü `#104862` = **1,14:1** kontrast: WCAG ihlali. Yerine
+  4,90:1'lik bir kenar rayı.
+- Satır uzunluğu **101,7 karakter**ti (`72ch`, sıfırın genişliği); 608 px ile ~70'e iniyor.
+- Inter bırakılıyor: Source Serif 4 gövde (19 px), Source Sans 3 arayüz.
+- Hocanın fotoğrafı menüden kalkıyor, yalnız hero'da kalıyor.
+- Hover'da `translateY`, gölge değişimi ve renk tonu değişimi yasak.
+
+**Word indirmeleri.** Hocanın "4 kutunun altında Word linki" isteği bu turda canlıya çıkıyor, ama
+yalnız denetimden geçen üç belge için: Brochure (0,11 MB), Understanding (0,95 MB), Sound
+(0,27 MB) — içlerinde e-posta, yorum ya da izlenen değişiklik yok. Yayınlanmayanlar ve nedeni:
+Signal Processing hocanın kişisel Gmail'ini içeriyor; From_Bridges Word yorumları içeriyor;
+Dynamical (3,97 MB) ve Machine Learning (10,29 MB) dosya başına 3 MB sınırını aşıyor.
+
+**Gizlilik.** Hocanın kişisel Gmail'i üç rehberin disclaimer kutusunda geçiyor; web sayfalarında
+Contact sayfasına bağlantıya çevriliyor. Kurumsal adres: `korkutkaynardag@iyte.edu.tr`.
 
 ---
 

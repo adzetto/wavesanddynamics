@@ -1,0 +1,44 @@
+nf-mla-tasks: Figure 2, the five core task mechanisms
+
+(a) CLASSIFICATION: 20 + 20 emails (seed 8), logistic regression, C = 1e6
+  w = (2.44011, 0.37046), b = -17.83902; training accuracy 0.925
+  CHECK: score equations [1 X]'(y - p) = (2.3e-09, 2.5e-06, 4.0e-07) at the optimum (sum |x| = 840)
+  new email at [8.2, 27.0]: p(spam) = 1.000; at [3.4, 17.0]: 0.038
+
+(b) REGRESSION: the 14 house sales of Figure 8, least squares
+  price = 45.134 k$ + 169.4761 $/ft^2 x area (as nf-mla-linreg)
+  new house 2400 ft^2: 451.9 k$; 1350 ft^2: 273.9 k$
+
+(c) CLUSTERING: 60 customers in 3 groups (seed 7), no labels; k-means, k = 3, from 3 customers (seed 34)
+  converged after 5 assignment steps; start at customers [0, 3, 7]
+  CHECK: final centres against sklearn KMeans from the same start: max |diff| = 1.1e-16
+  CHECK: the groups found match the groups the data were drawn from: 100 %
+  within-cluster sum of squares by step (scaled units): 6.0623, 1.8241, 0.4034, 0.3789, 0.3789
+
+(d) ANOMALY DETECTION: 80 normal readings (seed 11); Gaussian: mean (59.53 C, 2.912 mm/s)
+  threshold: squared Mahalanobis distance > chi2(2, 0.99) = 9.2103
+  CHECK: training readings inside the ellipse 80 of 80 (expected about 79.2)
+  CHECK: the drawn ellipse is the threshold: max |d2(ellipse) - thr| = 2.3e-14
+  new reading 57 C, 2.6 mm/s: d2 = 0.44 -> normal
+  new reading 66 C, 3.9 mm/s: d2 = 2.79 -> normal
+  new reading 52 C, 1.8 mm/s: d2 = 3.77 -> normal
+  new reading 62 C, 5.6 mm/s: d2 = 21.83 -> ANOMALY
+  new reading 74 C, 3.2 mm/s: d2 = 27.68 -> ANOMALY
+  new reading 63 C, 3.1 mm/s: d2 = 1.23 -> normal
+
+(e) FORECASTING: 70 days simulated from additive Holt-Winters (alpha, beta, gamma) = (0.35, 0.1, 0.25), weekly season, noise sd 4 (seed 1)
+  fitted to days 1..56 by least squares: alpha 0.310, beta 0.061, gamma 0.288; residual sd 3.716
+  CHECK: forecast sd, formula vs 20000 simulated futures of the fitted model (h = 1, 7, 8, 14): 3.716/3.721, 5.059/5.055, 5.741/5.742, 7.379/7.404
+  CHECK: mean of the simulated futures against the point forecast: max |diff| 0.042 (Monte Carlo error about 0.079)
+  the 14 held-back days inside the 80 % band: 12 of 14
+
+TIMING (30 Sep 2026, the client: slow Figure 2 down so each step can be followed): every step
+  about twice as slow, old values in brackets; the intro unchanged (readable by 0.8 s, all in by 1.2 s)
+  round 34 s (17 s): each mechanism a 6 s window (3 s) from 0.6 s, then 4 s at rest (2 s); poster 31.6 s (16.6 s)
+  (a), (b) the new case waits 0.5 s (0.25 s), glides to its second place with a 1.2 s spring (0.7 s),
+      stays 3 s (1.5 s) from leaving to coming back, and glides back; first motion at 1.1 s (0.85 s)
+  (c) grey, centres back to the start: 0.5 s (0.25 s), then a 0.4 s rest (0.2 s); a k-means step every
+      0.8 s (0.34 s): the colours change, and 0.2 s later (0.1 s) the centres glide 0.4 s (0.2 s) and rest
+  (d) the readings go in 0.4 s (0.2 s) and come back one by one, 0.76 s apart (0.38 s), each in 0.5 s (0.28 s)
+  (e) the forecast goes in 0.5 s (0.25 s) and is drawn forward in 1.8 s (0.9 s); the days that follow
+      come in one every 0.2 s (0.1 s)

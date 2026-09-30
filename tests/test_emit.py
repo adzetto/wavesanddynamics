@@ -6,7 +6,10 @@ the live site rather than as an error. These tests hold the shapes to what the
 client's own published post actually contains, and to what the published
 ricos-schema typings declare.
 """
+
 import json
+
+import pytest
 
 from tools.ricos.blocks import Callout, Figure, Para, Run, Table
 from tools.ricos.emit import Ids, _para, emit
@@ -35,10 +38,11 @@ def test_a_heading_carries_its_level_and_its_own_alignment():
     corpus has 548 non-AUTO alignments on top-level paragraphs to lose that
     way. Centring is how the author opens most of these documents.
     """
-    doc = emit([Para(runs=[Run(text="Closing Thoughts")], heading=2,
-                     align="CENTER")])
+    doc = emit([Para(runs=[Run(text="Closing Thoughts")], heading=2, align="CENTER")])
     assert doc["nodes"][0]["headingData"] == {
-        "level": 2, "textStyle": {"textAlignment": "CENTER"}}
+        "level": 2,
+        "textStyle": {"textAlignment": "CENTER"},
+    }
 
 
 def test_bold_run_carries_decoration():
@@ -92,10 +96,12 @@ def test_contents_list_paragraph_is_not_emitted():
     TOC9, and not the "Contents" heading above them - is the reader's answer
     and is pinned there.
     """
-    blocks = [Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
-              Para(runs=[Run(text="body")], role="TOC"),
-              Para(runs=[Run(text="Contents")], heading=1),
-              Para(runs=[Run(text="kept")])]
+    blocks = [
+        Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
+        Para(runs=[Run(text="body")], role="TOC"),
+        Para(runs=[Run(text="Contents")], heading=1),
+        Para(runs=[Run(text="kept")]),
+    ]
     doc = emit(blocks)
     texts = [n["nodes"][0]["textData"]["text"] for n in doc["nodes"]]
     assert texts == ["Contents", "kept"]
@@ -123,8 +129,10 @@ def test_image_node_uses_bare_id_and_dimensions():
     read off a live IMAGE node on the client's own site through the Data API,
     down to `width`/`height`, which the renderer needs to reserve the space.
     """
-    doc = emit([Figure(filename="image1.png", width=640, height=480)],
-               media_ids={"image1.png": "ce0a40_abc~mv2.png"})
+    doc = emit(
+        [Figure(filename="image1.png", width=640, height=480)],
+        media_ids={"image1.png": "ce0a40_abc~mv2.png"},
+    )
     node = doc["nodes"][0]
     assert node["type"] == "IMAGE"
     src = node["imageData"]["image"]["src"]
@@ -148,10 +156,15 @@ def test_the_whole_image_node_is_the_shape_the_validator_accepted():
     """
     doc = emit([Figure(filename="image1.png", width=640, height=480)])
     assert doc["nodes"][0] == {
-        "type": "IMAGE", "id": "n1", "nodes": [],
+        "type": "IMAGE",
+        "id": "n1",
+        "nodes": [],
         "imageData": {
-            "containerData": {"width": {"size": "CONTENT"},
-                              "alignment": "CENTER", "textWrap": True},
+            "containerData": {
+                "width": {"size": "CONTENT"},
+                "alignment": "CENTER",
+                "textWrap": True,
+            },
             "image": {"src": {"id": "image1.png"}, "width": 640, "height": 480},
         },
     }
@@ -168,12 +181,26 @@ def test_the_whole_table_cell_is_the_shape_the_validator_accepted():
     """
     doc = emit([Table(rows=[[[Para(runs=[Run(text="x")])]]])])
     assert doc["nodes"][0]["nodes"][0]["nodes"][0] == {
-        "type": "TABLE_CELL", "id": "n3", "nodes": [
-            {"type": "PARAGRAPH", "id": "n2", "nodes": [
-                {"type": "TEXT", "id": "", "nodes": [],
-                 "textData": {"text": "x", "decorations": []}}],
-             "paragraphData": {"textStyle": {"textAlignment": "AUTO"},
-                               "indentation": 0}}],
+        "type": "TABLE_CELL",
+        "id": "n3",
+        "nodes": [
+            {
+                "type": "PARAGRAPH",
+                "id": "n2",
+                "nodes": [
+                    {
+                        "type": "TEXT",
+                        "id": "",
+                        "nodes": [],
+                        "textData": {"text": "x", "decorations": []},
+                    }
+                ],
+                "paragraphData": {
+                    "textStyle": {"textAlignment": "AUTO"},
+                    "indentation": 0,
+                },
+            }
+        ],
         "tableCellData": {},
     }
 
@@ -189,8 +216,16 @@ def test_media_id_falls_back_to_the_filename():
 def test_image_caption_is_a_child_node_and_alt_text():
     """Both caption forms on purpose: `imageData.caption` is deprecated, but
     Wix's own published examples still carry it beside the CAPTION child."""
-    doc = emit([Figure(filename="i.png", width=1, height=1,
-                       caption="Figure 3. Dispersion curves.")])
+    doc = emit(
+        [
+            Figure(
+                filename="i.png",
+                width=1,
+                height=1,
+                caption="Figure 3. Dispersion curves.",
+            )
+        ]
+    )
     node = doc["nodes"][0]
     cap = node["nodes"][0]
     assert cap["type"] == "CAPTION"
@@ -204,8 +239,10 @@ def test_image_caption_is_a_child_node_and_alt_text():
 def test_table_nests_row_cell_paragraph():
     """TABLE -> TABLE_ROW -> TABLE_CELL -> block content, strictly. A cell's
     text is never a child of the cell itself; it needs its own paragraph."""
-    t = Table(rows=[[[Para(runs=[Run(text="Name")])],
-                     [Para(runs=[Run(text="Role")])]]], header_row=True)
+    t = Table(
+        rows=[[[Para(runs=[Run(text="Name")])], [Para(runs=[Run(text="Role")])]]],
+        header_row=True,
+    )
     doc = emit([t])
     table = doc["nodes"][0]
     assert table["type"] == "TABLE"
@@ -249,9 +286,15 @@ def test_the_body_filter_does_not_reach_inside_a_cell():
     `_cell` - every assertion it made held under the mutation it exists to
     catch.
     """
-    t = Table(rows=[[[Para(runs=[Run(text="x")]), Para(runs=[])],
-                     [Para(runs=[Run(text="  ")])],
-                     [Para(runs=[Run(text="y")], role="TOC")]]])
+    t = Table(
+        rows=[
+            [
+                [Para(runs=[Run(text="x")]), Para(runs=[])],
+                [Para(runs=[Run(text="  ")])],
+                [Para(runs=[Run(text="y")], role="TOC")],
+            ]
+        ]
+    )
     row = emit([t])["nodes"][0]["nodes"][0]
     assert [c["type"] for c in row["nodes"]] == ["TABLE_CELL"] * 3
     assert all(c["nodes"][0]["type"] == "PARAGRAPH" for c in row["nodes"])
@@ -275,8 +318,16 @@ def test_a_blockquote_holds_exactly_one_paragraph():
     `nodes: ParagraphNode[]`, but a generated array type cannot express a
     maximum, so it is not evidence against the limit. One child it is.
     """
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
-                                Para(runs=[Run(text="It has four parts.")])])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="The core idea")]),
+                    Para(runs=[Run(text="It has four parts.")]),
+                ]
+            )
+        ]
+    )
     quote = doc["nodes"][0]
     assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH"]
 
@@ -288,8 +339,16 @@ def test_the_quote_joins_its_source_paragraphs_with_a_line_break():
     ends, and running them together glued "How to use this guide" to the
     sentence after it in the ML guide's opening aside.
     """
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
-                                Para(runs=[Run(text="It has four parts.")])])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="The core idea")]),
+                    Para(runs=[Run(text="It has four parts.")]),
+                ]
+            )
+        ]
+    )
     texts = [t["textData"]["text"] for t in doc["nodes"][0]["nodes"][0]["nodes"]]
     assert texts == ["The core idea", "\n", "It has four parts."]
 
@@ -301,8 +360,16 @@ def test_the_quote_paragraph_takes_the_first_source_paragraph_s_properties():
     Rebuilding the quote's paragraph from its runs alone silently reset all of
     them to AUTO, which no test caught because none looked at this field.
     """
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="a")], align="JUSTIFY"),
-                                Para(runs=[Run(text="b")], align="CENTER")])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="a")], align="JUSTIFY"),
+                    Para(runs=[Run(text="b")], align="CENTER"),
+                ]
+            )
+        ]
+    )
     inner = doc["nodes"][0]["nodes"][0]
     assert inner["paragraphData"]["textStyle"]["textAlignment"] == "JUSTIFY"
 
@@ -312,8 +379,15 @@ def test_a_heading_inside_a_callout_stays_a_paragraph():
     nothing. The words are worth more than the weight, so the style goes and
     the paragraph stays - alignment included.
     """
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")],
-                                     heading=2, align="CENTER")])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="The core idea")], heading=2, align="CENTER")
+                ]
+            )
+        ]
+    )
     inner = doc["nodes"][0]["nodes"][0]
     assert inner["type"] == "PARAGRAPH"
     assert inner["paragraphData"]["textStyle"]["textAlignment"] == "CENTER"
@@ -325,13 +399,15 @@ def test_the_body_filter_still_applies_beside_the_new_block_types():
     `block.role`, which only a Para has, so widening the loop is exactly where
     the filter gets lost - or gets handed a Figure and raises AttributeError.
     """
-    blocks = [Para(runs=[]),
-              Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
-              Figure(filename="i.png", width=1, height=1),
-              Table(rows=[[[Para(runs=[Run(text="x")])]]]),
-              Callout(blocks=[Para(runs=[Run(text="aside")])]),
-              Para(runs=[Run(text="   ")]),
-              Para(runs=[Run(text="kept")])]
+    blocks = [
+        Para(runs=[]),
+        Para(runs=[Run(text="1. What is Machine Learning?\t2")], role="TOC"),
+        Figure(filename="i.png", width=1, height=1),
+        Table(rows=[[[Para(runs=[Run(text="x")])]]]),
+        Callout(blocks=[Para(runs=[Run(text="aside")])]),
+        Para(runs=[Run(text="   ")]),
+        Para(runs=[Run(text="kept")]),
+    ]
     types = [n["type"] for n in emit(blocks)["nodes"]]
     assert types == ["IMAGE", "TABLE", "BLOCKQUOTE", "PARAGRAPH"]
 
@@ -344,9 +420,17 @@ def test_a_picture_in_a_callout_survives_as_a_sibling():
     right way round. No aside in the corpus holds one, so this is the latent
     case, pinned before it can happen quietly.
     """
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="The core idea")]),
-                                Figure(filename="i.png", width=1, height=1),
-                                Para(runs=[Run(text="It has four parts.")])])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="The core idea")]),
+                    Figure(filename="i.png", width=1, height=1),
+                    Para(runs=[Run(text="It has four parts.")]),
+                ]
+            )
+        ]
+    )
     assert [n["type"] for n in doc["nodes"]] == ["BLOCKQUOTE", "IMAGE"]
     quote = doc["nodes"][0]
     assert [n["type"] for n in quote["nodes"]] == ["PARAGRAPH"]
@@ -364,8 +448,12 @@ def test_figure_with_no_source_is_skipped_but_an_unmeasured_one_is_kept():
     other case and is kept: the file is real and the upload step can repair the
     dimensions. Neither state occurs in the present corpus.
     """
-    doc = emit([Figure(filename="", width=640, height=480),
-                Figure(filename="real.png", width=0, height=0)])
+    doc = emit(
+        [
+            Figure(filename="", width=640, height=480),
+            Figure(filename="real.png", width=0, height=0),
+        ]
+    )
     assert [n["type"] for n in doc["nodes"]] == ["IMAGE"]
     assert doc["nodes"][0]["imageData"]["image"]["src"] == {"id": "real.png"}
 
@@ -376,3 +464,120 @@ def test_a_cell_emptied_by_a_skipped_figure_keeps_its_placeholder():
     row = emit([t])["nodes"][0]["nodes"][0]
     assert [c["type"] for c in row["nodes"]] == ["TABLE_CELL", "TABLE_CELL"]
     assert row["nodes"][0]["nodes"][0]["type"] == "PARAGRAPH"
+
+
+# --- colour, and the marks Ricos has no decoration for --------------------------
+
+
+def test_a_coloured_run_carries_a_color_decoration():
+    """The shape is the one Wix's REST reference gives for rich content -
+    `Decoration.colorData` with `foreground` and `background` as hex strings -
+    and it is the one shape in this module that was not run through the
+    validator, because this session had no key for it. It is pinned whole so
+    that the next session with a key knows exactly what to check.
+    """
+    run = Run(text="x", color="#7a0000", highlight="#ffff00")
+    decs = emit([Para(runs=[run])])["nodes"][0]["nodes"][0]["textData"]["decorations"]
+    assert decs == [
+        {
+            "type": "COLOR",
+            "colorData": {"foreground": "#7a0000", "background": "#ffff00"},
+        }
+    ]
+
+
+def test_a_colour_alone_carries_only_a_foreground():
+    decs = emit([Para(runs=[Run(text="x", color="#7a0000")])])["nodes"][0]["nodes"][0][
+        "textData"
+    ]["decorations"]
+    assert decs == [{"type": "COLOR", "colorData": {"foreground": "#7a0000"}}]
+
+
+def test_a_heading_carries_no_colour():
+    """Word's default heading blue arrives on every Heading1 through its
+    style; the site's theme owns what a heading looks like."""
+    doc = emit(
+        [Para(runs=[Run(text="One", color="#2e74b5", highlight="#ffff00")], heading=1)]
+    )
+    assert doc["nodes"][0]["nodes"][0]["textData"]["decorations"] == []
+
+
+def test_a_link_carries_no_colour():
+    """A link on the page is coloured by the site. The underline is another
+    matter: Word's own is set aside by the reader, so one that reaches here
+    is the author's and stays - the shape test above pins that."""
+    run = Run(text="x", link="https://x.test/", color="#0563c1", highlight="#ffff00")
+    decs = emit([Para(runs=[run])])["nodes"][0]["nodes"][0]["textData"]["decorations"]
+    assert decs == [
+        {"type": "LINK", "linkData": {"link": {"url": "https://x.test/"}}},
+        {"type": "COLOR", "colorData": {"background": "#ffff00"}},
+    ]
+
+
+@pytest.mark.parametrize(
+    ("color", "kept"),
+    [
+        ("#ffffff", False),  # white on dark cells, 26 runs: invisible on a white page
+        ("#a6a6a6", False),  # the ML guide's light-grey title line
+        ("#6b7280", True),  # the grey of the bylines and captions
+        ("#7a0000", True),
+    ],
+)
+def test_a_colour_that_cannot_be_read_on_a_white_page_is_not_emitted(color, kept):
+    """Cell shading is not carried, so a colour that needs a dark background
+    would be published as text nobody can see. The line is 3:1 contrast
+    against white, the least a page is allowed for large text."""
+    decs = emit([Para(runs=[Run(text="x", color=color)])])["nodes"][0]["nodes"][0][
+        "textData"
+    ]["decorations"]
+    assert bool(decs) is kept
+
+
+def test_a_background_keeps_a_light_foreground():
+    """White on a highlight the run carries itself is readable."""
+    run = Run(text="x", color="#ffffff", highlight="#7a0000")
+    decs = emit([Para(runs=[run])])["nodes"][0]["nodes"][0]["textData"]["decorations"]
+    assert decs == [
+        {
+            "type": "COLOR",
+            "colorData": {"foreground": "#ffffff", "background": "#7a0000"},
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "vertical", "shown"),
+    [
+        ("2", "super", "²"),
+        ("10", "super", "¹⁰"),
+        ("i+1", "sub", "ᵢ₊₁"),
+        ("A", "sub", "_A"),  # From Bridges to Photons: P_A + P_B
+        ("AB", "sub", "_(AB)"),
+        ("x", "super", "^x"),
+        ("2", "", "2"),
+    ],
+)
+def test_super_and_subscript_are_glyphs_where_they_exist_and_linear_where_not(
+    text, vertical, shown
+):
+    """Ricos has no vertical alignment. A superscript digit has its own
+    glyph and the meaning survives exactly: 10⁶ is not 106. Where Unicode has
+    no glyph the text falls back to the `^`/`_` notation of Word's own linear
+    equation format, which is what a reader of these documents already reads.
+    """
+    doc = emit([Para(runs=[Run(text=text, vertical=vertical)])])
+    assert doc["nodes"][0]["nodes"][0]["textData"]["text"] == shown
+
+
+def test_struck_through_text_carries_the_documented_strikethrough_decoration():
+    """The shape is Wix's REST reference for rich content documents
+    (`reference/ricos-schema/wix-rest-ricos-document-reference.txt`,
+    StrikethroughDecoration), in the same idiom as the ITALIC and UNDERLINE
+    shapes the validator accepted. The npm schema of the same date does not
+    declare it, and the validator has not seen it: if it is refused, the
+    fallback is what the page showed before - plain text - and the manifest
+    counts every run it happens to, so nothing about it is silent."""
+    doc = emit([Para(runs=[Run(text="gone", strike=True)])])
+    assert doc["nodes"][0]["nodes"][0]["textData"]["decorations"] == [
+        {"type": "STRIKETHROUGH", "strikethroughData": True}
+    ]

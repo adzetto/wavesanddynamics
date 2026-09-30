@@ -1,0 +1,57 @@
+nf-mla-svm: Figure 13, linear SVM (left) and RBF kernel SVM (right)
+
+(a) LINEAR
+  20 + 20 points, class A ~ N((1.1, 1.1), 0.62^2 I), class B ~ N((-1.2, -1.0), 0.62^2 I), seed 3
+  hard margin SVC (linear, C = 1e8, tol 1e-12): w = (1.717798, 1.338954), b = 0.563201, support vectors 3
+  normal direction theta* = 37.934967 deg; street width 2/|w| = 0.918279190
+CHECK 1: the widest street over all directions (closed form per direction, bounded search)
+  argmax m(theta) = 37.934966 deg (SVM 37.934967); max m = 0.918279228 (2/|w| = 0.918279190, diff 3.8e-08)
+  m(theta* -+ 15 deg) = 0.5143, 0.5287 (narrower either way); separable from 13.9 to 61.9 deg
+  primal QP by SLSQP from w = (3, 3), b = 0: w = (1.717798, 1.338954), b = 0.563201, 2/|w| = 0.918279229
+CHECK 2: KKT, y (w.x + b) >= 1, with equality exactly at the support vectors
+  min over all points 1.00000000; at the support vectors 1.00000000, 1.00000005, 1.00000006
+
+(b) RBF
+  60 + 60 points on two rings, radius ~ N(1.0, 0.14) (class A) and N(2.2, 0.16) (class B), seed 1
+  SVC(rbf, gamma = 0.5, C = 10, tol 1e-10): 14 support vectors, training accuracy 1.000, b = -0.912129
+  alpha_i y_i: -3.2529, -1.5378, -1.5181, -0.8545, -0.7711, -0.0354, -0.3059, -1.3766, -0.9720, +2.1088, +1.2281, +2.6067, +1.8863, +2.7943
+CHECK 3: f(x) = sum alpha_i y_i exp(-gamma |x - x_i|^2) + b against scikit-learn
+  max |ours - decision_function| over the 120 points = 1.0e-15
+  sum alpha_i y_i = -2.2e-15 (the dual's equality constraint)
+CHECK 4: the dual QP again, by SLSQP from alpha = 0 (max 1/2 a'Qa - sum a, 0 <= a <= C, y'a = 0)
+  14 support vectors (the same set); max |alpha - alpha_sklearn| = 2.1e-06; b = -0.912129 (scikit-learn -0.912129); dual objective -10.624204733 (-10.624204733)
+CHECK 5: margins: y f(x) >= 1 off the support vectors, = 1 on the free ones
+  min y f over non support vectors 1.0004; y f at free support vectors 0.99999994 .. 1.00000008
+  bounded (alpha = C) support vectors: 0
+  f at the points: class A 1.0000 .. 1.9858, class B -1.8453 .. -1.0000: the plane z = 0 lies between them
+CHECK 6: no straight line separates the rings
+  best line, exhaustive over all 7140 pairs x 2 orientations: 89 of 120 (74.2%); brute force over 3601 directions x every cut: 89 of 120
+  3 (pair, orientation) choices reach it, all one classification (1); drawn: its widest street, pinned by points 88, 96 and 14:
+  unit normal (0.612622, -0.790376), offset 1.048563, street 0.002323, scores 89 of 120; SLSQP primal: street 0.002323, unit normal (0.612622, -0.790376)
+  (so every line that scores 89 passes within 0.0012 of those three points)
+  (a linear SVC, C = 10, on the rings scores 0.600: the hinge loss is not the count of errors)
+
+GRID: boundary and margins traced on 241 x 241 (step 0.0267); surface 25 x 25 (step 0.2667)
+  level 0: 1 closed line(s), 463 vertices
+  level p: 1 closed line(s), 347 vertices
+  level m: 1 closed line(s), 613 vertices
+  intercept b = -0.9121: f tends to b far from the data
+  the traced boundary against f itself: max |f| on its 463 vertices = 1.9e-03
+  surface mesh (bilinear between its nodes) against f on a 97 x 97 grid: max |diff| = 0.057 (of a range -2.06 .. 2.82)
+  f as the page computes it (DATA rounded to 5 decimals) against f: max |diff| on 97 x 97 = 2.5e-05
+
+PAGE (nf-mla-svm.html, 1000 x 840)
+  (b) the tour: from 3.2 s the camera turns from straight above to the 3-D view on Motion's spring
+      (visual duration 2.0 s, bounce 0; the lift it replaces took 1.0 s), holds 6 s, turns back in
+      2.0 s and rests 12 s. A click on (b), the cube button or Enter on it takes over: a spring of
+      1.8 s from wherever the camera is. In 3-D a drag turns it (azimuth 0..88 deg, elevation
+      8..75 deg). Reduced motion and ?still switch at once; the poster (17.5 s) is the 2-D figure.
+  3-D view: azimuth 34 deg, elevation 34 deg; the box holds f in [-3, 3], drawn half as tall as
+      wide. Faces are sorted back to front by their horizontal depth alone (exact for a height field
+      seen from above) and split at z = 0, so the plane is drawn between the two halves. Points and
+      lines are hidden where a ray to the eye meets the mesh (the drawn surface, bilinear), fading
+      over 0.12 in f.
+  (b') the line turns 60 deg every 7 s (rest 5 s, then a Motion spring of 2 s) from -30 deg; the
+      poster shows 90 deg. Its zeros are found by bisection on f (48 halvings).
+  the arrow: hovered, focused or pinned (a click, Enter), (b) shows the best straight line, its class
+      A side washed and the 31 points it gets wrong ringed in crimson; 74 % against 100 %.

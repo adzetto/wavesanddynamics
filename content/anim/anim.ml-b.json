@@ -1,0 +1,14 @@
+{
+ "machine-learning-the-complete-picture-and-guide-5": {
+  "image11": "nf-mlb-knn.html",
+  "image12": "nf-mlb-kmeans.html",
+  "image13": "nf-mlb-activation.html",
+  "image14": "nf-mlb-mlp.html",
+  "image15": "nf-mlb-neuron.html",
+  "image16": "nf-mlb-loss.html",
+  "image17": "nf-mlb-fit.html",
+  "image18": "nf-mlb-cnn.html",
+  "image19": "nf-mlb-audio.html",
+  "image20": "nf-mlb-rnn.html"
+ }
+}

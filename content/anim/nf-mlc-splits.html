@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 32: Splitting labeled data into training, validation, and test sets (top)</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Top: one hundred labeled examples are shuffled into sixty for training, twenty for validation and twenty for test, shown as a strip and as the data with the model fitted on the training sixty. Bottom: five rounds of cross-validation on the eighty training and validation examples, each holding out a different fifth, with the five validation scores and their mean; the test set stays untouched until one final score."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 612;
+const DATA = {"x":[0.16877,0.17962,0.24586,0.26943,0.28689,0.33075,0.3405,0.40013,0.54668,0.6192,0.67439,0.70421,0.83117,0.89237,0.92901,1.27203,1.2857,1.2876,1.29774,1.37968,1.47691,1.47926,1.49735,1.59824,1.7267,1.9017,1.95653,2.00769,2.02216,2.04509,2.17148,2.17211,2.35301,2.45094,2.58141,2.75309,2.77145,2.92975,3.0871,3.1432,3.15183,3.17377,3.39321,3.40686,3.45748,3.53275,3.68993,4.04038,4.29949,4.36002,4.59716,4.66303,4.67073,4.68908,4.83625,4.93179,4.99278,5.1139,5.12382,5.45794,5.49075,5.5373,5.87882,5.91595,5.98392,6.01498,6.21884,6.2613,6.61476,6.62843,6.70361,6.73362,6.9104,6.92279,6.97361,7.27112,7.39247,7.41807,7.46509,7.81055,7.8804,8.02203,8.05136,8.16736,8.39125,8.45225,8.4589,8.5292,8.67334,8.95758,8.95944,9.01431,9.06134,9.27503,9.28211,9.41006,9.48328,9.78301,9.80914,9.96436],"y":[0.20285,-0.01716,0.60199,0.60673,0.4562,0.47289,0.01095,0.47057,1.47198,0.95783,0.48073,1.7742,1.59731,2.39206,1.52079,1.6849,1.25453,2.50354,3.07392,1.62333,1.78072,2.34197,1.71349,2.03321,2.0658,2.36919,2.78612,2.30983,2.71463,2.11355,2.44561,1.33583,1.60416,2.57565,1.88222,2.28801,2.25633,2.46612,2.07337,2.10262,1.58481,1.29538,1.00811,1.09981,0.74388,0.90394,0.88886,0.53811,-0.09479,-0.89072,-0.36459,-0.30992,0.06762,-0.1818,-0.89403,-1.02598,0.14766,-0.51871,-0.04275,-0.10451,-1.44313,-0.91673,-0.91191,-0.86037,-0.85297,-0.99692,-0.92021,-1.64957,-0.75578,-1.00365,-0.52929,-0.76238,-0.05549,0.05113,-0.11004,0.33379,0.42894,0.2278,0.4335,0.87906,1.39891,1.47772,1.78378,1.12339,2.49159,1.84572,1.86894,2.2191,2.26656,3.01978,2.63257,2.47204,2.6237,3.79626,3.23158,2.78082,3.35521,2.76652,4.27663,2.79485],"role":[0,0,1,0,2,1,0,2,2,0,0,0,1,2,0,1,0,0,2,1,2,0,1,0,0,2,0,0,2,0,0,0,1,0,2,0,0,0,1,0,2,0,1,0,0,0,2,0,0,1,0,1,0,0,0,0,1,0,0,1,2,0,2,1,0,2,0,2,1,0,0,0,2,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,2,1,1,2,2,0,0,0,2,0,0],"perm":[16,58,27,23,78,33,53,54,83,0,47,43,50,96,17,1,70,36,80,61,37,9,24,31,39,55,21,30,3,11,76,35,6,85,10,41,52,79,88,26,29,98,66,73,45,94,86,48,99,84,82,64,77,75,95,14,44,71,57,69,56,12,59,81,15,87,42,63,68,5,38,90,49,91,32,2,22,51,19,74,18,62,7,4,40,20,65,92,97,93,72,28,13,60,8,67,34,46,89,25],"c1":[-154.82102,271.27249,-69.53978,-72.66608,29.40013,-0.50092],"xs":[0.0,0.0625,0.125,0.1875,0.25,0.3125,0.375,0.4375,0.5,0.5625,0.625,0.6875,0.75,0.8125,0.875,0.9375,1.0,1.0625,1.125,1.1875,1.25,1.3125,1.375,1.4375,1.5,1.5625,1.625,1.6875,1.75,1.8125,1.875,1.9375,2.0,2.0625,2.125,2.1875,2.25,2.3125,2.375,2.4375,2.5,2.5625,2.625,2.6875,2.75,2.8125,2.875,2.9375,3.0,3.0625,3.125,3.1875,3.25,3.3125,3.375,3.4375,3.5,3.5625,3.625,3.6875,3.75,3.8125,3.875,3.9375,4.0,4.0625,4.125,4.1875,4.25,4.3125,4.375,4.4375,4.5,4.5625,4.625,4.6875,4.75,4.8125,4.875,4.9375,5.0,5.0625,5.125,5.1875,5.25,5.3125,5.375,5.4375,5.5,5.5625,5.625,5.6875,5.75,5.8125,5.875,5.9375,6.0,6.0625,6.125,6.1875,6.25,6.3125,6.375,6.4375,6.5,6.5625,6.625,6.6875,6.75,6.8125,6.875,6.9375,7.0,7.0625,7.125,7.1875,7.25,7.3125,7.375,7.4375,7.5,7.5625,7.625,7.6875,7.75,7.8125,7.875,7.9375,8.0,8.0625,8.125,8.1875,8.25,8.3125,8.375,8.4375,8.5,8.5625,8.625,8.6875,8.75,8.8125,8.875,8.9375,9.0,9.0625,9.125,9.1875,9.25,9.3125,9.375,9.4375,9.5,9.5625,9.625,9.6875,9.75,9.8125,9.875,9.9375,10.0],"fit":[-0.50092,-0.32003,-0.14491,0.02436,0.18768,0.345,0.49625,0.64139,0.78037,0.91316,1.03975,1.1601,1.27422,1.3821,1.48376,1.57921,1.66847,1.75157,1.82856,1.89947,1.96437,2.0233,2.07633,2.12353,2.16499,2.20077,2.23097,2.25569,2.27502,2.28907,2.29794,2.30176,2.30063,2.29469,2.28406,2.26886,2.24925,2.22535,2.1973,2.16527,2.12938,2.08981,2.04669,2.00019,1.95048,1.8977,1.84203,1.78364,1.72268,1.65934,1.59379,1.52619,1.45672,1.38555,1.31286,1.23884,1.16364,1.08746,1.01046,0.93282,0.85472,0.77634,0.69784,0.61941,0.54122,0.46343,0.38622,0.30976,0.23421,0.15974,0.08651,0.01469,-0.05558,-0.12412,-0.1908,-0.25546,-0.31796,-0.37815,-0.43588,-0.49104,-0.54348,-0.59307,-0.6397,-0.68324,-0.72358,-0.76061,-0.79422,-0.82431,-0.8508,-0.87358,-0.89258,-0.90771,-0.91892,-0.92613,-0.92927,-0.92831,-0.9232,-0.91389,-0.90035,-0.88256,-0.8605,-0.83417,-0.80356,-0.76867,-0.72953,-0.68614,-0.63856,-0.58681,-0.53094,-0.47102,-0.4071,-0.33927,-0.2676,-0.19221,-0.11318,-0.03064,0.05528,0.14446,0.23673,0.33196,0.42996,0.53056,0.63357,0.73878,0.84598,0.95495,1.06544,1.1772,1.28998,1.40349,1.51745,1.63156,1.7455,1.85895,1.97156,2.08298,2.19285,2.30077,2.40636,2.5092,2.60887,2.70492,2.79691,2.88435,2.96678,3.04368,3.11454,3.17883,3.23601,3.28549,3.32672,3.35908,3.38197,3.39476,3.39679,3.38741,3.36594,3.33166,3.28388,3.22184,3.14481],"single":{"train":0.37795,"val":0.43438},"cv":[0.35097,0.47547,0.48239,0.47609,0.41823],"folds":[[16,58,27,23,78,33,53,54,83,0,47,43,50,96,17,1],[70,36,80,61,37,9,24,31,39,55,21,30,3,11,76,35],[6,85,10,41,52,79,88,26,29,98,66,73,45,94,86,48],[99,84,82,64,77,75,95,14,44,71,57,69,56,12,59,81],[15,87,42,63,68,5,38,90,49,91,32,2,22,51,19,74]],"test":0.49714,"mean":0.44063,"sd":0.05647};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => setPlay(!playing));
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+function start() {
+  if (STILL) document.querySelector('.ctl').style.display = 'none';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+/* ---- mlc shared: shapes, labels, numbers (tools/numfig/mlc_lib.py) ---- */
+const MINUS = '−';
+function nf(v, d = 2) { const s = (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d); return s.replace('-', MINUS); }
+function pct(v) { return Math.round(v * 100) + ' %'; }
+/* a TikZ rectangle: outline drawing itself with `progress`, fill fading in behind it */
+function box(x, y, w, h, o = {}) {
+  const { fill = null, stroke = C.ink, width = 1.3, alpha = 1, progress = 1, dash = null, fillAlpha = 1 } = o;
+  if (progress <= 0 || alpha <= 0) return;
+  if (fill) { ctx.save(); ctx.globalAlpha *= alpha * fillAlpha * clamp(progress * 1.6 - .3); ctx.fillStyle = fill; ctx.fillRect(x, y, w, h); ctx.restore(); }
+  if (stroke) line([[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]], { color: stroke, width, alpha, progress, dash });
+}
+/* a label that arrives: fades in and settles 6 units into place on Motion's spring */
+function lab(s, x, y, t0, o = {}) {
+  const a = settle(t0, o.visual || .28); if (a <= 0) return 0;
+  return text(s, x, y + (o.rise === undefined ? 6 : o.rise) * (1 - a), { size: 16, ...o, alpha: (o.alpha === undefined ? 1 : o.alpha) * a });
+}
+function mlab(s, x, y, t0, o = {}) {
+  const a = settle(t0, o.visual || .28); if (a <= 0) return 0;
+  return math(s, x, y + (o.rise === undefined ? 6 : o.rise) * (1 - a), { size: 16, ...o, alpha: (o.alpha === undefined ? 1 : o.alpha) * a });
+}
+/* panel letter and a short subtitle in the body colour */
+function sub(letter, x, y, words, a, o = {}) {
+  if (a <= 0) return;
+  panel(letter, x, y, { alpha: a });
+  if (words) text(words, x + (o.gap || 36), y, { size: 16, color: C.body, alpha: a });
+}
+/* points of a quadratic Bezier from p0 to p2 bending through control p1 */
+function bez(p0, p1, p2, n = 40) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) { const u = i / n, v = 1 - u;
+    pts.push([v * v * p0[0] + 2 * v * u * p1[0] + u * u * p2[0], v * v * p0[1] + 2 * v * u * p1[1] + u * u * p2[1]]); }
+  return pts;
+}
+/* a curved arrow along a polyline, the stealth tip at the end once the stroke arrives */
+function carrow(pts, o = {}) {
+  const { color = C.ink, width = 1.5, head = 10, progress = 1, alpha = 1, dash = null } = o;
+  if (progress <= 0) return;
+  let L = 0; const d = [];
+  for (let i = 1; i < pts.length; i++) { d.push(Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); L += d[d.length - 1]; }
+  // stop the shaft short of the tip so the tip covers it
+  let keep = L * progress - (progress >= 1 ? head * .55 : 0), out = [pts[0]];
+  for (let i = 1; i < pts.length && keep > 0; i++) {
+    const s = Math.min(1, keep / d[i - 1]);
+    out.push([lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)]); keep -= d[i - 1];
+  }
+  line(out, { color, width, alpha, dash });
+  if (progress >= .98) {
+    const q = pts[pts.length - 1], p = pts[pts.length - 2];
+    const a = Math.atan2(q[1] - p[1], q[0] - p[0]);
+    arrow(q[0] - Math.cos(a) * 2, q[1] - Math.sin(a) * 2, q[0], q[1], { color, width, head, alpha: alpha * clamp((progress - .98) * 50) });
+  }
+}
+/* a colour for v through a LUT (engine's SEQ or DIVERGING), u in [0, 1] */
+function lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+/* luminance of a LUT entry: text on it is white above ~0.55 darkness */
+function lutDark(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return (.2126 * lut[i] + .7152 * lut[i + 1] + .0722 * lut[i + 2]) / 255 < .5; }
+/* a horizontal colour bar with ticks below and a label to its left */
+function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a;
+  for (let i = 0; i < w; i++) { ctx.fillStyle = lutc(lut, i / (w - 1)); ctx.fillRect(x + i, y, 1.5, h); }
+  ctx.restore();
+  box(x, y, w, h, { width: 1, alpha: a });
+  for (const v of ticks) {
+    const xx = x + (v - lo) / (hi - lo) * w;
+    line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
+    text(fmtv(v), xx, y + h + 19, { size: 14, align: 'center', alpha: a });
+  }
+  if (label) math(label, x - 12, y + h - 1, { size: 15, align: 'right', alpha: a });
+}
+/* colour mixing between two #rrggbb */
+function mix(c1, c2, s) {
+  const a = _hex(c1), b = _hex(c2);
+  return `rgb(${Math.round(lerp(a[0], b[0], s))},${Math.round(lerp(a[1], b[1], s))},${Math.round(lerp(a[2], b[2], s))})`;
+}
+/* a word in a box, as a token: serif 17, centred */
+function token(s, cx, cy, o = {}) {
+  const { w = 0, h = 34, size = 17, alpha = 1, stroke = C.ink, fill = '#fff', color = C.ink, width = 1.3, progress = 1 } = o;
+  ctx.save(); ctx.font = font({ size }); const tw = ctx.measureText(s).width; ctx.restore();
+  const bw = w || tw + 22;
+  box(cx - bw / 2, cy - h / 2, bw, h, { fill, stroke, width, alpha, progress });
+  if (progress > .3) text(s, cx, cy + size * .34, { size, align: 'center', color, alpha: alpha * clamp(progress * 1.5 - .3) });
+  return bw;
+}
+
+
+const N = 100, PERM = DATA.perm, ROLE = DATA.role;
+const SX = 118, CWs = 5.2, GAP = 12, SY = 70, SH = 26;
+const slot = r => SX + r * CWs + (r >= 60 ? GAP : 0) + (r >= 80 ? GAP : 0);    // position in the split strip
+const RANK = new Array(N); PERM.forEach((e, r) => RANK[e] = r);
+const FILL = [C.mist, C.accent, C.navy], STROKE = [C.blue, C.accent, C.navy];
+const T_SH = .55, D_SH = 1.0, T_CV = 1.55, DR = .38, T_LOOP = T_CV + 5 * DR + .9, PER = 1.3;
+const POSTER_T = T_LOOP - .2;
+function focus() { if (t < T_LOOP) return -1; return Math.floor((t - T_LOOP) / PER) % 5; }
+function draw() {
+  const fr = focus();
+  // ================= (a) one split
+  sub('a', 18, 36, 'training, validation and test sets', seg(.05, .3));
+  const sw = seg(T_SH + .1, .35);
+  text('all 100 labeled examples', SX, SY - 10, { size: 14, color: C.muted, alpha: seg(.1, .3) * (1 - sw) });
+  text('shuffled at random, then split', SX, SY - 10, { size: 14, color: C.muted, alpha: sw });
+  for (let e = 0; e < N; e++) {
+    const x0 = SX + e * CWs, x1 = slot(RANK[e]);
+    const s = settle(T_SH + .006 * RANK[e], .5), x = lerp(x0, x1, s);
+    const c = mix(C.steel2, FILL[ROLE[e]], clamp(s * 1.5));
+    ctx.save(); ctx.globalAlpha = seg(.03 + e * .003, .2); ctx.fillStyle = c; ctx.fillRect(x + .5, SY, CWs - 1, SH); ctx.restore();
+  }
+  const la = seg(T_SH + .7, .3);
+  [['training 60 %', 0, 60], ['validation 20 %', 60, 80], ['test 20 %', 80, 100]].forEach(([s, a, b], k) => {
+    const xa = slot(a), xb = slot(b - 1) + CWs, cx = (xa + xb) / 2;
+    line([[xa, SY + SH + 8], [xa, SY + SH + 13], [xb, SY + SH + 13], [xb, SY + SH + 8]], { width: 1, alpha: la });
+    text(s, cx, SY + SH + 32, { size: 15, align: 'center', color: k === 1 ? C.accent : C.ink, alpha: la });
+  });
+  lab('learns', slot(30), SY + SH + 52, T_SH + .85, { size: 14, color: C.muted, align: 'center' });
+  lab('tunes', (slot(60) + slot(79) + CWs) / 2, SY + SH + 52, T_SH + .9, { size: 14, color: C.muted, align: 'center' });
+  lab('used once, last', (slot(80) + slot(99) + CWs) / 2, SY + SH + 52, T_SH + .95, { size: 14, color: C.muted, align: 'center' });
+  // the data, by role, and the model fitted on the training 60
+  const g = axes({ x: 760, y: 58, w: 212, h: 150, xlim: [0, 10], ylim: [-3, 4], xticks: [0, 5, 10], yticks: [-2, 0, 2, 4],
+    xlabel: 'x', ylabel: 'y', ylabelGap: 30, progress: seg(.1, .4), tickSize: 14, labelSize: 15 });
+  const pa = seg(T_SH + .5, .4);
+  g.inside(() => {
+    line(DATA.xs.map((v, i) => [g.X(v), g.Y(DATA.fit[i])]), { color: C.navy, width: 2, progress: seg(T_SH + .7, .45) });
+    DATA.x.forEach((v, i) => { const X = g.X(v), Y = g.Y(DATA.y[i]), r = ROLE[i];
+      if (r === 2) box(X - 2.8, Y - 2.8, 5.6, 5.6, { stroke: C.navy, width: 1.2, alpha: pa });
+      else dot(X, Y, r === 1 ? 3.4 : 2.6, { color: r === 1 ? '#fff' : C.blue, fill: r === 1 ? C.accent : '#fff', width: r === 1 ? .8 : 1.1, alpha: pa }); });
+  });
+  mlab(`\\rm{validation\\ RMSE}\\ ${nf(DATA.single.val, 2)}`, 760, 284, T_SH + 1.0, { size: 15 });
+  // ================= (b) five rounds
+  sub('b', 18, 318, '5-fold cross-validation on the 80 %', seg(.1, .3));
+  const RY = 350, RH = 24, RG = 10, TVX = SX;
+  for (let k = 0; k < 5; k++) {
+    const y = RY + k * (RH + RG), ra = seg(T_CV + DR * k - .25, .3), on = fr < 0 || fr === k;
+    lab(`round ${k + 1}`, 18, y + RH / 2 + 5, T_CV + DR * k - .2, { size: 15, alpha: on ? 1 : .45 });
+    for (let j = 0; j < 80; j++) {
+      const fold = Math.floor(j / 16), isVal = fold === k, x = TVX + j * CWs + fold * 3;
+      const flip = settle(T_CV + DR * k, .3);
+      ctx.save(); ctx.globalAlpha = ra * (on ? 1 : .4);
+      ctx.fillStyle = isVal ? mix('#A9C3DA', C.accent, flip) : C.mist; ctx.fillRect(x + .5, y, CWs - 1, RH); ctx.restore();
+    }
+    const tx = TVX + 80 * CWs + 4 * 3 + GAP;
+    ctx.save(); ctx.globalAlpha = ra * .22; ctx.fillStyle = C.navy; ctx.fillRect(tx, y, 20 * CWs, RH); ctx.restore();
+    // this round's score, as it arrives
+    const s = settle(T_CV + DR * k + .15, .3);
+    if (s > 0) text(nf(DATA.cv[k], 2), tx + 20 * CWs + 16, y + RH / 2 + 5, { size: 15, color: on && fr === k ? C.accent : C.ink, alpha: s * (on ? 1 : .45) });
+  }
+  const tx = TVX + 80 * CWs + 4 * 3 + GAP;
+  lab('test, untouched', tx + 10 * CWs, RY - 8, T_CV, { size: 14, color: C.muted, align: 'center' });
+  lab('RMSE', tx + 20 * CWs + 16, RY - 8, T_CV, { size: 14, color: C.muted });
+  // the five scores on one axis, their mean, and the test score at the end
+  const h = axes({ x: 760, y: RY, w: 212, h: 5 * RH + 4 * RG, xlim: [.5, 5.5], ylim: [.2, .8], xticks: [1, 2, 3, 4, 5], yticks: [.2, .4, .6, .8],
+    xlabel: '\\rm{round}', ylabel: '\\rm{RMSE}', ylabelGap: 38, progress: seg(T_CV - .3, .4), tickSize: 14, labelSize: 15, yfmt: v => nf(v, 1) });
+  const ma = seg(T_CV + 5 * DR, .4);
+  h.inside(() => {
+    if (ma > 0) { ctx.save(); ctx.globalAlpha = .5 * ma; ctx.fillStyle = C.steel; const y0 = h.Y(DATA.mean + DATA.sd), y1 = h.Y(DATA.mean - DATA.sd);
+      ctx.fillRect(h.X(.5), y0, h.X(5.5) - h.X(.5), y1 - y0); ctx.restore();
+      line([[h.X(.5), h.Y(DATA.mean)], [h.X(5.5), h.Y(DATA.mean)]], { color: C.navy, width: 1.4, dash: [5, 4], progress: ma }); }
+    DATA.cv.forEach((v, k) => { const s = settle(T_CV + DR * k + .15, .3); if (s <= 0) return;
+      dot(h.X(k + 1), h.Y(v), 4.5, { color: '#fff', fill: fr === k ? C.accent : C.navy, width: 1.2, alpha: s }); });
+  });
+  mlab(`\\rm{mean\\ of\\ the\\ 5\\ rounds}\\ \\ ${nf(DATA.mean, 2)}\\,\\pm\\,${nf(DATA.sd, 2)}`, SX, RY + 5 * RH + 4 * RG + 26, T_CV + 5 * DR + .1, { size: 15 });
+  mlab(`\\rm{test\\ set,\\ scored\\ once\\ at\\ the\\ end}\\ \\ ${nf(DATA.test, 2)}`, SX + 300, RY + 5 * RH + 4 * RG + 26, T_CV + 5 * DR + .3, { size: 15, color: C.navy });
+  text('100 examples, y = 2 sin(0.8 x) + 0.15 x + noise (sd 0.45); model: degree 5 polynomial; score: root mean square error',
+       18, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+}
+boot();
+</script>
+</body>
+</html>

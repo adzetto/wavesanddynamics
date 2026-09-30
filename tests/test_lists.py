@@ -15,6 +15,7 @@ lives in one helper the body and a table cell both pass through, and why the
 aside deliberately does not use it: `BlockquoteNode.nodes` is declared
 `ParagraphNode[]`, so a list inside a quote would be off-type.
 """
+
 from conftest import XMLNS_W, para
 
 from tools.ricos.blocks import Callout, Para, Run
@@ -45,12 +46,14 @@ def _numbering(fmt, num_id="1"):
 
 
 def _table(rows):
-    body = "".join("<w:tr>" + "".join(f"<w:tc>{c}</w:tc>" for c in row) + "</w:tr>"
-                   for row in rows)
+    body = "".join(
+        "<w:tr>" + "".join(f"<w:tc>{c}</w:tc>" for c in row) + "</w:tr>" for row in rows
+    )
     return f"<w:tbl>{body}</w:tbl>"
 
 
 # --- the reader -----------------------------------------------------------
+
 
 def test_reader_marks_list_paragraphs(docx_factory):
     blocks = read_blocks(docx_factory(_li("INSPECT") + _li("MONITOR")))
@@ -64,8 +67,12 @@ def test_reader_records_nesting_level(docx_factory):
 
 
 def test_the_marker_comes_from_numbering_xml(docx_factory):
-    ordered = docx_factory(_li("first"), media={"word/numbering.xml": _numbering("decimal")})
-    bulleted = docx_factory(_li("first"), media={"word/numbering.xml": _numbering("bullet")})
+    ordered = docx_factory(
+        _li("first"), media={"word/numbering.xml": _numbering("decimal")}
+    )
+    bulleted = docx_factory(
+        _li("first"), media={"word/numbering.xml": _numbering("bullet")}
+    )
     assert read_blocks(ordered)[0].list_kind == "ordered"
     assert read_blocks(bulleted)[0].list_kind == "bullet"
 
@@ -92,7 +99,8 @@ def test_a_definition_with_no_readable_format_reads_as_a_bullet(docx_factory):
 
 
 def test_the_marker_comes_from_the_level_ilvl_names_not_the_first_one_written(
-        docx_factory):
+    docx_factory,
+):
     """`w:ilvl` says which depth a level is; the order they are written does not.
 
     Level 0's format stands for the whole definition, and reading the first
@@ -110,8 +118,9 @@ def test_the_marker_comes_from_the_level_ilvl_names_not_the_first_one_written(
         '<w:num w:numId="1"><w:abstractNumId w:val="7"/></w:num>'
         "</w:numbering>"
     ).encode()
-    blocks = read_blocks(docx_factory(_li("a"),
-                                      media={"word/numbering.xml": out_of_order}))
+    blocks = read_blocks(
+        docx_factory(_li("a"), media={"word/numbering.xml": out_of_order})
+    )
     assert blocks[0].list_kind == "bullet"
 
 
@@ -124,7 +133,9 @@ def test_numbering_removed_is_not_a_list(docx_factory):
     exactly the paragraph he de-listed into a bullet. No paragraph in this
     corpus carries it; the first edit to a list produces one.
     """
-    blocks = read_blocks(docx_factory(_li("in the list") + _li("taken out", num_id="0")))
+    blocks = read_blocks(
+        docx_factory(_li("in the list") + _li("taken out", num_id="0"))
+    )
     assert [b.list_kind for b in blocks] == ["bullet", ""]
     assert [b.list_id for b in blocks] == ["1", ""]
     assert [n["type"] for n in emit(blocks)["nodes"]] == ["BULLETED_LIST", "PARAGRAPH"]
@@ -142,7 +153,9 @@ def test_a_malformed_nesting_level_costs_one_paragraph_not_the_document(docx_fac
     assert [b.list_level for b in blocks] == [0, 0]
 
 
-def test_a_list_styled_paragraph_without_numbering_is_not_a_list(docx_factory, para_factory):
+def test_a_list_styled_paragraph_without_numbering_is_not_a_list(
+    docx_factory, para_factory
+):
     """Word styles the indented continuation of an item ListParagraph as well.
 
     Twelve paragraphs in the corpus are styled that way and carry no `w:numPr`.
@@ -154,6 +167,7 @@ def test_a_list_styled_paragraph_without_numbering_is_not_a_list(docx_factory, p
 
 
 # --- the grouping ---------------------------------------------------------
+
 
 def test_emit_groups_consecutive_items_into_one_list():
     items = [Para(runs=[Run(text=t)], list_kind="bullet") for t in ("a", "b", "c")]
@@ -169,10 +183,12 @@ def test_emit_groups_consecutive_items_into_one_list():
 
 
 def test_emit_splits_when_kind_changes():
-    doc = emit([
-        Para(runs=[Run(text="a")], list_kind="bullet"),
-        Para(runs=[Run(text="1")], list_kind="ordered"),
-    ])
+    doc = emit(
+        [
+            Para(runs=[Run(text="a")], list_kind="bullet"),
+            Para(runs=[Run(text="1")], list_kind="ordered"),
+        ]
+    )
     assert [n["type"] for n in doc["nodes"]] == ["BULLETED_LIST", "ORDERED_LIST"]
 
 
@@ -190,13 +206,18 @@ def test_a_new_numbering_definition_starts_a_new_list(docx_factory):
 
 
 def test_plain_paragraph_ends_a_list():
-    doc = emit([
-        Para(runs=[Run(text="a")], list_kind="bullet"),
-        Para(runs=[Run(text="prose")]),
-        Para(runs=[Run(text="b")], list_kind="bullet"),
-    ])
+    doc = emit(
+        [
+            Para(runs=[Run(text="a")], list_kind="bullet"),
+            Para(runs=[Run(text="prose")]),
+            Para(runs=[Run(text="b")], list_kind="bullet"),
+        ]
+    )
     assert [n["type"] for n in doc["nodes"]] == [
-        "BULLETED_LIST", "PARAGRAPH", "BULLETED_LIST"]
+        "BULLETED_LIST",
+        "PARAGRAPH",
+        "BULLETED_LIST",
+    ]
 
 
 def test_a_list_carries_no_indentation_it_cannot_express():
@@ -208,8 +229,12 @@ def test_a_list_carries_no_indentation_it_cannot_express():
     outside its declared range, which Ricos stores happily and renders however
     it likes. Leaving the field out asks for the default instead.
     """
-    doc = emit([Para(runs=[Run(text="a")], list_kind="bullet"),
-                Para(runs=[Run(text="b")], list_kind="ordered")])
+    doc = emit(
+        [
+            Para(runs=[Run(text="a")], list_kind="bullet"),
+            Para(runs=[Run(text="b")], list_kind="ordered"),
+        ]
+    )
     assert "bulletedListData" not in doc["nodes"][0]
     assert "orderedListData" not in doc["nodes"][1]
 
@@ -221,14 +246,19 @@ def test_an_empty_paragraph_between_items_does_not_split_the_list():
     stray gap either way. Dropping it first means two bullets typed around one
     stay the single list the page shows, instead of two lists restarting.
     """
-    doc = emit([Para(runs=[Run(text="a")], list_kind="bullet"),
-                Para(),
-                Para(runs=[Run(text="b")], list_kind="bullet")])
+    doc = emit(
+        [
+            Para(runs=[Run(text="a")], list_kind="bullet"),
+            Para(),
+            Para(runs=[Run(text="b")], list_kind="bullet"),
+        ]
+    )
     assert [n["type"] for n in doc["nodes"]] == ["BULLETED_LIST"]
     assert len(doc["nodes"][0]["nodes"]) == 2
 
 
 # --- the flows the grouping reaches, and the one it does not --------------
+
 
 def test_a_list_inside_a_table_cell_is_read_and_grouped(docx_factory):
     body = _table([[_li("a") + _li("b"), para("x")], [para("y"), para("z")]])
@@ -253,11 +283,20 @@ def test_a_list_paragraph_in_an_aside_stays_a_flat_paragraph(docx_factory):
 
 # --- the aside's own two defects -----------------------------------------
 
+
 def test_an_aside_paragraph_with_no_text_is_dropped():
     """Dropped before the join, so it does not leave a separator behind either."""
-    doc = emit([Callout(blocks=[Para(runs=[Run(text="kept")]),
-                                Para(),
-                                Para(runs=[Run(text="   ")])])])
+    doc = emit(
+        [
+            Callout(
+                blocks=[
+                    Para(runs=[Run(text="kept")]),
+                    Para(),
+                    Para(runs=[Run(text="   ")]),
+                ]
+            )
+        ]
+    )
     inner = doc["nodes"][0]["nodes"]
     assert [n["type"] for n in inner] == ["PARAGRAPH"]
     assert [t["textData"]["text"] for t in inner[0]["nodes"]] == ["kept"]
@@ -268,3 +307,53 @@ def test_a_quote_takes_its_id_before_its_children():
     quote = doc["nodes"][0]
     assert quote["id"] == "n1"
     assert quote["nodes"][0]["id"] == "n2"
+
+
+# --- a numbering reference that names no definition ------------------------------
+
+
+def test_a_numpr_with_a_level_but_no_definition_is_not_a_list(docx_factory):
+    """`w:numId` is what names the list; `w:ilvl` alone only says how deep.
+
+    Read as `list_id=""` this grouped under an empty id, so two unrelated
+    stretches of such paragraphs merged into one bulleted list. Nothing in
+    the corpus does it; the first document with a paragraph style that
+    carries the numbering, and a paragraph that overrides only the depth,
+    does - and if no style names a list either, it is prose."""
+    body = (
+        '<w:p><w:pPr><w:numPr><w:ilvl w:val="1"/></w:numPr></w:pPr>'
+        "<w:r><w:t>a</w:t></w:r></w:p>"
+    )
+    blocks = read_blocks(docx_factory(body + body))
+    assert [b.list_kind for b in blocks] == ["", ""]
+    assert [n["type"] for n in emit(blocks)["nodes"]] == ["PARAGRAPH", "PARAGRAPH"]
+
+
+def test_a_list_named_by_the_paragraph_style_is_a_list(docx_factory):
+    """Word's built-in "List Bullet" styles carry their `w:numPr` in the
+    style, and the paragraph says nothing of its own - or only its depth."""
+    styles = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f"<w:styles {XMLNS_W}>"
+        '<w:style w:type="paragraph" w:styleId="ListBullet"><w:name w:val="List Bullet"/>'
+        '<w:pPr><w:numPr><w:numId w:val="1"/></w:numPr></w:pPr></w:style>'
+        "</w:styles>"
+    ).encode()
+    body = (
+        para("a", style="ListBullet")
+        + '<w:p><w:pPr><w:pStyle w:val="ListBullet"/><w:numPr><w:ilvl w:val="1"/></w:numPr></w:pPr>'
+        "<w:r><w:t>b</w:t></w:r></w:p>"
+    )
+    blocks = read_blocks(
+        docx_factory(
+            body,
+            media={
+                "word/styles.xml": styles,
+                "word/numbering.xml": _numbering("decimal"),
+            },
+        )
+    )
+    assert [(b.list_kind, b.list_id, b.list_level) for b in blocks] == [
+        ("ordered", "1", 0),
+        ("ordered", "1", 1),
+    ]

@@ -66,6 +66,17 @@ def compute():
     v0 = ROOF_AMP / abs(g[0] * Phi[-1, 0])
     Q = g * v0                                # q_j(t) = Q_j sin(w_j t), m
     R = dict(m=m, k=k, M=M, K=K, w=w, Phi=Phi, Q=Q, v0=v0)
+    cases = []
+    for label, factors in (("undamaged", np.ones(5)),
+                           ("storey 3 damaged", np.array([1., 1., .55, 1., 1.])),
+                           ("storey 5 damaged", np.array([1., 1., 1., 1., .55]))):
+        Md, Kd = matrices(m, k * factors)
+        wd, Pd = modes(Md, Kd)
+        gd = Pd.T @ Md @ e / wd
+        vd = ROOF_AMP / abs(gd[0] * Pd[-1, 0])
+        cases.append({"label": label, "factor": factors.tolist(), "f": (wd / (2 * np.pi)).tolist(),
+                      "w": wd.tolist(), "phi": Pd.T.tolist(), "Q": (gd * vd).tolist()})
+    R["cases"] = cases
     # checks
     R["res"] = max(np.linalg.norm(K @ Phi[:, j] - w[j] ** 2 * M @ Phi[:, j]) / np.linalg.norm(K @ Phi[:, j])
                    for j in range(n))
@@ -166,6 +177,7 @@ JS = r"""
 const D = DATA;
 const POSTER_T = D.poster;
 const N = 5;
+let CASE = D.cases[0];
 const lab = t0 => settle(t0, .28);         // a label arriving
 const rise = s => 4 * (1 - s);             // ... settling 4 units into place
 
@@ -179,14 +191,14 @@ const G = D.gain;                          // drawing units per metre of displac
    x_i(t) = sum_j Q_j phi_j(i) sin(w_j (t - T0) / SLOW), zero before the impulse */
 function terms() {
   const tau = Math.max(0, t - D.t0) / D.slow;
-  return D.Q.map((q, j) => q * Math.sin(D.w[j] * tau));
+  return CASE.Q.map((q, j) => q * Math.sin(CASE.w[j] * tau));
 }
 function disp(c, js, mag) {                // floor displacements (units) of the modes js
   const u = [0];
-  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * D.phi[j][i]; u.push(s * G * mag); }
+  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * CASE.phi[j][i]; u.push(s * G * mag); }
   return u;
 }
-const ENV = [0, 1].map(j => [0].concat(D.phi[j].map(v => Math.abs(D.Q[j]) * v * G * D.mag[j])));
+function env(j) { return [0].concat(CASE.phi[j].map(v => Math.abs(CASE.Q[j]) * v * G * D.mag[j])); }
 
 /* ---------------------------------------------------------------- drawing */
 function column(cx, x0, u, s, o) {         // the column of storey s: fixed-fixed, cubic
@@ -269,11 +281,23 @@ function matrix(name, lx, x0, dx, ents, kind, hs, hl, alpha, bp) {
   for (const [x, s] of [[left, 1], [right, -1]])
     line([[x + 7 * s, top], [x, top], [x, bot], [x + 7 * s, bot]], {width: 1.3, progress: bp});
 }
+function spectrum(alpha) {
+  const x0 = 275, y0 = 760, w = 180, h = 24;
+  const maxf = Math.max(...D.cases.flatMap(c => c.f));
+  for (let j = 0; j < N; j++) {
+    const x = x0 + 12 + j * (w - 24) / (N - 1);
+    const hu = CASE.f[j] / maxf * h, hd = D.cases[0].f[j] / maxf * h;
+    line([[x - 5, y0], [x - 5, y0 - hd]], {color: C.rule, width: 4, alpha});
+    line([[x + 5, y0], [x + 5, y0 - hu]], {color: j < 2 ? C.accent : C.blue, width: 4, alpha});
+  }
+  line([[x0, y0], [x0 + w, y0]], {color: C.rule, width: 1, alpha});
+}
 
 /* ---------------------------------------------------------------- draw */
 function draw() {
   const c = terms();
   const tot = disp(c, [0, 1, 2, 3, 4], 1), m1 = disp(c, [0], D.mag[0]), m2 = disp(c, [1], D.mag[1]), mh = disp(c, [2, 3, 4], D.mag[2]);
+  const ENV = [env(0), env(1)];
   const zero = [0, 0, 0, 0, 0, 0];
   // the storey highlight: one storey at a time, quietly
   const k_ = Math.floor((t - D.hl0) / D.hldt), hs = t < D.hl0 ? 0 : ((k_ % N) + N) % N + 1;
@@ -288,10 +312,10 @@ function draw() {
   text('2nd mode', CX[2], 50 + rise(tt[2]), {size: 17, color: C.body, align: 'center', alpha: tt[2]});
   text('Higher modes', CX[3], 50 + rise(tt[3]), {size: 17, color: C.body, align: 'center', alpha: tt[3]});
   const fa = [lab(.30), lab(.34), lab(.38)];
-  math('f_{1} = ' + D.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
-  math('f_{2} = ' + D.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
+  math('f_{1} = ' + CASE.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
+  math('f_{2} = ' + CASE.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
   math('f_{3}, f_{4}, f_{5} = ', CX[3], 80 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
-  math(D.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
+  math(CASE.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
   text('× ' + D.mag[1], CX[2], 120 + rise(fa[1]), {size: 14, color: C.muted, align: 'center', alpha: fa[1]});
   text('× ' + D.mag[2], CX[3], 120 + rise(fa[2]), {size: 14, color: C.muted, align: 'center', alpha: fa[2]});
 
@@ -338,6 +362,7 @@ function draw() {
   const ma = lab(.60), bpm = seg(.55, .30);
   matrix('M', 92, 130, 50, MENT, 'm', hs, hl, ma, bpm);
   matrix('K', 470, 520, 96, KENT, 'k', hs, hl, lab(.66), bpm);
+  spectrum(lab(.72));
 
   // parameters and time scale
   const pa = lab(.80);
@@ -345,6 +370,27 @@ function draw() {
   text(D.slowtxt, W - 18, H - 14, {size: 14, color: C.muted, align: 'right', alpha: pa});
 }
 boot();
+(() => {
+  const host = document.querySelector('.fig');
+  if (!host || !D.cases || D.cases.length < 2) return;
+  const group = document.createElement('div');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Building damage cases');
+  group.style.cssText = 'position:absolute;left:18px;top:10px;display:flex;gap:6px;z-index:2';
+  D.cases.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = i ? item.label.replace('storey ', 'S') : 'undamaged';
+    b.style.cssText = 'border:1px solid #c9c4bc;border-radius:12px;background:#fff;color:#27221c;padding:3px 8px;font:12px sans-serif;cursor:pointer';
+    b.setAttribute('aria-pressed', String(i === 0));
+    b.addEventListener('click', e => {
+      e.stopPropagation(); CASE = item;
+      group.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i)));
+      redraw();
+    });
+    group.appendChild(b);
+  });
+  host.style.position = 'relative'; host.appendChild(group);
+})();
 """
 
 
@@ -361,6 +407,7 @@ def main():
         "params": ("floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; "
                    f"impulse at the roof, C = 0; displacements × {DEF:.0f}"),
         "slowtxt": f"time slowed {SLOW:.0f} ×",
+        "cases": R["cases"],
     }
     title = ("Figure 1: Lateral natural dynamic response of a building and its analysis through "
              "discretized formulation")

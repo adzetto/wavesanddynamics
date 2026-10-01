@@ -1,0 +1,21 @@
+{
+ "dynamical-behavior-of-engineering-structures-and-acoustic-wave-propagation": [
+  {
+   "key": "supplement-wavelength",
+   "after_caption": "Figure 4.",
+   "caption": "Figure 4a. Wavelength against frequency for the same SAFE branches shown in Figure 4, with a logarithmic wavelength axis in millimetres. Select bar, I-beam, rail, pipe or plate, and drag the wave markers to compare their wavelengths. The plate is 10 mm thick and infinite across its width, with A0 and S0 Lamb waves and SH0 shear-horizontal waves; the drawn width is a slice of the plate. Wavelength is computed as λ = 2π/k = cₚ/f and tends to infinity as k tends to zero. Wave packets travel at group velocity while their crests travel at phase velocity."
+  }
+ ],
+ "machine-learning-the-complete-picture-and-guide-5": [
+  {
+   "key": "supplement-forecasting",
+   "after_paragraph": "Forecasting is supervised learning too:",
+   "caption": "Figure 3a. Three forecasting methods fitted to the same synthetic monthly sensor signal: (a) seasonal ARIMA, (b) additive Holt-Winters exponential smoothing and (c) gradient boosted trees with lagged inputs. Each method forecasts 24 months using only the history before the selected origin. Withheld observations appear after the forecasts, with RMSE and MAE measured over all 24 months. Tree forecasts recursively use their own predictions as future lag inputs. The shaded interval in (a) is the ARIMA model's 95% prediction interval. Choose month 120, 156 or 192 to compare different histories; the relative performance changes with the origin."
+  },
+  {
+   "key": "supplement-feature-selection",
+   "after_list_containing": "Embedded methods",
+   "caption": "Figure 6a. Three feature-selection methods on one reproducible synthetic regression example, with 360 training rows and 120 held-out test rows. The target depends on x1 (energy), x2 (duration) and x3 (frequency); x4 is a noisy copy of x1, and x5 and x6 are nuisance inputs. (a) A Filter ranks absolute Pearson correlations and keeps three features. (b) A Wrapper adds features using five-fold cross-validation, fitting its scaler inside each fold. Move the step slider to inspect candidate subsets. (c) An Embedded method uses Lasso: increasing the L1 penalty shrinks coefficients toward zero. The dashed line marks α = 0.12. The same Ridge predictor evaluates each selected feature set on the held-out rows, which never influence selection or scaling."
+  }
+ ]
+}

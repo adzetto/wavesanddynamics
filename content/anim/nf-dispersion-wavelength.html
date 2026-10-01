@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Figure 4: Schematic dispersion curves for guided waves in a beam</title>
+<title>Figure 4a: Wavelength of guided waves against frequency</title>
 <style>
 @font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
 @font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
@@ -25,7 +25,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Phase velocity against frequency for a steel beam computed with a SAFE model: bending, axial and torsional modes start at zero frequency, higher order modes cut on above a threshold and approach the shear and Rayleigh speeds. Two waves marked 1 and 2 are shown as their cross sections and along the beam: at low frequency the whole section moves, at high frequency the motion gathers at the surfaces. Along the beam each wave runs as packets whose envelope moves at its group velocity while the crests inside move at its phase velocity, both speeds given over the beam. The cross section can be switched between a bar, an I-beam, a rail, a pipe and an infinite plate; the markers can be dragged along the curves or moved with the arrow keys, and Space pauses the waves."></canvas>
+  <canvas id="c" role="img" aria-label="Wavelength in millimetres on a logarithmic vertical axis against frequency in kilohertz. The same SAFE branches as Figure 4, with bar, I-beam, rail, pipe and plate choices. Drag either wave marker to compare its wavelength and travelling packet."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
@@ -812,7 +812,7 @@ const FM = D.fmax, CM = D.cmax, SLOW = D.slow;
 
 /* ---------------------------------------------------------------- layout */
 const P = {x: 88, y: 64, w: 452, h: 326};
-const PX = f => P.x + f / FM * P.w, PY = c => P.y + P.h - c / CM * P.h;
+const PX = f => P.x + f / FM * P.w, PY = (c, f) => P.y + P.h - Math.log10(Math.max(1e-6, 1000 * c / Math.max(f, 1e-12))) / 4 * P.h;
 const WC = [C.navy, C.accent];                           // wave 1, wave 2
 const SEC = {cx: [688, 888], cy: 244, G: 18};             // section views: centres, largest drawn displacement
 const STR = {s: 2.2, L: 412, x1: 950, yc: [580, 746], d: .6, a: 40 * Math.PI / 180, G: 11, SL: .5};
@@ -862,7 +862,7 @@ function lay(f, cp, cg, tol = 1e-5) {                    // k (rad/m), f (kHz), 
   };
   const rec = (i, k0, w0, k1, w1, d) => {
     const km = (k0 + k1) / 2, wm = herm(i, km);
-    if (d < 14 && (Math.abs(wm - (w0 + w1) / 2) > tol * wm || Math.abs(wm / km - (w0 / k0 + w1 / k1) / 2) > tol * wm / km)) {
+    if (d < 14 && (Math.abs(Math.log10(km) - (Math.log10(k0) + Math.log10(k1)) / 2) * P.h / 4 > .2 || Math.abs(wm - (w0 + w1) / 2) > tol * wm || Math.abs(wm / km - (w0 / k0 + w1 / k1) / 2) > tol * wm / km)) {
       rec(i, k0, w0, km, wm, d + 1); rec(i, km, wm, k1, w1, d + 1);
     } else { K.push(k1); W.push(w1); }
   };
@@ -880,7 +880,7 @@ function prepare(buf) {
   sec.ymin = Math.min(...sec.GY);
   sec.BR = meta.brs.map((r, id) => {
     const C_ = arr.curves, {k, f, cp} = lay(C_.subarray(r.o, r.o + r.n), C_.subarray(r.o + r.n, r.o + 2 * r.n), C_.subarray(r.o + 2 * r.n, r.o + 3 * r.n));
-    const xy = Array.from(f, (_, i) => [PX(Math.min(f[i], 1.04 * FM)), PY(Math.min(cp[i], 1.04 * CM))]);
+    const xy = Array.from(f, (_, i) => [PX(Math.min(f[i], 1.04 * FM)), PY(cp[i], f[i])]);
     const inw = i => f[i] <= FM && cp[i] <= CM;
     let i0 = 0, i1 = f.length - 1;
     while (!inw(i0)) i0++;
@@ -910,7 +910,7 @@ function prepare(buf) {
 }
 function load(key) {
   if (LOADED[key]) return Promise.resolve(LOADED[key]);
-  if (!PENDING[key]) PENDING[key] = fetch('nf-dispersion-' + key + '.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  if (!PENDING[key]) PENDING[key] = fetch('nf-dispersion-wavelength-' + key + '.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(j => prepare(b64buf(j.blob))).catch(e => { delete PENDING[key]; throw e; });
   return PENDING[key];
 }
@@ -1227,7 +1227,7 @@ function morphFund(A, B, e, a) {                         // the fundamental curv
     for (let i = 0; i <= 160; i++) {
       const f = FM * i / 160, lo = lerp(ba.f[ba.i0], bb.f[bb.i0], e);
       if (f < lo) continue;
-      pts.push([PX(f), PY(Math.min(1.04 * CM, lerp(cpAtF(ba, f), cpAtF(bb, f), e)))]);
+      pts.push([PX(f), PY(lerp(cpAtF(ba, f), cpAtF(bb, f), e), f)]);
     }
     line(pts, {...STY[type], alpha: a});
   }
@@ -1254,9 +1254,9 @@ function legend(sec, a) {                                // two rows, three colu
 function plotA(S, q, sw) {
   panel('a', 18, 34, {alpha: lab(0)});
   text('dispersion curves', 52, 34 + rise(lab(.03)), {size: 17, color: C.body, alpha: lab(.03)});
-  const ax = axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, FM], ylim: [0, CM],
-    xticks: [0, 25, 50, 75, 100, 125, 150, 175, 200], yticks: [0, 1, 2, 3, 4, 5, 6, 7],
-    xlabel: '\\rm{frequency}\\ f\\ \\rm{(kHz)}', ylabel: '\\rm{phase velocity}\\ c_{\\rm{p}}\\ \\rm{(km/s)}',
+  const ax = axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, FM], ylim: [0, 4],
+    xticks: [0, 25, 50, 75, 100, 125, 150, 175, 200], yticks: [0, 1, 2, 3, 4], yfmt: v => String(10 ** v),
+    xlabel: '\\rm{frequency}\\ f\\ \\rm{(kHz)}', ylabel: '\\rm{wavelength}\\ \\lambda\\ \\rm{(mm, log scale)}',
     ylabelGap: 44, progress: seg(0, .35)});
   const p = sw ? swP() : 1, A = sw ? sw.from : CUR, e = easeInOut(clamp((p - .1) / .8));
   const out = sw ? 1 - clamp(p / .4) : 0, inn = sw ? clamp((p - .35) / .45) : 1;
@@ -1267,7 +1267,7 @@ function plotA(S, q, sw) {
       ctx.fillRect(P.x, P.y, PX(sec.fc1) - P.x, P.h); ctx.restore();
     }
     for (const [c, a0] of [[D.ct, .35], [D.cr, .40]])
-      line([[P.x, PY(c)], [P.x + P.w, PY(c)]], {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});
+      line(Array.from({length: 201}, (_, i) => { const f = .001 * (FM / .001) ** (i / 200); return [PX(f), PY(c, f)]; }), {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});
     if (sw) { curvesOf(A, out, null, true); curvesOf(CUR, inn, null, true); morphFund(A, CUR, e, 1); }
     else curvesOf(CUR, 1, br => seg(.40 + .06 * CUR.HG(br.fc), .38));
     // the waves' curves and the one under the pointer, lifted over the rest
@@ -1292,8 +1292,6 @@ function plotA(S, q, sw) {
     text('cut-on', Math.max(P.x + 2, PX(sec.fc1) - 2), P.y - 8 + rise(ca), {size: 14, color: C.muted, alpha: ca * a});
   const ga = lab(.55);
   // the guide speeds named at the lines' right ends, outside the frame (the legend says which is which)
-  math('c_{\\rm{T}}', P.x + P.w + 6, PY(D.ct) - 1 + rise(ga), {size: 15, color: C.body, alpha: ga});
-  math('c_{\\rm{R}}', P.x + P.w + 6, PY(D.cr) + 12 + rise(ga), {size: 15, color: C.body, alpha: ga});
   const la = lab(.65);
   if (sw) { legend(A, la * (1 - clamp(p / .35))); legend(CUR, la * clamp((p - .45) / .35)); } else legend(CUR, la);
   // the waves: a thumb under the frequency axis, and the marker on the curve
@@ -1323,20 +1321,20 @@ function plotA(S, q, sw) {
   }
 }
 function markerPos(S, q, sw, e) {
-  const at = (s, a) => ({x: PX(s.f), y: PY(s.cp), a});
+  const at = (s, a) => ({x: PX(s.f), y: PY(s.cp, s.f), a});
   if (!sw) return [0, 1].map(w => at(S[w], q.mk[w]));
   // during a switch: from the old points to the new ones, riding the morphing curves
   return [0, 1].map(w => {
     const A = sw.S0[w], B = S[w], a = Math.max(q.mk[w], sw.q0.mk[w] * (1 - clamp((swP() - .6) / .4)));
     if (!A) return at(B, a * clamp((swP() - .5) / .3));
     const f = lerp(A.f, B.f, e), ba = sw.from.BR[A.id], bb = CUR.BR[B.id];
-    if (ba.type && ba.type === bb.type) return {x: PX(f), y: PY(lerp(cpAtF(ba, f), cpAtF(bb, f), e)), a};
-    return {x: lerp(PX(A.f), PX(B.f), e), y: lerp(PY(A.cp), PY(B.cp), e), a};
+    if (ba.type && ba.type === bb.type) return {x: PX(f), y: PY(lerp(cpAtF(ba, f), cpAtF(bb, f), e), f), a};
+    return {x: lerp(PX(A.f), PX(B.f), e), y: lerp(PY(A.cp, A.f), PY(B.cp, B.f), e), a};
   });
 }
 const lamTex = mm => mm < 1e3 ? mm.toPrecision(3) + '\\ \\rm{mm}' : (mm / 1e3).toFixed(2) + '\\ \\rm{m}';
 function tooltip() {                                     // the curve under the pointer: its name, f, wavelength, c_p and c_g
-  const br = CUR.BR[HOVER.id], q = atK(br, HOVER.k), x = PX(q.f), y = PY(q.cp), e = exact(CUR, HOVER.id, HOVER.k);
+  const br = CUR.BR[HOVER.id], q = atK(br, HOVER.k), x = PX(q.f), y = PY(q.cp, q.f), e = exact(CUR, HOVER.id, HOVER.k);
   dot(x, y, 4.5, {color: C.ink, fill: '#fff', width: 1.2});
   const L = [['t', br.nm], ['m', 'f = ' + q.f.toFixed(1) + '\\ \\rm{kHz},\\ \\ \\lambda\\ = ' + lamTex(2e3 * Math.PI / HOVER.k)],
              ['m', 'c_{\\rm{p}} = ' + q.cp.toFixed(2) + '\\ \\rm{km/s},\\ \\ c_{\\rm{g}} = ' + e.cg.toFixed(2) + '\\ \\rm{km/s}']];
@@ -1684,7 +1682,7 @@ function markerAt(X, Y, touch) {
   let best = -1, bd = touch ? 30 : 18;
   for (let w = 0; w < 2; w++) {
     const S = LAST[w]; if (!S || S.sec !== CUR.key) continue;
-    const d = Math.min(Math.hypot(PX(S.f) - X, PY(S.cp) - Y), Y > P.y + P.h ? Math.abs(PX(S.f) - X) + Math.abs(P.y + P.h + 5 - Y) * .5 : Infinity);
+    const d = Math.min(Math.hypot(PX(S.f) - X, PY(S.cp, S.f) - Y), Y > P.y + P.h ? Math.abs(PX(S.f) - X) + Math.abs(P.y + P.h + 5 - Y) * .5 : Infinity);
     if (d < bd) { bd = d; best = w; }
   }
   return best;
@@ -1695,7 +1693,7 @@ function place(S) {                                      // the overlays follow 
   if (!OV.length) return;
   for (let w = 0; w < 2; w++) {
     const el = OV[w], br = CUR.BR[S[w].id];
-    el.style.left = px(PX(S[w].f)); el.style.top = px(PY(S[w].cp));
+    el.style.left = px(PX(S[w].f)); el.style.top = px(PY(S[w].cp, S[w].f));
     const txt = br.nm + ', ' + S[w].f.toFixed(1) + ' kHz, phase velocity ' + S[w].cp.toFixed(2) + ' km/s, group velocity ' +
       S[w].cg.toFixed(2) + ' km/s, wavelength ' + (S[w].lam < 1e3 ? S[w].lam.toPrecision(3) + ' mm' : (S[w].lam / 1e3).toFixed(2) + ' m');
     if (el.getAttribute('aria-valuetext') !== txt) {
@@ -1805,7 +1803,7 @@ if (!STILL) {
     if (w < 0) {
       const n = nearest(CUR, X, Y);
       if (n.d > (touch ? 24 : 12)) return;
-      const d = [0, 1].map(v => LAST[v] && LAST[v].sec === CUR.key ? Math.hypot(PX(LAST[v].f) - X, PY(LAST[v].cp) - Y) : Infinity);
+      const d = [0, 1].map(v => LAST[v] && LAST[v].sec === CUR.key ? Math.hypot(PX(LAST[v].f) - X, PY(LAST[v].cp, LAST[v].f) - Y) : Infinity);
       w = d[0] <= d[1] ? 0 : 1; st = {id: n.id, k: n.k};
     }
     GRAB = {w, axis: Y > P.y + P.h};

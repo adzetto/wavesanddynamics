@@ -186,6 +186,13 @@ def test_his_figures_keep_their_numbers_and_captions(slug, monkeypatch):
     before = figures(build.page_doc(slug))
     monkeypatch.setattr(build, "ANIM", preview.animations("../anim"))
     after = figures(build.page_doc(slug))
+    # New worked examples have lettered numbers; the original Word figures
+    # and their captions still stay in exactly the same order.
+    supplements = {m["src"].rsplit("/", 1)[-1] for key, m in build.ANIM.get(slug, {}).items()
+                   if key.startswith("supplement-")}
+    added = [f for f in after if any(f'../anim/{name}"' in f for name in supplements)]
+    assert len(added) == len(supplements)
+    after = [f for f in after if f not in added]
     assert len(before) == len(after)
     caps = [re.findall(r"<figcaption>.*?</figcaption>", f) for f in before]
     assert caps == [re.findall(r"<figcaption>.*?</figcaption>", f) for f in after]

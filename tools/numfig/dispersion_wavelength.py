@@ -32,7 +32,6 @@ def script():
         "PY(S.cp)": "PY(S.cp, S.f)",
         "PY(S[w].cp)": "PY(S[w].cp, S[w].f)",
         "PY(LAST[v].cp)": "PY(LAST[v].cp, LAST[v].f)",
-        "fetch('nf-dispersion-'": "fetch('nf-dispersion-wavelength-'",
     }
     for old, new in replacements.items():
         assert old in js, old

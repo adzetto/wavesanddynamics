@@ -66,3 +66,9 @@ The feature-selection generator checks Pearson correlation against a
 standardized dot product and the true regression coefficients against least
 squares. The forecasting generator changes every future observation by 500
 and refits: all three forecasts must remain unchanged.
+# Production data loading
+
+Both dispersion figures embed all five section payloads in their HTML. Section
+selection therefore works without separate JSON requests, which the production
+host can challenge with HTTP 429. The sibling JSON files remain reproducible
+numerical artifacts; interactive figures use the embedded copies.

@@ -27,9 +27,9 @@ quadratic elements; its symmetry splits it into classes (mirror planes, or for
 the pipe's uniform polar mesh, circumferential harmonics). The sweep here
 draws the curves; the page carries each mesh and solves every wave it shows
 with the same elements: a skyline LDL^T of K(k) - s M whose Sturm count pins
-the branch, then inverse iteration. The bar travels inside the page; the
-others are fetched as nf-dispersion-<section>.json when first chosen. The
-curves travel as the few eigenfrequencies a cubic Hermite in k needs.
+the branch, then inverse iteration. All five sections travel inside the page,
+so choosing a section never depends on a separate network request. The curves
+travel as the few eigenfrequencies a cubic Hermite in k needs.
 
 With no reader input it tours the modes (wave 1 low in frequency, wave 2 gliding
 up its curve, its packet quickening and slowing with its c_g). The first touch
@@ -2217,8 +2217,8 @@ function prepare(buf) {
 }
 function load(key) {
   if (LOADED[key]) return Promise.resolve(LOADED[key]);
-  if (!PENDING[key]) PENDING[key] = fetch('nf-dispersion-' + key + '.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(j => prepare(b64buf(j.blob))).catch(e => { delete PENDING[key]; throw e; });
+  if (!PENDING[key]) PENDING[key] = Promise.resolve().then(() => prepare(b64buf(D.blobs[key])))
+    .catch(e => { delete PENDING[key]; throw e; });
   return PENDING[key];
 }
 const prefetch = () => { for (const s of D.secs) if (!LOADED[s.key]) load(s.key).catch(() => {}); };
@@ -3298,7 +3298,7 @@ def main():
             os.remove(old)
     data = {"fmax": F_MAX / 1e3, "cmax": CP_MAX / 1e3, "ct": sm.C_T / 1e3, "cr": sm.C_R / 1e3, "slow": SLOW,
             "pw": PACKET, "poster": POSTER, "secs": [{"key": k, "label": SECTIONS[k]["label"]} for k in ORDER],
-            "blob": b64["bar"]}
+            "blob": b64["bar"], "blobs": b64}
     title = "Figure 4: Schematic dispersion curves for guided waves in a beam"
     aria = ("Phase velocity against frequency for a steel beam computed with a SAFE model: bending, axial and "
             "torsional modes start at zero frequency, higher order modes cut on above a threshold and approach the "

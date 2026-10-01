@@ -33,6 +33,17 @@ def test_plate_s0_limit_is_plane_stress_extension():
     assert model.omegas("S", 2., 1)[0] / 2 == pytest.approx(exact, rel=1e-5)
 
 
+def test_section_switching_needs_no_external_data_requests():
+    import json
+    import re
+    for name in ["dispersion", "dispersion-wavelength"]:
+        source = (ROOT / "content/anim" / f"nf-{name}.html").read_text(encoding="utf-8")
+        data = json.loads(re.search(r"const DATA = (.*?);\n", source).group(1))
+        assert set(data["blobs"]) == set(d.ORDER)
+        assert all(data["blobs"].values())
+        assert "fetch(" not in source
+
+
 def test_supplement_anchor_is_required_once(monkeypatch):
     monkeypatch.setattr(build, "ANIM", preview.animations())
     with pytest.raises(SystemExit, match="finds 0 anchors"):

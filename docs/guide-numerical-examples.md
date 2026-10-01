@@ -5,9 +5,9 @@ plate is infinite across its width and 10 mm thick. Its basis ties nodes at
 equal thickness coordinates, separating Lamb and shear-horizontal modes.
 The displayed 40 mm width is a slice, not a pair of free edges.
 
-Figure 4a plots wavelength on a logarithmic vertical axis, in millimetres,
-against frequency. It uses Figure 4's same meshes, branches and SAFE solver.
-It computes wavelength directly as `2π/k = c_p/f`. It retains the same
+Figure 4a plots wavenumber on a logarithmic vertical axis, in radians per
+metre, against frequency. It uses Figure 4's same meshes, branches and SAFE
+solver. It computes wavenumber directly as `k = 2πf/c_p`. It retains the same
 phase-velocity window so the two figures compare the same branches.
 
 The machine-learning guide has two additional figures:

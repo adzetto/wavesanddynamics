@@ -30,7 +30,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </div>
 <script>
 const W = 1000, H = 790;
-const DATA = {"poster":6.073,"t0":0.45,"slow":5.0,"hl0":1.4,"hldt":1.8,"w":[11.884,32.28432,49.66734,62.77307,74.22392],"f":[1.8914,5.13821,7.9048,9.99064,11.8131],"Q":[1.03641,0.39403,0.22524,0.10334,0.0193],"phi":[[0.000364138,0.000719177,0.00104,0.0013,0.00145],[-0.000906694,-0.0013,-0.000823141,0.000381954,0.00149],[0.00115,0.000652359,-0.000971738,-0.001,0.00131],[-0.00116,0.000380234,0.00108,-0.00138,0.000762237],[0.00117,-0.00149,0.00106,-0.000494031,0.000168316]],"gain":15500.0,"mag":[1,2,4],"params":"floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; impulse at the roof, C = 0; displacements \u00d7 800","slowtxt":"time slowed 5 \u00d7"};
+const DATA = {"poster":6.073,"t0":0.45,"slow":5.0,"hl0":1.4,"hldt":1.8,"w":[11.884,32.28432,49.66734,62.77307,74.22392],"f":[1.8914,5.13821,7.9048,9.99064,11.8131],"Q":[1.03641,0.39403,0.22524,0.10334,0.0193],"phi":[[0.000364138,0.000719177,0.00104,0.0013,0.00145],[-0.000906694,-0.0013,-0.000823141,0.000381954,0.00149],[0.00115,0.000652359,-0.000971738,-0.001,0.00131],[-0.00116,0.000380234,0.00108,-0.00138,0.000762237],[0.00117,-0.00149,0.00106,-0.000494031,0.000168316]],"gain":15500.0,"mag":[1,2,4],"params":"floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; impulse at the roof, C = 0; displacements \u00d7 800","slowtxt":"time slowed 5 \u00d7","cases":[{"label":"undamaged","factor":[1.0,1.0,1.0,1.0,1.0],"f":[1.8914,5.13821,7.9048,9.99064,11.8131],"w":[11.884,32.28432,49.66734,62.77307,74.22392],"phi":[[0.000364138,0.000719177,0.00104,0.0013,0.00145],[-0.000906694,-0.0013,-0.000823141,0.000381954,0.00149],[0.00115,0.000652359,-0.000971738,-0.001,0.00131],[-0.00116,0.000380234,0.00108,-0.00138,0.000762237],[0.00117,-0.00149,0.00106,-0.000494031,0.000168316]],"Q":[1.03641,0.39403,0.22524,0.10334,0.0193]},{"label":"storey 3 damaged","factor":[1.0,1.0,0.55,1.0,1.0],"f":[1.73658,5.00333,7.10798,9.87759,11.02234],"w":[10.91125,31.43685,44.66073,62.0627,69.25539],"phi":[[0.000300359,0.000597248,0.0011,0.00133,0.00145],[-0.00101,-0.00148,-0.000641421,0.000377542,0.00128],[0.000880214,0.000749739,-0.00132,-0.000608607,0.00143],[-0.00072137,0.000197515,0.00111,-0.0016,0.000915848],[0.00161,-0.00136,0.000613454,-0.000396074,0.000163267]],"Q":[1.03519,0.31833,0.25012,0.11503,0.01838]},{"label":"storey 5 damaged","factor":[1.0,1.0,1.0,1.0,0.55],"f":[1.86582,4.57844,6.95539,9.60421,11.78298],"w":[11.72327,28.76717,43.70199,60.34505,74.03463],"phi":[[0.000351358,0.000694745,0.00101,0.00126,0.00154],[-0.000697414,-0.00109,-0.000916327,-0.000135726,0.00182],[0.0011,0.000990895,-0.00038769,-0.00141,0.000951672],[-0.00132,0.000192553,0.00138,-0.00112,0.000299795],[0.00121,-0.00152,0.00104,-0.000384478,6.28402e-05]],"Q":[0.97447,0.4685,0.16161,0.03687,0.0063]}]};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
    `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
@@ -532,6 +532,7 @@ function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i =
 const D = DATA;
 const POSTER_T = D.poster;
 const N = 5;
+let CASE = D.cases[0];
 const lab = t0 => settle(t0, .28);         // a label arriving
 const rise = s => 4 * (1 - s);             // ... settling 4 units into place
 
@@ -545,14 +546,14 @@ const G = D.gain;                          // drawing units per metre of displac
    x_i(t) = sum_j Q_j phi_j(i) sin(w_j (t - T0) / SLOW), zero before the impulse */
 function terms() {
   const tau = Math.max(0, t - D.t0) / D.slow;
-  return D.Q.map((q, j) => q * Math.sin(D.w[j] * tau));
+  return CASE.Q.map((q, j) => q * Math.sin(CASE.w[j] * tau));
 }
 function disp(c, js, mag) {                // floor displacements (units) of the modes js
   const u = [0];
-  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * D.phi[j][i]; u.push(s * G * mag); }
+  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * CASE.phi[j][i]; u.push(s * G * mag); }
   return u;
 }
-const ENV = [0, 1].map(j => [0].concat(D.phi[j].map(v => Math.abs(D.Q[j]) * v * G * D.mag[j])));
+function env(j) { return [0].concat(CASE.phi[j].map(v => Math.abs(CASE.Q[j]) * v * G * D.mag[j])); }
 
 /* ---------------------------------------------------------------- drawing */
 function column(cx, x0, u, s, o) {         // the column of storey s: fixed-fixed, cubic
@@ -635,11 +636,23 @@ function matrix(name, lx, x0, dx, ents, kind, hs, hl, alpha, bp) {
   for (const [x, s] of [[left, 1], [right, -1]])
     line([[x + 7 * s, top], [x, top], [x, bot], [x + 7 * s, bot]], {width: 1.3, progress: bp});
 }
+function spectrum(alpha) {
+  const x0 = 275, y0 = 760, w = 180, h = 24;
+  const maxf = Math.max(...D.cases.flatMap(c => c.f));
+  for (let j = 0; j < N; j++) {
+    const x = x0 + 12 + j * (w - 24) / (N - 1);
+    const hu = CASE.f[j] / maxf * h, hd = D.cases[0].f[j] / maxf * h;
+    line([[x - 5, y0], [x - 5, y0 - hd]], {color: C.rule, width: 4, alpha});
+    line([[x + 5, y0], [x + 5, y0 - hu]], {color: j < 2 ? C.accent : C.blue, width: 4, alpha});
+  }
+  line([[x0, y0], [x0 + w, y0]], {color: C.rule, width: 1, alpha});
+}
 
 /* ---------------------------------------------------------------- draw */
 function draw() {
   const c = terms();
   const tot = disp(c, [0, 1, 2, 3, 4], 1), m1 = disp(c, [0], D.mag[0]), m2 = disp(c, [1], D.mag[1]), mh = disp(c, [2, 3, 4], D.mag[2]);
+  const ENV = [env(0), env(1)];
   const zero = [0, 0, 0, 0, 0, 0];
   // the storey highlight: one storey at a time, quietly
   const k_ = Math.floor((t - D.hl0) / D.hldt), hs = t < D.hl0 ? 0 : ((k_ % N) + N) % N + 1;
@@ -654,10 +667,10 @@ function draw() {
   text('2nd mode', CX[2], 50 + rise(tt[2]), {size: 17, color: C.body, align: 'center', alpha: tt[2]});
   text('Higher modes', CX[3], 50 + rise(tt[3]), {size: 17, color: C.body, align: 'center', alpha: tt[3]});
   const fa = [lab(.30), lab(.34), lab(.38)];
-  math('f_{1} = ' + D.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
-  math('f_{2} = ' + D.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
+  math('f_{1} = ' + CASE.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
+  math('f_{2} = ' + CASE.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
   math('f_{3}, f_{4}, f_{5} = ', CX[3], 80 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
-  math(D.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
+  math(CASE.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
   text('× ' + D.mag[1], CX[2], 120 + rise(fa[1]), {size: 14, color: C.muted, align: 'center', alpha: fa[1]});
   text('× ' + D.mag[2], CX[3], 120 + rise(fa[2]), {size: 14, color: C.muted, align: 'center', alpha: fa[2]});
 
@@ -704,6 +717,7 @@ function draw() {
   const ma = lab(.60), bpm = seg(.55, .30);
   matrix('M', 92, 130, 50, MENT, 'm', hs, hl, ma, bpm);
   matrix('K', 470, 520, 96, KENT, 'k', hs, hl, lab(.66), bpm);
+  spectrum(lab(.72));
 
   // parameters and time scale
   const pa = lab(.80);
@@ -711,6 +725,27 @@ function draw() {
   text(D.slowtxt, W - 18, H - 14, {size: 14, color: C.muted, align: 'right', alpha: pa});
 }
 boot();
+(() => {
+  const host = document.querySelector('.fig');
+  if (!host || !D.cases || D.cases.length < 2) return;
+  const group = document.createElement('div');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Building damage cases');
+  group.style.cssText = 'position:absolute;left:18px;top:10px;display:flex;gap:6px;z-index:2';
+  D.cases.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = i ? item.label.replace('storey ', 'S') : 'undamaged';
+    b.style.cssText = 'border:1px solid #c9c4bc;border-radius:12px;background:#fff;color:#27221c;padding:3px 8px;font:12px sans-serif;cursor:pointer';
+    b.setAttribute('aria-pressed', String(i === 0));
+    b.addEventListener('click', e => {
+      e.stopPropagation(); CASE = item;
+      group.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i)));
+      redraw();
+    });
+    group.appendChild(b);
+  });
+  host.style.position = 'relative'; host.appendChild(group);
+})();
 </script>
 </body>
 </html>

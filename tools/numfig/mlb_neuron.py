@@ -681,11 +681,35 @@ function panelB() {
   for (const [key, words] of items) { key(lx, ly - 5, lA); lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40; }
 }
 
+function approximationArchitecture() {
+  const st=bNow(), n=st.n, nt=NETS[n-1], y=1100, a=lab(.5);
+  cv.dataset.architecture=`1-${n}-1`;
+  text(`Selected architecture: 1 input → ${n} hidden neuron${n===1?'':'s'} → 1 output`, 76, 966, {size:18,alpha:a});
+  text('input',240,997,{size:15,align:'center',alpha:a});
+  text(`${n} tanh neuron${n===1?'':'s'}`,490,997,{size:15,align:'center',alpha:a});
+  text('linear output',800,997,{size:15,align:'center',alpha:a});
+  const ys=Array.from({length:n},(_,j)=>y+(j-(n-1)/2)*13);
+  const built=builtB(st);
+  for(let j=0;j<n;j++) {
+    const col=j<built?C.blue:C.guide;
+    line([[253,y],[482,ys[j]]],{color:col,width:1,alpha:a*.65});
+    line([[498,ys[j]],[787,y]],{color:col,width:1,alpha:a*.65});
+  }
+  for(let j=0;j<n;j++) dot(490,ys[j],5,{color:C.blue,fill:j<built?C.steel:'#fff',width:1.1,alpha:a});
+  dot(240,y,13,{color:C.blue,fill:'#fff',width:1.5,alpha:a});
+  dot(800,y,13,{color:C.blue,fill:'#fff',width:1.5,alpha:a});
+  math('x',240,y+5,{size:16,align:'center',alpha:a});
+  text('g',800,y+5,{size:16,align:'center',alpha:a});
+  text(`Output bias ${(nt.base+nt.v.reduce((s,v)=>s+v,0)).toFixed(3)}; ${3*n+1} fitted parameters`,76,1218,{size:15,color:C.muted,alpha:a});
+  text('Every hidden neuron connects to the input and output; weights match the selected fit above.',76,1243,{size:14,color:C.muted,alpha:a});
+}
+
 function draw() {
   panelA();
   text('network of Figure 17 (iris, 4-5-5-3, tanh, softmax, 300 epochs of gradient descent); inputs standardized; values rounded',
        18, 564, { size: 14, color: C.muted, alpha: lab(.5) });
   panelB();
+  approximationArchitecture();
   text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
   place();
@@ -872,7 +896,8 @@ ARIA = ("Top: the iris network of Figure 17 with one neuron marked, and that neu
         "(softmax for an output neuron) to its output, with a small plot of how its weights moved during the 300 "
         "training epochs; choosing another neuron replays its computation. Bottom: networks of 1 to 14 tanh "
         "neurons fitted to one wiggly target function, their pieces added one at a time, the error falling as "
-        "neurons are added, from 0.30 with one neuron to 0.003 with fourteen.")
+        "neurons are added, from 0.30 with one neuron to 0.003 with fourteen. The selected number of neurons "
+        "also shows its exact 1-N-1 architecture with all input and output connections.")
 
 
 def verify(states):
@@ -911,7 +936,7 @@ def verify(states):
 
 if __name__ == "__main__":
     print("RMS", [round(nt["rms"], 4) for nt in NETS])
-    mc.publish(NAME, TITLE, ARIA, 1000, 970, DATA, JS,
+    mc.publish(NAME, TITLE, ARIA, 1000, 1280, DATA, JS,
                look=(0.3, 0.8, 1.4, 2.2, 3.0, 4.0, 5.0, 8.0, 12.0, 17.0, 21.0))
     # the page's clocks, as its script sets them (checked against the page under --verify)
     TB, BGAP, BHOLD = .35, .45, 4.5
@@ -921,7 +946,8 @@ if __name__ == "__main__":
     PA = int(np.ceil(POSTER)) + 3
     sim = lambda n: .55 + .3 * (n - 1) + .75 + .3 + .45 + .3 + .75 + .3
     say("THE PAGE")
-    say(f"  W = 1000, H = 970. POSTER_T = {POSTER:g} s: in (b) 14 neurons added up, in (a) the first neuron computed.")
+    say(f"  W = 1000, H = 1280. POSTER_T = {POSTER:g} s: in (b) 14 neurons added up, in (a) the first neuron computed.")
+    say("  Selecting N in (b) also shows its fully connected 1-N-1 topology, using the same fitted network's output bias and parameter count.")
     say(f"  (a) tours hidden 1 neuron 1, hidden 2 neuron 5 and the versicolor output, {PA} s each. A neuron's")
     say(f"  computation takes {sim(4):.1f} s (4 inputs) or {sim(5):.1f} s (5): each input's arrow grows along its weight in")
     say("  0.75 s, 0.3 s after the one before; its product arrives and goes on to the sum; the bias joins;")

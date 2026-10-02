@@ -71,7 +71,8 @@ CHECK: tanh(u) = 2 sigma(2u) - 1, so these are the sigmoid networks of the earli
   RMS 0.1768, 0.0831, 0.0030 for N = 3, 7, 14; these give 0.1768, 0.0831, 0.0030
 
 THE PAGE
-  W = 1000, H = 970. POSTER_T = 21 s: in (b) 14 neurons added up, in (a) the first neuron computed.
+  W = 1000, H = 1280. POSTER_T = 21 s: in (b) 14 neurons added up, in (a) the first neuron computed.
+  Selecting N in (b) also shows its fully connected 1-N-1 topology, using the same fitted network's output bias and parameter count.
   (a) tours hidden 1 neuron 1, hidden 2 neuron 5 and the versicolor output, 24 s each. A neuron's
   computation takes 4.3 s (4 inputs) or 4.6 s (5): each input's arrow grows along its weight in
   0.75 s, 0.3 s after the one before; its product arrives and goes on to the sum; the bias joins;

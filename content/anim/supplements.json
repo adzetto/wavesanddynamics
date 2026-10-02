@@ -3,7 +3,7 @@
   {
    "key": "supplement-wavelength",
    "after_caption": "Figure 4.",
-   "caption": "Figure 4a. Wavelength against frequency for the same SAFE branches shown in Figure 4, with a logarithmic wavelength axis in millimetres. Select bar, I-beam, rail, pipe or plate, and drag the wave markers to compare their wavelengths. The plate is 10 mm thick and infinite across its width, with A0 and S0 Lamb waves and SH0 shear-horizontal waves; the drawn width is a slice of the plate. Wavelength is computed as λ = 2π/k = cₚ/f and tends to infinity as k tends to zero. Wave packets travel at group velocity while their crests travel at phase velocity."
+   "caption": "Figure 4a. Wavenumber against frequency for the same SAFE branches shown in Figure 4, with a logarithmic wavenumber axis in radians per metre. Select bar, I-beam, rail, pipe or plate, and drag the wave markers to compare their wavenumbers. The plate is 10 mm thick and infinite across its width, with A0 and S0 Lamb waves and SH0 shear-horizontal waves. Wavenumber is computed as k = 2πf/cₚ = 2π/λ. The educational rail-like section is 35 × 40 mm; its mode count differs from a full-size railway rail. The refined meshes are checked against finer meshes. Wave packets travel at group velocity while their crests travel at phase velocity."
   }
  ],
  "machine-learning-the-complete-picture-and-guide-5": [

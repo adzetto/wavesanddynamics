@@ -72,3 +72,35 @@ Both dispersion figures embed all five section payloads in their HTML. Section
 selection therefore works without separate JSON requests, which the production
 host can challenge with HTTP 429. The sibling JSON files remain reproducible
 numerical artifacts; interactive figures use the embedded copies.
+
+## Additional requests checked on 2 October 2026
+
+Figure 4's bar uses 16 × 32 Q9 elements in both the Python sweep and the browser
+solver. The I-beam, rail, pipe and plate use 1.5 times their previous mesh
+density. Production meshes are compared with finer reference meshes. Large
+Python eigenproblems use sparse shift-invert, with independent dense checks.
+The browser retains its eigenvalue-counting solver.
+
+The reference paper [Xu et al. (2024)](https://doi.org/10.1038/s41598-024-59328-5)
+uses a 192 mm high, 150 mm wide, 75 kg/m rail with 550 triangular elements and
+340 nodes. This guide's simplified rail is 40 mm high and 35 mm wide, uses
+quadratic quadrilaterals, and retains the guide's steel properties. Matching
+the paper's number of branches would require its geometry and material too.
+Here each displayed branch is checked against the eigenvalue count of this
+guide's own cross-section, rather than adding curves to match a picture.
+
+Figure 4a now shows **wavenumber**, as requested in the latest feedback. Its
+existing filename is retained so earlier links keep working. Wavelength
+continues to appear in each wave's numerical readout.
+
+Figure 1 offers undamaged, storey-3 and storey-5 damage presets, plus a stiffness
+slider for each of its five storeys (20–150% of the baseline). A symmetric
+Jacobi eigensolver recomputes mass-normalized modes and frequencies in the
+browser. Every comparison keeps the original roof impulse. The spectrum is
+the FFT of 32 physical seconds of the exact undamped roof displacement, sampled
+at 64 Hz with a Hann window and coherent-gain amplitude correction.
+
+Figure 18's neuron-count selection also draws its fitted 1–N–1 network, with
+N hidden tanh units and every input/output connection. Its displayed output
+bias is `base + sum(v)` because the existing fit uses `v * (1 + tanh(...))`.
+There are `3*N + 1` fitted weights and biases.

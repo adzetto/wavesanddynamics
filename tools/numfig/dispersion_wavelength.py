@@ -41,7 +41,7 @@ def script():
     # original Hermite solution rather than joining sparse endpoints.
     old = "if (d < 14 && (Math.abs(wm - (w0 + w1) / 2)"
     assert old in js
-    js = js.replace(old, "if (d < 14 && (Math.abs(Math.log10(km) - (Math.log10(k0) + Math.log10(k1)) / 2) * P.h / 4 > .2 || Math.abs(wm - (w0 + w1) / 2)")
+    js = js.replace(old, "if (d < 14 && (Math.abs(Math.log10(km) - (Math.log10(k0) + Math.log10(k1)) / 2) * P.h / 3 > .2 || Math.abs(wm - (w0 + w1) / 2)")
     old = "line([[P.x, PY(c)], [P.x + P.w, PY(c)]], {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});"
     assert old in js
     js = js.replace(old, "line(Array.from({length: 201}, (_, i) => { const f = .001 * (FM / .001) ** (i / 200); return [PX(f), PY(c, f)]; }), {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});")

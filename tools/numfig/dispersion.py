@@ -73,6 +73,7 @@ import safe_model as sm
 
 NAME = "dispersion"
 MESH = (16, 32)                   # Q9 elements across b and h (1.25 mm), see the check
+SECTION_REFINEMENT = 1.5           # finer I-beam, rail, pipe and plate meshes
 F_MAX, CP_MAX = 200e3, 7.0e3      # the plot window, Hz and m/s
 K_MAX = 470.0                     # rad/m: every branch of the bar leaves the window below it
 REF_W, REF_H = 520, 418           # the refinement metric (drawing units), finer than the plot
@@ -246,12 +247,16 @@ class Section:
         return self._cls[name]
 
     def omegas(self, name, k, n):
+        if self.classes[name].shape[1] > 400:
+            return sparse_modes(self, name, k, n)[0]
         Q, k1, k2, k3, m = self.cls(name)
         w2 = sla.eigh(k1 + k * k2 + k * k * k3, m, eigvals_only=True,
                       subset_by_index=[0, min(n, len(m)) - 1], driver="gvx")
         return np.sqrt(np.clip(w2, 0, None))
 
     def solve(self, name, k, n):
+        if self.classes[name].shape[1] > 400:
+            return sparse_modes(self, name, k, n)
         Q, k1, k2, k3, m = self.cls(name)
         w2, v = sla.eigh(k1 + k * k2 + k * k * k3, m, subset_by_index=[0, n - 1], driver="gvx")
         return np.sqrt(np.clip(w2, 0, None)), Q @ v
@@ -283,8 +288,8 @@ def grid_mesh(yb, zb, ny, nz, keep):
 
 
 def bar_mesh(s=1.0):
-    """The bar of safe_model.py (s = 1: its 10 x 20 elements, node for node)."""
-    return grid_mesh([-10.0, 10.0], [-20.0, 20.0], [int(10 * s)], [int(20 * s)], lambda i, j: True)
+    """The production bar, node for node identical to safe_model.Safe(*MESH)."""
+    return grid_mesh([-10.0, 10.0], [-20.0, 20.0], [int(MESH[0] * s)], [int(MESH[1] * s)], lambda i, j: True)
 
 
 def plate_mesh(s=1.0):
@@ -501,7 +506,7 @@ SECTIONS = {
                   classes=[("A", "Lamb", -1), ("S", "Lamb", 1), ("SHs", "SH", 1), ("SHa", "SH", -1)],
                   fund={"vertical": ("A", 0), "axial": ("S", 0), "lateral": ("SHs", 0)},
                   legend=[("vertical", "A0 Lamb"), ("axial", "S0 Lamb"), ("lateral", "SH0"), (None, "higher order")],
-                  what="plate, thickness 10 mm (infinite width)",
+                  what="10 mm infinite plate",
                   tour=[("vertical", 20, "vertical", 50, 150), ("axial", 20, "axial", 50, 150),
                         ("lateral", 20, "lateral", 50, 150), ("h1", 185, "h1", 188, 195)]),
     "bar": dict(label="bar", mesh=bar_mesh, kind="mirror", planes=(1, 1), classes=CLS4, fund=FUND4, legend=LEG4,
@@ -542,6 +547,8 @@ def class_meta(Z):
 def make_section(key, s=1.0):
     """The section's SAFE model with its classes (s: mesh density, 1 the page's)."""
     Z = SECTIONS[key]
+    if key != "bar":
+        s *= SECTION_REFINEMENT
     if key == "pipe":
         nth, nr = int(round(72 * s)), int(round(3 * s))
         S = Section(*pipe_mesh(nth, nr))
@@ -587,7 +594,8 @@ def compute_section(key):
     Z = SECTIONS[key]
     src = ("".join(inspect.getsource(f) for f in (_dmat, _jac, element, Section, grid_mesh, Z["mesh"], properties,
                                                   torsion, make_section, branches_g, compute_section))
-           + repr((F_MAX, CP_MAX, REF_W, REF_H, key, Z["kind"], Z["classes"], Z["fund"], Z.get("nth"), IBEAM, RAIL, PIPE)))
+           + inspect.getsource(sparse_modes)
+           + repr((MESH, SECTION_REFINEMENT, F_MAX, CP_MAX, REF_W, REF_H, key, Z["kind"], Z["classes"], Z["fund"], Z.get("nth"), IBEAM, RAIL, PIPE)))
     h = hashlib.sha1(src.encode()).hexdigest()[:12]
     cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{h}.pkl")
     if os.path.exists(cache):
@@ -832,7 +840,7 @@ def section_blob(key, R):
               f"{len(S.elems)} quadratic elements, solved in the page")
     meta = {"key": key, "label": Z["label"], "kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO,
             "classes": class_meta(Z),
-            "nth": Z.get("nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
+            "nth": getattr(S, "nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
             "faces": fcs, "B": B, "H": Hh, "sscale": round(min(160 / B, 300 / Hh), 4), "fc1": fc1, "cuts": cuts,
             "A": float(R["props"]["A"]) if "props" in R else float(sm.B * sm.H * 1e6),
             "legend": [[t, s] for t, s in Z["legend"]], "params": params}
@@ -874,10 +882,34 @@ def branches(model, name, n):
     return ks, W
 
 
+def sparse_modes(model, name, k, n):
+    """Lowest generalized eigenpairs, without dense matrices on refined meshes."""
+    if not hasattr(model, "_sparse_modes"):
+        model._sparse_modes = {}
+    if name not in model._sparse_modes:
+        Q = model.classes[name] if isinstance(model, Section) else model.basis(*sm.CLASSES[name])
+        model._sparse_modes[name] = (Q, *( (Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M)))
+    Q, k1, k2, k3, m = model._sparse_modes[name]
+    K = k1 + k * k2 + k * k * k3
+    count = min(n, m.shape[0] - 2)
+    vals, vec = spla.eigsh(K, k=count, M=m, sigma=-1., which="LM", tol=1e-10,
+                          v0=np.linspace(1., 2., m.shape[0]))
+    order = np.argsort(vals)
+    return np.sqrt(np.clip(vals[order], 0, None)), Q @ vec[:, order]
+
+
+class SparseSafe(sm.Safe):
+    def omegas(self, name, k, n):
+        return sparse_modes(self, name, k, n)[0]
+
+    def solve(self, name, k, n):
+        return sparse_modes(self, name, k, n)
+
+
 def compute():
     """The sweep and the checks against closed forms (cached in the temp folder)."""
     src = (open(os.path.join(HERE, "safe_model.py"), encoding="utf-8").read()
-           + inspect.getsource(branches) + inspect.getsource(compute)
+           + inspect.getsource(branches) + inspect.getsource(compute) + inspect.getsource(SparseSafe) + inspect.getsource(sparse_modes)
            + repr((MESH, F_MAX, CP_MAX, K_MAX, REF_W, REF_H)))
     key = hashlib.sha1(src.encode()).hexdigest()[:12]
     cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}.pkl")
@@ -885,7 +917,7 @@ def compute():
         with open(cache, "rb") as fh:
             return pickle.load(fh)
     t0 = time.time()
-    model = sm.Safe(*MESH)
+    model = SparseSafe(*MESH)
     R = {"mesh": MESH, "ndof": model.ndof, "K2err": model.K2_antisym_err}
     # cut-on frequencies (k = 0) and the branches of every class
     R["cut"], R["br"] = {}, {}
@@ -936,7 +968,7 @@ def compute():
     # mesh convergence at k = 150, 440 rad/m: the 8 lowest of each class
     conv = {}
     for mesh in ((6, 12), (8, 16), (10, 20), MESH, (32, 64)):
-        mm = sm.Safe(*mesh)
+        mm = SparseSafe(*mesh)
         conv[mesh] = {name: np.array([mm.omegas(name, k, 8) for k in (150.0, 440.0)])
                       for name in sm.CLASSES}
     R["conv"] = conv
@@ -962,7 +994,7 @@ def check_bar(R):
       f" Viktorov's (0.87 + 1.12 nu)/(1 + nu) gives {(0.87+1.12*sm.NU)/(1+sm.NU):.5f})")
     p("  SAFE: u = U(y, z) exp(i(kx - wt)); Q9 quadratic quadrilaterals, 3 dof per node,")
     p("  3 x 3 Gauss (exact for rectangles); [K1 + ik K2 + k^2 K3 - w^2 M] U = 0 made real")
-    p("  symmetric by U_x = i V_x; scipy.linalg.eigh at each real k. The two mirror planes")
+    p("  symmetric by U_x = i V_x; sparse shift-invert eigenpairs at each real k, checked against dense eigh. The two mirror planes")
     p("  split the problem into four symmetry classes (orthonormal symmetry-adapted bases):")
     p("  (++) axial, (+-) vertical bending, (-+) lateral bending, (--) torsional.")
     p(f"  K2 antisymmetry check: max|K2 + K2^T|/max|K2| = {R['K2err']:.1e}")
@@ -972,7 +1004,7 @@ def check_bar(R):
     ref = R["conv"][(32, 64)]
     p(f"  every branch below {1.1*F_MAX/1e3:.0f} kHz (of the 8 lowest per class), against the 32 x 64 mesh:")
     worst = {}
-    for mesh in ((6, 12), (8, 16), (10, 20)):
+    for mesh in ((6, 12), (8, 16), (10, 20), MESH):
         errs = []
         for ik in range(2):
             e = 0
@@ -985,8 +1017,8 @@ def check_bar(R):
         worst[mesh] = max(errs)
         p(f"  {mesh[0]:2d} x {mesh[1]:2d} ({sm.B*1e3/mesh[0]:.1f} mm elements): max |w/w_ref - 1| "
           f"k = 150 rad/m {errs[0]:.1e}, k = 440 rad/m {errs[1]:.1e}")
-    p(f"  The error falls as h^4 (quadratic elements). The 10 x 20 mesh is within "
-      f"{100*worst[(10, 20)]:.2f} %: well below")
+    p(f"  The error falls as h^4 (quadratic elements). The production {MESH[0]} x {MESH[1]} mesh is within "
+      f"{100*worst[MESH]:.2f} %: well below")
     p("  one drawing unit anywhere on the plot.")
     p("")
     p("CUT-ON FREQUENCIES (k = 0) against closed forms")
@@ -1079,7 +1111,7 @@ def check_solver_all(Rs):
         S = make_section(key)
         models[key] = S
         tb, tflat, _ = thinned(key, R)
-        sec = {"kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO, "nth": Z.get("nth", 0),
+        sec = {"kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO, "nth": getattr(S, "nth", 0),
                "classes": class_meta(Z),
                "nodes": np.asarray(S.nodes_mm, np.float32).ravel().tolist(), "elems": S.elems.ravel().tolist()}
         if Z["kind"] == "mirror":
@@ -1266,22 +1298,21 @@ def check_plate(R):
     return lines
 
 
-_SPARSE = {}
-
-
-def group_near(model, name, k, w0, tol=5e-2):
+def group_near(model, name, k, w0, tol=1e-4):
     """(w, c_g) of the eigenpair nearest w0 (rad/s), by sparse shift-invert."""
-    key = (id(model), name)
-    if key not in _SPARSE:
+    if not hasattr(model, "_group_sparse"):
+        model._group_sparse = {}
+    if name not in model._group_sparse:
         Q = model.classes[name]
-        _SPARSE[key] = tuple((Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M))
-    K1, K2, K3, M = _SPARSE[key]
+        model._group_sparse[name] = tuple((Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M))
+    K1, K2, K3, M = model._group_sparse[name]
     K = (K1 + k * K2 + (k * k) * K3).tocsc()
-    vals, vecs = spla.eigsh(K, k=1, M=M, sigma=w0 * w0, which="LM")
+    # Avoid a singular factorization when the requested shift is itself exact
+    # (notably the pipe's nondispersive torsional branch).
+    vals, vecs = spla.eigsh(K, k=1, M=M, sigma=w0 * w0 * (1 + 1e-8), which="LM")
     x, w = vecs[:, 0], np.sqrt(vals[0])
-    # A finer production mesh can shift a nearby eigenvalue enough that the
-    # coarse reference is no longer within the historical acceptance window.
-    # Shift-invert still returns the eigenpair nearest the requested reference.
+    if abs(w / w0 - 1) > tol:
+        raise RuntimeError(f"group_near: {name} k = {k}: found {w}, wanted {w0}")
     return w, (x @ (K2 @ x) + 2 * k * (x @ (K3 @ x))) / (2 * w * (x @ (M @ x)))
 
 
@@ -1387,7 +1418,11 @@ def tour_group(Rs):
             for lab, bi, f in (("w1", s["b1"], s["f1"]), ("wa", s["b2"], s["fa"]), ("w2", s["b2"], s["f2"])):
                 name = Z["classes"][tb[bi]["ci"]][0]
                 k = k_at_f(curves[bi], f)
-                w, cg = group_near(S, name, k, 2e3 * np.pi * float(np.interp(k, curves[bi][0], curves[bi][1])))
+                # Identify the branch by its eigenvalue index, then use its
+                # exact eigenfrequency as the shift instead of a linear seed.
+                branch = tb[bi]["b"]
+                exact_w = S.omegas(name, k, branch + 1)[branch]
+                w, cg = group_near(S, name, k, exact_w)
                 h = 1e-3 * k
                 gp = group_near(S, name, k + h, w + cg * h)[1]
                 gm = group_near(S, name, k - h, w - cg * h)[1]
@@ -1589,7 +1624,7 @@ def overlaps_all(times, live=False, width=672):
                 # and the two markers apart (their discs are drawn, not type: the check above
                 # does not see them): at least one diameter between their centres when both show
                 gap = pg.evaluate("(() => { if (SW || USER) return 99; const q = tourAt(CUR, t - TOUR.off), a = LAST[0], b = LAST[1];"
-                                  " return q.mk[0] > .35 && q.mk[1] > .35 ? Math.hypot(PX(a.f) - PX(b.f), PY(a.cp) - PY(b.cp)) : 99; })()")
+                                  " return q.mk[0] > .35 && q.mk[1] > .35 ? (() => { const p = markerLabels(markerPos(LAST, q, false, 1)); return Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y); })() : 99; })()")
                 if gap < 21:
                     lab = lab + [["marker 1", "marker 2", round(gap, 1), 0]]
                 wp = pg.evaluate("18 + textW(CUR.params, 14)")
@@ -2614,7 +2649,14 @@ function plotA(S, q, sw) {
     const ph = ((t + w * 1.2) % 2.4) / 2.4, a = pos[w].a * .5 * (1 - ph) * seg(1.4, .6);
     if (a > .01) dot(pos[w].x, pos[w].y, 11 + 12 * easeOut(ph), {color: WC[w], fill: null, width: 1.2, alpha: a});
   }
-  for (let w = 0; w < 2; w++) badge(w, pos[w].x, pos[w].y, pos[w].a);
+  const labels = markerLabels(pos);
+  for (let w = 0; w < 2; w++) {
+    if (labels[w].y !== pos[w].y) {
+      line([[pos[w].x, pos[w].y], [labels[w].x, labels[w].y]], {color: WC[w], width: 1, alpha: pos[w].a});
+      dot(pos[w].x, pos[w].y, 2.5, {color: WC[w], fill: WC[w], alpha: pos[w].a});
+    }
+    badge(w, labels[w].x, labels[w].y, pos[w].a);
+  }
   if (!STILL && HOVER && !GRAB && !sw) tooltip();
   // the slot: how to use it until it is used, then the way back to the tour
   if (!STILL) {
@@ -2627,6 +2669,13 @@ function plotA(S, q, sw) {
     }
     placeResume(back > .5);
   }
+}
+function markerLabels(pos) {
+  const labels = pos.map(p => ({...p}));
+  if (pos.every(p => p.a > .35) && Math.hypot(pos[0].x-pos[1].x, pos[0].y-pos[1].y) < 24) {
+    labels[0].y -= 14; labels[1].y += 14;
+  }
+  return labels;
 }
 function markerPos(S, q, sw, e) {
   const at = (s, a) => ({x: PX(s.f), y: PY(s.cp), a});
@@ -3052,7 +3101,7 @@ function key(w, e) {
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfw{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;pointer-events:none;outline:none}' +
-    '.nfb{position:absolute;margin:0;padding:0;border:0;background:transparent;cursor:pointer;outline:none;font:inherit;color:transparent}' +
+    '.nfb{position:absolute;margin:0;padding:0;border:0;background:transparent;cursor:pointer;outline:none;font:inherit;color:transparent;overflow:hidden}' +
     '.nfw:focus-visible,.nfb:focus-visible{outline:2px solid #095A94;outline-offset:2px}.nfb[hidden]{display:none}';
   document.head.appendChild(css);
   const ctl = FIG.querySelector('.ctl'), add = el => { FIG.insertBefore(el, ctl); return el; };

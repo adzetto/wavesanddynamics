@@ -314,25 +314,31 @@ def still_body(body):
 def body_at(label, rev="HEAD"):
     """The slide's body (figures computed, formulas set) from its sources at
     git revision `rev`, or None where it had none."""
+    import shutil
     import subprocess
     import tempfile
     stem = his.stem(label)
-    tmp = tempfile.mkdtemp(prefix="deck-rev-")
-    for ext in (".html", ".py"):
-        got = subprocess.run(["git", "show", f"{rev}:tools/deck/src/{stem}{ext}"], cwd=ROOT,
-                             capture_output=True)
-        if got.returncode:
-            if ext == ".html":
-                return None
-            continue
-        with open(os.path.join(tmp, stem + ext), "wb") as fh:
-            fh.write(got.stdout)
-    mod = None
-    if os.path.isfile(os.path.join(tmp, stem + ".py")):
-        spec = importlib.util.spec_from_file_location(f"deck_rev_{stem}", os.path.join(tmp, stem + ".py"))
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-    return numbered_body(label, os.path.join(tmp, stem + ".html"), mod)
+    # beside src/, as deep as it: a script that finds the repository's files
+    # from its own path (s013.py, the fonts) finds them from here too
+    tmp = tempfile.mkdtemp(prefix=".rev-", dir=os.path.dirname(SRC))
+    try:
+        for ext in (".html", ".py"):
+            got = subprocess.run(["git", "show", f"{rev}:tools/deck/src/{stem}{ext}"], cwd=ROOT,
+                                 capture_output=True)
+            if got.returncode:
+                if ext == ".html":
+                    return None
+                continue
+            with open(os.path.join(tmp, stem + ext), "wb") as fh:
+                fh.write(got.stdout)
+        mod = None
+        if os.path.isfile(os.path.join(tmp, stem + ".py")):
+            spec = importlib.util.spec_from_file_location(f"deck_rev_{stem}", os.path.join(tmp, stem + ".py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        return numbered_body(label, os.path.join(tmp, stem + ".html"), mod)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def numbered_body(label, html_path=None, mod=None):
@@ -742,14 +748,15 @@ def shoot(labels, look_only=False, force=False, with_anim=True, anim_only=False,
     animation), and write it. Returns (problems, room, written rows).
     anim_only: write its animation page and manifest line, never its
     photograph or web copies; `changed` {label: problem} are the slides the
-    unchanged check refused."""
+    unchanged check refused. held {label: problems}: what the check finds in
+    a slide the unchanged check held to HEAD (reported, not refused)."""
     from PIL import Image
     from playwright.sync_api import sync_playwright
 
     for d in ("slides", "review"):
         os.makedirs(os.path.join(BUILD, d), exist_ok=True)
     base = server()
-    report, room, rows, anims = {}, {}, {}, {}
+    report, room, rows, anims, held = {}, {}, {}, {}, {}
     with sync_playwright() as p:
         # grayscale anti-aliasing and unhinted outlines: the same glyphs at every size
         b = p.chromium.launch(args=["--disable-lcd-text", "--font-render-hinting=none"])
@@ -768,6 +775,12 @@ def shoot(labels, look_only=False, force=False, with_anim=True, anim_only=False,
             info = pg.evaluate(INFO_JS)
             pg.close()
             probs = check(lab, info, words_elsewhere=anim_only)
+            if anim_only and not (changed or {}).get(lab):
+                # the slide is HEAD's to the byte and its photograph is not
+                # rewritten: what its layout shows here is HEAD's on this
+                # machine (whose fonts measure a hair differently from the one
+                # that photographed it), nothing the animation did
+                held[lab], probs = probs, []
             if anim_only and (changed or {}).get(lab):
                 probs.append(changed[lab])
             if faces:
@@ -820,7 +833,7 @@ def shoot(labels, look_only=False, force=False, with_anim=True, anim_only=False,
                 os.remove(live)
             rows[lab] = row(lab, anim_length(live) if os.path.isfile(live) else None)
         b.close()
-    return report, room, rows, anims
+    return report, room, rows, anims, held
 
 
 def kit():
@@ -1046,8 +1059,9 @@ def main(argv=None):
             write_file(look, page)
         elif os.path.isfile(look) and not a.no_anim:
             os.remove(look)
-    report, room, rows, anims = shoot(todo, look_only=a.look, force=a.force, with_anim=not a.no_anim,
-                                      anim_only=a.anim_only, changed=changed)
+    report, room, rows, anims, held = shoot(todo, look_only=a.look, force=a.force,
+                                            with_anim=not a.no_anim, anim_only=a.anim_only,
+                                            changed=changed)
     bad = 0
     for lab in todo:
         stem = his.stem(lab)
@@ -1065,6 +1079,8 @@ def main(argv=None):
                   f"{played.get('slowest', '?')} ms; frames: build/r10-deck/review/{stem}-anim.png")
         for pr in probs:
             print("      -", pr)
+        for pr in held.get(lab, []):
+            print("      · as at HEAD:", pr)
         bad += bool(probs)
     for lab in todo:          # one report per slide: several agents render side by side
         with open(os.path.join(BUILD, "review", f"{his.stem(lab)}.json"), "w", encoding="utf-8") as fh:

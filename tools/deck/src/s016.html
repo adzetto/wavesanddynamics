@@ -14,26 +14,26 @@
  </header>
  <main class="body">
   <div class="g pair">
-   <div class="s5" id="one">
+   <div class="s5" id="one" data-in="0.3">
     <h2 class="h">One cylinder: material variability</h2>
     <p class="p">Lands anywhere around <m>μ</m>; SD <m>σ = 3 MPa</m>. <br>More testing never shrinks <m>σ</m>.</p>
    </div>
-   <div class="cell s1 o6"><p class="edge above">More data</p></div>
-   <div class="s6 o7" id="avg">
+   <div class="cell s1 o6"><p class="edge above" data-in="4.5">More data</p></div>
+   <div class="s6 o7" id="avg" data-in="4.9">
     <h2 class="h">Average of 25: estimation uncertainty</h2>
     <p class="p">Averages cluster near <m>μ</m>; <m>SE = 0.6 MPa</m>. <br>More tests shrink <m>SE = σ/√n</m>.</p>
    </div>
   </div>
-  <i class="wire" data-from="#one" data-to="#avg" data-gap="14"></i>
+  <i class="wire" data-from="#one" data-to="#avg" data-gap="14" data-in="4.4" data-dur=".5"></i>
   <div data-fig="spread" class="spread"></div>
   <div class="g laws">
-   <p class="eq c-navy s6"><m>Var(X̄) = (1/n²) × nσ² = σ²/n</m></p>
-   <p class="eq c-blue s6 o7"><m>SE(X̄) = σ/√n = 3/√25 = 0.6 MPa</m></p>
+   <p class="eq c-navy s6" data-in="3.9"><m>Var(X̄) = (1/n²) × nσ² = σ²/n</m></p>
+   <p class="eq c-blue s6 o7" data-in="8.4"><m>SE(X̄) = σ/√n = 3/√25 = 0.6 MPa</m></p>
   </div>
  </main>
  <footer class="foot">
   <div data-fig="star" class="mark"></div>
-  <p class="take">More tests sharpen our estimate of <m>μ</m>; they never make individual cylinders more alike.</p>
+  <p class="take" data-in="9.1" data-as="fade">More tests sharpen our estimate of <m>μ</m>; they never make individual cylinders more alike.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: distinguish population variation from estimation uncertainty</span><span class="src">Sources: [3], [6]</span><span class="num">16</span></p>
  </footer>
 </section>

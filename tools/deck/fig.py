@@ -813,16 +813,21 @@ class Axes:
     def legend(self, entries, at="north east", pad=16, row=38, sample=44, size=24, inset=14, anim=None):
         """pgfplots' legend: a 1 px ink box, white, inside the axis. entries
         are (label HTML, dict of the line's style: color, width, dash, or
-        kind='area'/'mark'). anim= arrives the whole legend."""
+        kind='area'/'mark'). anim= arrives the whole legend, or, a list, its
+        box and then each entry (an entry with what it names)."""
         f = self.f
-        a = dict(anim=anim)
+        box, each = ((anim[0], list(anim[1:])) if isinstance(anim, (list, tuple))
+                     else (anim, [anim] * len(entries)))
+        if len(each) != len(entries):
+            raise ValueError(f"legend: {len(each)} specs for {len(entries)} entries")
         est_w = max(len(_html.unescape(__import__("re").sub(r"<[^>]+>", "", t))) for t, _ in entries) * size * 0.5
         bw = pad + sample + 12 + est_w + pad
         bh = pad * 2 + row * len(entries) - (row - size)
         bx = self.x + self.w - inset - bw if "east" in at else self.x + inset
         by = self.y + inset if "north" in at else self.y + self.h - inset - bh
-        f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0, **a)
-        for i, (t, st) in enumerate(entries):
+        f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0, anim=box)
+        for i, ((t, st), e) in enumerate(zip(entries, each)):
+            a = dict(anim=e)
             cy = by + pad + size / 2 + i * row
             kind = st.get("kind", "line")
             if kind == "area":

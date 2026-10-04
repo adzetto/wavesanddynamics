@@ -13,43 +13,43 @@
  </header>
  <main class="body g der">
   <div class="s6 stack">
-   <div>
+   <div data-in="0.3">
     <h2 class="h">Ingredients and notation</h2>
     <p class="p lines"><span><m>D</m>: the observed strength measurements</span><span>Prior: <m>μ ∼ N(m₀, v₀)</m></span><span><m>m₀</m>: prior mean; <m>v₀</m>: prior variance</span><span><m>vᴅ = σ²/n</m>: variance of the sample mean</span></p>
    </div>
-   <div>
+   <div data-in="1.3">
     <h2 class="h">Bayes’ rule</h2>
     <div class="eqs rule">
      <p class="eq c-blue"><m>p(μ | D) ∝ p(D | μ) × p(μ)</m></p>
      <p class="eq c-blue"><m>posterior ∝ likelihood × prior</m></p>
     </div>
    </div>
-   <p class="ps"><m>∝</m> means “proportional to.” A normalizing constant makes the total probability equal to one.</p>
+   <p class="ps" data-in="2.3" data-as="fade"><m>∝</m> means “proportional to.” A normalizing constant makes the total probability equal to one.</p>
   </div>
   <div class="s6 o7 stack">
-   <div>
+   <div data-in="3.0">
     <h2 class="h">Combine the two squared distances</h2>
     <div class="eqs">
      <p class="eq"><m>p(μ | D) ∝ exp{−½[(μ − m₀)²/v₀</m></p>
-     <p class="eq"><span class="ph"><m>p(μ | D) ∝ exp{−½[</m></span><m>+ (μ − x̄)²/vᴅ]}</m></p>
+     <p class="eq" data-in="3.6"><span class="ph"><m>p(μ | D) ∝ exp{−½[</m></span><m>+ (μ − x̄)²/vᴅ]}</m></p>
     </div>
    </div>
-   <div>
+   <div data-in="4.4">
     <p class="p">Expand the squares and collect terms in <m>μ</m>:</p>
-    <p class="eq"><m>μ²(1/v₀ + 1/vᴅ) − 2μ(m₀/v₀ + x̄/vᴅ)</m></p>
-    <p class="p">Then complete the square: <m>(μ − mₚ)²/vₚ</m>.</p>
+    <p class="eq" data-in="4.9"><m>μ²(1/v₀ + 1/vᴅ) − 2μ(m₀/v₀ + x̄/vᴅ)</m></p>
+    <p class="p" data-in="5.5">Then complete the square: <m>(μ − mₚ)²/vₚ</m>.</p>
    </div>
-   <div>
+   <div data-in="6.2">
     <div class="eqs post">
      <p class="eq c-blue"><m>vₚ = 1 / (1/v₀ + 1/vᴅ)</m></p>
      <p class="eq c-blue"><m>mₚ = vₚ(m₀/v₀ + x̄/vᴅ)</m></p>
     </div>
-    <p class="note"><m>mₚ</m> = posterior mean; <m>vₚ</m> = posterior variance.</p>
+    <p class="note" data-in="6.8" data-as="fade"><m>mₚ</m> = posterior mean; <m>vₚ</m> = posterior variance.</p>
    </div>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Multiplying two normal-shaped functions adds their precisions: precision = 1 / variance.</p>
+  <p class="take" data-in="7.5" data-as="fade">Multiplying two normal-shaped functions adds their precisions: precision = 1 / variance.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: prior information plus the data likelihood</span><span class="src">Sources: [10]</span><span class="num">18</span></p>
  </footer>
 </section>

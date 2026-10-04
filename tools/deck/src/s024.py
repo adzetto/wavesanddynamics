@@ -11,8 +11,14 @@ wide however many households are surveyed."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, seq, wipe
 from s022 import X, TRIPS, fitted
+
+# The data and their line, then the two questions (DECK_BRIEF.md "Animated
+# slides"; the blocks' moments are in s024.html): the confidence band of the
+# mean is uncovered with its block, then the wider prediction band with
+# its; each legend entry comes with its band.
+ANIM = {"length": 5.8}
 
 N = len(X)
 RES = TRIPS - fitted(X)
@@ -30,14 +36,14 @@ def bands():
     f = Fig(976, 652)
     ax = f.axes(120, 14, 838, 502, xlim=(0.4, 6.6), ylim=(-1.0, 15.6),
                 xticks=range(1, 7), yticks=range(0, 15, 2),
-                xlabel="Persons per household", ylabel="Daily trips", grid=True)
+                xlabel="Persons per household", ylabel="Daily trips", grid=True, anim=fade(.3, .4))
     x = np.linspace(0.6, 6.4, 200)
     y = fitted(x)
-    ax.area(x, y + half(x, 1), y - half(x, 1), color=C.steel2)
-    ax.area(x, y + half(x, 0), y - half(x, 0), color=C.sky, opacity=0.8)
-    ax.plot(x, y, color=C.accent, width=3.5)
-    ax.scatter(X, TRIPS, r=6.5, color=C.navy)
+    ax.area(x, y + half(x, 1), y - half(x, 1), color=C.steel2, anim=wipe(4.1, .7))
+    ax.area(x, y + half(x, 0), y - half(x, 0), color=C.sky, opacity=0.8, anim=wipe(2.7, .7))
+    ax.plot(x, y, color=C.accent, width=3.5, anim=draw(1.6, .6))
+    ax.scatter(X, TRIPS, r=6.5, color=C.navy, anim=seq(.6, .03, visual=.25))
     ax.legend([("95% prediction interval", {"kind": "area", "color": C.steel2}),
                ("95% confidence interval for mean", {"kind": "area", "color": C.sky, "opacity": 0.8})],
-              at="north west", size=26, row=40)
+              at="north west", size=26, row=40, anim=[pop(2.7), pop(4.1), pop(2.8)])
     return f.html()

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 14: Frequentist and Bayesian: what are we asking?</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
+<section class="slide">
+ <style>
+  .ask{margin-top:6px;grid-template-rows:auto auto auto auto}
+  .ask .qt{margin-top:30px;font-size:40px;font-weight:600;line-height:1.3}
+  .ask .qt>span:first-child{margin-left:-.42em}
+  .ask .say{margin-top:64px}
+  .ask .end{margin-top:64px}
+ </style>
+ <header class="head">
+  <h1 class="title">Frequentist and Bayesian: what are we asking?</h1>
+  <p class="lede">Suppose we tested 25 concrete cylinders. We want to learn the unknown population mean strength <span class="m"><span class="mi">𝜇</span></span>.</p>
+ </header>
+ <main class="body">
+  <div class="g ask">
+   <h2 class="h s6 r1" data-in="0.3">FREQUENTIST: evaluate a procedure</h2>
+   <p class="p qt c-navy lines s6 r2" data-in="0.9"><span>“If we repeated this sampling process,</span><span>how often would our method succeed?”</span></p>
+   <p class="p say lines s6 r3" data-in="1.6"><span>Imagine many possible samples of 25 tests.</span><span>Each gives a different mean and interval.</span><span>Assess the method across those samples.</span></p>
+   <p class="p b c-navy end lines s6 r4" data-in="2.5"><span>The population mean stays fixed.</span><span>The data and our estimates vary.</span></p>
+   <h2 class="h s6 o7 r1" data-in="3.4">BAYESIAN: update uncertainty</h2>
+   <p class="p qt c-blue lines s6 o7 r2" data-in="4.0"><span>“Given these measurements, which</span><span>values of <span class="m"><span class="mi">𝜇</span></span> are now more plausible?”</span></p>
+   <p class="p say lines s6 o7 r3" data-in="4.7"><span>Start with a prior over plausible <span class="m"><span class="mi">𝜇</span></span> values.</span><span>Use the data likelihood to reweight them.</span><span>The posterior describes updated uncertainty.</span></p>
+   <p class="p b c-blue end lines s6 o7 r4" data-in="5.6"><span><span class="m"><span class="mi">𝜇</span></span> can be physically fixed in both frameworks.</span><span>The Bayesian distribution represents what</span><span>we do not yet know about it.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take" data-in="6.5" data-as="fade">Both use a data model. They differ in how they describe uncertainty about the unknown.</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: two frameworks for reasoning from a finite sample</span><span class="src">Sources: [6], [10]</span><span class="num">14</span></p>
+ </footer>
+</section>
+
+<script type="application/json" id="deck-anim">{"length": 7.1, "label": "14", "stem": "s014"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

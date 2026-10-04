@@ -234,6 +234,7 @@
         case 'wipe': s.wipe = {r: seg(tau, p.d), dir: p.dir || 'right'}; break;
         case 'grow':
           s.sy *= spring(tau, p.v);
+          if (tau <= 0) s.o = 0;               // a bar of no height would still show its stroke
           if (p.b !== undefined) s.by = p.b;
           break;
         case 'keys':

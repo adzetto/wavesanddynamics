@@ -17,7 +17,14 @@ import math
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, pop, sample, seq
+
+# One cylinder, then the average of 25 (DECK_BRIEF.md "Animated slides"; the
+# blocks' moments are in s016.html): each panel's curve draws, its draws are
+# counted out along the axis and its spread is dimensioned; the second
+# panel keeps the first's curve faint behind it. The star comes with the
+# take-away.
+ANIM = {"length": 9.8}
 
 MU, SIGMA, N = 32.0, 3.0, 25
 SE = SIGMA / math.sqrt(N)
@@ -32,14 +39,14 @@ TITLE = {"size": 30, "weight": 700}
 X = np.linspace(20, 44, 1200)
 
 
-def _axes(f, box, first):
+def _axes(f, box, first, anim=None):
     return f.axes(*box, xlim=(20, 44), ylim=(0, 0.7), xticks=[20, 25, 30, 35, 40],
                   yticks=[0, 0.2, 0.4, 0.6], ytick_nd=1,
                   yticklabels=None if first else ["", "", "", ""],
-                  xlabel="Strength (MPa)", ylabel="Density" if first else None)
+                  xlabel="Strength (MPa)", ylabel="Density" if first else None, anim=anim)
 
 
-def _span(f, ax, a, b, y, color=C.accent, width=2.5):
+def _span(f, ax, a, b, y, color=C.accent, width=2.5, anim=None):
     """A dimension from a to b at height y (data): a two-headed arrow, or,
     where the span is too short for two heads, a line between two arrows
     that point in from outside (the drawing office's small dimension)."""
@@ -47,42 +54,45 @@ def _span(f, ax, a, b, y, color=C.accent, width=2.5):
     head = 6 * width + 4
     if xb - xa > 3 * head:
         m = (xa + xb) / 2
-        f.arrow((m, Y), (xa, Y), color=color, width=width)
-        f.arrow((m, Y), (xb, Y), color=color, width=width)
+        f.arrow((m, Y), (xa, Y), color=color, width=width, anim=anim)
+        f.arrow((m, Y), (xb, Y), color=color, width=width, anim=anim)
         return xb
-    f.line([(xa, Y), (xb, Y)], stroke=color, width=width, cap="butt")
-    f.arrow((xa - 1.6 * head, Y), (xa, Y), color=color, width=width)
-    f.arrow((xb + 1.6 * head, Y), (xb, Y), color=color, width=width)
+    f.line([(xa, Y), (xb, Y)], stroke=color, width=width, cap="butt", anim=anim)
+    f.arrow((xa - 1.6 * head, Y), (xa, Y), color=color, width=width, anim=anim)
+    f.arrow((xb + 1.6 * head, Y), (xb, Y), color=color, width=width, anim=anim)
     return xb + 1.6 * head
 
 
 def spread():
     f = Fig(W, H)
     # one cylinder
-    a = _axes(f, BOXES[0], True)
-    a.area(X, ONE.pdf(X), color=C.mist)
-    a.plot(X, ONE.pdf(X), color=C.navy, width=3)
-    a.scatter(TESTS, np.full(TESTS.shape, 0.032), r=7, color=C.paper, stroke=C.navy)
-    _span(f, a, MU - SIGMA, MU + SIGMA, 0.2)
+    a = _axes(f, BOXES[0], True, anim=fade(.8, .4))
+    a.area(X, ONE.pdf(X), color=C.mist, anim=fade(1.4, .5))
+    a.plot(X, ONE.pdf(X), color=C.navy, width=3, anim=draw(1.2, .7))
+    a.scatter(TESTS, np.full(TESTS.shape, 0.032), r=7, color=C.paper, stroke=C.navy,
+              anim=seq(2.0, .1))
+    _span(f, a, MU - SIGMA, MU + SIGMA, 0.2, anim=draw(3.3, .35))
     xm, ym = a.P(MU, 0.2)
-    f.text(xm, ym - 14, "<m>σ</m> = 3 MPa (± 1 SD)", "south", color=C.accent)
+    f.text(xm, ym - 14, "<m>σ</m> = 3 MPa (± 1 SD)", "south", color=C.accent, anim=pop(3.5))
     x0, y0, w0, _ = BOXES[0]
     f.text(x0 + w0 / 2, y0 - 14, "One cylinder: where a single test lands", "south",
-           color=C.navy, **TITLE)
+           color=C.navy, **TITLE, anim=pop(.9))
     # the average of 25
-    b = _axes(f, BOXES[1], False)
-    b.area(X, ONE.pdf(X), color=C.steel)
-    b.area(X, AVG.pdf(X), color=C.blue, opacity=0.3)
-    b.plot(X, AVG.pdf(X), color=C.blue, width=3)
-    b.scatter(MEANS, np.full(MEANS.shape, 0.032), r=7, color=C.paper, stroke=C.blue)
-    xe = _span(f, b, MU - SE, MU + SE, 0.36)
+    b = _axes(f, BOXES[1], False, anim=fade(5.3, .4))
+    b.area(X, ONE.pdf(X), color=C.steel, anim=fade(5.6, .4))
+    b.area(X, AVG.pdf(X), color=C.blue, opacity=0.3, anim=fade(6.3, .5))
+    b.plot(X, AVG.pdf(X), color=C.blue, width=3, anim=draw(6.1, .7))
+    b.scatter(MEANS, np.full(MEANS.shape, 0.032), r=7, color=C.paper, stroke=C.blue,
+              anim=seq(6.9, .1))
+    xe = _span(f, b, MU - SE, MU + SE, 0.36, anim=draw(8.0, .3))
     _, ye = b.P(MU, 0.36)
-    f.text(xe + 12, ye, "SE = 0.6 MPa", "west", color=C.accent)
+    f.text(xe + 12, ye, "SE = 0.6 MPa", "west", color=C.accent, anim=pop(8.1))
     xf, yf = b.P(37.6, 0.075)
-    f.text(xf, yf, "faint: single <br>cylinders", "south west", size=26, color=C.muted)
+    f.text(xf, yf, "faint: single <br>cylinders", "south west", size=26, color=C.muted,
+           anim=pop(5.7))
     x1, y1, w1, _ = BOXES[1]
     f.text(x1 + w1 / 2, y1 - 14, "Average of 25: where a sample mean lands", "south",
-           color=C.blue, **TITLE)
+           color=C.blue, **TITLE, anim=pop(5.4))
     return f.html()
 
 
@@ -92,5 +102,5 @@ def star():
     cx, cy = 20.0, 20.5
     pts = [(cx + (R if k % 2 == 0 else r) * math.sin(k * math.pi / 5),
             cy - (R if k % 2 == 0 else r) * math.cos(k * math.pi / 5)) for k in range(10)]
-    f.poly(pts, fill=C.navy)
+    f.poly(pts, fill=C.navy, anim=pop(9.1))
     return f.html()

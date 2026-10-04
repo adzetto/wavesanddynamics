@@ -13,24 +13,24 @@
  </header>
  <main class="body g calc">
   <div class="s6 stack">
-   <div class="eqs">
+   <div class="eqs" data-in="0.3">
     <p class="eq"><m>Prior variance v₀ = 2² = 4 MPa²</m></p>
     <p class="eq"><m>Data variance vᴅ = 3²/25 = 0.36 MPa²</m></p>
    </div>
-   <div class="eqs">
+   <div class="eqs" data-in="2.7">
     <p class="eq c-blue"><m>vₚ = 1/(1/4 + 1/0.36) = 0.3303 MPa²</m></p>
     <p class="eq c-blue"><m>Posterior SD = √vₚ = 0.575 MPa</m></p>
    </div>
-   <div class="eqs">
+   <div class="eqs" data-in="4.0">
     <p class="eq c-navy"><m>mₚ = (30/4 + 32/0.36)/(1/4 + 1/0.36)</m></p>
     <p class="eq c-navy"><span class="ph"><m>mₚ</m></span><m> = 0.0826 × 30 + 0.9174 × 32</m></p>
     <p class="eq c-navy"><span class="ph"><m>mₚ</m></span><m> = 31.83 MPa</m></p>
    </div>
-   <p class="p b c-accent">About 8% prior weight and 92% data weight.</p>
+   <p class="p b c-accent" data-in="4.9">About 8% prior weight and 92% data weight.</p>
   </div>
   <div class="s6 o7">
    <div data-fig="posterior"></div>
-   <div class="ci">
+   <div class="ci" data-in="5.9">
     <p class="p b c-blue">95% credible interval</p>
     <p class="eq c-blue"><m>31.835 ± 1.96(0.575) = [30.71, 32.96] MPa</m></p>
     <p class="note">95% posterior probability, given this model, prior and data.</p>
@@ -38,7 +38,7 @@
   </div>
  </main>
  <footer class="foot">
-  <p class="take">The more precise source receives more weight. More tests increase the data’s weight.</p>
+  <p class="take" data-in="6.8" data-as="fade">The more precise source receives more weight. More tests increase the data’s weight.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3: calculating the posterior mean and credible interval</span><span class="src">Sources: [10]</span><span class="num">19</span></p>
  </footer>
 </section>

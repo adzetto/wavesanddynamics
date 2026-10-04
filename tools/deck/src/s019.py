@@ -15,8 +15,14 @@ the axes, so the legend stands over the plot, at the axes' left edge."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, wipe
 from s013 import legend
+
+# The numbers and the picture together (DECK_BRIEF.md "Animated slides"; the
+# blocks' moments are in s019.html): the prior and the likelihood draw with
+# their variances, the posterior with its own, and the 95% credible
+# interval is uncovered under it as its block arrives.
+ANIM = {"length": 7.4}
 
 M0, V0, XBAR, VD = 30.0, 2.0 ** 2, 32.0, 3.0 ** 2 / 25
 VP = 1 / (1 / V0 + 1 / VD)
@@ -37,15 +43,16 @@ def posterior():
                 xticks=[26, 28, 30, 32, 34, 36], yticks=[0, 0.2, 0.4, 0.6], ytick_nd=1,
                 xlabel="Unknown population mean <m>μ</m> (MPa)",
                 ylabel='<span style="display:block;text-align:center">Density / <br>scaled likelihood</span>',
-                ylabel_gap=104)
+                ylabel_gap=104, anim=fade(.8, .4))
     ci = np.linspace(LO, HI, 400)
-    ax.area(ci, POST.pdf(ci), color=C.blue, opacity=0.18)
+    ax.area(ci, POST.pdf(ci), color=C.blue, opacity=0.18, anim=wipe(5.4, .6))
     x = np.linspace(26, 36, 1000)
-    ax.plot(x, PRIOR.pdf(x), color=C.navy, width=3, dash="10 6")
-    ax.plot(x, LIKE.pdf(x), color=C.accent, width=3.5)
-    ax.plot(x, POST.pdf(x), color=C.blue, width=4.5)
+    ax.plot(x, PRIOR.pdf(x), color=C.navy, width=3, dash="10 6", anim=draw(1.2, .6))
+    ax.plot(x, LIKE.pdf(x), color=C.accent, width=3.5, anim=draw(1.9, .6))
+    ax.plot(x, POST.pdf(x), color=C.blue, width=4.5, anim=draw(3.2, .7))
     legend(ax, [("Prior: mean 30, SD 2", {"color": C.navy, "width": 3, "dash": "10 6"}),
                 ("Likelihood (scaled to unit area)", {"color": C.accent, "width": 3.5}),
                 ("Posterior: mean 31.83, SD 0.575", {"color": C.blue, "width": 4.5})],
-           at=(160, 4), size=24, row=34, pad=14, sample=40, gap=10)
+           at=(160, 4), size=24, row=34, pad=14, sample=40, gap=10,
+           anim=[pop(1.2), pop(1.3), pop(2.0), pop(3.3)])
     return f.html()

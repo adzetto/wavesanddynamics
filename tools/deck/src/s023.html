@@ -11,29 +11,29 @@
  </header>
  <main class="body g">
   <div class="s5 stack">
-   <div class="model">
+   <div class="model" data-in="0.3">
     <h2 class="h">The model</h2>
     <p class="eq c-blue"><m>Y | x ~ N(β₀ + β₁x, σ²)</m></p>
     <p class="ps">The line is the mean at each <m>x</m>; <m>σ</m> is the scatter.</p>
    </div>
-   <div class="gives">
+   <div class="gives" data-in="7.5">
     <h2 class="h">What that gives us</h2>
     <p class="ps">Least squares = maximum likelihood here</p>
     <p class="ps">Prediction intervals for a new test (slide 24)</p>
     <p class="ps">Probabilities: <m>P(Y &lt; 25 MPa | x = 0.55) = 2.3%</m></p>
    </div>
-   <div>
+   <div data-in="8.3">
     <h2 class="h">Same idea, other outcomes</h2>
     <p class="ps lines"><span>Counts: Poisson regression.</span><span>Yes/no: logistic regression, fragility curves.</span></p>
    </div>
   </div>
   <div class="s7 o6 fig23">
    <div data-fig="model"></div>
-   <p class="note">Illustrative data: <m>β₀ = 75</m> MPa, <m>β₁ = −80</m> MPa, <m>σ = 3</m> MPa</p>
+   <p class="note" data-in="0.9" data-as="fade">Illustrative data: <m>β₀ = 75</m> MPa, <m>β₁ = −80</m> MPa, <m>σ = 3</m> MPa</p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">The line is the mean of a distribution; the scatter around it is part of the model.</p>
+  <p class="take" data-in="9.1" data-as="fade">The line is the mean of a distribution; the scatter around it is part of the model.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 2: regression, used as a probability model</span><span class="src">Sources: [6], [12], [13]</span><span class="num">23</span></p>
  </footer>
 </section>

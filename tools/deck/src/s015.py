@@ -17,8 +17,14 @@ of the second is set on two lines to stay within its axis."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, pop, sample
 from s013 import legend
+
+# The frequentist column, then the Bayesian (DECK_BRIEF.md "Animated slides";
+# the blocks' moments are in s015.html): the fixed true mean, then the 25
+# repeated intervals one by one from the first sample up; the prior, the
+# likelihood and the posterior, each with its legend entry.
+ANIM = {"length": 9.9}
 
 SIGMA, N, MU = 3.0, 25, 32.0
 SE = SIGMA / np.sqrt(N)
@@ -42,13 +48,13 @@ def repeated():
     f = Fig(W, H)
     ax = f.axes(*BOX, xlim=(29, 35), ylim=(0, 26), xticks=[30, 31, 32, 33, 34],
                 yticks=[1, 5, 10, 15, 20, 25], xlabel="Mean strength (MPa)",
-                ylabel="Repeated sample")
-    ax.vline(MU, color=C.blue, width=2.5, dash="8 6")
+                ylabel="Repeated sample", anim=fade(1.1, .4))
+    ax.vline(MU, color=C.blue, width=2.5, dash="8 6", anim=draw(1.5, .4))
     for i, (m, miss) in enumerate(zip(MEANS, MISS), start=1):
         f.line(ax._pts([m - HALF, m + HALF], [i, i]), stroke=C.accent if miss else C.navy,
-               width=4.5, cap="butt", clip=ax.clip)
+               width=4.5, cap="butt", clip=ax.clip, anim=draw(1.925 + .075 * i, .25))
     X, _ = ax.P(MU, 0)
-    f.text(X, BOX[1] - 12, "Fixed true mean", "south", color=C.blue)
+    f.text(X, BOX[1] - 12, "Fixed true mean", "south", color=C.blue, anim=pop(1.6))
     return f.html()
 
 
@@ -57,13 +63,14 @@ def update():
     ax = f.axes(*BOX, xlim=(26, 36), ylim=(0, 0.8), xticks=[26, 28, 30, 32, 34, 36],
                 yticks=[0, 0.2, 0.4, 0.6], ytick_nd=1, xlabel="Unknown mean <m>μ</m> (MPa)",
                 ylabel='<span style="display:block;text-align:center">Density / <br>scaled likelihood</span>',
-                ylabel_gap=104)
+                ylabel_gap=104, anim=fade(5.8, .4))
     x = np.linspace(26, 36, 1000)
-    ax.plot(x, PRIOR.pdf(x), color=C.navy, width=3, dash="10 6")
-    ax.plot(x, LIKE.pdf(x), color=C.accent, width=3.5)
-    ax.plot(x, POST.pdf(x), color=C.blue, width=4.5)
+    ax.plot(x, PRIOR.pdf(x), color=C.navy, width=3, dash="10 6", anim=draw(6.2, .6))
+    ax.plot(x, LIKE.pdf(x), color=C.accent, width=3.5, anim=draw(6.9, .6))
+    ax.plot(x, POST.pdf(x), color=C.blue, width=4.5, anim=draw(7.6, .7))
     legend(ax, [("Prior", {"color": C.navy, "width": 3, "dash": "10 6"}),
                 ("Likelihood (scaled)", {"color": C.accent, "width": 3.5}),
                 ("Posterior", {"color": C.blue, "width": 4.5})], at="north west",
-           size=24, row=34, pad=14, sample=40, gap=10)
+           size=24, row=34, pad=14, sample=40, gap=10,
+           anim=[pop(6.2), pop(6.3), pop(7.0), pop(7.7)])
     return f.html()

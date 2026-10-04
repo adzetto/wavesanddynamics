@@ -13,7 +13,12 @@ DATA and FIT are shared with slide 24, which draws its two bands on them."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, pop, sample, seq
+
+# The survey, then the fit (DECK_BRIEF.md "Animated slides"; the blocks'
+# moments are in s022.html): the households are counted out by size, then
+# the least-squares line draws through them.
+ANIM = {"length": 5.6}
 
 B0, B1, SIGMA = 1.03, 1.80, 1.0
 X = np.repeat(np.arange(1, 7), 5).astype(float)          # persons per household
@@ -30,9 +35,10 @@ def trips():
     f = Fig(976, 652)
     ax = f.axes(120, 14, 838, 502, xlim=(0.4, 6.6), ylim=(0.8, 14.8),
                 xticks=range(1, 7), yticks=range(2, 15, 2),
-                xlabel="Persons per household", ylabel="Daily household trips", grid=True)
+                xlabel="Persons per household", ylabel="Daily household trips", grid=True,
+                anim=fade(.8, .4))
     xs = np.array([0.6, 6.4])
-    ax.plot(xs, fitted(xs), color=C.accent, width=4.5)
-    ax.scatter(X, TRIPS, r=8, color=C.navy)
-    f.text(ax.x + 26, ax.y + 22, "Illustrative survey data", "north west")
+    ax.plot(xs, fitted(xs), color=C.accent, width=4.5, anim=draw(3.0, .7))
+    ax.scatter(X, TRIPS, r=8, color=C.navy, anim=seq(1.2, .05, visual=.25))
+    f.text(ax.x + 26, ax.y + 22, "Illustrative survey data", "north west", anim=pop(1.0))
     return f.html()

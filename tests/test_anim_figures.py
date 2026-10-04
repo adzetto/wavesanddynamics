@@ -46,11 +46,13 @@ def test_each_of_his_files_redraws_the_pictures_it_was_matched_to():
         assert json.load(fh) == EXPECTED
     # every page in content/anim/ redraws a picture: anim.json's, or one of a
     # fragment's (anim.<name>.json, a set drawn apart), and none is left over
+    # (a picture redrawn as several figures names a list of them)
     mapped = {f for pics in EXPECTED.values() for f in pics.values()}
     for n in os.listdir(ANIM):
         if re.fullmatch(r"anim\.[\w-]+\.json", n):
             with open(os.path.join(ANIM, n), encoding="utf-8") as fh:
-                mapped |= {f for pics in json.load(fh).values() for f in pics.values()}
+                mapped |= {f for pics in json.load(fh).values() for v in pics.values()
+                           for f in (v if isinstance(v, list) else [v])}
     files = sorted(n for n in os.listdir(ANIM) if n.endswith(".html"))
     # or it is drawn only as a Big Picture card (tools/bp_art.py picks its still)
     with open(os.path.join(ROOT, "tools", "bp_art.py"), encoding="utf-8") as fh:
@@ -76,8 +78,9 @@ def test_the_frame_takes_the_canvas_ratio_and_the_title_without_its_number():
     # his documents, and any other a fragment redraws (each page a title and a size)
     assert set(EXPECTED) <= set(got)
     for slug in set(got) - set(EXPECTED):
-        for a in got[slug].values():
-            assert a["title"] and a["w"] > 0 and a["h"] > 0 and a["src"].startswith("../anim/nf-")
+        for v in got[slug].values():
+            for a in (v if isinstance(v, list) else [v]):
+                assert a["title"] and a["w"] > 0 and a["h"] > 0 and a["src"].startswith("../anim/nf-")
     # his last two files are redrawn too (round 11): every frame is an nf- page
     sizes = {"nf-shm-sensors.html": (1000, 500), "nf-shm-ndt.html": (1000, 548)}
     for name in NUMFIG.values():              # drawn 1000 wide, as tall as each needs
@@ -158,6 +161,42 @@ def test_a_figure_redrawn_from_a_model_prints_its_own_frame(tmp_path):
     assert "still" not in MOVE["image12"] and 'src="../fig/d/image12.webp"' in _draw(MOVE)
 
 
+def test_one_picture_redrawn_as_several_figures_shows_each_over_one_caption(tmp_path):
+    # Figure 18 of the machine learning guide: what one neuron computes, then many
+    # neurons together, each a figure of its own that fills the screen
+    from PIL import Image
+    (tmp_path / "anim.json").write_text('{"doc": {"image12": ["nf-a.html", "nf-b.html"]}}', encoding="utf-8")
+    for n, h in (("a", 640), ("b", 540)):
+        (tmp_path / f"nf-{n}.html").write_text(
+            f"<title>Figure 18{n}: Part {n}</title><script>const W = 1000, H = {h};</script>", encoding="utf-8")
+        Image.new("RGB", (1344, round(1.344 * h)), "white").save(tmp_path / f"nf-{n}.webp")
+    parts = preview.animations("../anim", str(tmp_path))["doc"]["image12"]
+    assert [a["src"] for a in parts] == ["../anim/nf-a.html", "../anim/nf-b.html"]
+    assert [a["title"] for a in parts] == ["Part a", "Part b"] and [a["h"] for a in parts] == [640, 540]
+    moving = _draw({"image12": parts})
+    cap = re.search(r"<figcaption>.*?</figcaption>", _draw(None)).group(0)
+    # one figure, each part a frame with its own button and printed frame, the caption once, last
+    assert moving.startswith('<figure class="fig--parts"><div class="fig--anim"><iframe class="anim" '
+                             'src="../anim/nf-a.html"') and moving.endswith(cap + "</figure>")
+    assert moving.count('<div class="fig--anim">') == 2 and moving.count(preview.FULL) == 2
+    assert moving.count("<figcaption>") == 1 and moving.count("<iframe") == 2
+    assert 'style="aspect-ratio:1000/640"' in moving and 'style="aspect-ratio:1000/540"' in moving
+    stills = re.findall(r'<img class="anim__still" ([^>]*)>', moving)
+    assert [re.search(r'src="([^"]+)"', st).group(1) for st in stills] == ["../anim/nf-a.webp", "../anim/nf-b.webp"]
+    # each part is a figure of its own to the page's script and styles (full screen, spacing)
+    from parts import docs
+    assert ".docpage .fig--parts>.fig--anim+.fig--anim{" in docs.CSS
+    assert "document.querySelectorAll('.docpage .fig--anim')" in docs.JS
+    # every part prints its frame, and a picture needs two parts at least
+    (tmp_path / "nf-b.webp").unlink()
+    with pytest.raises(ValueError, match="printed frame"):
+        preview.animations("../anim", str(tmp_path))
+    # and the real Figure 18 is two such figures in the guide
+    with open(os.path.join(ANIM, "anim.ml-b.json"), encoding="utf-8") as fh:
+        ml = json.load(fh)["machine-learning-the-complete-picture-and-guide-5"]
+    assert ml["image15"] == ["nf-mlb-neuron.html", "nf-mlb-uat.html"]
+
+
 def test_the_page_shows_the_frame_only_where_a_script_runs_and_the_picture_on_paper():
     from parts import docs
     css = docs.CSS
@@ -191,9 +230,10 @@ def test_his_figures_keep_their_numbers_and_captions(slug, monkeypatch):
     assert caps == [re.findall(r"<figcaption>.*?</figcaption>", f) for f in after]
     # the picture each frame stands for, read from the page before the frames
     # (a redrawn figure prints its own frame, so its picture's name is gone)
-    moved = {re.search(r"/(image\d+)\.webp", was).group(1):
-             re.search(r'src="\.\./anim/([^"]+)"', now).group(1)
-             for was, now in zip(before, after) if "<iframe" in now}
+    # (a picture redrawn as several figures stands for the list of them)
+    moved = {re.search(r"/(image\d+)\.webp", was).group(1): srcs if len(srcs) > 1 else srcs[0]
+             for was, now in zip(before, after) if "<iframe" in now
+             for srcs in [re.findall(r'<iframe class="anim" src="\.\./anim/([^"]+)"', now)]}
     # anim.json's pictures of the document and its fragments' (anim.<name>.json),
     # those in its body (a cover in the head is drawn apart)
     want = dict(EXPECTED[slug])

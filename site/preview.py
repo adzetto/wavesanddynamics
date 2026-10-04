@@ -915,6 +915,8 @@ def _image(node, figdir, role):
         if isinstance(w, int) and isinstance(h, int):
             w, h = max(1, round(w / 2)), max(1, round(h / 2))
         anim = _PLAN["anim"].get(os.path.splitext(img["src"]["id"])[0])
+        if isinstance(anim, list):       # a cell holds one frame: the first of a picture's parts
+            anim = anim[0]
         if anim:
             return _in_cell(anim, src, alt, w, h, cap)
         return (f'<figure><img src="{src}" alt="{alt}" width="{w}" height="{h}" '
@@ -924,6 +926,8 @@ def _image(node, figdir, role):
     if meta.get("src720"):
         srcset = f' srcset="{meta["src720"]} 720w, {src} {w}w" sizes="{meta["sizes"]}"'
     anim = _PLAN["anim"].get(os.path.splitext(img["src"]["id"])[0])
+    if isinstance(anim, list):           # one picture redrawn as several figures
+        return _animated_parts(anim, alt, cap)
     if anim:
         if anim.get("still"):            # a redrawn figure prints its own frame
             still = anim["still"]
@@ -999,6 +1003,12 @@ def animations(href="../anim", src=ANIM_SRC):
     in the same shape (tools/numfig/: a document's figures, a table's
     drawings), so the people drawing them never write one file at once. A
     picture named twice stops the build.
+
+    A picture may be redrawn as several figures, a list of files in the
+    place of one (Figure 18 of the machine learning guide: what one neuron
+    computes, then many neurons together, each large enough to fill the
+    screen): its entry is then the list of their entries, in order, and each
+    must print its own frame (paper shows the frames one after another).
     """
     path = os.path.join(src, "anim.json")
     if not os.path.isfile(path):
@@ -1014,27 +1024,39 @@ def animations(href="../anim", src=ANIM_SRC):
                     raise ValueError(f"content/anim/{extra}: {slug} {sorted(twice)} named twice")
                 have.update(pictures)
     files, out = {}, {}
+
+    def load(name):
+        if name not in files:
+            with open(os.path.join(src, name), encoding="utf-8") as fh:
+                text = fh.read()
+            size, title = CANVAS.search(text), re.search(r"<title>(.*?)</title>", text, re.S)
+            if not size or not title:
+                raise ValueError(f"content/anim/{name}: no <title>, or no canvas size "
+                                 f"(const W = ..., H = ...)")
+            name_ = " ".join(html.unescape(title.group(1)).split())
+            files[name] = {"src": f"{href}/{name}", "w": int(size.group(1)),
+                           "h": int(size.group(2)),
+                           "title": FIGNO.sub("", name_, count=1).strip() or name_}
+            frame = os.path.join(src, os.path.splitext(name)[0] + ".webp")
+            if os.path.isfile(frame):
+                from PIL import Image
+                with Image.open(frame) as im:
+                    fw, fh_ = im.size
+                files[name]["still"] = {"src": f"{href}/{os.path.splitext(name)[0]}.webp",
+                                        "w": fw, "h": fh_}
+        return files[name]
+
     for slug, pictures in wanted.items():
         for stem, name in pictures.items():
-            if name not in files:
-                with open(os.path.join(src, name), encoding="utf-8") as fh:
-                    text = fh.read()
-                size, title = CANVAS.search(text), re.search(r"<title>(.*?)</title>", text, re.S)
-                if not size or not title:
-                    raise ValueError(f"content/anim/{name}: no <title>, or no canvas size "
-                                     f"(const W = ..., H = ...)")
-                name_ = " ".join(html.unescape(title.group(1)).split())
-                files[name] = {"src": f"{href}/{name}", "w": int(size.group(1)),
-                               "h": int(size.group(2)),
-                               "title": FIGNO.sub("", name_, count=1).strip() or name_}
-                frame = os.path.join(src, os.path.splitext(name)[0] + ".webp")
-                if os.path.isfile(frame):
-                    from PIL import Image
-                    with Image.open(frame) as im:
-                        fw, fh_ = im.size
-                    files[name]["still"] = {"src": f"{href}/{os.path.splitext(name)[0]}.webp",
-                                            "w": fw, "h": fh_}
-            out.setdefault(slug, {})[stem] = files[name]
+            if isinstance(name, list):
+                parts = [load(n) for n in name]
+                if len(parts) < 2 or not all("still" in a for a in parts):
+                    raise ValueError(f"content/anim: {slug} {stem} is redrawn as {name}: a picture "
+                                     f"redrawn as several figures needs two at least, each with "
+                                     f"its printed frame (nf-*.webp)")
+                out.setdefault(slug, {})[stem] = parts
+            else:
+                out.setdefault(slug, {})[stem] = load(name)
     return out
 
 
@@ -1050,6 +1072,25 @@ def _animated(anim, still, cap):
             f'title="{html.escape(anim["title"])}" loading="lazy" '
             f'style="aspect-ratio:{anim["w"]}/{anim["h"]}"></iframe>{FULL}'
             f'<img class="anim__still" {still} loading="lazy" decoding="async">{cap}</figure>')
+
+
+def _animated_parts(parts, alt, cap):
+    """One picture of his redrawn as several moving figures (animations():
+    Figure 18 of the machine learning guide, what one neuron computes and then
+    many neurons together): each part a frame of its own, with its own full
+    screen button and its own printed frame, one after another over the
+    picture's one caption. A part is _animated()'s frame without the caption,
+    in a <div> of the same class, so the page's script and styles take each
+    for a figure of its own; the caption is the <figure>'s. The picture's alt
+    text goes with the first part's printed frame."""
+    out = []
+    for k, a in enumerate(parts):
+        st = a["still"]
+        still = (f'src="{st["src"]}" alt="{alt if k == 0 else ""}" width="{st["w"]}" '
+                 f'height="{st["h"]}"')
+        out.append(_animated(a, still, "").replace('<figure class="fig--anim">', '<div class="fig--anim">', 1)
+                   [:-len("</figure>")] + "</div>")
+    return f'<figure class="fig--parts">{"".join(out)}{cap}</figure>'
 
 
 # The button that shows a moving figure full screen (parts/docs.py runs it):

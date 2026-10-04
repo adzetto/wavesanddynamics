@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 18b: Why repeating that computation across many neurons lets a network approximate almost any function (the universal approximation theorem)</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+.ctl button{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.ctl button svg{width:12px;height:12px;fill:currentColor;}
+.ctl #rs svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ctl button:focus-visible{outline:2px solid #095A94;outline-offset:2px;}
+/* small frames */@media (max-width:480px){.ctl{right:3px;bottom:3px;gap:4px;}.ctl button{width:22px;height:22px;}.ctl button svg{width:10px;height:10px;}}@media (max-width:300px){#rs{display:none;}.ctl{opacity:.3;}.ctl button{width:18px;height:18px;}.ctl button svg{width:8px;height:8px;}}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 540;
+const DATA = {"xs":[0.0,0.00417,0.00833,0.0125,0.01667,0.02083,0.025,0.02917,0.03333,0.0375,0.04167,0.04583,0.05,0.05417,0.05833,0.0625,0.06667,0.07083,0.075,0.07917,0.08333,0.0875,0.09167,0.09583,0.1,0.10417,0.10833,0.1125,0.11667,0.12083,0.125,0.12917,0.13333,0.1375,0.14167,0.14583,0.15,0.15417,0.15833,0.1625,0.16667,0.17083,0.175,0.17917,0.18333,0.1875,0.19167,0.19583,0.2,0.20417,0.20833,0.2125,0.21667,0.22083,0.225,0.22917,0.23333,0.2375,0.24167,0.24583,0.25,0.25417,0.25833,0.2625,0.26667,0.27083,0.275,0.27917,0.28333,0.2875,0.29167,0.29583,0.3,0.30417,0.30833,0.3125,0.31667,0.32083,0.325,0.32917,0.33333,0.3375,0.34167,0.34583,0.35,0.35417,0.35833,0.3625,0.36667,0.37083,0.375,0.37917,0.38333,0.3875,0.39167,0.39583,0.4,0.40417,0.40833,0.4125,0.41667,0.42083,0.425,0.42917,0.43333,0.4375,0.44167,0.44583,0.45,0.45417,0.45833,0.4625,0.46667,0.47083,0.475,0.47917,0.48333,0.4875,0.49167,0.49583,0.5,0.50417,0.50833,0.5125,0.51667,0.52083,0.525,0.52917,0.53333,0.5375,0.54167,0.54583,0.55,0.55417,0.55833,0.5625,0.56667,0.57083,0.575,0.57917,0.58333,0.5875,0.59167,0.59583,0.6,0.60417,0.60833,0.6125,0.61667,0.62083,0.625,0.62917,0.63333,0.6375,0.64167,0.64583,0.65,0.65417,0.65833,0.6625,0.66667,0.67083,0.675,0.67917,0.68333,0.6875,0.69167,0.69583,0.7,0.70417,0.70833,0.7125,0.71667,0.72083,0.725,0.72917,0.73333,0.7375,0.74167,0.74583,0.75,0.75417,0.75833,0.7625,0.76667,0.77083,0.775,0.77917,0.78333,0.7875,0.79167,0.79583,0.8,0.80417,0.80833,0.8125,0.81667,0.82083,0.825,0.82917,0.83333,0.8375,0.84167,0.84583,0.85,0.85417,0.85833,0.8625,0.86667,0.87083,0.875,0.87917,0.88333,0.8875,0.89167,0.89583,0.9,0.90417,0.90833,0.9125,0.91667,0.92083,0.925,0.92917,0.93333,0.9375,0.94167,0.94583,0.95,0.95417,0.95833,0.9625,0.96667,0.97083,0.975,0.97917,0.98333,0.9875,0.99167,0.99583,1.0],"g":[0.08866,0.15973,0.22832,0.29372,0.35527,0.4124,0.46457,0.51132,0.55229,0.5872,0.61585,0.63814,0.65406,0.66369,0.6672,0.66485,0.65697,0.64398,0.62634,0.60459,0.5793,0.55109,0.5206,0.48849,0.4554,0.422,0.3889,0.35671,0.32598,0.29721,0.27087,0.24733,0.2269,0.20981,0.19622,0.1862,0.17973,0.17672,0.177,0.18032,0.18635,0.19472,0.20498,0.21665,0.22919,0.24206,0.25468,0.26648,0.27687,0.28531,0.29126,0.29424,0.29378,0.28951,0.28109,0.26827,0.25087,0.2288,0.20203,0.17065,0.1348,0.09473,0.05076,0.00328,-0.04723,-0.10024,-0.15515,-0.21134,-0.26814,-0.32483,-0.38071,-0.43505,-0.48716,-0.53633,-0.58192,-0.6233,-0.6599,-0.69122,-0.71684,-0.73638,-0.74957,-0.75623,-0.75626,-0.74965,-0.7365,-0.71697,-0.69134,-0.65997,-0.62328,-0.58177,-0.53601,-0.48663,-0.43429,-0.37969,-0.32355,-0.2666,-0.20959,-0.15324,-0.09823,-0.04524,0.00512,0.05228,0.09574,0.13507,0.16992,0.20001,0.22516,0.24526,0.26032,0.27039,0.27565,0.27634,0.27276,0.26531,0.25444,0.24065,0.22447,0.20649,0.1873,0.16752,0.14775,0.12859,0.11061,0.09437,0.08035,0.069,0.06071,0.0558,0.05451,0.05701,0.06339,0.07364,0.08768,0.10535,0.12641,0.15054,0.17734,0.20637,0.23712,0.26903,0.30151,0.33394,0.36569,0.39612,0.42459,0.4505,0.47326,0.49232,0.50719,0.51743,0.52268,0.52263,0.51708,0.50588,0.48901,0.4665,0.43848,0.40518,0.36691,0.32405,0.27706,0.22647,0.17287,0.11691,0.05925,0.000609737,-0.05828,-0.11669,-0.17389,-0.22916,-0.28182,-0.33122,-0.37676,-0.4179,-0.45417,-0.48517,-0.51058,-0.53017,-0.54379,-0.55139,-0.553,-0.54875,-0.53886,-0.52362,-0.50341,-0.47867,-0.44992,-0.41771,-0.38265,-0.3454,-0.3066,-0.26694,-0.2271,-0.18773,-0.14949,-0.11299,-0.07878,-0.04739,-0.01926,0.00522,0.02575,0.0421,0.05412,0.06175,0.06502,0.06403,0.05899,0.05016,0.03789,0.02258,0.0047,-0.01523,-0.03665,-0.05897,-0.08159,-0.10389,-0.12526,-0.1451,-0.16285,-0.17796,-0.18996,-0.19839,-0.2029,-0.20318,-0.19901,-0.19025,-0.17684,-0.1588,-0.13625,-0.10938,-0.07848,-0.04389,-0.00605,0.03455,0.07736,0.12178,0.16718,0.21289,0.25822,0.30251,0.34506],"nets":[{"n":1,"base":0.46713,"v":[-0.26596],"w":[15.89754],"m":[0.18983],"rms":0.30026},{"n":2,"base":0.31004,"v":[-0.4,0.25912],"w":[43.55753,81.67427],"m":[0.26819,0.39854],"rms":0.2371},{"n":3,"base":0.30987,"v":[-0.4,0.37946,-0.21582],"w":[43.58009,47.67473,102.7013],"m":[0.26821,0.40882,0.68364],"rms":0.17681},{"n":4,"base":0.30987,"v":[-0.4,0.37939,-0.4,0.25548],"w":[43.58183,47.68667,47.88587,49.95755],"m":[0.26821,0.40881,0.69794,0.79451],"rms":0.14013},{"n":5,"base":0.51358,"v":[-0.14018,-0.4,0.4,-0.38286,0.25606],"w":[83.34577,46.42916,46.12471,50.2695,49.70205],"m":[0.11082,0.27502,0.40408,0.69933,0.79443],"rms":0.11572},{"n":6,"base":0.51362,"v":[-0.16437,-0.4,0.38868,0.11261,-0.4,0.19573],"w":[65.03179,47.2279,49.18967,107.61224,49.67269,71.92726],"m":[0.11465,0.27909,0.39903,0.5798,0.68838,0.80138],"rms":0.09749},{"n":7,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.19573],"w":[38.95579,33.40041,47.26094,48.8183,107.61858,49.67247,71.93022],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.80138],"rms":0.08311},{"n":8,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.17191,0.20178],"w":[38.95579,33.40036,47.2609,48.81794,107.61727,49.67031,84.84154,75.21475],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.79866,0.98025],"rms":0.06995},{"n":9,"base":-0.09409,"v":[0.4,-0.25742,-0.4,0.4,0.21374,-0.4,-0.4,0.36826,0.26882],"w":[39.27133,35.93609,46.99091,47.94162,56.36128,38.60789,5.61603,41.74054,55.30448],"m":[0.01381,0.10077,0.27884,0.39949,0.5857,0.68763,0.77361,0.79605,0.97678],"rms":0.05111},{"n":10,"base":-0.09863,"v":[0.4,-0.25252,-0.4,0.4,0.3806,-0.4,-0.4,0.37054,-0.18393,0.4],"w":[39.44007,37.35903,47.04416,47.89785,36.6838,10.61867,33.13672,30.5821,34.58405,28.24446],"m":[0.01351,0.10063,0.27818,0.40037,0.58832,0.62833,0.69337,0.79796,0.89145,0.97984],"rms":0.04356},{"n":11,"base":-0.10896,"v":[0.4,-0.21905,-0.4,0.2725,0.35803,-0.4,0.2864,-0.4,0.4,-0.4,0.3053],"w":[40.1973,46.24486,40.91069,57.33875,44.462,6.5692,42.28099,39.29547,39.21365,6.585,47.72666],"m":[0.0126,0.09857,0.28088,0.37824,0.41733,0.44109,0.58021,0.6873,0.79842,0.82244,0.97559],"rms":0.03306},{"n":12,"base":-0.11367,"v":[0.4,-0.2255,-0.16959,-0.3381,0.36163,0.17804,0.35168,-0.4,-0.4,0.33331,-0.16695,0.39998],"w":[40.16851,45.47677,67.52343,40.47629,39.2516,65.1343,40.04048,8.16774,37.84524,36.06653,38.24303,28.29947],"m":[0.01247,0.09889,0.26041,0.29703,0.38259,0.41987,0.58319,0.59854,0.69135,0.7998,0.89289,0.98036],"rms":0.02495},{"n":13,"base":-0.11411,"v":[0.4,-0.26805,-0.29159,-0.39554,0.4,0.4,-0.16503,0.29475,-0.39997,-0.24471,0.4,-0.21083,0.4],"w":[39.58503,37.53224,46.28712,39.94312,7.67948,33.02679,42.3698,28.1102,29.02055,35.0758,25.57864,30.79521,28.27351],"m":[0.01285,0.10145,0.25927,0.301,0.32753,0.39905,0.49821,0.58588,0.67287,0.71229,0.79717,0.88912,0.97919],"rms":0.01137},{"n":14,"base":-0.07075,"v":[0.4,-0.30085,0.12181,-0.26998,-0.4,0.32511,0.38546,-0.27781,0.39491,-0.4,-0.27205,0.4,-0.20884,0.4],"w":[38.91289,28.63932,33.9283,28.34951,25.19319,25.57594,24.002,22.86652,22.09335,27.83058,33.36469,25.7159,31.09882,28.2697],"m":[0.01533,0.10363,0.18819,0.26286,0.30077,0.37646,0.41405,0.49462,0.58242,0.66985,0.71002,0.79696,0.88926,0.97926],"rms":0.00302}]};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      ctx.font = font({ size, italic: it });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+/* ------------------------------------------------ mlb: machine learning figures */
+const S = .28;                                   // a label arriving: settle(t0, S)
+const lab = t0 => settle(t0, S);
+const rise = s => 5 * (1 - s);                   // ... settling 5 units into place
+/* the classes: crimson and purple, and blue for a third group. Figure 14's
+   caption names its classes orange and purple, so that figure (mlb_knn.py)
+   adds K.orange for itself */
+const K = {
+  red: C.amber, redEdge: C.accent,
+  purple: '#6A4F94', purpleEdge: '#46315F',
+  blue: '#2E6A9E', blueEdge: C.navy,
+};
+const CLS = [[K.red, K.redEdge], [K.purple, K.purpleEdge], [K.blue, K.blueEdge]];
+const HOLLOW = ['#FFFFFF', C.guide];
+/* a colour between two, as #rrggbb (so mixes can be mixed again) */
+const _h2 = v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0');
+function mixHex(a, b, s) {
+  const A = _hex(a), B = _hex(b);
+  return '#' + _h2(lerp(A[0], B[0], s)) + _h2(lerp(A[1], B[1], s)) + _h2(lerp(A[2], B[2], s));
+}
+/* a mark as pgfplots draws it: circle, square, triangle or a five pointed star */
+function mark(kind, x, y, r, o = {}) {
+  const { fill = '#fff', stroke = C.ink, width = 1.2, alpha = 1 } = o;
+  if (alpha <= 0 || r <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath();
+  if (kind === 'star') {
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * .45 : r;
+      if (i) ctx.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); else ctx.moveTo(x + q * Math.cos(a), y + q * Math.sin(a));
+    }
+    ctx.closePath();
+  } else if (kind === 'square') ctx.rect(x - r, y - r, 2 * r, 2 * r);
+  else if (kind === 'triangle') { ctx.moveTo(x, y - r * 1.15); ctx.lineTo(x + r, y + r * .7); ctx.lineTo(x - r, y + r * .7); ctx.closePath(); }
+  else ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.stroke(); }
+  ctx.restore();
+}
+/* a cross (a cluster center): two strokes over a white halo */
+function cross(x, y, r, o = {}) {
+  const { color = C.ink, width = 3, alpha = 1 } = o;
+  if (alpha <= 0) return;
+  for (const [c, w] of [['#fff', width + 3.2], [color, width]]) {
+    line([[x - r, y - r], [x + r, y + r]], { color: c, width: w, alpha });
+    line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
+  }
+}
+/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+   [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
+function legend(x, y, w, rows, o = {}) {
+  const { alpha = 1, rowH = 22, size = 15 } = o;
+  if (alpha <= 0) return;
+  const h = rows.length * rowH + 10;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h); ctx.restore();
+  rows.forEach(([key, words, asMath], i) => {
+    const yy = y + 5 + rowH * (i + .5);
+    key(x + 22, yy, alpha);
+    if (asMath) math(words, x + 42, yy + size * .34, { size, alpha });
+    else text(words, x + 42, yy + size * .34, { size, alpha });
+  });
+  return h;
+}
+/* a filled and outlined rectangle */
+function rect(x, y, w, h, o = {}) {
+  const { fill = null, stroke = C.ink, width = 1.2, alpha = 1, dash = null } = o;
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (fill) { ctx.fillStyle = fill; ctx.fillRect(x, y, w, h); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
+  ctx.restore();
+}
+/* an n by m grid of cells from (x, y), cell size s, colour col(i, j) or null */
+function cells(x, y, n, m, s, col, o = {}) {
+  const { alpha = 1, gridColor = C.rule, gridWidth = .8, frame = C.ink, frameWidth = 1.2 } = o;
+  if (alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    const c = col(i, j); if (!c) continue;
+    ctx.fillStyle = c; ctx.fillRect(x + j * s, y + i * s, s + .35, s + .35);
+  }
+  if (gridColor) {
+    ctx.strokeStyle = gridColor; ctx.lineWidth = gridWidth; ctx.beginPath();
+    for (let i = 1; i < n; i++) { ctx.moveTo(x, y + i * s); ctx.lineTo(x + m * s, y + i * s); }
+    for (let j = 1; j < m; j++) { ctx.moveTo(x + j * s, y); ctx.lineTo(x + j * s, y + n * s); }
+    ctx.stroke();
+  }
+  if (frame) { ctx.strokeStyle = frame; ctx.lineWidth = frameWidth; ctx.strokeRect(x, y, m * s, n * s); }
+  ctx.restore();
+}
+/* a neuron: a circle, ink outline, filled with the colour of its value */
+function node(x, y, r, o = {}) {
+  const { fill = '#fff', stroke = C.ink, width = 1.4, alpha = 1 } = o;
+  mark('circle', x, y, r, { fill, stroke, width, alpha });
+}
+/* piecewise linear interpolation on an increasing grid */
+function interp(xs, ys, x) {
+  let lo = 0, hi = xs.length - 1;
+  if (x <= xs[0]) return ys[0]; if (x >= xs[hi]) return ys[hi];
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] > x) hi = m; else lo = m; }
+  return lerp(ys[lo], ys[hi], (x - xs[lo]) / (xs[hi] - xs[lo]));
+}
+/* a number for math(): fixed decimals, the minus sign is the engine's */
+const num = (v, d = 2) => (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+/* the clock of a motion that starts at t0 and eases in over r seconds */
+function runClock(t0, r = .6) {
+  const s = t - t0;
+  return s <= 0 ? 0 : s < r ? s * s / (2 * r) : s - r / 2;
+}
+
+const D = DATA;
+const XSS = D.xs, NX = XSS.length, NETS = D.nets, NMAX = NETS.length;
+/* a neuron's piece: what it adds as it switches on, v (1 + tanh(w (x - m))), from 0 to 2v */
+const PIE = NETS.map(nt => nt.v.map((v, j) => Float64Array.from(XSS, x => v * (1 + Math.tanh(nt.w[j] * (x - nt.m[j]))))));
+const LRMS = NETS.map(nt => Math.log10(nt.rms));
+
+/* ================================================ the reader's choices (explicit state) */
+let NSEL = null;      // a number of neurons chosen (or built again): {n, t0, prev}; null: the tour
+let HC = 0;           // the chip (or the error plot's marker) under the pointer
+let HP = -1;          // the piece pointed at in the plot
+let HR = false;       // the pointer is on the button that builds the sum again
+function reset() { NSEL = null; HC = 0; HP = -1; HR = false; }
+
+/* ================================================ the clock: 3, 7 and 14 neurons in turn */
+const TB = .35, TOURB = [3, 7, 14], BGAP = .45, BHOLD = 4.5;
+const stepB = n => Math.min(.55, 4.2 / n), buildB = n => n * stepB(n);
+const BDUR = TOURB.map(n => BGAP + buildB(n) + BHOLD), BPER = BDUR.reduce((a, b) => a + b);
+const POSTER_T = TB + BDUR[0] + BDUR[1] + BGAP + buildB(14) + .6;   // 14 neurons added up
+function bNow() {
+  if (NSEL) return NSEL;
+  const c0 = Math.max(0, t - TB), cy = Math.floor(c0 / BPER);
+  let c = c0 - cy * BPER, i = 0, base = TB + cy * BPER;
+  while (i < TOURB.length - 1 && c >= BDUR[i]) { c -= BDUR[i]; base += BDUR[i]; i++; }
+  const first = cy === 0 && i === 0;
+  return { n: TOURB[i], t0: base, prev: first ? null : { n: TOURB[(i + TOURB.length - 1) % TOURB.length], t0: -1e3, sw: base } };
+}
+/* draw something as it was at the moment sw (a fit fading out keeps its last state) */
+function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
+
+/* ================================================ the layout */
+const YT = 36, CH = { x: 532, y: YT - 18, w: 26, h: 24, gap: 4 };
+const RB = { x: CH.x + NMAX * (CH.w + CH.gap) + 14, y: YT - 6, r: 12 };       // build again
+const FP = { x: 76, y: 96, w: 540, h: 296 }, EP = { x: 724, y: 96, w: 240, h: 296 };
+const pts = Array.from({ length: NX }, () => [0, 0]);
+function builtB(st) {                          // pieces added so far, as a real number
+  const u = t - st.t0 - BGAP, s = stepB(st.n);
+  if (u <= 0) return 0;
+  const q = Math.floor(u / s);
+  return q >= st.n ? st.n : q + easeInOut(u / s - q);
+}
+function fitCurves(A, st, fa, grow, hp) {
+  const P = PIE[st.n - 1], c = NETS[st.n - 1].base, u = builtB(st), kk = Math.floor(u), fr = u - kk;
+  for (let j = 0; j < Math.min(st.n, kk + 1); j++) {
+    const sc = j < kk ? 1 : fr; if (sc <= 0) continue;
+    for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(sc * P[j][i]); }
+    const on = j === kk, me = j === hp;
+    line(pts, { color: on || me ? C.accent : C.sky, width: me ? 2.6 : on ? 1.8 : 1.1, alpha: (on || me ? 1 : hp >= 0 ? .4 : .75) * fa });
+  }
+  for (let i = 0; i < NX; i++) {
+    let v = c;
+    for (let j = 0; j < Math.min(st.n, kk + 1); j++) v += (j < kk ? 1 : fr) * P[j][i];
+    pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(v);
+  }
+  line(pts, { color: C.blue, width: 2.4, alpha: fa, progress: grow });
+}
+
+function draw() {
+  const la = lab(.06), st = bNow();
+  panel('b', 18, YT, { alpha: lab(.04) });
+  text('many neurons added together', 52, YT + rise(la), { size: 17, color: C.body, alpha: la });
+  // the number of neurons: the reader's choice
+  text('number of neurons', CH.x - 12, YT, { size: 15, color: C.body, align: 'right', alpha: la });
+  for (let q = 1; q <= NMAX; q++) {
+    const x = CH.x + (q - 1) * (CH.w + CH.gap), on = q === st.n, a = lab(.08 + .012 * q);
+    rect(x, CH.y, CH.w, CH.h, { fill: on ? C.navy : HC === q ? C.steel : '#fff', stroke: on ? C.navy : C.guide, width: 1, alpha: a });
+    text(String(q), x + CH.w / 2, CH.y + 17, { size: 15, color: on ? '#fff' : C.body, align: 'center', alpha: a });
+  }
+  // build the sum again: a round button with the restart arrow
+  if (!STILL) {
+    const a = lab(.3), col = HR ? C.navy : C.guide;
+    dot(RB.x, RB.y, RB.r, { color: col, fill: HR ? C.steel : '#fff', width: 1.2, alpha: a });
+    const arc = []; for (let q = 0; q <= 20; q++) { const an = -.5 + 4.6 * q / 20; arc.push([RB.x + 5.6 * Math.cos(an), RB.y + 5.6 * Math.sin(an)]); }
+    line(arc, { color: col, width: 1.5, alpha: a });
+    const e = arc[arc.length - 1];
+    line([[e[0] - 3.2, e[1] - 1.6], [e[0], e[1]], [e[0] + 1, e[1] - 3.4]], { color: col, width: 1.5, alpha: a });
+  }
+  // the fit: the target, the pieces, their sum
+  const A = axes({ ...FP, xlim: [0, 1], ylim: [-1.3, 1.3], xticks: [0, .25, .5, .75, 1], yticks: [-1, -.5, 0, .5, 1],
+                   xfmt: v => v === .5 ? '0.5' : fmt(v), yfmt: v => v === .5 ? '0.5' : v === -.5 ? '−0.5' : fmt(v),
+                   xlabel: 'x', progress: seg(.1, .35) });
+  const u = builtB(st), done = u >= st.n, hp = done ? HP : -1;
+  text(`${st.n} neuron${st.n > 1 ? 's' : ''}`, FP.x, FP.y - 12, { size: 17, alpha: la });
+  math(`\\rm{error}\\ \\ ${NETS[st.n - 1].rms.toFixed(3)}`, FP.x + FP.w, FP.y - 12,
+       { size: 15, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
+  A.inside(() => {
+    line([[FP.x, A.Y(0)], [FP.x + FP.w, A.Y(0)]], { color: C.rule, width: 1, alpha: seg(.2, .3) });
+    for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(D.g[i]); }
+    line(pts, { color: C.guide, width: 1.6, dash: [2.5, 3.5], progress: seg(.15, .4) });
+    if (st.prev) { const fo = 1 - seg(st.t0, BGAP * .7); if (fo > 0) at(st.prev.sw, () => fitCurves(A, st.prev, fo, 1, -1)); }
+    fitCurves(A, st, st.prev ? seg(st.t0 + BGAP * .5, BGAP * .5) : 1, st.prev ? 1 : seg(.3, .4), hp);
+  });
+  // the piece pointed at: its neuron's numbers, over the plot's foot
+  if (hp >= 0) {
+    const nt = NETS[st.n - 1], y = FP.y + FP.h - 14;
+    math(`\\rm{neuron}\\ ${hp + 1}:\\ \\ v = ${num(nt.v[hp])},\\ \\ w = ${nt.w[hp].toFixed(1)},\\ \\ m = ${num(nt.m[hp])}`,
+         FP.x + FP.w - 12, y, { size: 15, color: C.accent, align: 'right' });
+  }
+  // the error for every number of neurons, log scale; the one shown glides along it
+  const E = axes({ ...EP, xlim: [.5, NMAX + .5], ylim: [-3, 0], xticks: [1, 5, 10, 14], yticks: [-3, -2, -1, 0],
+                   yfmt: v => ['0.001', '0.01', '0.1', '1'][v + 3], xlabel: '\\rm{number\\ of\\ neurons}',
+                   ylabel: '\\rm{error}', ylabelGap: 50, grid: true, progress: seg(.12, .35) });
+  const ep = [];
+  for (let q = 1; q <= NMAX; q++) ep.push([E.X(q), E.Y(LRMS[q - 1])]);
+  line(ep, { color: C.blue, width: 1.6, progress: seg(.25, .5) });
+  for (let q = 1; q <= NMAX; q++) mark('circle', E.X(q), E.Y(LRMS[q - 1]), HC === q ? 4.8 : 3.4,
+                                      { fill: HC === q ? C.steel : '#fff', stroke: C.blue, width: 1.3, alpha: seg(.3 + .02 * q, .2) });
+  const n0 = st.prev ? st.prev.n : st.n, gl = settle(st.t0, .45), nq = lerp(n0, st.n, Math.min(1, gl));
+  const q0 = clamp(Math.floor(nq), 1, NMAX - 1), fq = clamp(nq - q0);
+  dot(E.X(nq), E.Y(lerp(LRMS[q0 - 1], LRMS[q0], fq)), 5, { color: '#fff', fill: C.accent, width: 1.4, alpha: seg(.4, .25) });
+  // the network's formula over the plot, and which line is which under it
+  const lA = lab(.4), ly = FP.y + FP.h + 84;
+  math('f(x) = c + \\Sigma_{j} v_{j}\\,\\rm{tanh}(w_{j}(x - m_{j}))', FP.x + FP.w / 2, FP.y - 12, { size: 17, align: 'center', alpha: lA });
+  const items = [[C.guide, 1.6, [2.5, 3.5], 'target function'], [C.sky, 1.2, null, 'one neuron’s piece'],
+                 [C.accent, 1.8, null, 'the piece being added'], [C.blue, 2.4, null, 'their sum']];
+  let lx = FP.x + 22;
+  for (const [col, wd, dash, words] of items) {
+    line([[lx - 14, ly - 5], [lx + 14, ly - 5]], { color: col, width: wd, dash, alpha: lA });
+    lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40;
+  }
+  text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
+       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  if (!STILL) text('point at a piece', FP.x + FP.w, FP.y + FP.h + 44, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  place();
+}
+
+/* ================================================ the reader's hand: pointer and keyboard */
+const FIG = document.querySelector('.fig'), KB = { cr: [], rb: null, key: '' };
+function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+function redraw() { if (!playing) render(); }
+const quick = () => REDUCED || STILL;                    // less motion: the sum at once
+function chooseN(n, again) {
+  const cur = bNow();
+  if (!playing && !quick()) setPlay(true);
+  NSEL = quick() ? { n, t0: t - 1e3, prev: null } : { n, t0: t, prev: again ? null : { n: cur.n, t0: cur.t0, sw: t } };
+  HP = -1; redraw();
+}
+function hitChip(X, Y) {
+  if (Y >= CH.y - 4 && Y <= CH.y + CH.h + 4) {
+    const q = Math.floor((X - CH.x + CH.gap / 2) / (CH.w + CH.gap));
+    if (q >= 0 && q < NMAX) return q + 1;
+  }
+  if (X >= EP.x && X <= EP.x + EP.w && Y >= EP.y - 6 && Y <= EP.y + EP.h + 6) {
+    const q = Math.round((X - EP.x) / EP.w * NMAX + .5);
+    if (q >= 1 && q <= NMAX && Math.abs(X - (EP.x + (q - .5) / NMAX * EP.w)) < 9) return q;
+  }
+  return 0;
+}
+const onRB = (X, Y) => !STILL && Math.hypot(X - RB.x, Y - RB.y) < RB.r + 4;
+function hitPiece(X, Y) {                      // the piece whose curve passes nearest, within 7 units
+  const st = bNow();
+  if (builtB(st) < st.n || X < FP.x || X > FP.x + FP.w || Y < FP.y || Y > FP.y + FP.h) return -1;
+  const i = Math.round((X - FP.x) / FP.w * (NX - 1)), P = PIE[st.n - 1], A = 1.3, best = { j: -1, d: 7 };
+  for (let j = 0; j < st.n; j++) { const y = FP.y + FP.h - (P[j][i] + A) / (2 * A) * FP.h, d = Math.abs(y - Y); if (d < best.d) { best.d = d; best.j = j; } }
+  return best.j;
+}
+if (!STILL) {
+  const css = document.createElement('style');
+  css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
+    'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
+  document.head.appendChild(css);
+  const ctl = FIG.querySelector('.ctl');
+  const add = (parent, tag, role, label) => {
+    const el = document.createElement(tag); el.className = 'nfk';
+    if (tag === 'button') el.type = 'button';
+    if (role) el.setAttribute('role', role);
+    if (label) el.setAttribute('aria-label', label);
+    parent === FIG ? FIG.insertBefore(el, ctl) : parent.appendChild(el);
+    return el;
+  };
+  const gB = document.createElement('div');
+  gB.setAttribute('role', 'radiogroup'); gB.setAttribute('aria-label', 'Number of neurons added together');
+  FIG.insertBefore(gB, ctl);
+  const roving = (list, i, pick) => e => {
+    const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = list.length;
+    const j = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : d ? (i + d + n) % n : (e.key === 'Enter' || e.key === ' ') ? i : -1;
+    if (j < 0) return;
+    e.preventDefault(); list[j].focus(); pick(j);
+  };
+  for (let q = 1; q <= NMAX; q++) {
+    const b = add(gB, 'button', 'radio', `${q} neuron${q > 1 ? 's' : ''}`);
+    b.addEventListener('keydown', roving(KB.cr, q - 1, j => chooseN(j + 1)));
+    KB.cr.push(b);
+  }
+  KB.rb = add(FIG, 'button', null, 'Add the neurons again, one at a time');
+  KB.rb.addEventListener('click', e => { e.stopPropagation(); chooseN(bNow().n, true); });
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const [X, Y] = toUnits(e), hc = hitChip(X, Y), hr = onRB(X, Y), hp = hc || hr ? -1 : hitPiece(X, Y);
+    cv.style.cursor = hc || hr || hp >= 0 ? 'pointer' : '';
+    if (hc !== HC || hr !== HR || hp !== HP) { HC = hc; HR = hr; HP = hp; redraw(); }
+  });
+  cv.addEventListener('pointerleave', () => { HC = 0; HR = false; HP = -1; cv.style.cursor = ''; redraw(); });
+  // a click on a chip, a marker, the button or a piece is a choice: it must not also pause
+  // (the engine toggles on a click of the canvas), so it stops on the way down
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const [X, Y] = toUnits(e), c = hitChip(X, Y), p = hitPiece(X, Y);
+    if (c) chooseN(c);
+    else if (onRB(X, Y)) chooseN(bNow().n, true);
+    else if (p >= 0) { HP = HP === p ? -1 : p; redraw(); }
+    else return;
+    e.stopPropagation();
+  }, true);
+}
+/* the keyboard's stand-ins sit on what they choose, and say what is chosen */
+function place() {
+  if (STILL || !KB.rb) return;
+  const bs = bNow(), key = cv.clientWidth + ':' + bs.n;
+  if (key === KB.key) return;
+  KB.key = key;
+  const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
+  const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
+  KB.cr.forEach((b, q) => {
+    box(b, CH.x + q * (CH.w + CH.gap), CH.y, CH.x + q * (CH.w + CH.gap) + CH.w, CH.y + CH.h);
+    b.setAttribute('aria-checked', String(q + 1 === bs.n)); b.tabIndex = q + 1 === bs.n ? 0 : -1;
+  });
+  box(KB.rb, RB.x - RB.r - 2, RB.y - RB.r - 2, RB.x + RB.r + 2, RB.y + RB.r + 2);
+}
+boot();
+</script>
+</body>
+</html>

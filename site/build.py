@@ -1198,7 +1198,10 @@ def doc_body(slug):
     for name, text in ALT.get(slug, {}).items():
         # a picture redrawn as a moving figure hands its words to the frame
         # that figure prints (nf-<name>.webp), which stands where it stood
-        still = ANIM.get(slug, {}).get(name, {}).get("still", {}).get("src", "")
+        moved = ANIM.get(slug, {}).get(name, {})
+        if isinstance(moved, list):      # a picture redrawn as several figures: the first prints it
+            moved = moved[0]
+        still = moved.get("still", {}).get("src", "")
         stem = still.rsplit("/", 1)[-1][:-len(".webp")] if still.endswith(".webp") else name
         was = f'/{stem}.webp" alt=""'
         if was not in body:

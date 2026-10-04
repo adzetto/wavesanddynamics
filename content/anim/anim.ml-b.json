@@ -4,7 +4,7 @@
   "image12": "nf-mlb-kmeans.html",
   "image13": "nf-mlb-activation.html",
   "image14": "nf-mlb-mlp.html",
-  "image15": "nf-mlb-neuron.html",
+  "image15": ["nf-mlb-neuron.html", "nf-mlb-uat.html"],
   "image16": "nf-mlb-loss.html",
   "image17": "nf-mlb-fit.html",
   "image18": "nf-mlb-cnn.html",

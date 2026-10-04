@@ -607,6 +607,9 @@ math{font-family:"Site Math",math}
    size. Where the browser cannot give an element the screen (a phone's
    Safari), the figure lies over the page instead. */
 .docpage .fig--anim{position:relative}
+/* a picture redrawn as several moving figures (preview.py _animated_parts):
+   each its own frame and button, one under the other, the caption under all */
+.docpage .fig--parts>.fig--anim+.fig--anim{margin-top:28px}
 .anim__full{display:none}
 .js .docpage .fig--anim>.anim__full{position:absolute;z-index:3;top:10px;right:10px;display:grid;
   place-items:center;width:34px;height:34px;padding:0;margin:0;grid-area:auto;border-radius:50%;

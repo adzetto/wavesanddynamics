@@ -111,7 +111,9 @@ def test_his_originals_are_archived_and_no_longer_published_unused():
     for n in os.listdir(ANIM):
         if n == "anim.json" or re.fullmatch(r"anim\.[\w-]+\.json", n):
             with open(os.path.join(ANIM, n), encoding="utf-8") as fh:
-                mapped |= {f for pics in json.load(fh).values() for f in pics.values()}
+                # (a picture redrawn as several figures names a list of them)
+                mapped |= {f for pics in json.load(fh).values() for v in pics.values()
+                           for f in (v if isinstance(v, list) else [v])}
     # ... or drawn only as a Big Picture card (tools/bp_art.py picks its still)
     with open(os.path.join(ROOT, "tools", "bp_art.py"), encoding="utf-8") as fh:
         mapped |= {f"{n}.html" for n in re.findall(r"content:anim/(nf-[\w-]+)\.webp", fh.read())}

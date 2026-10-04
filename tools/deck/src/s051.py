@@ -8,7 +8,12 @@ promise that 95% of whole paths stay inside. Four paths of 160 steps are a
 fixed draw (numpy's PCG64, seed below), the same every run."""
 import numpy as np
 
-from fig import Fig, C, SERIES
+from fig import Fig, C, SERIES, draw, fade, pop, wipe
+
+# The walks set off together and wander as the steps go by (DECK_BRIEF.md
+# "Animated slides"; the blocks' moments are in s051.html), the 95% band
+# widening with them, then the mean and the variance that say why.
+ANIM = {"length": 4.9}
 
 SIGMA, N, Z95 = 0.3, 160, 1.959964
 n = np.arange(0, N + 1)
@@ -25,11 +30,11 @@ def walk():
     f = Fig(976, 616)
     ax = f.axes(136, 14, 822, 470, xlim=(-4, 164), ylim=(-YL, YL),
                 xticks=range(0, 161, 40), yticks=[-8, -4, 0, 4, 8],
-                xlabel="Step <m>n</m>", ylabel="Sensor bias (mm)")
-    ax.area(n, HALF, -HALF, color=C.steel)
-    ax.hline(0)
+                xlabel="Step <m>n</m>", ylabel="Sensor bias (mm)", anim=fade(.9, .4))
+    ax.area(n, HALF, -HALF, color=C.steel, anim=wipe(1.3, 1.6))
+    ax.hline(0, anim=fade(1.2, .3))
     for k, p in enumerate(PATHS):
-        ax.plot(n, p, color=SERIES[k], width=2.5)
+        ax.plot(n, p, color=SERIES[k], width=2.5, anim=draw(1.3, 1.6))
     ax.legend([("Pointwise 95% band", {"kind": "area", "color": C.steel})], at="north west",
-              size=28, row=40, pad=14, sample=48, inset=16)
+              size=28, row=40, pad=14, sample=48, inset=16, anim=pop(1.4))
     return f.html()

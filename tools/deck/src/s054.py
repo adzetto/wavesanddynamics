@@ -10,8 +10,14 @@ shares  the three shares stacked, year by year (straight between the yearly
         year 10."""
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, wipe
 from s053 import P, tw
+
+# The matrix, the start, then the shares year by year (DECK_BRIEF.md
+# "Animated slides"; the blocks' moments are in s054.html): the three bands
+# are uncovered as the years pass, the slice at year 2 is read with pi_2 and
+# the one at year 10 with pi_10.
+ANIM = {"length": 7.5}
 
 T = np.arange(0, 11)
 PI = np.array([np.linalg.matrix_power(P, t)[0] for t in T])     # pi_0 = [1, 0, 0]
@@ -25,13 +31,14 @@ def shares():
     f = Fig(976, 622)
     ax = f.axes(118, 12, 838, 492, xlim=(0, 10), ylim=(0, 1), xticks=T,
                 yticks=[0, 0.2, 0.4, 0.6, 0.8, 1], ticks="out",
-                xlabel="Years (inspection intervals)", ylabel="Share of sections in each state")
+                xlabel="Years (inspection intervals)", ylabel="Share of sections in each state",
+                anim=fade(1.2, .4))
     good, worn = PI[:, 0], PI[:, 0] + PI[:, 1]
-    ax.area(T, good, 0, color=C.navy)
-    ax.area(T, worn, good, color=C.amber)
-    ax.area(T, 1, worn, color=C.deep)
-    ax.vline(2, color=C.paper, width=2.5, dash="10 7")
-    f.rect(ax.x, ax.y, ax.w, ax.h, stroke=C.ink, width=2)      # the box over the fills
+    ax.area(T, good, 0, color=C.navy, anim=wipe(3.0, 2.0))
+    ax.area(T, worn, good, color=C.amber, anim=wipe(3.0, 2.0))
+    ax.area(T, 1, worn, color=C.deep, anim=wipe(3.0, 2.0))
+    ax.vline(2, color=C.paper, width=2.5, dash="10 7", anim=draw(3.8, .4))
+    f.rect(ax.x, ax.y, ax.w, ax.h, stroke=C.ink, width=2, anim=fade(1.2, .4))   # the box over the fills
 
     def band(x, lo, hi):
         """The middle of a band at year x (straight between the years)."""
@@ -43,14 +50,15 @@ def shares():
     for k, (lo, hi) in enumerate(bounds):
         s = f"{round(100 * PI[2, k])}%"
         y = band(2.45, lo, hi) if k < 2 else 0.968
-        ax.text(2.1, y, s, "west", size=28, color=ink[k], weight=700)
+        ax.text(2.1, y, s, "west", size=28, color=ink[k], weight=700, anim=pop(4.0))
     # the slice at year 10: 11 / 16 / 73 %
     for k, (lo, hi) in enumerate(bounds):
         s = f"{round(100 * PI[10, k])}%"
         y = band(9.45, lo, hi) if k < 2 else 0.5
-        ax.text(9.84, y, s, "east", size=28, color=ink[k], weight=700)
+        ax.text(9.84, y, s, "east", size=28, color=ink[k], weight=700, anim=pop(5.3))
     ax.legend([("Good", {"kind": "area", "color": C.navy}),
                ("Degraded", {"kind": "area", "color": C.amber}),
-               ("Failed", {"kind": "area", "color": C.deep})], at="north east", size=26, row=38)
+               ("Failed", {"kind": "area", "color": C.deep})], at="north east", size=26, row=38,
+              anim=pop(3.0))
     assert tw("Degraded", 26) < 26 * 0.5 * 8 + 6          # the legend's box holds its words
     return f.html()

@@ -16,7 +16,13 @@ checks that it equals scipy.signal.welch on the whole record.
 import numpy as np
 from scipy import signal
 
-from fig import Fig, C, SERIES
+from fig import Fig, C, SERIES, draw, fade, pop
+
+# Welch's three steps in order (DECK_BRIEF.md "Animated slides"; the panels'
+# moments are in s049.html): the record, then each window and the segment it
+# tapers; the four periodograms one by one; then the single periodogram, the
+# true spectrum and the Welch average over them, each with its key.
+ANIM = {"length": 9.8}
 from s048 import X, DT, G, F as F1, P as P1, log_axis
 
 FS, L, STEP = 20.0, 256, 128
@@ -40,63 +46,65 @@ H_ROW = 408                                   # the figure row, as tall for all 
 TOP = 92                                      # the boxes' top, under two title lines
 
 
-def _title(f, x, n, words):
+def _title(f, x, n, words, anim=None):
     """His numbered title over its box: the number hangs beside the first
     line (a title of two lines is set at 1.3; the number takes that line's
     place, half-leading included)."""
     y = TOP - 10
     lines = words.count("<br>") + 1
     ny = y - (lines - 1) * 28 * 1.3 - (4.2 if lines > 1 else 0)
-    f.text(x, ny, n, "south west", size=28, color=C.navy, font="serif", weight=600)
-    f.text(x + 28, y, words, "south west", size=28, color=C.navy, font="serif", weight=600)
+    f.text(x, ny, n, "south west", size=28, color=C.navy, font="serif", weight=600, anim=anim)
+    f.text(x + 28, y, words, "south west", size=28, color=C.navy, font="serif", weight=600, anim=anim)
 
 
 def segments():
     f = Fig(W, H_ROW)
-    _title(f, 24, "1", "Cut into overlapping segments, <br>taper each with a window")
+    _title(f, 24, "1", "Cut into overlapping segments, <br>taper each with a window", anim=pop(.3))
     ax = f.axes(24, TOP, 506, 226, xlim=(0, 40), ylim=(-3.6, 11.8), box=False, ticks="out",
-                xticks=range(0, 41, 10), xlabel="Time (s)")
+                xticks=range(0, 41, 10), xlabel="Time (s)", anim=fade(.4, .4))
     t = np.arange(len(X)) * DT
     keep = t <= 40
-    ax.plot(t[keep], X[keep], color=C.steel2, width=1.1)
+    ax.plot(t[keep], X[keep], color=C.steel2, width=1.1, anim=draw(.7, .9))
     for k in range(4):
         idx = SEGS[k]
-        ax.plot(t[idx], WIN * (X[idx] - X[idx].mean()), color=SERIES[k], width=1.5)
+        ax.plot(t[idx], WIN * (X[idx] - X[idx].mean()), color=SERIES[k], width=1.5,
+                anim=draw(1.8 + .35 * k, .5))
     for k in range(4):                        # the windows, one row each, over the record
         idx = SEGS[k]
         base = 4.6 + 1.55 * k
-        ax.plot(t[idx], base + 2.2 * WIN, color=SERIES[k], width=3)
+        ax.plot(t[idx], base + 2.2 * WIN, color=SERIES[k], width=3, anim=draw(1.7 + .35 * k, .4))
     return f.html()
 
 
 def periodograms():
     f = Fig(W, H_ROW)
-    _title(f, 104, "2", "Periodogram of each <br>segment (still noisy)")
+    _title(f, 104, "2", "Periodogram of each <br>segment (still noisy)", anim=pop(3.4))
     yt, yl = log_axis(-6, 1)
     ax = f.axes(104, TOP, 426, 226, xlim=(-0.3, 10.3), ylim=YLOG, ylog=True,
                 xticks=range(0, 11, 2), yticks=yt, yticklabels=yl, xlabel="Frequency (Hz)",
-                ylabel="PSD", ylabel_gap=92)
+                ylabel="PSD", ylabel_gap=92, anim=fade(3.5, .4))
     for k in range(4):
-        ax.plot(FW[1:], PK[k][1:], color=SERIES[k], width=2)
+        ax.plot(FW[1:], PK[k][1:], color=SERIES[k], width=2, anim=draw(3.8 + .25 * k, .7))
     return f.html()
 
 
 def average():
     """Panel 3, with his legend as a key under the panel."""
     f = Fig(W, 560)
-    _title(f, 76, "3", "Average them: smooth estimate")
+    _title(f, 76, "3", "Average them: smooth estimate", anim=pop(5.4))
     yt, yl = log_axis(-6, 1)
     ax = f.axes(76, TOP, 454, 226, xlim=(-0.3, 10.3), ylim=YLOG, ylog=True,
-                xticks=range(0, 11, 2), yticks=yt, yticklabels=yl, xlabel="Frequency (Hz)")
-    ax.plot(F1, P1, color=C.mist, width=1.1)
-    ax.plot(FT, G(FT), color=C.accent, width=3, dash="12 7")
-    ax.plot(FW, PW, color=C.navy, width=4)
+                xticks=range(0, 11, 2), yticks=yt, yticklabels=yl, xlabel="Frequency (Hz)",
+                anim=fade(5.5, .4))
+    ax.plot(F1, P1, color=C.mist, width=1.1, anim=draw(5.8, .7))
+    ax.plot(FT, G(FT), color=C.accent, width=3, dash="12 7", anim=draw(6.4, .6))
+    ax.plot(FW, PW, color=C.navy, width=4, anim=draw(7.0, .8))
     rows = [("single periodogram", dict(stroke=C.mist, width=2.5)),
             ("Welch average of 14 segments", dict(stroke=C.navy, width=4)),
             ("true spectrum", dict(stroke=C.accent, width=3, dash="12 7"))]
     y0 = H_ROW + 24
-    for i, (words, st) in enumerate(rows):
+    for i, ((words, st), at) in enumerate(zip(rows, (5.8, 7.0, 6.4))):   # each key with its curve
         cy = y0 + 17 + i * 40
-        f.line([(76, cy), (76 + 52, cy)], cap="butt", **st)
-        f.text(76 + 66, cy, words, "west", size=26)
+        f.line([(76, cy), (76 + 52, cy)], cap="butt", anim=pop(at), **st)
+        f.text(76 + 66, cy, words, "west", size=26, anim=pop(at))
     return f.html()

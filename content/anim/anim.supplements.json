@@ -1,0 +1,9 @@
+{
+ "dynamical-behavior-of-engineering-structures-and-acoustic-wave-propagation": {
+  "supplement-wavelength": "nf-dispersion-wavelength.html"
+ },
+ "machine-learning-the-complete-picture-and-guide-5": {
+  "supplement-feature-selection": "nf-ml-feature-selection.html",
+  "supplement-forecasting": "nf-ml-forecasting.html"
+ }
+}

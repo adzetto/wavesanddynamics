@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Figure 18b: Why repeating that computation across many neurons lets a network approximate almost any function (the universal approximation theorem)</title>
+<title>Figure 6a: Three approaches to feature selection</title>
 <style>
 @font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
 @font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
@@ -25,12 +25,12 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen. The selected number of neurons also shows its exact 1-N-1 architecture with all input and output connections."></canvas>
+  <canvas id="c" role="img" aria-label="Three numerical examples on the same synthetic regression data: correlation filtering, forward subset selection with cross-validation, and a Lasso coefficient path."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 830;
-const DATA = {"xs":[0.0,0.00417,0.00833,0.0125,0.01667,0.02083,0.025,0.02917,0.03333,0.0375,0.04167,0.04583,0.05,0.05417,0.05833,0.0625,0.06667,0.07083,0.075,0.07917,0.08333,0.0875,0.09167,0.09583,0.1,0.10417,0.10833,0.1125,0.11667,0.12083,0.125,0.12917,0.13333,0.1375,0.14167,0.14583,0.15,0.15417,0.15833,0.1625,0.16667,0.17083,0.175,0.17917,0.18333,0.1875,0.19167,0.19583,0.2,0.20417,0.20833,0.2125,0.21667,0.22083,0.225,0.22917,0.23333,0.2375,0.24167,0.24583,0.25,0.25417,0.25833,0.2625,0.26667,0.27083,0.275,0.27917,0.28333,0.2875,0.29167,0.29583,0.3,0.30417,0.30833,0.3125,0.31667,0.32083,0.325,0.32917,0.33333,0.3375,0.34167,0.34583,0.35,0.35417,0.35833,0.3625,0.36667,0.37083,0.375,0.37917,0.38333,0.3875,0.39167,0.39583,0.4,0.40417,0.40833,0.4125,0.41667,0.42083,0.425,0.42917,0.43333,0.4375,0.44167,0.44583,0.45,0.45417,0.45833,0.4625,0.46667,0.47083,0.475,0.47917,0.48333,0.4875,0.49167,0.49583,0.5,0.50417,0.50833,0.5125,0.51667,0.52083,0.525,0.52917,0.53333,0.5375,0.54167,0.54583,0.55,0.55417,0.55833,0.5625,0.56667,0.57083,0.575,0.57917,0.58333,0.5875,0.59167,0.59583,0.6,0.60417,0.60833,0.6125,0.61667,0.62083,0.625,0.62917,0.63333,0.6375,0.64167,0.64583,0.65,0.65417,0.65833,0.6625,0.66667,0.67083,0.675,0.67917,0.68333,0.6875,0.69167,0.69583,0.7,0.70417,0.70833,0.7125,0.71667,0.72083,0.725,0.72917,0.73333,0.7375,0.74167,0.74583,0.75,0.75417,0.75833,0.7625,0.76667,0.77083,0.775,0.77917,0.78333,0.7875,0.79167,0.79583,0.8,0.80417,0.80833,0.8125,0.81667,0.82083,0.825,0.82917,0.83333,0.8375,0.84167,0.84583,0.85,0.85417,0.85833,0.8625,0.86667,0.87083,0.875,0.87917,0.88333,0.8875,0.89167,0.89583,0.9,0.90417,0.90833,0.9125,0.91667,0.92083,0.925,0.92917,0.93333,0.9375,0.94167,0.94583,0.95,0.95417,0.95833,0.9625,0.96667,0.97083,0.975,0.97917,0.98333,0.9875,0.99167,0.99583,1.0],"g":[0.08866,0.15973,0.22832,0.29372,0.35527,0.4124,0.46457,0.51132,0.55229,0.5872,0.61585,0.63814,0.65406,0.66369,0.6672,0.66485,0.65697,0.64398,0.62634,0.60459,0.5793,0.55109,0.5206,0.48849,0.4554,0.422,0.3889,0.35671,0.32598,0.29721,0.27087,0.24733,0.2269,0.20981,0.19622,0.1862,0.17973,0.17672,0.177,0.18032,0.18635,0.19472,0.20498,0.21665,0.22919,0.24206,0.25468,0.26648,0.27687,0.28531,0.29126,0.29424,0.29378,0.28951,0.28109,0.26827,0.25087,0.2288,0.20203,0.17065,0.1348,0.09473,0.05076,0.00328,-0.04723,-0.10024,-0.15515,-0.21134,-0.26814,-0.32483,-0.38071,-0.43505,-0.48716,-0.53633,-0.58192,-0.6233,-0.6599,-0.69122,-0.71684,-0.73638,-0.74957,-0.75623,-0.75626,-0.74965,-0.7365,-0.71697,-0.69134,-0.65997,-0.62328,-0.58177,-0.53601,-0.48663,-0.43429,-0.37969,-0.32355,-0.2666,-0.20959,-0.15324,-0.09823,-0.04524,0.00512,0.05228,0.09574,0.13507,0.16992,0.20001,0.22516,0.24526,0.26032,0.27039,0.27565,0.27634,0.27276,0.26531,0.25444,0.24065,0.22447,0.20649,0.1873,0.16752,0.14775,0.12859,0.11061,0.09437,0.08035,0.069,0.06071,0.0558,0.05451,0.05701,0.06339,0.07364,0.08768,0.10535,0.12641,0.15054,0.17734,0.20637,0.23712,0.26903,0.30151,0.33394,0.36569,0.39612,0.42459,0.4505,0.47326,0.49232,0.50719,0.51743,0.52268,0.52263,0.51708,0.50588,0.48901,0.4665,0.43848,0.40518,0.36691,0.32405,0.27706,0.22647,0.17287,0.11691,0.05925,0.000609737,-0.05828,-0.11669,-0.17389,-0.22916,-0.28182,-0.33122,-0.37676,-0.4179,-0.45417,-0.48517,-0.51058,-0.53017,-0.54379,-0.55139,-0.553,-0.54875,-0.53886,-0.52362,-0.50341,-0.47867,-0.44992,-0.41771,-0.38265,-0.3454,-0.3066,-0.26694,-0.2271,-0.18773,-0.14949,-0.11299,-0.07878,-0.04739,-0.01926,0.00522,0.02575,0.0421,0.05412,0.06175,0.06502,0.06403,0.05899,0.05016,0.03789,0.02258,0.0047,-0.01523,-0.03665,-0.05897,-0.08159,-0.10389,-0.12526,-0.1451,-0.16285,-0.17796,-0.18996,-0.19839,-0.2029,-0.20318,-0.19901,-0.19025,-0.17684,-0.1588,-0.13625,-0.10938,-0.07848,-0.04389,-0.00605,0.03455,0.07736,0.12178,0.16718,0.21289,0.25822,0.30251,0.34506],"nets":[{"n":1,"base":0.46713,"v":[-0.26596],"w":[15.89754],"m":[0.18983],"rms":0.30026},{"n":2,"base":0.31004,"v":[-0.4,0.25912],"w":[43.55753,81.67427],"m":[0.26819,0.39854],"rms":0.2371},{"n":3,"base":0.30987,"v":[-0.4,0.37946,-0.21582],"w":[43.58009,47.67473,102.7013],"m":[0.26821,0.40882,0.68364],"rms":0.17681},{"n":4,"base":0.30987,"v":[-0.4,0.37939,-0.4,0.25548],"w":[43.58183,47.68667,47.88587,49.95755],"m":[0.26821,0.40881,0.69794,0.79451],"rms":0.14013},{"n":5,"base":0.51358,"v":[-0.14018,-0.4,0.4,-0.38286,0.25606],"w":[83.34577,46.42916,46.12471,50.2695,49.70205],"m":[0.11082,0.27502,0.40408,0.69933,0.79443],"rms":0.11572},{"n":6,"base":0.51362,"v":[-0.16437,-0.4,0.38868,0.11261,-0.4,0.19573],"w":[65.03179,47.2279,49.18967,107.61224,49.67269,71.92726],"m":[0.11465,0.27909,0.39903,0.5798,0.68838,0.80138],"rms":0.09749},{"n":7,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.19573],"w":[38.95579,33.40041,47.26094,48.8183,107.61858,49.67247,71.93022],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.80138],"rms":0.08311},{"n":8,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.17191,0.20178],"w":[38.95579,33.40036,47.2609,48.81794,107.61727,49.67031,84.84154,75.21475],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.79866,0.98025],"rms":0.06995},{"n":9,"base":-0.09409,"v":[0.4,-0.25742,-0.4,0.4,0.21374,-0.4,-0.4,0.36826,0.26882],"w":[39.27133,35.93609,46.99091,47.94162,56.36128,38.60789,5.61603,41.74054,55.30448],"m":[0.01381,0.10077,0.27884,0.39949,0.5857,0.68763,0.77361,0.79605,0.97678],"rms":0.05111},{"n":10,"base":-0.09863,"v":[0.4,-0.25252,-0.4,0.4,0.3806,-0.4,-0.4,0.37054,-0.18393,0.4],"w":[39.44007,37.35903,47.04416,47.89785,36.6838,10.61867,33.13672,30.5821,34.58405,28.24446],"m":[0.01351,0.10063,0.27818,0.40037,0.58832,0.62833,0.69337,0.79796,0.89145,0.97984],"rms":0.04356},{"n":11,"base":-0.10896,"v":[0.4,-0.21905,-0.4,0.2725,0.35803,-0.4,0.2864,-0.4,0.4,-0.4,0.3053],"w":[40.1973,46.24486,40.91069,57.33875,44.462,6.5692,42.28099,39.29547,39.21365,6.585,47.72666],"m":[0.0126,0.09857,0.28088,0.37824,0.41733,0.44109,0.58021,0.6873,0.79842,0.82244,0.97559],"rms":0.03306},{"n":12,"base":-0.11367,"v":[0.4,-0.2255,-0.16959,-0.3381,0.36163,0.17804,0.35168,-0.4,-0.4,0.33331,-0.16695,0.39998],"w":[40.16851,45.47677,67.52343,40.47629,39.2516,65.1343,40.04048,8.16774,37.84524,36.06653,38.24303,28.29947],"m":[0.01247,0.09889,0.26041,0.29703,0.38259,0.41987,0.58319,0.59854,0.69135,0.7998,0.89289,0.98036],"rms":0.02495},{"n":13,"base":-0.11411,"v":[0.4,-0.26805,-0.29159,-0.39554,0.4,0.4,-0.16503,0.29475,-0.39997,-0.24471,0.4,-0.21083,0.4],"w":[39.58503,37.53224,46.28712,39.94312,7.67948,33.02679,42.3698,28.1102,29.02055,35.0758,25.57864,30.79521,28.27351],"m":[0.01285,0.10145,0.25927,0.301,0.32753,0.39905,0.49821,0.58588,0.67287,0.71229,0.79717,0.88912,0.97919],"rms":0.01137},{"n":14,"base":-0.07075,"v":[0.4,-0.30085,0.12181,-0.26998,-0.4,0.32511,0.38546,-0.27781,0.39491,-0.4,-0.27205,0.4,-0.20884,0.4],"w":[38.91289,28.63932,33.9283,28.34951,25.19319,25.57594,24.002,22.86652,22.09335,27.83058,33.36469,25.7159,31.09882,28.2697],"m":[0.01533,0.10363,0.18819,0.26286,0.30077,0.37646,0.41405,0.49462,0.58242,0.66985,0.71002,0.79696,0.88926,0.97926],"rms":0.00302}]};
+const W = 1000, H = 1080;
+const DATA = {"correlation":[0.7623,0.47798,0.3498,0.76,0.0539,0.01558],"filter":[0,3,1],"steps":[{"selected":[0],"candidates":[[0,2.58991],[1,3.52261],[2,3.74845],[3,2.59942],[4,4.01262],[5,4.00911]],"rmse":2.58991},{"selected":[0,1],"candidates":[[1,1.62854],[2,2.17895],[3,2.5876],[4,2.59773],[5,2.59833]],"rmse":1.62854},{"selected":[0,1,2],"candidates":[[2,0.69183],[3,1.6298],[4,1.6342],[5,1.62555]],"rmse":0.69183},{"selected":[0,1,2,5],"candidates":[[3,0.69491],[4,0.69192],[5,0.68924]],"rmse":0.68924},{"selected":[0,1,2,5,4],"candidates":[[3,0.6924],[4,0.68954]],"rmse":0.68954},{"selected":[0,1,2,5,4,3],"candidates":[[3,0.69263]],"rmse":0.69263}],"alphas":[4.0,3.65177,3.33386,3.04363,2.77866,2.53676,2.31592,2.1143,1.93024,1.7622,1.60879,1.46873,1.34087,1.22414,1.11757,1.02027,0.93145,0.85036,0.77633,0.70875,0.64705,0.59072,0.53929,0.49234,0.44948,0.41035,0.37463,0.34201,0.31224,0.28506,0.26024,0.23758,0.2169,0.19802,0.18078,0.16504,0.15067,0.13756,0.12558,0.11465,0.10467,0.09556,0.08724,0.07964,0.07271,0.06638,0.0606,0.05532,0.05051,0.04611,0.0421,0.03843,0.03509,0.03203,0.02924,0.0267,0.02437,0.02225,0.02031,0.01855,0.01693,0.01546,0.01411,0.01288,0.01176,0.01074,0.0098,0.00895,0.00817,0.00746,0.00681,0.00622,0.00568,0.00518,0.00473,0.00432,0.00394,0.0036,0.00329,0.003],"coefs":[[0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0],[0.25936,0.0,0.0,0.0,0.0,0.0],[0.50126,0.0,0.0,0.0,0.0,0.0],[0.7221,-0.0,0.0,0.0,0.0,0.0],[0.8666,-0.0,0.0,0.05777,0.0,0.0],[0.96173,-0.00932,0.0,0.14803,0.0,0.0],[1.09407,-0.18268,0.0,0.18975,-0.0,0.0],[1.21488,-0.34095,0.0,0.22784,-0.0,0.0],[1.32518,-0.48544,0.0,0.26262,-0.0,0.0],[1.46688,-0.62023,0.07662,0.25321,-0.0,0.0],[1.62402,-0.74524,0.19845,0.21675,-0.0,0.0],[1.76747,-0.85936,0.30967,0.18347,-0.0,0.0],[1.89844,-0.96355,0.41121,0.15308,-0.0,0.0],[2.01801,-1.05866,0.50391,0.12534,-0.0,0.0],[2.12716,-1.1455,0.58854,0.10001,-0.0,0.0],[2.22682,-1.22478,0.6658,0.07689,-0.0,0.0],[2.3178,-1.29715,0.73634,0.05578,-0.0,0.0],[2.40086,-1.36323,0.80073,0.03651,-0.0,0.0],[2.47668,-1.42355,0.85952,0.01891,-0.0,0.0],[2.54591,-1.47862,0.91319,0.00285,-0.0,0.0],[2.59743,-1.52883,0.96205,0.0,-0.0,0.0],[2.64189,-1.57465,1.00662,0.0,-0.0,0.0],[2.68247,-1.61648,1.04731,0.0,-0.0,0.0],[2.71953,-1.65467,1.08446,0.0,-0.0,0.0],[2.75336,-1.68953,1.11838,0.0,0.0,0.0],[2.78424,-1.72136,1.14934,0.0,0.0,0.0],[2.81244,-1.75042,1.1776,0.0,0.0,0.0],[2.83818,-1.77695,1.20341,0.0,0.0,0.0],[2.86168,-1.80117,1.22697,0.0,0.0,0.0],[2.88313,-1.82328,1.24848,0.0,0.0,0.0],[2.90272,-1.84346,1.26811,0.0,0.0,0.0],[2.9206,-1.86189,1.28604,0.0,0.0,0.0],[2.93693,-1.87872,1.30241,0.0,0.0,0.0],[2.95183,-1.89408,1.31735,0.0,0.0,0.0],[2.96544,-1.9081,1.33099,0.0,0.0,0.0],[2.97786,-1.9209,1.34344,0.0,0.0,0.0],[2.9892,-1.93259,1.35481,0.0,0.0,0.0],[2.99955,-1.94326,1.36519,0.0,0.0,0.0],[3.009,-1.953,1.37466,0.0,0.0,0.0],[3.01763,-1.96189,1.38331,0.0,0.0,0.0],[3.02551,-1.97001,1.39121,0.0,0.0,0.0],[3.0327,-1.97742,1.39842,0.0,0.0,0.0],[3.03927,-1.98419,1.405,0.0,0.0,0.0],[3.04529,-1.99037,1.41097,0.0,0.0,0.000540894],[3.05111,-1.99608,1.41609,0.0,0.0,0.00591],[3.05643,-2.00129,1.42076,0.0,0.0,0.01081],[3.06127,-2.00605,1.42502,0.0,0.0,0.01528],[3.0657,-2.0104,1.42891,0.0,0.0,0.01936],[3.06974,-2.01436,1.43246,0.0,0.0,0.02309],[3.07343,-2.01798,1.4357,0.0,0.0,0.0265],[3.07685,-2.02131,1.4387,0.0,0.000987188,0.02956],[3.08007,-2.02441,1.44151,0.0,0.00397,0.03225],[3.08301,-2.02724,1.44407,0.0,0.0067,0.03472],[3.0857,-2.02982,1.44641,0.0,0.00919,0.03697],[3.08815,-2.03217,1.44855,0.0,0.01146,0.03902],[3.09038,-2.03432,1.4505,0.0,0.01353,0.04089],[3.09243,-2.03629,1.45228,0.0,0.01542,0.0426],[3.09429,-2.03808,1.4539,0.0,0.01715,0.04417],[3.09599,-2.03971,1.45539,0.0,0.01873,0.04559],[3.09755,-2.04121,1.45674,0.0,0.02017,0.04689],[3.09897,-2.04257,1.45798,0.0,0.02149,0.04808],[3.10026,-2.04382,1.45911,0.0,0.02269,0.04917],[3.10144,-2.04495,1.46014,0.0,0.02378,0.05016],[3.10252,-2.04599,1.46108,0.0,0.02478,0.05106],[3.10351,-2.04694,1.46194,0.0,0.0257,0.05189],[3.10441,-2.0478,1.46273,0.0,0.02653,0.05264],[3.10523,-2.04859,1.46344,0.0,0.02729,0.05333],[3.10598,-2.04932,1.4641,0.0,0.02799,0.05396],[3.10667,-2.04997,1.46469,0.0,0.02862,0.05453],[3.10729,-2.05057,1.46524,0.0,0.0292,0.05505],[3.10786,-2.05112,1.46574,0.0,0.02973,0.05553],[3.10838,-2.05162,1.46619,0.0,0.03021,0.05597],[3.10886,-2.05208,1.46661,0.0,0.03065,0.05637],[3.10929,-2.0525,1.46698,0.0,0.03106,0.05673],[3.10969,-2.05288,1.46733,-0.0,0.03142,0.05706],[3.11005,-2.05323,1.46765,-0.0,0.03176,0.05737],[3.11038,-2.05354,1.46793,-0.0,0.03207,0.05764]],"alpha":0.12,"embedded":[0,1,2],"embedded_coef":[2.98365,-1.92687,1.34924,0.0,0.0,0.0],"rmse":[1.7244,0.66161,0.66161],"features":["energy","duration","frequency","energy proxy","noise 1","noise 2"],"truth":[3.0,-2.0,1.5,0.0,0.0,0.0],"train":360,"test":120};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
    `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
@@ -529,362 +529,81 @@ const seq = v => _lutc(SEQ, v);
 function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
 function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
 
-/* ------------------------------------------------ mlb: machine learning figures */
-const S = .28;                                   // a label arriving: settle(t0, S)
-const lab = t0 => settle(t0, S);
-const rise = s => 5 * (1 - s);                   // ... settling 5 units into place
-/* the classes: crimson and purple, and blue for a third group. Figure 14's
-   caption names its classes orange and purple, so that figure (mlb_knn.py)
-   adds K.orange for itself */
-const K = {
-  red: C.amber, redEdge: C.accent,
-  purple: '#6A4F94', purpleEdge: '#46315F',
-  blue: '#2E6A9E', blueEdge: C.navy,
-};
-const CLS = [[K.red, K.redEdge], [K.purple, K.purpleEdge], [K.blue, K.blueEdge]];
-const HOLLOW = ['#FFFFFF', C.guide];
-/* a colour between two, as #rrggbb (so mixes can be mixed again) */
-const _h2 = v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0');
-function mixHex(a, b, s) {
-  const A = _hex(a), B = _hex(b);
-  return '#' + _h2(lerp(A[0], B[0], s)) + _h2(lerp(A[1], B[1], s)) + _h2(lerp(A[2], B[2], s));
-}
-/* a mark as pgfplots draws it: circle, square, triangle or a five pointed star */
-function mark(kind, x, y, r, o = {}) {
-  const { fill = '#fff', stroke = C.ink, width = 1.2, alpha = 1 } = o;
-  if (alpha <= 0 || r <= 0) return;
-  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath();
-  if (kind === 'star') {
-    for (let i = 0; i < 10; i++) {
-      const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * .45 : r;
-      if (i) ctx.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); else ctx.moveTo(x + q * Math.cos(a), y + q * Math.sin(a));
-    }
-    ctx.closePath();
-  } else if (kind === 'square') ctx.rect(x - r, y - r, 2 * r, 2 * r);
-  else if (kind === 'triangle') { ctx.moveTo(x, y - r * 1.15); ctx.lineTo(x + r, y + r * .7); ctx.lineTo(x - r, y + r * .7); ctx.closePath(); }
-  else ctx.arc(x, y, r, 0, 2 * Math.PI);
-  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.stroke(); }
-  ctx.restore();
-}
-/* a cross (a cluster center): two strokes over a white halo */
-function cross(x, y, r, o = {}) {
-  const { color = C.ink, width = 3, alpha = 1 } = o;
-  if (alpha <= 0) return;
-  for (const [c, w] of [['#fff', width + 3.2], [color, width]]) {
-    line([[x - r, y - r], [x + r, y + r]], { color: c, width: w, alpha });
-    line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
-  }
-}
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
-   [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
-function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
-  if (alpha <= 0) return;
-  const h = rows.length * rowH + 10;
-  ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h); ctx.restore();
-  rows.forEach(([key, words, asMath], i) => {
-    const yy = y + 5 + rowH * (i + .5);
-    key(x + 22, yy, alpha);
-    if (asMath) math(words, x + 42, yy + size * .34, { size, alpha });
-    else text(words, x + 42, yy + size * .34, { size, alpha });
-  });
-  return h;
-}
-/* a filled and outlined rectangle */
-function rect(x, y, w, h, o = {}) {
-  const { fill = null, stroke = C.ink, width = 1.2, alpha = 1, dash = null } = o;
-  if (alpha <= 0) return;
-  ctx.save(); ctx.globalAlpha *= alpha;
-  if (fill) { ctx.fillStyle = fill; ctx.fillRect(x, y, w, h); }
-  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
-  ctx.restore();
-}
-/* an n by m grid of cells from (x, y), cell size s, colour col(i, j) or null */
-function cells(x, y, n, m, s, col, o = {}) {
-  const { alpha = 1, gridColor = C.rule, gridWidth = .8, frame = C.ink, frameWidth = 1.2 } = o;
-  if (alpha <= 0) return;
-  ctx.save(); ctx.globalAlpha *= alpha;
-  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
-    const c = col(i, j); if (!c) continue;
-    ctx.fillStyle = c; ctx.fillRect(x + j * s, y + i * s, s + .35, s + .35);
-  }
-  if (gridColor) {
-    ctx.strokeStyle = gridColor; ctx.lineWidth = gridWidth; ctx.beginPath();
-    for (let i = 1; i < n; i++) { ctx.moveTo(x, y + i * s); ctx.lineTo(x + m * s, y + i * s); }
-    for (let j = 1; j < m; j++) { ctx.moveTo(x + j * s, y); ctx.lineTo(x + j * s, y + n * s); }
-    ctx.stroke();
-  }
-  if (frame) { ctx.strokeStyle = frame; ctx.lineWidth = frameWidth; ctx.strokeRect(x, y, m * s, n * s); }
-  ctx.restore();
-}
-/* a neuron: a circle, ink outline, filled with the colour of its value */
-function node(x, y, r, o = {}) {
-  const { fill = '#fff', stroke = C.ink, width = 1.4, alpha = 1 } = o;
-  mark('circle', x, y, r, { fill, stroke, width, alpha });
-}
-/* piecewise linear interpolation on an increasing grid */
-function interp(xs, ys, x) {
-  let lo = 0, hi = xs.length - 1;
-  if (x <= xs[0]) return ys[0]; if (x >= xs[hi]) return ys[hi];
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] > x) hi = m; else lo = m; }
-  return lerp(ys[lo], ys[hi], (x - xs[lo]) / (xs[hi] - xs[lo]));
-}
-/* a number for math(): fixed decimals, the minus sign is the engine's */
-const num = (v, d = 2) => (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
-/* the clock of a motion that starts at t0 and eases in over r seconds */
-function runClock(t0, r = .6) {
-  const s = t - t0;
-  return s <= 0 ? 0 : s < r ? s * s / (2 * r) : s - r / 2;
-}
-
-const D = DATA;
-const XSS = D.xs, NX = XSS.length, NETS = D.nets, NMAX = NETS.length;
-/* a neuron's piece: what it adds as it switches on, v (1 + tanh(w (x - m))), from 0 to 2v */
-const PIE = NETS.map(nt => nt.v.map((v, j) => Float64Array.from(XSS, x => v * (1 + Math.tanh(nt.w[j] * (x - nt.m[j]))))));
-const LRMS = NETS.map(nt => Math.log10(nt.rms));
-
-/* ================================================ the reader's choices (explicit state) */
-let NSEL = null;      // a number of neurons chosen (or built again): {n, t0, prev}; null: the tour
-let HC = 0;           // the chip (or the error plot's marker) under the pointer
-let HP = -1;          // the piece pointed at in the plot
-let HR = false;       // the pointer is on the button that builds the sum again
-function reset() { NSEL = null; HC = 0; HP = -1; HR = false; }
-
-/* ================================================ the clock: 3, 7 and 14 neurons in turn */
-const TB = .35, TOURB = [3, 7, 14], BGAP = .45, BHOLD = 4.5;
-const stepB = n => Math.min(.55, 4.2 / n), buildB = n => n * stepB(n);
-const BDUR = TOURB.map(n => BGAP + buildB(n) + BHOLD), BPER = BDUR.reduce((a, b) => a + b);
-const POSTER_T = TB + BDUR[0] + BDUR[1] + BGAP + buildB(14) + .6;   // 14 neurons added up
-function bNow() {
-  if (NSEL) return NSEL;
-  const c0 = Math.max(0, t - TB), cy = Math.floor(c0 / BPER);
-  let c = c0 - cy * BPER, i = 0, base = TB + cy * BPER;
-  while (i < TOURB.length - 1 && c >= BDUR[i]) { c -= BDUR[i]; base += BDUR[i]; i++; }
-  const first = cy === 0 && i === 0;
-  return { n: TOURB[i], t0: base, prev: first ? null : { n: TOURB[(i + TOURB.length - 1) % TOURB.length], t0: -1e3, sw: base } };
-}
-/* draw something as it was at the moment sw (a fit fading out keeps its last state) */
-function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
-
-/* ================================================ the layout */
-const YT = 36, CH = { x: 532, y: YT - 18, w: 26, h: 24, gap: 4 };
-const RB = { x: CH.x + NMAX * (CH.w + CH.gap) + 14, y: YT - 6, r: 12 };       // build again
-const FP = { x: 76, y: 96, w: 540, h: 296 }, EP = { x: 724, y: 96, w: 240, h: 296 };
-const pts = Array.from({ length: NX }, () => [0, 0]);
-function builtB(st) {                          // pieces added so far, as a real number
-  const u = t - st.t0 - BGAP, s = stepB(st.n);
-  if (u <= 0) return 0;
-  const q = Math.floor(u / s);
-  return q >= st.n ? st.n : q + easeInOut(u / s - q);
-}
-function fitCurves(A, st, fa, grow, hp) {
-  const P = PIE[st.n - 1], c = NETS[st.n - 1].base, u = builtB(st), kk = Math.floor(u), fr = u - kk;
-  for (let j = 0; j < Math.min(st.n, kk + 1); j++) {
-    const sc = j < kk ? 1 : fr; if (sc <= 0) continue;
-    for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(sc * P[j][i]); }
-    const on = j === kk, me = j === hp;
-    line(pts, { color: on || me ? C.accent : C.sky, width: me ? 2.6 : on ? 1.8 : 1.1, alpha: (on || me ? 1 : hp >= 0 ? .4 : .75) * fa });
-  }
-  for (let i = 0; i < NX; i++) {
-    let v = c;
-    for (let j = 0; j < Math.min(st.n, kk + 1); j++) v += (j < kk ? 1 : fr) * P[j][i];
-    pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(v);
-  }
-  line(pts, { color: C.blue, width: 2.4, alpha: fa, progress: grow });
-}
-
+const D = DATA, POSTER_T = 8, FIG = cv.closest('.fig');
+let manual = null, stepInput = null;
+function reset() { manual = null; }
+const subset = a => a.map(j => 'x' + (j + 1)).join(', ');
 function draw() {
-  const la = lab(.06), st = bNow();
-  panel('b', 18, YT, { alpha: lab(.04) });
-  text('many neurons added together', 52, YT + rise(la), { size: 17, color: C.body, alpha: la });
-  // the number of neurons: the reader's choice
-  text('number of neurons', CH.x - 12, YT, { size: 15, color: C.body, align: 'right', alpha: la });
-  for (let q = 1; q <= NMAX; q++) {
-    const x = CH.x + (q - 1) * (CH.w + CH.gap), on = q === st.n, a = lab(.08 + .012 * q);
-    rect(x, CH.y, CH.w, CH.h, { fill: on ? C.navy : HC === q ? C.steel : '#fff', stroke: on ? C.navy : C.guide, width: 1, alpha: a });
-    text(String(q), x + CH.w / 2, CH.y + 17, { size: 15, color: on ? '#fff' : C.body, align: 'center', alpha: a });
+  const u = manual === null ? clamp((t - 1) / 5) : manual;
+  const k = Math.min(3, 1 + Math.floor(u * 2.99)), step = D.steps[k - 1];
+  if (manual === null && stepInput) stepInput.value = k;
+  const xs = 110, ww = 500;
+  panel('a', 22, 34); text('Filter: score before fitting', 58, 34, {size: 19});
+  const a = axes({x: xs, y: 76, w: ww, h: 200, xlim: [0, 1], ylim: [.5, 6.5],
+    xticks: [0, .25, .5, .75, 1], yticks: [1, 2, 3, 4, 5, 6], yfmt: v => 'x' + (7 - v),
+    xlabel: '|r(x_j, y)|', ylabel: '\\rm{feature}', grid: true, progress: seg(0, .35)});
+  for (let j = 0; j < 6; j++) {
+    const yy = a.Y(6 - j), selected = D.filter.includes(j), len = D.correlation[j] * seg(.15 + j * .04, .35);
+    ctx.fillStyle = selected ? C.blue : C.steel2; ctx.fillRect(a.X(0), yy - 8, len * ww, 16);
+    text(D.correlation[j].toFixed(3), a.X(len) + 8, yy + 5, {size: 14, alpha: lab()});
   }
-  // build the sum again: a round button with the restart arrow
-  if (!STILL) {
-    const a = lab(.3), col = HR ? C.navy : C.guide;
-    dot(RB.x, RB.y, RB.r, { color: col, fill: HR ? C.steel : '#fff', width: 1.2, alpha: a });
-    const arc = []; for (let q = 0; q <= 20; q++) { const an = -.5 + 4.6 * q / 20; arc.push([RB.x + 5.6 * Math.cos(an), RB.y + 5.6 * Math.sin(an)]); }
-    line(arc, { color: col, width: 1.5, alpha: a });
-    const e = arc[arc.length - 1];
-    line([[e[0] - 3.2, e[1] - 1.6], [e[0], e[1]], [e[0] + 1, e[1] - 3.4]], { color: col, width: 1.5, alpha: a });
-  }
-  // the fit: the target, the pieces, their sum
-  const A = axes({ ...FP, xlim: [0, 1], ylim: [-1.3, 1.3], xticks: [0, .25, .5, .75, 1], yticks: [-1, -.5, 0, .5, 1],
-                   xfmt: v => v === .5 ? '0.5' : fmt(v), yfmt: v => v === .5 ? '0.5' : v === -.5 ? '−0.5' : fmt(v),
-                   xlabel: 'x', progress: seg(.1, .35) });
-  const u = builtB(st), done = u >= st.n, hp = done ? HP : -1;
-  text(`${st.n} neuron${st.n > 1 ? 's' : ''}`, FP.x, FP.y - 12, { size: 17, alpha: la });
-  math(`\\rm{error}\\ \\ ${NETS[st.n - 1].rms.toFixed(3)}`, FP.x + FP.w, FP.y - 12,
-       { size: 15, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
-  A.inside(() => {
-    line([[FP.x, A.Y(0)], [FP.x + FP.w, A.Y(0)]], { color: C.rule, width: 1, alpha: seg(.2, .3) });
-    for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(D.g[i]); }
-    line(pts, { color: C.guide, width: 1.6, dash: [2.5, 3.5], progress: seg(.15, .4) });
-    if (st.prev) { const fo = 1 - seg(st.t0, BGAP * .7); if (fo > 0) at(st.prev.sw, () => fitCurves(A, st.prev, fo, 1, -1)); }
-    fitCurves(A, st, st.prev ? seg(st.t0 + BGAP * .5, BGAP * .5) : 1, st.prev ? 1 : seg(.3, .4), hp);
+  text('Top three correlations', 682, 88, {size: 17});
+  text(subset(D.filter), 682, 117, {size: 18, color: C.blue});
+  text('x4 repeats much of x1', 682, 156, {size: 16, color: C.muted});
+  text('x3 carries extra information', 682, 179, {size: 16, color: C.muted});
+  text('Held-out RMSE: ' + D.rmse[0].toFixed(3), 682, 228, {size: 17});
+  panel('b', 22, 368); text('Wrapper: fit candidate subsets', 58, 368, {size: 19});
+  const b = axes({x: xs, y: 410, w: ww, h: 190, xlim: [1, 6], ylim: [.4, 3],
+    xticks: [1, 2, 3, 4, 5, 6], yticks: [.5, 1, 1.5, 2, 2.5, 3],
+    xlabel: '\\rm{number of features}', ylabel: '\\rm{CV RMSE}', grid: true, progress: seg(.1, .35)});
+  const pp = D.steps.map((s, i) => [b.X(i + 1), b.Y(s.rmse)]);
+  b.inside(() => line(pp, {color: C.navy, width: 2.4, progress: seg(.3, .45)}));
+  pp.forEach((p, i) => dot(...p, 4, {color: C.navy, fill: '#fff'}));
+  dot(...pp[k - 1], 7, {color: C.accent, fill: C.accent});
+  text('Forward step ' + k + ' of 3', 682, 421, {size: 17});
+  text(subset(step.selected), 682, 450, {size: 18, color: C.blue});
+  text('Candidate     CV RMSE', 682, 489, {size: 16, color: C.muted});
+  step.candidates.forEach(([j, v], i) => {
+    const yy = 516 + i * 21, selected = step.selected[k - 1] === j;
+    text('add x' + (j + 1), 682, yy, {size: 15, color: selected ? C.accent : C.body});
+    text(v.toFixed(3), 910, yy, {size: 15, align: 'right', color: selected ? C.accent : C.body});
   });
-  // the piece pointed at: its neuron's numbers, over the plot's foot
-  if (hp >= 0) {
-    const nt = NETS[st.n - 1], y = FP.y + FP.h - 14;
-    math(`\\rm{neuron}\\ ${hp + 1}:\\ \\ v = ${num(nt.v[hp])},\\ \\ w = ${nt.w[hp].toFixed(1)},\\ \\ m = ${num(nt.m[hp])}`,
-         FP.x + FP.w - 12, y, { size: 15, color: C.accent, align: 'right' });
-  }
-  // the error for every number of neurons, log scale; the one shown glides along it
-  const E = axes({ ...EP, xlim: [.5, NMAX + .5], ylim: [-3, 0], xticks: [1, 5, 10, 14], yticks: [-3, -2, -1, 0],
-                   yfmt: v => ['0.001', '0.01', '0.1', '1'][v + 3], xlabel: '\\rm{number\\ of\\ neurons}',
-                   ylabel: '\\rm{error}', ylabelGap: 50, grid: true, progress: seg(.12, .35) });
-  const ep = [];
-  for (let q = 1; q <= NMAX; q++) ep.push([E.X(q), E.Y(LRMS[q - 1])]);
-  line(ep, { color: C.blue, width: 1.6, progress: seg(.25, .5) });
-  for (let q = 1; q <= NMAX; q++) mark('circle', E.X(q), E.Y(LRMS[q - 1]), HC === q ? 4.8 : 3.4,
-                                      { fill: HC === q ? C.steel : '#fff', stroke: C.blue, width: 1.3, alpha: seg(.3 + .02 * q, .2) });
-  const n0 = st.prev ? st.prev.n : st.n, gl = settle(st.t0, .45), nq = lerp(n0, st.n, Math.min(1, gl));
-  const q0 = clamp(Math.floor(nq), 1, NMAX - 1), fq = clamp(nq - q0);
-  dot(E.X(nq), E.Y(lerp(LRMS[q0 - 1], LRMS[q0], fq)), 5, { color: '#fff', fill: C.accent, width: 1.4, alpha: seg(.4, .25) });
-  // the network's formula over the plot, and which line is which under it
-  const lA = lab(.4), ly = FP.y + FP.h + 84;
-  math('f(x) = c + \\Sigma_{j} v_{j}\\,\\rm{tanh}(w_{j}(x - m_{j}))', FP.x + FP.w / 2, FP.y - 12, { size: 17, align: 'center', alpha: lA });
-  const items = [[C.guide, 1.6, [2.5, 3.5], 'target function'], [C.sky, 1.2, null, 'one neuron’s piece'],
-                 [C.accent, 1.8, null, 'the piece being added'], [C.blue, 2.4, null, 'their sum']];
-  let lx = FP.x + 22;
-  for (const [col, wd, dash, words] of items) {
-    line([[lx - 14, ly - 5], [lx + 14, ly - 5]], { color: col, width: wd, dash, alpha: lA });
-    lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40;
-  }
-  architecture(st);
-  text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
-  if (!STILL) text('point at a piece', FP.x + FP.w, FP.y + FP.h + 44, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
-  place();
+  text('Three-feature test RMSE: ' + D.rmse[1].toFixed(3), 682, 671, {size: 16});
+  panel('c', 22, 718); text('Embedded: L1 shrinks coefficients', 58, 718, {size: 19});
+  const c = axes({x: xs, y: 766, w: ww, h: 200, xlim: [-3, 1], ylim: [-2.5, 3.5],
+    xticks: [-3, -2, -1, 0, 1], xfmt: v => String(10 ** v), yticks: [-2, -1, 0, 1, 2, 3],
+    xlabel: '\\rm{penalty}\\ \\alpha\\ \\rm{(log scale)}', ylabel: '\\rm{coefficient}', grid: true, progress: seg(.15, .35)});
+  const colors = [C.navy, C.blue, C.accent, C.sky, C.guide, C.muted];
+  c.inside(() => {
+    line([[c.X(-3), c.Y(0)], [c.X(1), c.Y(0)]], {color: C.rule, width: 1});
+    for (let j = 0; j < 6; j++) line(D.alphas.map((a, i) => [c.X(Math.log10(a)), c.Y(D.coefs[i][j])]),
+      {color: colors[j], width: j < 3 ? 2.4 : 1.4, dash: j > 2 ? [4, 3] : null, progress: seg(.3 + .04 * j, .4)});
+    line([[c.X(Math.log10(D.alpha)), c.Y(-2.5)], [c.X(Math.log10(D.alpha)), c.Y(3.5)]], {color: C.guide, width: 1, dash: [5, 4]});
+  });
+  text('Lasso, alpha = ' + D.alpha, 682, 778, {size: 17});
+  D.embedded_coef.forEach((v, j) => {
+    const yy = 815 + j * 22;
+    line([[682, yy - 5], [704, yy - 5]], {color: colors[j], width: 2, dash: j > 2 ? [4, 3] : null});
+    text('x' + (j + 1) + ': ' + D.features[j], 714, yy, {size: 15});
+    text(v.toFixed(3), 972, yy, {size: 15, align: 'right'});
+  });
+  text('Selected: ' + subset(D.embedded), 682, 971, {size: 16, color: C.blue});
+  text('Held-out RMSE: ' + D.rmse[2].toFixed(3), 682, 998, {size: 16});
+  text('Synthetic sensor features, 360 train / 120 test; same Ridge predictor for all held-out comparisons', 22, 1051, {size: 14, color: C.muted});
 }
-
-/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output, every connection
-   drawn; a neuron is blue once its piece is added. Its output bias is base + sum(v), since each
-   piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
-const AR = { y: 520, cy: 654, xi: 240, xh: 490, xo: 800, ri: 13, rh: 5, dy: 13 };
-function architecture(st) {
-  const n = st.n, nt = NETS[n - 1], a = lab(.5), built = builtB(st);
-  cv.dataset.architecture = `1-${n}-1`;
-  text(`Selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 18, alpha: a });
-  text('input', AR.xi, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text('linear output', AR.xo, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * AR.dy);
-  for (let j = 0; j < n; j++) {
-    const col = j < built ? C.blue : C.guide;
-    line([[AR.xi + AR.ri, AR.cy], [AR.xh - 8, ys[j]]], { color: col, width: 1, alpha: a * .65 });
-    line([[AR.xh + 8, ys[j]], [AR.xo - AR.ri, AR.cy]], { color: col, width: 1, alpha: a * .65 });
-  }
-  for (let j = 0; j < n; j++) dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.1, alpha: a });
-  dot(AR.xi, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
-  dot(AR.xo, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
-  math('x', AR.xi, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  text('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  text(`Output bias ${(nt.base + nt.v.reduce((s, v) => s + v, 0)).toFixed(3)}; ${3 * n + 1} fitted parameters`,
-       FP.x, AR.cy + 118, { size: 15, color: C.muted, alpha: a });
-  text('Every hidden neuron connects to the input and output; weights match the selected fit above.',
-       FP.x, AR.cy + 143, { size: 14, color: C.muted, alpha: a });
-}
-
-/* ================================================ the reader's hand: pointer and keyboard */
-const FIG = document.querySelector('.fig'), KB = { cr: [], rb: null, key: '' };
-function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
-function redraw() { if (!playing) render(); }
-const quick = () => REDUCED || STILL;                    // less motion: the sum at once
-function chooseN(n, again) {
-  const cur = bNow();
-  if (!playing && !quick()) setPlay(true);
-  NSEL = quick() ? { n, t0: t - 1e3, prev: null } : { n, t0: t, prev: again ? null : { n: cur.n, t0: cur.t0, sw: t } };
-  HP = -1; redraw();
-}
-function hitChip(X, Y) {
-  if (Y >= CH.y - 4 && Y <= CH.y + CH.h + 4) {
-    const q = Math.floor((X - CH.x + CH.gap / 2) / (CH.w + CH.gap));
-    if (q >= 0 && q < NMAX) return q + 1;
-  }
-  if (X >= EP.x && X <= EP.x + EP.w && Y >= EP.y - 6 && Y <= EP.y + EP.h + 6) {
-    const q = Math.round((X - EP.x) / EP.w * NMAX + .5);
-    if (q >= 1 && q <= NMAX && Math.abs(X - (EP.x + (q - .5) / NMAX * EP.w)) < 9) return q;
-  }
-  return 0;
-}
-const onRB = (X, Y) => !STILL && Math.hypot(X - RB.x, Y - RB.y) < RB.r + 4;
-function hitPiece(X, Y) {                      // the piece whose curve passes nearest, within 7 units
-  const st = bNow();
-  if (builtB(st) < st.n || X < FP.x || X > FP.x + FP.w || Y < FP.y || Y > FP.y + FP.h) return -1;
-  const i = Math.round((X - FP.x) / FP.w * (NX - 1)), P = PIE[st.n - 1], A = 1.3, best = { j: -1, d: 7 };
-  for (let j = 0; j < st.n; j++) { const y = FP.y + FP.h - (P[j][i] + A) / (2 * A) * FP.h, d = Math.abs(y - Y); if (d < best.d) { best.d = d; best.j = j; } }
-  return best.j;
-}
+function lab() { return seg(.4, .3); }
 if (!STILL) {
-  const css = document.createElement('style');
-  css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
-    'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
-  document.head.appendChild(css);
-  const ctl = FIG.querySelector('.ctl');
-  const add = (parent, tag, role, label) => {
-    const el = document.createElement(tag); el.className = 'nfk';
-    if (tag === 'button') el.type = 'button';
-    if (role) el.setAttribute('role', role);
-    if (label) el.setAttribute('aria-label', label);
-    parent === FIG ? FIG.insertBefore(el, ctl) : parent.appendChild(el);
-    return el;
-  };
-  const gB = document.createElement('div');
-  gB.setAttribute('role', 'radiogroup'); gB.setAttribute('aria-label', 'Number of neurons added together');
-  FIG.insertBefore(gB, ctl);
-  const roving = (list, i, pick) => e => {
-    const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = list.length;
-    const j = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : d ? (i + d + n) % n : (e.key === 'Enter' || e.key === ' ') ? i : -1;
-    if (j < 0) return;
-    e.preventDefault(); list[j].focus(); pick(j);
-  };
-  for (let q = 1; q <= NMAX; q++) {
-    const b = add(gB, 'button', 'radio', `${q} neuron${q > 1 ? 's' : ''}`);
-    b.addEventListener('keydown', roving(KB.cr, q - 1, j => chooseN(j + 1)));
-    KB.cr.push(b);
-  }
-  KB.rb = add(FIG, 'button', null, 'Add the neurons again, one at a time');
-  KB.rb.addEventListener('click', e => { e.stopPropagation(); chooseN(bNow().n, true); });
-  cv.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;
-    const [X, Y] = toUnits(e), hc = hitChip(X, Y), hr = onRB(X, Y), hp = hc || hr ? -1 : hitPiece(X, Y);
-    cv.style.cursor = hc || hr || hp >= 0 ? 'pointer' : '';
-    if (hc !== HC || hr !== HR || hp !== HP) { HC = hc; HR = hr; HP = hp; redraw(); }
-  });
-  cv.addEventListener('pointerleave', () => { HC = 0; HR = false; HP = -1; cv.style.cursor = ''; redraw(); });
-  // a click on a chip, a marker, the button or a piece is a choice: it must not also pause
-  // (the engine toggles on a click of the canvas), so it stops on the way down
-  FIG.addEventListener('click', e => {
-    if (e.target !== cv) return;
-    const [X, Y] = toUnits(e), c = hitChip(X, Y), p = hitPiece(X, Y);
-    if (c) chooseN(c);
-    else if (onRB(X, Y)) chooseN(bNow().n, true);
-    else if (p >= 0) { HP = HP === p ? -1 : p; redraw(); }
-    else return;
-    e.stopPropagation();
-  }, true);
-}
-/* the keyboard's stand-ins sit on what they choose, and say what is chosen */
-function place() {
-  if (STILL || !KB.rb) return;
-  const bs = bNow(), key = cv.clientWidth + ':' + bs.n;
-  if (key === KB.key) return;
-  KB.key = key;
-  const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
-  const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
-  KB.cr.forEach((b, q) => {
-    box(b, CH.x + q * (CH.w + CH.gap), CH.y, CH.x + q * (CH.w + CH.gap) + CH.w, CH.y + CH.h);
-    b.setAttribute('aria-checked', String(q + 1 === bs.n)); b.tabIndex = q + 1 === bs.n ? 0 : -1;
-  });
-  box(KB.rb, RB.x - RB.r - 2, RB.y - RB.r - 2, RB.x + RB.r + 2, RB.y + RB.r + 2);
+  const ctl = document.createElement('label');
+  ctl.style.cssText = 'position:absolute;left:11%;top:62.5%;font:500 14px "CMU Serif";color:#544F48;display:flex;align-items:center;gap:8px;width:50%';
+  ctl.textContent = 'Forward-selection step';
+  const input = document.createElement('input'); input.type = 'range'; input.min = 1; input.max = 3; input.step = 1; input.value = 3;
+  stepInput = input;
+  input.setAttribute('aria-label', 'Forward-selection step'); input.style.width = '35%';
+  new ResizeObserver(() => { const scale = cv.getBoundingClientRect().width / W;
+    ctl.style.fontSize = (14 * scale) + 'px'; input.style.height = (20 * scale) + 'px';
+  }).observe(cv);
+  input.addEventListener('input', () => { manual = (Number(input.value) - 1) / 2; render(); });
+  ctl.addEventListener('click', e => e.stopPropagation()); ctl.appendChild(input); FIG.appendChild(ctl);
 }
 boot();
 </script>

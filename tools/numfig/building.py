@@ -66,6 +66,16 @@ def compute():
     v0 = ROOF_AMP / abs(g[0] * Phi[-1, 0])
     Q = g * v0                                # q_j(t) = Q_j sin(w_j t), m
     R = dict(m=m, k=k, M=M, K=K, w=w, Phi=Phi, Q=Q, v0=v0)
+    cases = []
+    for label, factors in (("undamaged", np.ones(5)),
+                           ("storey 3 damaged", np.array([1., 1., .55, 1., 1.])),
+                           ("storey 5 damaged", np.array([1., 1., 1., 1., .55]))):
+        Md, Kd = matrices(m, k * factors)
+        wd, Pd = modes(Md, Kd)
+        gd = Pd.T @ Md @ e / wd
+        cases.append({"label": label, "factor": factors.tolist(), "f": (wd / (2 * np.pi)).tolist(),
+                      "w": wd.tolist(), "phi": Pd.T.tolist(), "Q": (gd * v0).tolist()})
+    R["cases"] = cases
     # checks
     R["res"] = max(np.linalg.norm(K @ Phi[:, j] - w[j] ** 2 * M @ Phi[:, j]) / np.linalg.norm(K @ Phi[:, j])
                    for j in range(n))
@@ -166,6 +176,7 @@ JS = r"""
 const D = DATA;
 const POSTER_T = D.poster;
 const N = 5;
+let CASE = D.cases[0];
 const lab = t0 => settle(t0, .28);         // a label arriving
 const rise = s => 4 * (1 - s);             // ... settling 4 units into place
 
@@ -179,14 +190,60 @@ const G = D.gain;                          // drawing units per metre of displac
    x_i(t) = sum_j Q_j phi_j(i) sin(w_j (t - T0) / SLOW), zero before the impulse */
 function terms() {
   const tau = Math.max(0, t - D.t0) / D.slow;
-  return D.Q.map((q, j) => q * Math.sin(D.w[j] * tau));
+  return CASE.Q.map((q, j) => q * Math.sin(CASE.w[j] * tau));
 }
 function disp(c, js, mag) {                // floor displacements (units) of the modes js
   const u = [0];
-  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * D.phi[j][i]; u.push(s * G * mag); }
+  for (let i = 0; i < N; i++) { let s = 0; for (const j of js) s += c[j] * CASE.phi[j][i]; u.push(s * G * mag); }
   return u;
 }
-const ENV = [0, 1].map(j => [0].concat(D.phi[j].map(v => Math.abs(D.Q[j]) * v * G * D.mag[j])));
+function env(j) { return [0].concat(D.phi[j].map(v => Math.abs(D.Q[j]) * v * G * D.mag[j])); }
+
+function solveStiffness(factors) {
+  const k = D.k.map((v, i) => v * factors[i]), m = D.m;
+  const K = Array.from({length:N}, () => Array(N).fill(0));
+  for (let s=0;s<N;s++) { K[s][s]+=k[s]; if(s) { K[s-1][s-1]+=k[s]; K[s-1][s]-=k[s]; K[s][s-1]-=k[s]; } }
+  const A = K.map((row,i)=>row.map((v,j)=>v/Math.sqrt(m[i]*m[j])));
+  const V = Array.from({length:N},(_,i)=>Array.from({length:N},(_,j)=>+(i===j)));
+  for (let it=0;it<150;it++) {
+    let p=0,q=1,big=0;
+    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++) if(Math.abs(A[i][j])>big) {big=Math.abs(A[i][j]);p=i;q=j;}
+    if(big<1e-11) break;
+    const tau=(A[q][q]-A[p][p])/(2*A[p][q]), z=(tau>=0?1:-1)/(Math.abs(tau)+Math.sqrt(1+tau*tau));
+    const c=1/Math.sqrt(1+z*z),s=z*c,ap=A[p][p],aq=A[q][q],pq=A[p][q];
+    A[p][p]=ap-z*pq; A[q][q]=aq+z*pq; A[p][q]=A[q][p]=0;
+    for(let i=0;i<N;i++) {
+      if(i!==p&&i!==q) {const a=A[i][p],b=A[i][q]; A[i][p]=A[p][i]=c*a-s*b; A[i][q]=A[q][i]=s*a+c*b;}
+      const a=V[i][p],b=V[i][q];V[i][p]=c*a-s*b;V[i][q]=s*a+c*b;
+    }
+  }
+  const ids=Array.from({length:N},(_,i)=>i).sort((i,j)=>A[i][i]-A[j][j]);
+  const w=ids.map(j=>Math.sqrt(A[j][j]));
+  const phi=ids.map(j=>V.map((row,i)=>row[j]/Math.sqrt(m[i])*(V[N-1][j]<0?-1:1)));
+  return {label:'custom stiffness',factor:[...factors],w,f:w.map(v=>v/(2*Math.PI)),phi,
+          Q:phi.map((v,j)=>v[N-1]*m[N-1]*D.v0/w[j])};
+}
+
+// FFT of the exact undamped roof displacement over 32 physical seconds.
+function fftSpectrum(model) {
+  const n=2048, fs=64, re=new Float64Array(n), im=new Float64Array(n); let ws=0;
+  for(let i=0;i<n;i++) {
+    const window=.5-.5*Math.cos(2*Math.PI*i/(n-1)); ws+=window;
+    re[i]=1000*window*model.w.reduce((a,w,j)=>a+model.Q[j]*model.phi[j][N-1]*Math.sin(w*i/fs),0);
+  }
+  for(let i=1,j=0;i<n;i++) {
+    let b=n>>1; for(;j&b;b>>=1) j^=b; j^=b;
+    if(i<j) {const a=re[i];re[i]=re[j];re[j]=a;}
+  }
+  for(let len=2;len<=n;len*=2) for(let start=0;start<n;start+=len) {
+    for(let j=0;j<len/2;j++) {
+      const a=-2*Math.PI*j/len,c=Math.cos(a),s=Math.sin(a),r=start+j,v=r+len/2;
+      const tr=c*re[v]-s*im[v],ti=s*re[v]+c*im[v];
+      re[v]=re[r]-tr;im[v]=im[r]-ti;re[r]+=tr;im[r]+=ti;
+    }
+  }
+  return Array.from({length:n/2+1},(_,i)=>[i*fs/n,Math.hypot(re[i],im[i])*(i===0||i===n/2?1:2)/ws]);
+}
 
 /* ---------------------------------------------------------------- drawing */
 function column(cx, x0, u, s, o) {         // the column of storey s: fixed-fixed, cubic
@@ -205,6 +262,8 @@ function building(cx, u, o = {}) {
     if (ps <= 0) break;
     for (const x0 of [-BW / 2, BW / 2]) {
       column(cx, x0, u, s, {color, width, dash, alpha, progress: ps});
+      if (!thin && CASE.factor[s - 1] < .999)
+        column(cx, x0, u, s, {color:C.accent, width:width+.4, alpha, progress:ps});
       if (hl > 0 && s === hs) column(cx, x0, u, s, {color: C.accent, width: width + .4, alpha: alpha * hl, progress: ps});
     }
     if (ps >= 1 && !thin)                  // a rigid floor
@@ -269,11 +328,29 @@ function matrix(name, lx, x0, dx, ents, kind, hs, hl, alpha, bp) {
   for (const [x, s] of [[left, 1], [right, -1]])
     line([[x + 7 * s, top], [x, top], [x, bot], [x + 7 * s, bot]], {width: 1.3, progress: bp});
 }
+function spectrum(alpha) {
+  text('Roof-displacement frequency spectrum', 76, 956, {size:18,alpha});
+  line([[560,950],[590,950]], {color:C.guide,dash:[4,3],alpha});
+  text('undamaged',600,955,{size:15,color:C.muted,alpha});
+  line([[746,950],[776,950]], {color:C.blue,width:2,alpha});
+  text('selected stiffness',786,955,{size:15,alpha});
+  const maxf=Math.ceil(Math.max(...D.f,...CASE.f)*1.1);
+  const ymax=Math.ceil(Math.max(...BASE_SPEC.map(x=>x[1]),...CASE.spectrum.map(x=>x[1]))*5)/5;
+  const A=axes({x:76,y:990,w:864,h:190,xlim:[0,maxf],ylim:[0,ymax],
+    xticks:Array.from({length:Math.floor(maxf/2)+1},(_,i)=>2*i),yticks:[0,ymax/2,ymax],
+    yfmt:v=>v.toFixed(2),xlabel:'frequency (Hz)',ylabel:'amplitude (mm)',progress:seg(.8,.35)});
+  A.inside(()=>{
+    for(const [spec,col,dash] of [[BASE_SPEC,C.guide,[4,3]],[CASE.spectrum,C.blue,null]])
+      line(spec.filter(p=>p[0]<=maxf).map(p=>[A.X(p[0]),A.Y(p[1])]),{color:col,width:1.8,dash,alpha});
+  });
+  text('Same roof impulse; 32 s physical record, Hann window, 64 Hz sampling; C = 0.',76,1264,{size:14,color:C.muted,alpha});
+}
 
 /* ---------------------------------------------------------------- draw */
 function draw() {
   const c = terms();
   const tot = disp(c, [0, 1, 2, 3, 4], 1), m1 = disp(c, [0], D.mag[0]), m2 = disp(c, [1], D.mag[1]), mh = disp(c, [2, 3, 4], D.mag[2]);
+  const ENV = [env(0), env(1)];
   const zero = [0, 0, 0, 0, 0, 0];
   // the storey highlight: one storey at a time, quietly
   const k_ = Math.floor((t - D.hl0) / D.hldt), hs = t < D.hl0 ? 0 : ((k_ % N) + N) % N + 1;
@@ -288,10 +365,10 @@ function draw() {
   text('2nd mode', CX[2], 50 + rise(tt[2]), {size: 17, color: C.body, align: 'center', alpha: tt[2]});
   text('Higher modes', CX[3], 50 + rise(tt[3]), {size: 17, color: C.body, align: 'center', alpha: tt[3]});
   const fa = [lab(.30), lab(.34), lab(.38)];
-  math('f_{1} = ' + D.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
-  math('f_{2} = ' + D.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
+  math('f_{1} = ' + CASE.f[0].toFixed(2) + '\\ \\rm{Hz}', CX[1], 80 + rise(fa[0]), {size: 16, align: 'center', alpha: fa[0]});
+  math('f_{2} = ' + CASE.f[1].toFixed(2) + '\\ \\rm{Hz}', CX[2], 80 + rise(fa[1]), {size: 16, align: 'center', alpha: fa[1]});
   math('f_{3}, f_{4}, f_{5} = ', CX[3], 80 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
-  math(D.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
+  math(CASE.f.slice(2).map(v => v.toFixed(1)).join(', ') + '\\ \\rm{Hz}', CX[3], 100 + rise(fa[2]), {size: 16, align: 'center', alpha: fa[2]});
   text('× ' + D.mag[1], CX[2], 120 + rise(fa[1]), {size: 14, color: C.muted, align: 'center', alpha: fa[1]});
   text('× ' + D.mag[2], CX[3], 120 + rise(fa[2]), {size: 14, color: C.muted, align: 'center', alpha: fa[2]});
 
@@ -338,13 +415,59 @@ function draw() {
   const ma = lab(.60), bpm = seg(.55, .30);
   matrix('M', 92, 130, 50, MENT, 'm', hs, hl, ma, bpm);
   matrix('K', 470, 520, 96, KENT, 'k', hs, hl, lab(.66), bpm);
+  text('Dashed: undamaged modal amplitudes; red columns: stiffness loss; solid: selected model.', 76, 482, {size:14,color:C.muted,alpha:lab(.55)});
+  text('Change each storey stiffness (MN/m)',24,815,{size:18,alpha:lab(.7)});
+  for(let i=0;i<N;i++) {
+    const x=24+i*194;
+    text(`Storey ${i+1}`,x,843,{size:16,alpha:lab(.7)});
+    text((D.k[i]*CASE.factor[i]/1e6).toFixed(1)+' MN/m',x,908,{size:16,color:C.blue,alpha:lab(.7)});
+  }
+  spectrum(lab(.72));
 
   // parameters and time scale
   const pa = lab(.80);
   text(D.params, 18, H - 14, {size: 14, color: C.muted, alpha: pa});
   text(D.slowtxt, W - 18, H - 14, {size: 14, color: C.muted, align: 'right', alpha: pa});
 }
+const BASE_SPEC=fftSpectrum(D.cases[0]);
+D.cases.forEach(c=>c.spectrum=fftSpectrum(c));
 boot();
+(() => {
+  const host = document.querySelector('.fig');
+  if (!host || !D.cases || D.cases.length < 2) return;
+  const group = document.createElement('div');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Building damage cases');
+  group.style.cssText = 'position:absolute;display:flex;gap:6px;z-index:2';
+  const sliders=[],buttons=[];
+  const update=()=>{ sliders.forEach((s,i)=>{s.value=String(CASE.factor[i]*100);s.setAttribute('aria-valuetext',(D.k[i]*CASE.factor[i]/1e6).toFixed(1)+' MN/m, '+Math.round(CASE.factor[i]*100)+' percent of undamaged');}); buttons.forEach((b,i)=>b.setAttribute('aria-pressed',String(CASE===D.cases[i]))); if(!playing) render(); };
+  D.cases.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = item.label;
+    b.style.cssText = 'border:1px solid #a8b6c3;border-radius:2px;background:#fff;color:#234969;padding:3px 8px;font:15px CMUSerif,serif;cursor:pointer';
+    b.setAttribute('aria-pressed', String(i === 0));
+    b.addEventListener('click', e => {
+      e.stopPropagation(); CASE = item;
+      update();
+    });
+    group.appendChild(b); buttons.push(b);
+  });
+  host.style.position = 'relative'; host.appendChild(group);
+  for(let i=0;i<N;i++) {
+    const s=document.createElement('input');s.type='range';s.min='20';s.max='150';s.step='1';s.value='100';
+    s.setAttribute('aria-label',`Storey ${i+1} stiffness (percent of undamaged)`);
+    s.style.cssText='position:absolute;margin:0;accent-color:#095A94;z-index:2;cursor:pointer';
+    s.addEventListener('input',()=>{const f=[...CASE.factor];f[i]=Number(s.value)/100;CASE=solveStiffness(f);CASE.spectrum=fftSpectrum(CASE);update();});
+    s.addEventListener('click',e=>e.stopPropagation());host.appendChild(s);sliders.push(s);
+  }
+  const placeControls=()=>{
+    const scale=cv.clientWidth/W;
+    group.style.left=24*scale+'px';group.style.top=762*scale+'px';
+    buttons.forEach(b=>{b.style.fontSize=15*scale+'px';b.style.padding=3*scale+'px '+8*scale+'px';});
+    sliders.forEach((s,i)=>{s.style.left=(24+i*194)*scale+'px';s.style.top=858*scale+'px';s.style.width=165*scale+'px';s.style.height=28*scale+'px';});
+  };
+  new ResizeObserver(placeControls).observe(cv);placeControls();update();
+})();
 """
 
 
@@ -361,6 +484,8 @@ def main():
         "params": ("floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; "
                    f"impulse at the roof, C = 0; displacements × {DEF:.0f}"),
         "slowtxt": f"time slowed {SLOW:.0f} ×",
+        "cases": R["cases"],
+        "m": R["m"].tolist(), "k": R["k"].tolist(), "v0": R["v0"],
     }
     title = ("Figure 1: Lateral natural dynamic response of a building and its analysis through "
              "discretized formulation")
@@ -368,7 +493,8 @@ def main():
             "exact sum of its 1st mode, its 2nd mode and its higher modes, each vibrating at its own computed "
             "natural frequency. Below, the equation of motion with the mass and stiffness matrices, whose "
             "entries light up storey by storey.")
-    common.build_html(NAME, title, aria, 1000, 790, data, JS)
+    aria += " Change any storey stiffness or choose a damage preset to recompute the natural modes and compare the roof-displacement spectrum with the undamaged building."
+    common.build_html(NAME, title, aria, 1000, 1320, data, JS)
     txt = check(R, tp)
     with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)

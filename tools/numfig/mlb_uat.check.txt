@@ -27,7 +27,9 @@ CHECK: tanh(u) = 2 sigma(2u) - 1, so these are the sigmoid networks of the earli
   RMS 0.1768, 0.0831, 0.0030 for N = 3, 7, 14; these give 0.1768, 0.0831, 0.0030
 
 THE PAGE
-  W = 1000, H = 540. POSTER_T = 21 s: 14 neurons added up.
+  W = 1000, H = 830. POSTER_T = 21 s: 14 neurons added up.
+  Under the plots, the N chosen as a network: its fully connected 1-N-1 topology, a neuron blue once
+  its piece is added, the output bias base + sum(v) and the 3N + 1 fitted parameters.
   The page tours 3, 7 and 14 neurons, 24.55 s a round; a neuron switches on every
   min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.
   A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,

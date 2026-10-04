@@ -1,5 +1,5 @@
-"""Figure 4: dispersion curves of guided waves in a beam, from SAFE models of
-four steel cross-sections, and two of each one's waves, shown as their
+"""Figure 4: dispersion curves of guided waves, from SAFE models of
+four steel cross-sections and an infinite plate, with two waves shown as their
 cross-sections and along the beam. Interactive: every state is a SAFE solution.
 
 (a) phase velocity c_p = w/k against frequency: every branch inside the window,
@@ -22,14 +22,14 @@ cross-sections and along the beam. Interactive: every state is a SAFE solution.
 
 The sections (a switcher over (b)): the rectangular bar of safe_model.py, an
 I-beam, a rail-like section (head, web, foot: about a quarter scale UIC60,
-the rail of Figures 8 and 9) and a pipe. Each is meshed here with 9-node
+the rail of Figures 8 and 9), a pipe and a 10 mm plate of infinite width. Each is meshed here with 9-node
 quadratic elements; its symmetry splits it into classes (mirror planes, or for
 the pipe's uniform polar mesh, circumferential harmonics). The sweep here
 draws the curves; the page carries each mesh and solves every wave it shows
 with the same elements: a skyline LDL^T of K(k) - s M whose Sturm count pins
-the branch, then inverse iteration. The bar travels inside the page; the
-others are fetched as nf-dispersion-<section>.json when first chosen. The
-curves travel as the few eigenfrequencies a cubic Hermite in k needs.
+the branch, then inverse iteration. All five sections travel inside the page,
+so choosing a section never depends on a separate network request. The curves
+travel as the few eigenfrequencies a cubic Hermite in k needs.
 
 With no reader input it tours the modes (wave 1 low in frequency, wave 2 gliding
 up its curve, its packet quickening and slowing with its c_g). The first touch
@@ -72,7 +72,8 @@ import common
 import safe_model as sm
 
 NAME = "dispersion"
-MESH = (10, 20)                   # Q9 elements across b and h (2 mm), see the check
+MESH = (16, 32)                   # Q9 elements across b and h (1.25 mm), see the check
+SECTION_REFINEMENT = 1.5           # finer I-beam, rail, pipe and plate meshes
 F_MAX, CP_MAX = 200e3, 7.0e3      # the plot window, Hz and m/s
 K_MAX = 470.0                     # rad/m: every branch of the bar leaves the window below it
 REF_W, REF_H = 520, 418           # the refinement metric (drawing units), finer than the plot
@@ -246,12 +247,16 @@ class Section:
         return self._cls[name]
 
     def omegas(self, name, k, n):
+        if self.classes[name].shape[1] > 400:
+            return sparse_modes(self, name, k, n)[0]
         Q, k1, k2, k3, m = self.cls(name)
         w2 = sla.eigh(k1 + k * k2 + k * k * k3, m, eigvals_only=True,
                       subset_by_index=[0, min(n, len(m)) - 1], driver="gvx")
         return np.sqrt(np.clip(w2, 0, None))
 
     def solve(self, name, k, n):
+        if self.classes[name].shape[1] > 400:
+            return sparse_modes(self, name, k, n)
         Q, k1, k2, k3, m = self.cls(name)
         w2, v = sla.eigh(k1 + k * k2 + k * k * k3, m, subset_by_index=[0, n - 1], driver="gvx")
         return np.sqrt(np.clip(w2, 0, None)), Q @ v
@@ -283,8 +288,33 @@ def grid_mesh(yb, zb, ny, nz, keep):
 
 
 def bar_mesh(s=1.0):
-    """The bar of safe_model.py (s = 1: its 10 x 20 elements, node for node)."""
-    return grid_mesh([-10.0, 10.0], [-20.0, 20.0], [int(10 * s)], [int(20 * s)], lambda i, j: True)
+    """The production bar, node for node identical to safe_model.Safe(*MESH)."""
+    return grid_mesh([-10.0, 10.0], [-20.0, 20.0], [int(MESH[0] * s)], [int(MESH[1] * s)], lambda i, j: True)
+
+
+def plate_mesh(s=1.0):
+    """A displayed 40 mm slice of an infinite 10 mm plate, uniform across y.
+
+    The basis ties all nodes at the same z: the drawn width is not a free
+    edge. Lamb waves have u_y = 0; SH waves have only u_y.
+    """
+    return grid_mesh([-20.0, 20.0], [-5.0, 5.0], [1], [max(2, int(10 * s))], lambda i, j: True)
+
+
+def plate_basis(S, family, parity):
+    z = np.round(S.nodes_mm[:, 1], 4)
+    rows, cols, vals, col = [], [], [], 0
+    for zz in sorted(set(abs(z))):
+        for c in ([1] if family == "SH" else [0, 2]):
+            sign = parity * (-1 if c == 2 else 1)
+            if zz == 0 and sign < 0:
+                continue
+            sel = np.flatnonzero(np.isclose(abs(z), zz, atol=1e-6))
+            for n in sel:
+                rows.append(3 * n + c); cols.append(col)
+                vals.append((sign if z[n] < 0 else 1) / np.sqrt(len(sel)))
+            col += 1
+    return sp.csr_matrix((vals, (rows, cols)), shape=(S.ndof, col))
 
 
 IBEAM = dict(h=40.0, b=30.0, tf=5.0, tw=4.0)
@@ -472,6 +502,13 @@ LEG4 = [("vertical", "vertical bending"), ("lateral", "lateral bending"), ("axia
 # the tour of each section: (wave 1's mode, f1, wave 2's mode, fa, f2), kHz; wave 2 glides
 # fa to f2 (the first stop shows it at f2 at once); "h1" is the first higher order mode
 SECTIONS = {
+    "plate": dict(label="plate", mesh=plate_mesh, kind="plate",
+                  classes=[("A", "Lamb", -1), ("S", "Lamb", 1), ("SHs", "SH", 1), ("SHa", "SH", -1)],
+                  fund={"vertical": ("A", 0), "axial": ("S", 0), "lateral": ("SHs", 0)},
+                  legend=[("vertical", "A0 Lamb"), ("axial", "S0 Lamb"), ("lateral", "SH0"), (None, "higher order")],
+                  what="10 mm infinite plate",
+                  tour=[("vertical", 20, "vertical", 50, 150), ("axial", 20, "axial", 50, 150),
+                        ("lateral", 20, "lateral", 50, 150), ("h1", 185, "h1", 188, 195)]),
     "bar": dict(label="bar", mesh=bar_mesh, kind="mirror", planes=(1, 1), classes=CLS4, fund=FUND4, legend=LEG4,
                 what="bar 20 × 40 mm",
                 tour=[("vertical", 20, "vertical", 50, 150), ("axial", 20, "axial", 50, 150),
@@ -496,18 +533,32 @@ SECTIONS = {
                  tour=[("vertical", 20, "vertical", 50, 150), ("axial", 10, "axial", 30, 150),
                        ("torsional", 20, "torsional", 50, 150), ("h1", 12, "h1", 40, 150)]),
 }
-ORDER = ["bar", "ibeam", "rail", "pipe"]
+ORDER = ["bar", "ibeam", "rail", "pipe", "plate"]
+
+
+def class_meta(Z):
+    if Z["kind"] == "mirror":
+        return [dict(name=c[0], py=c[1], pz=c[2]) for c in Z["classes"]]
+    if Z["kind"] == "plate":
+        return [dict(name=c[0], family=c[1], parity=c[2]) for c in Z["classes"]]
+    return [dict(name=c[0], typ=c[1], n=c[2]) for c in Z["classes"]]
 
 
 def make_section(key, s=1.0):
     """The section's SAFE model with its classes (s: mesh density, 1 the page's)."""
     Z = SECTIONS[key]
+    if key != "bar":
+        s *= SECTION_REFINEMENT
     if key == "pipe":
         nth, nr = int(round(72 * s)), int(round(3 * s))
         S = Section(*pipe_mesh(nth, nr))
         for name, typ, n in Z["classes"]:
             S.classes[name] = S.ring_basis(n, typ, nth)
         S.nth = nth
+    elif key == "plate":
+        S = Section(*plate_mesh(s))
+        for name, family, parity in Z["classes"]:
+            S.classes[name] = plate_basis(S, family, parity)
     else:
         S = Section(*Z["mesh"](s))
         for name, py, pz in Z["classes"]:
@@ -543,7 +594,8 @@ def compute_section(key):
     Z = SECTIONS[key]
     src = ("".join(inspect.getsource(f) for f in (_dmat, _jac, element, Section, grid_mesh, Z["mesh"], properties,
                                                   torsion, make_section, branches_g, compute_section))
-           + repr((F_MAX, CP_MAX, REF_W, REF_H, key, Z["kind"], Z["classes"], Z["fund"], Z.get("nth"), IBEAM, RAIL, PIPE)))
+           + inspect.getsource(sparse_modes)
+           + repr((MESH, SECTION_REFINEMENT, F_MAX, CP_MAX, REF_W, REF_H, key, Z["kind"], Z["classes"], Z["fund"], Z.get("nth"), IBEAM, RAIL, PIPE)))
     h = hashlib.sha1(src.encode()).hexdigest()[:12]
     cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{h}.pkl")
     if os.path.exists(cache):
@@ -636,6 +688,8 @@ def curves_of(key, R):
             if key == "pipe":
                 nm = f"{NAMES[typ] if typ != 'vertical' else 'bending'} {pipe_name(name, b)}" if typ else \
                     f"higher order mode {pipe_name(name, b)}, cut-on {fc:.1f} kHz"
+            elif key == "plate":
+                nm = ("SH" + str(2 * b + (name == "SHa"))) if name.startswith("SH") else name + str(b) + " Lamb"
             elif typ:
                 nm = NAMES[typ]
             else:
@@ -785,9 +839,8 @@ def section_blob(key, R):
     params = (f"{Z['what']}; steel, E = 210 GPa, ν = 0.29, ρ = 7850 kg/m³; SAFE, "
               f"{len(S.elems)} quadratic elements, solved in the page")
     meta = {"key": key, "label": Z["label"], "kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO,
-            "classes": [dict(name=c[0], py=c[1], pz=c[2]) if Z["kind"] == "mirror" else dict(name=c[0], typ=c[1], n=c[2])
-                        for c in Z["classes"]],
-            "nth": Z.get("nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
+            "classes": class_meta(Z),
+            "nth": getattr(S, "nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
             "faces": fcs, "B": B, "H": Hh, "sscale": round(min(160 / B, 300 / Hh), 4), "fc1": fc1, "cuts": cuts,
             "A": float(R["props"]["A"]) if "props" in R else float(sm.B * sm.H * 1e6),
             "legend": [[t, s] for t, s in Z["legend"]], "params": params}
@@ -829,10 +882,34 @@ def branches(model, name, n):
     return ks, W
 
 
+def sparse_modes(model, name, k, n):
+    """Lowest generalized eigenpairs, without dense matrices on refined meshes."""
+    if not hasattr(model, "_sparse_modes"):
+        model._sparse_modes = {}
+    if name not in model._sparse_modes:
+        Q = model.classes[name] if isinstance(model, Section) else model.basis(*sm.CLASSES[name])
+        model._sparse_modes[name] = (Q, *( (Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M)))
+    Q, k1, k2, k3, m = model._sparse_modes[name]
+    K = k1 + k * k2 + k * k * k3
+    count = min(n, m.shape[0] - 2)
+    vals, vec = spla.eigsh(K, k=count, M=m, sigma=-1., which="LM", tol=1e-10,
+                          v0=np.linspace(1., 2., m.shape[0]))
+    order = np.argsort(vals)
+    return np.sqrt(np.clip(vals[order], 0, None)), Q @ vec[:, order]
+
+
+class SparseSafe(sm.Safe):
+    def omegas(self, name, k, n):
+        return sparse_modes(self, name, k, n)[0]
+
+    def solve(self, name, k, n):
+        return sparse_modes(self, name, k, n)
+
+
 def compute():
     """The sweep and the checks against closed forms (cached in the temp folder)."""
     src = (open(os.path.join(HERE, "safe_model.py"), encoding="utf-8").read()
-           + inspect.getsource(branches) + inspect.getsource(compute)
+           + inspect.getsource(branches) + inspect.getsource(compute) + inspect.getsource(SparseSafe) + inspect.getsource(sparse_modes)
            + repr((MESH, F_MAX, CP_MAX, K_MAX, REF_W, REF_H)))
     key = hashlib.sha1(src.encode()).hexdigest()[:12]
     cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}.pkl")
@@ -840,7 +917,7 @@ def compute():
         with open(cache, "rb") as fh:
             return pickle.load(fh)
     t0 = time.time()
-    model = sm.Safe(*MESH)
+    model = SparseSafe(*MESH)
     R = {"mesh": MESH, "ndof": model.ndof, "K2err": model.K2_antisym_err}
     # cut-on frequencies (k = 0) and the branches of every class
     R["cut"], R["br"] = {}, {}
@@ -890,8 +967,8 @@ def compute():
         R["edge"][name] = (k, np.sqrt(np.sort(w2)))
     # mesh convergence at k = 150, 440 rad/m: the 8 lowest of each class
     conv = {}
-    for mesh in ((6, 12), (8, 16), (10, 20), (16, 32)):
-        mm = sm.Safe(*mesh)
+    for mesh in ((6, 12), (8, 16), (10, 20), MESH, (32, 64)):
+        mm = SparseSafe(*mesh)
         conv[mesh] = {name: np.array([mm.omegas(name, k, 8) for k in (150.0, 440.0)])
                       for name in sm.CLASSES}
     R["conv"] = conv
@@ -917,17 +994,17 @@ def check_bar(R):
       f" Viktorov's (0.87 + 1.12 nu)/(1 + nu) gives {(0.87+1.12*sm.NU)/(1+sm.NU):.5f})")
     p("  SAFE: u = U(y, z) exp(i(kx - wt)); Q9 quadratic quadrilaterals, 3 dof per node,")
     p("  3 x 3 Gauss (exact for rectangles); [K1 + ik K2 + k^2 K3 - w^2 M] U = 0 made real")
-    p("  symmetric by U_x = i V_x; scipy.linalg.eigh at each real k. The two mirror planes")
+    p("  symmetric by U_x = i V_x; sparse shift-invert eigenpairs at each real k, checked against dense eigh. The two mirror planes")
     p("  split the problem into four symmetry classes (orthonormal symmetry-adapted bases):")
     p("  (++) axial, (+-) vertical bending, (-+) lateral bending, (--) torsional.")
     p(f"  K2 antisymmetry check: max|K2 + K2^T|/max|K2| = {R['K2err']:.1e}")
     p("")
     p("MESH AND CONVERGENCE")
-    p(f"  production mesh {MESH[0]} x {MESH[1]} Q9 elements (2 mm), {R['ndof']} dof.")
-    ref = R["conv"][(16, 32)]
-    p(f"  every branch below {1.1*F_MAX/1e3:.0f} kHz (of the 8 lowest per class), against the 16 x 32 mesh:")
+    p(f"  production mesh {MESH[0]} x {MESH[1]} Q9 elements (1.25 mm), {R['ndof']} dof.")
+    ref = R["conv"][(32, 64)]
+    p(f"  every branch below {1.1*F_MAX/1e3:.0f} kHz (of the 8 lowest per class), against the 32 x 64 mesh:")
     worst = {}
-    for mesh in ((6, 12), (8, 16), (10, 20)):
+    for mesh in ((6, 12), (8, 16), (10, 20), MESH):
         errs = []
         for ik in range(2):
             e = 0
@@ -940,8 +1017,8 @@ def check_bar(R):
         worst[mesh] = max(errs)
         p(f"  {mesh[0]:2d} x {mesh[1]:2d} ({sm.B*1e3/mesh[0]:.1f} mm elements): max |w/w_ref - 1| "
           f"k = 150 rad/m {errs[0]:.1e}, k = 440 rad/m {errs[1]:.1e}")
-    p(f"  The error falls as h^4 (quadratic elements). The 10 x 20 mesh is within "
-      f"{100*worst[(10, 20)]:.2f} %: well below")
+    p(f"  The error falls as h^4 (quadratic elements). The production {MESH[0]} x {MESH[1]} mesh is within "
+      f"{100*worst[MESH]:.2f} %: well below")
     p("  one drawing unit anywhere on the plot.")
     p("")
     p("CUT-ON FREQUENCIES (k = 0) against closed forms")
@@ -1034,9 +1111,8 @@ def check_solver_all(Rs):
         S = make_section(key)
         models[key] = S
         tb, tflat, _ = thinned(key, R)
-        sec = {"kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO, "nth": Z.get("nth", 0),
-               "classes": [dict(name=c[0], py=c[1], pz=c[2]) if Z["kind"] == "mirror" else dict(name=c[0], typ=c[1], n=c[2])
-                           for c in Z["classes"]],
+        sec = {"kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO, "nth": getattr(S, "nth", 0),
+               "classes": class_meta(Z),
                "nodes": np.asarray(S.nodes_mm, np.float32).ravel().tolist(), "elems": S.elems.ravel().tolist()}
         if Z["kind"] == "mirror":
             sec["rank"] = rep_order(S, Z["planes"]).tolist()
@@ -1108,6 +1184,9 @@ def check_sections(Rs):
     G_, c0, ct = sm.MU, sm.C_0, sm.C_T
     for key in ORDER[1:]:
         Z, R = SECTIONS[key], Rs[key]
+        if key == "plate":
+            L += check_plate(R)
+            continue
         P, T = R["props"], R["tors"]
         p(f"THE {Z['label'].upper()} ({Z.get('detail', Z['what'])})")
         p(f"  mesh: {R['nel']} Q9 elements, {R['nnode']} nodes, {R['ndof']} dof, smallest Jacobian "
@@ -1190,20 +1269,47 @@ def check_sections(Rs):
 
 
 # ================================================================ group velocity
-_SPARSE = {}
+
+def check_plate(R):
+    """Infinite-plate limits and the independent Rayleigh-Lamb equations."""
+    import guided_ut as lamb
+    S = make_section("plate")
+    cp0 = np.sqrt(sm.E / (sm.RHO * (1 - sm.NU ** 2)))
+    bend = np.sqrt(sm.E * .01 ** 2 / (12 * sm.RHO * (1 - sm.NU ** 2)))
+    lines = ["THE PLATE, infinite width, thickness 10 mm",
+             "  Uniform across y: Lamb u_y=0, SH has u_x=u_z=0; free faces at z=+/-5 mm.",
+             "  The displayed 40 mm width is a slice, not a free-edged finite beam."]
+    for name, k, ref in [("S", 2., cp0), ("A", 2., 2 * bend), ("SHs", 200., sm.C_T)]:
+        w, V = S.solve(name, k, 1)
+        cp = w[0] / k
+        error = abs(cp / ref - 1)
+        assert error < .001, (name, error)
+        lines.append(f"  {name} at k={k:g}: c_p={cp:.6f} m/s, limit {ref:.6f}, relative error {error:.2e}.")
+    for family, name in [("S", "S"), ("A", "A")]:
+        for k in [40., 150., 400.]:
+            w = S.omegas(name, k, 1)[0]
+            cp = w / k
+            exact = min(lamb.roots_at(family, w / (2 * np.pi)), key=lambda v: abs(v - cp))
+            error = abs(cp / exact - 1)
+            assert error < .001, (family, k, error)
+            lines.append(f"  {family}0 k={k:g}: SAFE {cp:.6f}, Rayleigh-Lamb {exact:.6f} m/s, error {error:.2e}.")
+    lines.append("  Reference: https://pmc.ncbi.nlm.nih.gov/articles/PMC6356890/ (Lamb and SH plate families).")
+    lines.append("")
+    return lines
 
 
 def group_near(model, name, k, w0, tol=1e-4):
-    """(w, c_g) of the eigenpair of class `name` at k nearest w0 (rad/s), by sparse shift-invert
-    (ARPACK) on the class's sparse matrices, and its c_g by the page's formula (cg in SOLVER):
-    V^T (K2 + 2k K3) V / (2 w V^T M V). The pair must be within tol of w0, or it raises."""
-    key = (id(model), name)
-    if key not in _SPARSE:
+    """(w, c_g) of the eigenpair nearest w0 (rad/s), by sparse shift-invert."""
+    if not hasattr(model, "_group_sparse"):
+        model._group_sparse = {}
+    if name not in model._group_sparse:
         Q = model.classes[name]
-        _SPARSE[key] = tuple((Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M))
-    K1, K2, K3, M = _SPARSE[key]
+        model._group_sparse[name] = tuple((Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M))
+    K1, K2, K3, M = model._group_sparse[name]
     K = (K1 + k * K2 + (k * k) * K3).tocsc()
-    vals, vecs = spla.eigsh(K, k=1, M=M, sigma=w0 * w0, which="LM")
+    # Avoid a singular factorization when the requested shift is itself exact
+    # (notably the pipe's nondispersive torsional branch).
+    vals, vecs = spla.eigsh(K, k=1, M=M, sigma=w0 * w0 * (1 + 1e-8), which="LM")
     x, w = vecs[:, 0], np.sqrt(vals[0])
     if abs(w / w0 - 1) > tol:
         raise RuntimeError(f"group_near: {name} k = {k}: found {w}, wanted {w0}")
@@ -1312,7 +1418,11 @@ def tour_group(Rs):
             for lab, bi, f in (("w1", s["b1"], s["f1"]), ("wa", s["b2"], s["fa"]), ("w2", s["b2"], s["f2"])):
                 name = Z["classes"][tb[bi]["ci"]][0]
                 k = k_at_f(curves[bi], f)
-                w, cg = group_near(S, name, k, 2e3 * np.pi * float(np.interp(k, curves[bi][0], curves[bi][1])))
+                # Identify the branch by its eigenvalue index, then use its
+                # exact eigenfrequency as the shift instead of a linear seed.
+                branch = tb[bi]["b"]
+                exact_w = S.omegas(name, k, branch + 1)[branch]
+                w, cg = group_near(S, name, k, exact_w)
                 h = 1e-3 * k
                 gp = group_near(S, name, k + h, w + cg * h)[1]
                 gm = group_near(S, name, k - h, w - cg * h)[1]
@@ -1346,6 +1456,9 @@ def check_group(Rs, SV, TG, MS):
     p("  k (rad/m)  mode       c_g SAFE (m/s)  FD - SAFE     closed form                     c_g (m/s)   error")
     for key in ORDER:
         S, Z = make_section(key), SECTIONS[key]
+        if key == "plate":
+            p("  plate: the A0, S0 and SH0 phase-speed checks are listed above; c_g checked against FD by the page solver check.")
+            continue
         P = properties(S)
         T = torsion(S)
         kap = 10 * (1 + sm.NU) / (12 + 11 * sm.NU) if key == "bar" else None
@@ -1511,7 +1624,7 @@ def overlaps_all(times, live=False, width=672):
                 # and the two markers apart (their discs are drawn, not type: the check above
                 # does not see them): at least one diameter between their centres when both show
                 gap = pg.evaluate("(() => { if (SW || USER) return 99; const q = tourAt(CUR, t - TOUR.off), a = LAST[0], b = LAST[1];"
-                                  " return q.mk[0] > .35 && q.mk[1] > .35 ? Math.hypot(PX(a.f) - PX(b.f), PY(a.cp) - PY(b.cp)) : 99; })()")
+                                  " return q.mk[0] > .35 && q.mk[1] > .35 ? (() => { const p = markerLabels(markerPos(LAST, q, false, 1)); return Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y); })() : 99; })()")
                 if gap < 21:
                     lab = lab + [["marker 1", "marker 2", round(gap, 1), 0]]
                 wp = pg.evaluate("18 + textW(CUR.params, 14)")
@@ -1852,6 +1965,17 @@ function safeModel(sec) {
         for (const [d, x] of v) if (Math.abs(x) > 1e-12) put(d, m, x / Math.sqrt(s2));
         m++;
       }
+    } else if (sec.kind === 'plate') {
+      const z = Array.from({length: N}, (_, n) => Math.round(sec.nodes[2 * n + 1] * 1e4) / 1e4);
+      const levels = [...new Set(z.map(Math.abs))].sort((a, b) => a - b);
+      for (const zz of levels) for (const c of C.family === 'SH' ? [1] : [0, 2]) {
+        const sign = C.parity * (c === 2 ? -1 : 1);
+        if (zz === 0 && sign < 0) continue;
+        const sel = [];
+        for (let n = 0; n < N; n++) if (Math.abs(Math.abs(z[n]) - zz) < 1e-6) sel.push(n);
+        for (const n of sel) put(3 * n + c, m, (z[n] < 0 ? sign : 1) / Math.sqrt(sel.length));
+        m++;
+      }
     } else {                                            // a harmonic n of type V or L on a polar mesh
       const r = [], ph = [], par = [];
       for (let q = 0; q < N; q++) {
@@ -2127,8 +2251,8 @@ function prepare(buf) {
 }
 function load(key) {
   if (LOADED[key]) return Promise.resolve(LOADED[key]);
-  if (!PENDING[key]) PENDING[key] = fetch('nf-dispersion-' + key + '.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(j => prepare(b64buf(j.blob))).catch(e => { delete PENDING[key]; throw e; });
+  if (!PENDING[key]) PENDING[key] = Promise.resolve().then(() => prepare(b64buf(D.blobs[key])))
+    .catch(e => { delete PENDING[key]; throw e; });
   return PENDING[key];
 }
 const prefetch = () => { for (const s of D.secs) if (!LOADED[s.key]) load(s.key).catch(() => {}); };
@@ -2353,7 +2477,7 @@ function stateNow() {
    another the curve nearest in c_p; the frequency stays where the curve allows */
 function mapState(from, to, st) {
   const br = from.BR[st.id], q = atK(br, st.k);
-  let id = br.type ? to.fund[br.type] : -1;
+  let id = br.type && to.fund[br.type] !== undefined ? to.fund[br.type] : -1;
   if (id < 0) {
     let bd = Infinity;
     for (const b of to.BR) if (q.f >= b.f[b.i0] && q.f <= b.f[b.i1]) { const d = Math.abs(cpAtF(b, q.f) - q.cp); if (d < bd) { bd = d; id = b.id; } }
@@ -2377,9 +2501,9 @@ function chooseSection(key) {
     if (SW) { NEXT = key; return; }
     if (CUR.key === key) return;
     const q = stateNow(), from = CUR;
-    SW = {from, to, t0: now(), ta: t, q0: {...q, st: q.st.map(s => ({...s})), X: q.X.slice(), ps: q.ps.slice()}, S0: [LAST[0], LAST[1]]};
+    SW = {from, to, t0: now() - (REDUCED ? SWD : 0), ta: t, q0: {...q, st: q.st.map(s => ({...s})), X: q.X.slice(), ps: q.ps.slice()}, S0: [LAST[0], LAST[1]]};
     if (USER) USER.st = USER.st.map(s => mapState(from, to, s));
-    else TOUR.off = t;
+    else TOUR.off = t - (playing ? 0 : POSTER_T);
     CUR = to;
     LAST[0] = LAST[1] = null;
     syncSwitch();
@@ -2525,7 +2649,14 @@ function plotA(S, q, sw) {
     const ph = ((t + w * 1.2) % 2.4) / 2.4, a = pos[w].a * .5 * (1 - ph) * seg(1.4, .6);
     if (a > .01) dot(pos[w].x, pos[w].y, 11 + 12 * easeOut(ph), {color: WC[w], fill: null, width: 1.2, alpha: a});
   }
-  for (let w = 0; w < 2; w++) badge(w, pos[w].x, pos[w].y, pos[w].a);
+  const labels = markerLabels(pos);
+  for (let w = 0; w < 2; w++) {
+    if (labels[w].y !== pos[w].y) {
+      line([[pos[w].x, pos[w].y], [labels[w].x, labels[w].y]], {color: WC[w], width: 1, alpha: pos[w].a});
+      dot(pos[w].x, pos[w].y, 2.5, {color: WC[w], fill: WC[w], alpha: pos[w].a});
+    }
+    badge(w, labels[w].x, labels[w].y, pos[w].a);
+  }
   if (!STILL && HOVER && !GRAB && !sw) tooltip();
   // the slot: how to use it until it is used, then the way back to the tour
   if (!STILL) {
@@ -2538,6 +2669,13 @@ function plotA(S, q, sw) {
     }
     placeResume(back > .5);
   }
+}
+function markerLabels(pos) {
+  const labels = pos.map(p => ({...p}));
+  if (pos.every(p => p.a > .35) && Math.hypot(pos[0].x-pos[1].x, pos[0].y-pos[1].y) < 24) {
+    labels[0].y -= 14; labels[1].y += 14;
+  }
+  return labels;
 }
 function markerPos(S, q, sw, e) {
   const at = (s, a) => ({x: PX(s.f), y: PY(s.cp), a});
@@ -2573,6 +2711,7 @@ const ICON = {
   ibeam: [[[-5, -6], [5, -6], [5, -4], [1, -4], [1, 4], [5, 4], [5, 6], [-5, 6], [-5, 4], [-1, 4], [-1, -4], [-5, -4]]],
   rail: [[[-6, 6], [6, 6], [6, 5], [1, 3.4], [1, -2.5], [3, -3], [3, -6], [-3, -6], [-3, -3], [-1, -2.5], [-1, 3.4], [-6, 5]]],
   pipe: 'ring',
+  plate: [[[-6, -1.5], [6, -1.5], [6, 1.5], [-6, 1.5]]],
 };
 let SWHI = null;
 function switcher() {
@@ -2962,7 +3101,7 @@ function key(w, e) {
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfw{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;pointer-events:none;outline:none}' +
-    '.nfb{position:absolute;margin:0;padding:0;border:0;background:transparent;cursor:pointer;outline:none;font:inherit;color:transparent}' +
+    '.nfb{position:absolute;margin:0;padding:0;border:0;background:transparent;cursor:pointer;outline:none;font:inherit;color:transparent;overflow:hidden}' +
     '.nfw:focus-visible,.nfb:focus-visible{outline:2px solid #095A94;outline-offset:2px}.nfb[hidden]{display:none}';
   document.head.appendChild(css);
   const ctl = FIG.querySelector('.ctl'), add = el => { FIG.insertBefore(el, ctl); return el; };
@@ -3063,13 +3202,15 @@ JS = "const D = DATA;\n" + SOLVER + FIGURE + "\nboot();\n"
 
 
 def check_text(Rs, SV, sizes, ov, ovl, TG, MS):
-    L = ["Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in beams of four steel",
-         "cross-sections, and two waves of each, every one solved in the page by the same SAFE model", ""]
+    L = ["Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in four steel sections",
+         "and an infinite plate, every wave solved in the page by the same SAFE model", ""]
     L += check_bar(Rs["bar"])
     L += check_sections(Rs)
     p = L.append
     ref, gen = sm.Safe(*MESH), make_section("bar")
-    dm = max(abs(A - B).max() / abs(B).max() for A, B in ((gen.K1, ref.K1), (gen.K2, ref.K2), (gen.K3, ref.K3), (gen.M, ref.M)))
+    pairs = ((gen.K1, ref.K1), (gen.K2, ref.K2), (gen.K3, ref.K3), (gen.M, ref.M))
+    dm = (max(abs(A - B).max() / abs(B).max() for A, B in pairs)
+          if all(A.shape == B.shape for A, B in pairs) else None)
     p("THE PAGE SOLVES EVERY WAVE IT SHOWS")
     p("  Each section travels as its mesh (nodes in float32, the Python model reading the same rounded")
     p("  values) and its symmetry. The page builds the same isoparametric Q9 elements (3 x 3 Gauss),")
@@ -3080,7 +3221,10 @@ def check_text(Rs, SV, sizes, ov, ovl, TG, MS):
     p("  converges on the branch's own eigenpair at that k. Should it head for a nearer eigenvalue")
     p("  below s, the count brackets the branch's alone, bisection narrows the bracket, and the")
     p("  iteration runs again from its middle.")
-    p(f"  The bar's general assembly gives safe_model's matrices: max relative difference {dm:.1e}.")
+    if dm is None:
+        p("  The bar's general assembly and safe_model use different mesh densities; matrix dimensions are not directly comparable.")
+    else:
+        p(f"  The bar's general assembly gives safe_model's matrices: max relative difference {dm:.1e}.")
     if "skipped" in SV:
         p(f"  (the node check skipped: {SV['skipped']})")
     else:
@@ -3207,7 +3351,7 @@ def main():
             os.remove(old)
     data = {"fmax": F_MAX / 1e3, "cmax": CP_MAX / 1e3, "ct": sm.C_T / 1e3, "cr": sm.C_R / 1e3, "slow": SLOW,
             "pw": PACKET, "poster": POSTER, "secs": [{"key": k, "label": SECTIONS[k]["label"]} for k in ORDER],
-            "blob": b64["bar"]}
+            "blob": b64["bar"], "blobs": b64}
     title = "Figure 4: Schematic dispersion curves for guided waves in a beam"
     aria = ("Phase velocity against frequency for a steel beam computed with a SAFE model: bending, axial and "
             "torsional modes start at zero frequency, higher order modes cut on above a threshold and approach the "
@@ -3215,7 +3359,7 @@ def main():
             "beam: at low frequency the whole section moves, at high frequency the motion gathers at the surfaces. "
             "Along the beam each wave runs as packets whose envelope moves at its group velocity while the crests "
             "inside move at its phase velocity, both speeds given over the beam. "
-            "The cross section can be switched between a bar, an I-beam, a rail and a pipe; the markers can be "
+            "The cross section can be switched between a bar, an I-beam, a rail, a pipe and an infinite plate; the markers can be "
             "dragged along the curves or moved with the arrow keys, and Space pauses the waves.")
     assert f"L: {BEAM:g}," in FIGURE and f"const NG = {TOUR_T['NG']};" in FIGURE and \
         "const T1 = {T1}, TS = {TS}, TG0 = {TG0}, TGD = {TGD};".format(**TOUR_T) in FIGURE, "the page's constants moved"

@@ -1189,6 +1189,45 @@ def link_words(body, slug):
     return body
 
 
+def add_supplementary_figures(body, slug):
+    """Numerical examples added to the guides without changing their Word source.
+
+    Anchors must match once. Assets use the ordinary animation manifest, so
+    full screen, no-script, print, lazy loading and publishing stay shared.
+    """
+    path = os.path.join(ROOT, "content", "anim", "supplements.json")
+    if not os.path.isfile(path):
+        return body
+    with open(path, encoding="utf-8") as fh:
+        supplements = json.load(fh).get(slug, [])
+    import preview
+    for spec in supplements:
+        anim = ANIM.get(slug, {}).get(spec["key"])
+        if anim is None:  # page_doc also renders the original without animations
+            continue
+        if "after_caption" in spec:
+            matches = [m for m in re.finditer(r"<figure\b.*?</figure>", body, re.S)
+                       if (cap := re.search(r"<figcaption>(.*?)</figcaption>", m.group(0), re.S))
+                       and _words_of(cap.group(1)).startswith(spec["after_caption"])]
+        elif "after_paragraph" in spec:
+            matches = [m for m in re.finditer(r"<p\b[^>]*>.*?</p>", body, re.S)
+                       if _words_of(m.group(0)).startswith(spec["after_paragraph"])]
+        else:
+            matches = [m for m in re.finditer(r"<ul\b[^>]*>.*?</ul>", body, re.S)
+                       if spec["after_list_containing"] in _words_of(m.group(0))]
+        if len(matches) != 1:
+            sys.exit(f"doc/{slug}.html: supplement {spec['key']} finds {len(matches)} anchors")
+        still = anim.get("still")
+        if not still:
+            sys.exit(f"doc/{slug}.html: supplement {spec['key']} has no printed frame")
+        image = (f'src="{html.escape(still["src"])}" width="{still["w"]}" height="{still["h"]}" '
+                 f'alt="{html.escape(anim["title"])}"')
+        fig = preview._animated(anim, image, f'<figcaption>{html.escape(spec["caption"])}</figcaption>')
+        end = matches[0].end()
+        body = body[:end] + fig + body[end:]
+    return body
+
+
 def doc_body(slug):
     with open(os.path.join(BUILD, slug, "part-01.json"), encoding="utf-8") as fh:
         doc = json.load(fh)
@@ -1245,7 +1284,7 @@ def doc_body(slug):
     other = {a.rstrip(".") for a in re.findall(r"[\w.+-]+@[\w-]+\.[\w.-]+", body)} - PUBLIC_EMAILS
     if other:
         sys.exit(f"doc/{slug}.html: an address the site must not carry: {sorted(other)}")
-    return link_words(place_figures(body, slug), slug)
+    return add_supplementary_figures(link_words(place_figures(body, slug), slug), slug)
 
 
 def page_doc(slug, word=None, pending=False):

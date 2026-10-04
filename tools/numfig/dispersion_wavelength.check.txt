@@ -1,0 +1,8 @@
+Figure 4a: the same meshes, curves, solver and wave packets as Figure 4.
+No second fitted dispersion relation: k = 2 pi f/c_p exactly.
+Units: k in rad/m, f in kHz, c_p in km/s.
+At f = 50 kHz and c_p = 5 km/s: k = 62.832 rad/m.
+The same branches and phase-velocity window as Figure 4 are retained for direct comparison.
+Curves are adaptively refined in log(k) to a midpoint chord error below 0.2 drawing units.
+Vertical range 1 to 1000 rad/m, logarithmic; k tends to zero as frequency tends to zero.
+Poster and intro sampled by common.still, additional frames at 0.6, 3 and 20 s.

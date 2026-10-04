@@ -276,10 +276,39 @@ function draw() {
     line([[lx - 14, ly - 5], [lx + 14, ly - 5]], { color: col, width: wd, dash, alpha: lA });
     lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40;
   }
+  architecture(st);
   text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
   if (!STILL) text('point at a piece', FP.x + FP.w, FP.y + FP.h + 44, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
   place();
+}
+
+/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output, every connection
+   drawn; a neuron is blue once its piece is added. Its output bias is base + sum(v), since each
+   piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
+const AR = { y: 520, cy: 654, xi: 240, xh: 490, xo: 800, ri: 13, rh: 5, dy: 13 };
+function architecture(st) {
+  const n = st.n, nt = NETS[n - 1], a = lab(.5), built = builtB(st);
+  cv.dataset.architecture = `1-${n}-1`;
+  text(`Selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 18, alpha: a });
+  text('input', AR.xi, AR.y + 31, { size: 15, align: 'center', alpha: a });
+  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.y + 31, { size: 15, align: 'center', alpha: a });
+  text('linear output', AR.xo, AR.y + 31, { size: 15, align: 'center', alpha: a });
+  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * AR.dy);
+  for (let j = 0; j < n; j++) {
+    const col = j < built ? C.blue : C.guide;
+    line([[AR.xi + AR.ri, AR.cy], [AR.xh - 8, ys[j]]], { color: col, width: 1, alpha: a * .65 });
+    line([[AR.xh + 8, ys[j]], [AR.xo - AR.ri, AR.cy]], { color: col, width: 1, alpha: a * .65 });
+  }
+  for (let j = 0; j < n; j++) dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.1, alpha: a });
+  dot(AR.xi, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
+  dot(AR.xo, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
+  math('x', AR.xi, AR.cy + 5, { size: 16, align: 'center', alpha: a });
+  text('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
+  text(`Output bias ${(nt.base + nt.v.reduce((s, v) => s + v, 0)).toFixed(3)}; ${3 * n + 1} fitted parameters`,
+       FP.x, AR.cy + 118, { size: 15, color: C.muted, alpha: a });
+  text('Every hidden neuron connects to the input and output; weights match the selected fit above.',
+       FP.x, AR.cy + 143, { size: 14, color: C.muted, alpha: a });
 }
 
 /* ================================================ the reader's hand: pointer and keyboard */
@@ -381,7 +410,9 @@ boot();
 TITLE = ("Figure 18b: Why repeating that computation across many neurons lets a network approximate "
          "almost any function (the universal approximation theorem)")
 ARIA = ("Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a "
-        "time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen.")
+        "time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen. "
+        "The selected number of neurons also shows its exact 1-N-1 architecture with all input and output "
+        "connections.")
 
 
 def verify(states):
@@ -419,13 +450,15 @@ def verify(states):
 
 if __name__ == "__main__":
     print("RMS", [round(nt["rms"], 4) for nt in NETS])
-    mc.publish(NAME, TITLE, ARIA, 1000, 540, DATA, JS, look=(0.3, 0.8, 1.6, 3.0, 5.0, 8.0, 12.0, 17.0))
+    mc.publish(NAME, TITLE, ARIA, 1000, 830, DATA, JS, look=(0.3, 0.8, 1.6, 3.0, 5.0, 8.0, 12.0, 17.0))
     TB, BGAP, BHOLD = .35, .45, 4.5
     stepB = lambda n: min(.55, 4.2 / n)
     BD = [BGAP + n * stepB(n) + BHOLD for n in (3, 7, 14)]
     POSTER = TB + BD[0] + BD[1] + BGAP + 14 * stepB(14) + .6
     say("THE PAGE")
-    say(f"  W = 1000, H = 540. POSTER_T = {POSTER:g} s: 14 neurons added up.")
+    say(f"  W = 1000, H = 830. POSTER_T = {POSTER:g} s: 14 neurons added up.")
+    say("  Under the plots, the N chosen as a network: its fully connected 1-N-1 topology, a neuron blue once")
+    say("  its piece is added, the output bias base + sum(v) and the 3N + 1 fitted parameters.")
     say(f"  The page tours 3, 7 and 14 neurons, {sum(BD):g} s a round; a neuron switches on every")
     say("  min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.")
     say("  A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,")

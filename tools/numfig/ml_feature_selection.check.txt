@@ -1,0 +1,14 @@
+Figure 6a: synthetic sensor-feature regression, seed 42, 480 independent rows.
+y = 3 x1 - 2 x2 + 1.5 x3 + epsilon; epsilon SD 0.7.
+x4 = 0.97 x1 + 0.15 noise; x5 and x6 independent nuisance features.
+360 training rows, 120 held-out rows. Test rows never select or scale features.
+Filter: top 3 absolute Pearson correlations, training rows only.
+Wrapper: forward selection with 5-fold CV Ridge; scaler fitted within each fold.
+Embedded: Lasso coefficient path on training-standardized inputs; alpha 0.12 fixed in advance.
+Filter [1 4 2]; Wrapper [1 2 3]; Embedded [1 2 3].
+Held-out RMSE with the same Ridge predictor: [1.724402032406995, 0.6616052227324133, 0.6616052227324133].
+Pearson vs standardized dot-product max error 1.67e-16.
+OLS true-feature coefficients [3.0246398603889033, -2.0133189015234896, 1.4831731168475337], true values [3, -2, 1.5].
+Predictive importance is not causal importance; this is a reproducible synthetic example.
+Sources: https://scikit-learn.org/stable/modules/feature_selection.html
+Poster and intro overlap checks passed.

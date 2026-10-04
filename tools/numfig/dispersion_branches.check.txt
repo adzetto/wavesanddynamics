@@ -1,0 +1,13 @@
+Displayed branch count audit, 2 October 2026
+Window: f <= 200 kHz and phase velocity <= 7 km/s.
+All low eigenvalues are inspected independently at k = 2, 20, 50, 150, 400, 650, 900 rad/m.
+Pipe sin/cos partners have identical dispersion and are drawn once.
+bar: 512 Q9 elements, 2145 nodes, 27 displayed branches; independent counts at sampled k: [4, 4, 5, 22, 6, 0, 0]; none missing
+ibeam: 250 Q9 elements, 1147 nodes, 32 displayed branches; independent counts at sampled k: [4, 8, 12, 26, 16, 0, 0]; none missing
+rail: 369 Q9 elements, 1625 nodes, 27 displayed branches; independent counts at sampled k: [4, 6, 10, 25, 11, 0, 0]; none missing
+pipe: 432 Q9 elements, 1944 nodes, 22 displayed branches; independent counts at sampled k: [3, 5, 9, 19, 9, 0, 0]; none missing
+plate: 15 Q9 elements, 93 nodes, 4 displayed branches; independent counts at sampled k: [3, 3, 3, 3, 1, 0, 0]; none missing
+Reference: https://doi.org/10.1038/s41598-024-59328-5
+The reference uses a 192 mm high, 150 mm wide rail, 550 triangles / 340 nodes.
+The educational rail here is 35 x 40 mm, with Q9 elements and the guide steel properties.
+Geometry, material and frequency window determine branch count; mesh density controls numerical convergence.

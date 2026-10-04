@@ -256,7 +256,7 @@ def test_his_figures_keep_their_numbers_and_captions(slug, monkeypatch):
 
 def test_a_moving_figure_can_fill_the_screen():
     moving = _draw(MOVE)
-    # the button sits over the frame, after it, and says what it does
+    # the button sits after the frame, in the row under it, and says what it does
     assert preview.FULL in moving and moving.index("</iframe>") < moving.index('class="anim__full"')
     assert 'aria-label="Show this figure full screen"' in preview.FULL
     from parts import docs
@@ -264,10 +264,104 @@ def test_a_moving_figure_can_fill_the_screen():
     # full screen where the browser gives it, laid over the page where it does not
     assert ".docpage .fig--anim:is(:fullscreen,.is-full)" in css
     assert "requestFullscreen" in js and "fullscreenchange" in js and "Leave full screen" in js
-    # the frame keeps its ratio and fills the screen alone: no caption, no number
-    assert "calc((100dvh - 2 * var(--pad)) * var(--ar,1.6))" in css
+    # the frame keeps its ratio and fills the screen with only its row of
+    # buttons under it (42px): no caption, no number
+    assert "calc((100dvh - 2 * var(--pad) - 42px) * var(--ar,1.6))" in css
     assert ".docpage .fig--anim:is(:fullscreen,.is-full) figcaption{display:none}" in css
-    assert "@media print{.anim__full{display:none!important}}" in css
+    assert "@media print{.anim__bar{display:none!important}}" in css
+
+
+def test_a_moving_figures_buttons_sit_in_a_row_under_it_and_drive_it():
+    # laid over the frame, the buttons hid type in 16 of the machine learning
+    # guide's 33 figures on a laptop and 27 on a phone (4 Oct 2026): now play or
+    # pause, restart and full screen sit in a row under the frame, beside the caption
+    moving, bar = _draw(MOVE), preview.BAR
+    assert bar in moving and moving.index("</iframe>") < moving.index('class="anim__bar"') < moving.index("<figcaption>")
+    assert bar.index('class="anim__pp"') < bar.index('class="anim__rs"') < bar.index('class="anim__full"')
+    assert bar.count(" hidden>") == 2 and 'role="group"' in bar      # play and restart wait for the frame
+    from parts import docs
+    css, js = docs.CSS, docs.JS
+    assert ".js .docpage .fig--anim>.anim__bar{display:flex;gap:8px;float:right;" in css
+    rule = css[css.index(".js .docpage .fig--anim>.anim__bar{"):]
+    assert "position" not in rule[:rule.index("}")]          # in the flow under the frame, not over it
+    # the float stays inside its figure, and table cells keep their grid
+    assert ".js .docpage .fig--anim:not(.fig--cell,:fullscreen,.is-full){display:flow-root}" in css
+    assert ".js .docpage .tbl .fig--cell>.anim__bar{grid-area:2/1;" in css
+    assert ".docpage .fig--anim.is-full{position:fixed;inset:0;z-index:1000;margin:0!important}" in css
+    assert "nf:'toggle'" in js and "nf:'restart'" in js and "nf:'hello'" in js and "m.nf!=='state'" in js
+    assert preview.PLAY_ICON in js and preview.PAUSE_ICON in js
+    # the frame stands its own two down where the row is, and answers it
+    sys.path.insert(0, os.path.join(ROOT, "tools", "numfig"))
+    import common
+    with open(os.path.join(ROOT, "tools", "numfig", "engine.js"), encoding="utf-8") as fh:
+        engine = fh.read()
+    assert "classList.add('chrome-out')" in engine and "nf: 'state'" in engine
+    assert ".chrome-out .ctl :is(#pp,#rs){{display:none;}}" in common.HEAD
+    # alone, its own buttons are never under 24 px
+    assert "max-width:300px" not in common.HEAD and ".ctl button{{width:24px;height:24px;}}" in common.HEAD
+
+
+def _chromium():
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            p.chromium.launch().close()
+        return True
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _chromium(), reason="needs Playwright's Chromium")
+def test_in_a_browser_the_row_plays_pauses_and_restarts_the_frame_and_covers_none_of_it(tmp_path):
+    import functools
+    import http.server
+    import shutil
+    import threading
+    from parts import docs
+    from playwright.sync_api import sync_playwright
+    name = "nf-mlb-activation.html"
+    (tmp_path / "anim").mkdir()
+    (tmp_path / "doc").mkdir()
+    shutil.copy(os.path.join(ANIM, name), tmp_path / "anim" / name)
+    shutil.copytree(os.path.join(ROOT, "content", "fonts-cmu"), tmp_path / "fonts")
+    w, h = re.search(r"const W = (\d+), H = (\d+);", open(os.path.join(ANIM, name), encoding="utf-8").read()).groups()
+    fig = preview._animated({"src": f"../anim/{name}", "title": "Activation", "w": w, "h": h},
+                            'src="../anim/x.webp" alt="" width="10" height="10"',
+                            "<figcaption>Figure 1. His caption.</figcaption>")
+    (tmp_path / "doc" / "p.html").write_text(
+        f'<!doctype html><html class="js"><meta charset="utf-8"><style>{docs.CSS}</style>'
+        f'<div class="docpage"><div class="doc" style="width:672px">{fig}</div></div>'
+        f'<script>(function(){{{docs.JS}}})();</script></html>', encoding="utf-8")
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(
+        type("Q", (http.server.SimpleHTTPRequestHandler,), {"log_message": lambda *a: None}), directory=str(tmp_path)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page(viewport={"width": 800, "height": 900})
+            pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/doc/p.html")
+            frame = pg.frame_locator("iframe.anim")
+            pg.wait_for_function("!document.querySelector('.anim__pp').hidden", timeout=20000)
+            inner = pg.frames[1]
+            # the frame's own pause and restart stand down; the row's speak for them
+            assert inner.evaluate("getComputedStyle(document.getElementById('pp')).display") == "none"
+            assert inner.evaluate("playing") is True
+            assert pg.get_attribute(".anim__pp", "aria-label") == "Pause animation"
+            pg.click(".anim__pp")
+            pg.wait_for_function("document.querySelector('.anim__pp').getAttribute('aria-label') === 'Play animation'")
+            assert inner.evaluate("playing") is False
+            pg.click(".anim__rs")
+            pg.wait_for_function("document.querySelector('.anim__pp').getAttribute('aria-label') === 'Pause animation'")
+            assert inner.evaluate("playing") is True and inner.evaluate("t") < 1
+            # no button lies on the frame
+            box = pg.locator("iframe.anim").bounding_box()
+            for sel in (".anim__pp", ".anim__rs", ".anim__full"):
+                r = pg.locator(sel).bounding_box()
+                assert r["y"] >= box["y"] + box["height"], sel
+            assert frame.locator("canvas").count() == 1
+            b.close()
+    finally:
+        srv.shutdown()
 
 
 def test_every_redrawn_figure_is_set_in_computer_modern_and_drawn_without_orange():

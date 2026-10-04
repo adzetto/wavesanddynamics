@@ -39,14 +39,21 @@ HEAD = """<!DOCTYPE html>
 html,body{{margin:0;padding:0;background:#fff;}}
 .fig{{position:relative;width:100%;}}
 .fig canvas{{display:block;width:100%;height:auto;cursor:pointer;}}
-.ctl{{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.45;transition:opacity .2s;}}
+.ctl{{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.6;transition:opacity .16s cubic-bezier(.2,0,.38,.9);}}
 .fig:hover .ctl,.ctl:focus-within{{opacity:1;}}
-.ctl button{{width:28px;height:28px;border-radius:50%;border:1px solid #C9C4BC;background:#fff;color:#27221C;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}}
-.ctl button svg{{width:12px;height:12px;fill:currentColor;}}
-.ctl #rs svg{{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}}
-.ctl button:focus-visible{{outline:2px solid #095A94;outline-offset:2px;}}
-/* small frames */@media (max-width:480px){{.ctl{{right:3px;bottom:3px;gap:4px;}}.ctl button{{width:22px;height:22px;}}.ctl button svg{{width:10px;height:10px;}}}}@media (max-width:300px){{#rs{{display:none;}}.ctl{{opacity:.3;}}.ctl button{{width:18px;height:18px;}}.ctl button svg{{width:8px;height:8px;}}}}
+@media (hover:none){{.ctl{{opacity:.85;}}}}
+/* the site's tokens (site/parts/theme.py), written out: the frame is a document of its own.
+   ring --line-strong, glyph --ink, hover --surface, pressed --line, focus --focus */
+.ctl button{{position:relative;box-sizing:border-box;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid #8A857C;
+  background:#fff;color:#27221C;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+  transition:background-color .12s cubic-bezier(.2,0,.38,.9);}}
+.ctl button svg{{width:15px;height:15px;fill:currentColor;}}
+.ctl #rs svg{{fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;}}
+@media (hover:hover){{.ctl button:hover{{background:#F6F3EF;}}}}
+.ctl button:active{{background:#D7D2CA;}}
+.ctl button:focus-visible{{outline:2px solid #043052;outline-offset:2px;}}
+/* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){{.ctl{{right:4px;bottom:4px;}}.ctl button{{width:24px;height:24px;}}.ctl button svg{{width:13px;height:13px;}}}}
+/* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){{display:none;}}
 </style>
 </head>
 <body>

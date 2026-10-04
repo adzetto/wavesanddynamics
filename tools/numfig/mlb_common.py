@@ -38,6 +38,12 @@ const K = {
 };
 const CLS = [[K.red, K.redEdge], [K.purple, K.purpleEdge], [K.blue, K.blueEdge]];
 const HOLLOW = ['#FFFFFF', C.guide];
+/* signed values (weights, activations, vector entries): positive blue,
+   negative crimson, matched in lightness, the engine's DIVERGING read from its
+   other end; the same in mlc_lib.py, so every figure of the guide agrees */
+const SIGNED = (() => { const L = new Uint8ClampedArray(768); for (let i = 0; i < 256; i++) for (let c = 0; c < 3; c++) L[i * 3 + c] = DIVERGING[(255 - i) * 3 + c]; return L; })();
+const signed = v => { const i = Math.round((clamp(v, -1, 1) + 1) / 2 * 255) * 3; return '#' + [0, 1, 2].map(c => SIGNED[i + c].toString(16).padStart(2, '0')).join(''); };
+const S_POS = C.blue, S_NEG = C.accent;
 /* a colour between two, as #rrggbb (so mixes can be mixed again) */
 const _h2 = v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0');
 function mixHex(a, b, s) {

@@ -1067,10 +1067,11 @@ def _animated(anim, still, cap):
     the screen. The picture stays inside the figure for where the frame
     cannot run and for paper: parts/docs.py shows the frame only once the
     page's script has marked <html> "js", and the picture in print. `still`
-    is the picture's attributes as _image() writes them."""
+    is the picture's attributes as _image() writes them. Under the frame, at
+    its right, the row of buttons (BAR): no button lies on the figure."""
     return (f'<figure class="fig--anim"><iframe class="anim" src="{anim["src"]}" '
             f'title="{html.escape(anim["title"])}" loading="lazy" '
-            f'style="aspect-ratio:{anim["w"]}/{anim["h"]}"></iframe>{FULL}'
+            f'style="aspect-ratio:{anim["w"]}/{anim["h"]}"></iframe>{BAR}'
             f'<img class="anim__still" {still} loading="lazy" decoding="async">{cap}</figure>')
 
 
@@ -1096,12 +1097,33 @@ def _animated_parts(parts, alt, cap):
 # The button that shows a moving figure full screen (parts/docs.py runs it):
 # four corners that open outward, and fold in again once it is full screen.
 FULL = ('<button class="anim__full" type="button" aria-label="Show this figure full screen">'
-        '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" '
-        'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" '
+        'stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '
         'focusable="false"><g class="af-open"><path class="af-a" d="M4 9V4h5"/>'
         '<path class="af-b" d="M20 9V4h-5"/><path class="af-c" d="M4 15v5h5"/>'
         '<path class="af-d" d="M20 15v5h-5"/></g><g class="af-shut"><path d="M9 4v5H4"/>'
         '<path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/></g></svg></button>')
+
+# The row of buttons under a moving figure's frame, at its right, beside the
+# caption: play or pause and restart, which drive the frame (tools/numfig/
+# engine.js, HOSTED) and show once it answers, hidden until then and for a
+# figure that plays once; and full screen. parts/docs.py runs them. The
+# frame's own pause and restart stand down while the row is there, so no
+# button lies on the figure.
+PLAY_ICON = ('<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" '
+             'focusable="false"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/>'
+             '</svg>')
+PAUSE_ICON = ('<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" '
+              'focusable="false"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/>'
+              '<rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>')
+RESTART_ICON = ('<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" '
+                'stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '
+                'focusable="false"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>'
+                '<path d="M3 3v5h5"/></svg>')
+BAR = ('<div class="anim__bar" role="group" aria-label="Figure controls">'
+       f'<button class="anim__pp" type="button" aria-label="Play animation" hidden>{PLAY_ICON}</button>'
+       f'<button class="anim__rs" type="button" aria-label="Restart animation" hidden>{RESTART_ICON}</button>'
+       f'{FULL}</div>')
 
 
 # ------------------------------------------------------------- render

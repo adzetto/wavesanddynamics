@@ -254,7 +254,7 @@ def test_the_row_gives_every_step_an_equal_share_and_every_arrow_its_own():
     # a label may use the free half of the gap under the arrow beside it
     assert "max-width:calc(100% + var(--flow-arrow) + var(--flow-gap))" in css
     # an icon keeps his size and takes no full screen button
-    assert ".js .docpage .doc .flow__step .anim__full{display:none}" in css
+    assert ".js .docpage .doc .flow__step .anim__bar{display:none}" in css
     # a phone: a list, each picture beside its label, the arrows turned down between the pictures
     phone = css[css.index("@media (max-width:640px){"):]
     assert "grid-template-columns:auto minmax(0,1fr)" in phone and "grid-template-columns:subgrid" in phone

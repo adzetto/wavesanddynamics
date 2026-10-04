@@ -598,58 +598,76 @@ math{font-family:"Site Math",math}
 }
 .js .docpage :is(.doc,.dochead) .anim__still{display:none}
 
-/* Full screen (preview.py FULL, the script below): a round button in the
-   frame's top right corner, shown while the pointer is on the figure (always,
-   quietly, on a touch screen), four corners that open a little under the
-   pointer. The figure then fills the screen with its caption: the frame as
-   large as the screen allows at its own ratio (--ar), drawn again at that size,
-   since every figure draws its lines and type afresh when its frame changes
-   size. Where the browser cannot give an element the screen (a phone's
-   Safari), the figure lies over the page instead. */
+/* The row of buttons under a moving figure (preview.py BAR, the script
+   below): play or pause and restart, which drive the frame over postMessage
+   (tools/numfig/engine.js, HOSTED), and full screen. It sits under the
+   frame's right corner, beside the caption's first line, which flows round
+   it, as the zoom mark sits under a still picture (above). Laid over the
+   frame, the buttons hid type in 16 of the machine learning guide's 33
+   figures on a laptop and 27 on a phone, and took the clicks meant for the
+   figures' own controls in their corners.
+
+   Full screen: four corners that open a little under the pointer; the figure
+   then fills the screen: the frame as large as the screen allows at its own
+   ratio (--ar) with the row under it, drawn again at that size, since every
+   figure draws its lines and type afresh when its frame changes size. Where
+   the browser cannot give an element the screen (a phone's Safari), the
+   figure lies over the page instead. */
 .docpage .fig--anim{position:relative}
 /* a picture redrawn as several moving figures (preview.py _animated_parts):
-   each its own frame and button, one under the other, the caption under all */
+   each its own frame and row, one under the other, the caption under all */
 .docpage .fig--parts>.fig--anim+.fig--anim{margin-top:28px}
-.anim__full{display:none}
-.js .docpage .fig--anim>.anim__full{position:absolute;z-index:3;top:10px;right:10px;display:grid;
-  place-items:center;width:34px;height:34px;padding:0;margin:0;grid-area:auto;border-radius:50%;
-  border:1px solid color-mix(in oklab,var(--ink) 14%,transparent);color:var(--ink);cursor:pointer;
-  background:color-mix(in oklab,var(--page) 86%,transparent);
-  -webkit-backdrop-filter:blur(8px) saturate(160%);backdrop-filter:blur(8px) saturate(160%);
-  opacity:0;transition:opacity var(--t-fast) var(--ease-state),transform var(--spring-fast)}
-.js .docpage .tbl .fig--cell>.anim__full{width:30px;height:30px;top:6px;right:6px}
-.anim__full svg{display:block;width:18px;height:18px;overflow:visible}
+.anim__bar{display:none}
+.js .docpage .fig--anim>.anim__bar{display:flex;gap:8px;float:right;margin:10px 0 4px 16px}
+/* the float stays in its figure: a cover, a one-line caption, a part */
+.js .docpage .fig--anim:not(.fig--cell,:fullscreen,.is-full){display:flow-root}
+.js .docpage .tbl .fig--cell>.anim__bar{grid-area:2/1;float:none;justify-self:end;margin:6px 0 0}
+.anim__bar>button{position:relative;display:grid;place-items:center;box-sizing:border-box;width:32px;height:32px;
+  margin:0;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--page);color:var(--muted);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.anim__bar>button[hidden]{display:none}
+.anim__bar svg{display:block;width:16px;height:16px;overflow:visible}
+.js .docpage .fig--anim:is(:hover,:focus-within) .anim__bar>button{color:var(--ink);border-color:var(--line-strong)}
+@media (hover:hover){.anim__bar>button:hover{background:var(--surface)}}
+.anim__bar>button:active{background:var(--line)}
+.anim__bar>button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* a finger gets 44px: the gap and a ring round each button take it */
+@media (pointer:coarse){.js .docpage .fig--anim>.anim__bar{gap:12px}
+  .anim__bar>button::before{content:'';position:absolute;inset:-6px;border-radius:50%}}
+@media (prefers-reduced-motion:no-preference){
+  .anim__bar>button{transition:color var(--t-quick) var(--ease-state),border-color var(--t-quick) var(--ease-state),
+    background-color var(--t-quick) var(--ease-state),transform var(--spring-fast)}
+  .anim__bar>button:active{transform:scale(.94)}}
 .anim__full .af-shut{display:none}
 .anim__full .af-open path{transition:transform var(--spring-fast)}
-.js .docpage .fig--anim:is(:hover,:focus-within)>.anim__full,.js .docpage .fig--anim>.anim__full:focus-visible{opacity:1}
-@media (hover:none){.js .docpage .fig--anim>.anim__full{opacity:.8}}
 @media (hover:hover) and (prefers-reduced-motion:no-preference){
   .anim__full:hover .af-a{transform:translate(-1.5px,-1.5px)}
   .anim__full:hover .af-b{transform:translate(1.5px,-1.5px)}
   .anim__full:hover .af-c{transform:translate(-1.5px,1.5px)}
   .anim__full:hover .af-d{transform:translate(1.5px,1.5px)}
 }
-.anim__full:active{transform:scale(.94)}
-.anim__full:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-/* full screen is the figure alone, as large as the screen allows: its
-   number and caption stay on the page, and its white still melts into the
-   paper (the blend above) so no frame edge shows */
+/* full screen is the figure alone, as large as the screen allows with its
+   row under it: its number and caption stay on the page, and its white still
+   melts into the paper (the blend above) so no frame edge shows */
 .docpage .fig--anim:is(:fullscreen,.is-full){--pad:clamp(12px,2.5vw,40px);display:flex;flex-direction:column;
   align-items:center;justify-content:center;width:auto;max-width:none;margin:0;padding:var(--pad);
   background:var(--page);overflow:hidden}
-.docpage .fig--anim.is-full{position:fixed;inset:0;z-index:1000}
+/* as the browser's own :fullscreen{margin:0 !important}: no figure margin rule wins */
+.docpage .fig--anim.is-full{position:fixed;inset:0;z-index:1000;margin:0!important}
 .js .docpage .fig--anim:is(:fullscreen,.is-full) .anim{display:block;flex:none;
-  width:min(100%,calc((100vh - 2 * var(--pad)) * var(--ar,1.6)));
-  width:min(100%,calc((100dvh - 2 * var(--pad)) * var(--ar,1.6)));height:auto;
+  width:min(100%,calc((100vh - 2 * var(--pad) - 42px) * var(--ar,1.6)));
+  width:min(100%,calc((100dvh - 2 * var(--pad) - 42px) * var(--ar,1.6)));height:auto;
   opacity:1;visibility:visible;transform:none}
 .js .docpage .fig--anim:is(:fullscreen,.is-full) .anim__still{display:none}
 .docpage .fig--anim:is(:fullscreen,.is-full) figcaption{display:none}
-.docpage .fig--anim:is(:fullscreen,.is-full)>.anim__full{position:fixed;top:14px;right:14px;opacity:1}
+.docpage .fig--anim:is(:fullscreen,.is-full)>.anim__bar{float:none;justify-content:flex-end;margin:10px 0 0;
+  width:min(100%,calc((100vh - 2 * var(--pad) - 42px) * var(--ar,1.6)));
+  width:min(100%,calc((100dvh - 2 * var(--pad) - 42px) * var(--ar,1.6)))}
 .docpage .fig--anim:is(:fullscreen,.is-full) .af-open{display:none}
 .docpage .fig--anim:is(:fullscreen,.is-full) .af-shut{display:inline}
 /* the page's stable gutter is let go too, or the figure stops 15px short of the edge */
 .fig-open{overflow:hidden;scrollbar-gutter:auto}
-@media print{.anim__full{display:none!important}}
+@media print{.anim__bar{display:none!important}}
 
 /* rows of book covers he set side by side, captioned "Left to right": one
    height across the row (build.py sets the row's width from it), each cover
@@ -812,7 +830,7 @@ math{font-family:"Site Math",math}
    each frame keeps his picture's size, which preview.py writes on it, and an
    icon takes no full screen button */
 .docpage .doc .flow__step .fig--anim{max-width:100%}
-.js .docpage .doc .flow__step .anim__full{display:none}
+.js .docpage .doc .flow__step .anim__bar{display:none}
 /* his arrows as the figures draw theirs (engine.js arrow()): a hairline with a
    TikZ stealth tip, in the muted ink. The glyph he typed stays in the page,
    silent (aria-hidden) and unseen. The margin under it is the pictures', so it
@@ -1077,6 +1095,23 @@ if(fold&&fold.animate)fold.querySelector('summary').addEventListener('click',fun
         if(o&&o.lock&&innerWidth<innerHeight&&(+(f.style.getPropertyValue('--ar'))||1)>1)o.lock('landscape').catch(function(){});
       }).catch(function(){over=f;f.classList.add('is-full');said(f,true)});}
       else{over=f;f.classList.add('is-full');document.documentElement.classList.add('fig-open');said(f,true)}});
+  });
+  /* the row's play or pause and restart drive the frame (tools/numfig/engine.js,
+     HOSTED) and show once it answers; a frame that plays once says so, and
+     keeps them hidden (preview.py BAR) */
+  var PLAY='<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>',
+    PAUSE='<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+  figs.forEach(function(f){
+    var fr=f.querySelector('iframe.anim'),bar=f.querySelector('.anim__bar');if(!fr||!bar)return;
+    var pp=bar.querySelector('.anim__pp'),rs=bar.querySelector('.anim__rs');if(!pp||!rs)return;
+    function send(m){try{fr.contentWindow.postMessage(m,location.origin)}catch(e){}}
+    pp.addEventListener('click',function(e){e.stopPropagation();send({nf:'toggle'})});
+    rs.addEventListener('click',function(e){e.stopPropagation();send({nf:'restart'})});
+    addEventListener('message',function(e){var m=e.data;
+      if(e.source!==fr.contentWindow||e.origin!==location.origin||!m||m.nf!=='state')return;
+      pp.hidden=rs.hidden=!!m.quiet;pp.innerHTML=m.playing?PAUSE:PLAY;
+      pp.setAttribute('aria-label',m.playing?'Pause animation':'Play animation')});
+    send({nf:'hello'});fr.addEventListener('load',function(){send({nf:'hello'})});
   });
   document.addEventListener('fullscreenchange',function(){
     if(!document.fullscreenElement&&!over)document.documentElement.classList.remove('fig-open');

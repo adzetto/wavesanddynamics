@@ -16,7 +16,7 @@ LIB = r"""
 /* ---- mlc shared: shapes, labels, numbers (tools/numfig/mlc_lib.py) ---- */
 const MINUS = '−';
 function nf(v, d = 2) { const s = (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d); return s.replace('-', MINUS); }
-function pct(v) { return Math.round(v * 100) + ' %'; }
+function pct(v) { return Math.round(v * 100) + '%'; }
 /* a TikZ rectangle: outline drawing itself with `progress`, fill fading in behind it */
 function box(x, y, w, h, o = {}) {
   const { fill = null, stroke = C.ink, width = 1.3, alpha = 1, progress = 1, dash = null, fillAlpha = 1 } = o;
@@ -37,7 +37,7 @@ function mlab(s, x, y, t0, o = {}) {
 function sub(letter, x, y, words, a, o = {}) {
   if (a <= 0) return;
   panel(letter, x, y, { alpha: a });
-  if (words) text(words, x + (o.gap || 36), y, { size: 16, color: C.body, alpha: a });
+  if (words) text(words, x + (o.gap || 35), y, { size: 17, color: C.body, alpha: a });
 }
 /* points of a quadratic Bezier from p0 to p2 bending through control p1 */
 function bez(p0, p1, p2, n = 40) {
@@ -67,8 +67,18 @@ function carrow(pts, o = {}) {
 }
 /* a colour for v through a LUT (engine's SEQ or DIVERGING), u in [0, 1] */
 function lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
-/* luminance of a LUT entry: text on it is white above ~0.55 darkness */
-function lutDark(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return (.2126 * lut[i] + .7152 * lut[i + 1] + .0722 * lut[i + 2]) / 255 < .5; }
+/* a LUT entry dark enough for white text: WCAG relative luminance under
+   .213, where white and ink have the same contrast on it */
+function lutDark(lut, u) {
+  const i = Math.round(clamp(u) * 255) * 3, lin = c => (c /= 255) <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+  return .2126 * lin(lut[i]) + .7152 * lin(lut[i + 1]) + .0722 * lin(lut[i + 2]) < .213;
+}
+/* signed values (weights, activations, vector entries): positive blue,
+   negative crimson, matched in lightness, the engine's DIVERGING read from its
+   other end; the same in mlb_common.py, so every figure of the guide agrees */
+const SIGNED = (() => { const L = new Uint8ClampedArray(768); for (let i = 0; i < 256; i++) for (let c = 0; c < 3; c++) L[i * 3 + c] = DIVERGING[(255 - i) * 3 + c]; return L; })();
+const signed = v => { const i = Math.round((clamp(v, -1, 1) + 1) / 2 * 255) * 3; return '#' + [0, 1, 2].map(c => SIGNED[i + c].toString(16).padStart(2, '0')).join(''); };
+const S_POS = C.blue, S_NEG = C.accent;
 /* a horizontal colour bar with ticks below and a label to its left */
 function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)) {
   if (a <= 0) return;

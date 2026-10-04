@@ -5,7 +5,9 @@
 
    Same frame as his animations (content/anim/fig*.html): a canvas W by H in
    drawing units, scaled to the width it is given; pause, restart, a click on
-   the canvas toggles; paused while off screen. Unlike them the type is
+   the canvas toggles; paused while off screen. In the guide's page the pause
+   and restart are the page's, in a row under the frame (HOSTED, below).
+   Unlike them the type is
    Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
    for less motion, or the print still (?still), gets the figure complete at
    POSTER_T instead of the empty first frame. */
@@ -80,9 +82,26 @@ function render() {
 const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
 const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
 const pp = document.getElementById('pp');
+/* In the guide's page the frame's own pause and restart give way to the
+   page's row of buttons under the frame (site/parts/docs.py), so no corner
+   of the figure is covered. The page drives the frame with postMessage:
+   {nf: 'toggle'}, {nf: 'restart'}, {nf: 'hello'}; the frame answers every
+   change with {nf: 'state', playing, quiet}. Only a page of this site that
+   holds such a row is listened to. */
+const HOSTED = (() => {
+  try {
+    return parent !== window && parent.location.origin === location.origin && !!frameElement &&
+      !!frameElement.parentElement.querySelector('.anim__bar');
+  } catch (e) { return false; }
+})();
+if (HOSTED) document.documentElement.classList.add('chrome-out');   // before the first frame: no flash
+function _tell() {
+  if (HOSTED) parent.postMessage({ nf: 'state', playing, quiet: _quiet() || STILL }, location.origin);
+}
 function setPlay(p) {
   playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
   pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+  _tell();
 }
 const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
 function poster() { t = posterT(); render(); }
@@ -91,6 +110,20 @@ document.getElementById('rs').addEventListener('click', e => {
   e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
 });
 cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+addEventListener('message', e => {
+  const m = e.data;
+  if (!HOSTED || e.source !== parent || e.origin !== location.origin || !m || typeof m.nf !== 'string') return;
+  if (m.nf === 'hello') _tell();
+  else if (_quiet() || STILL) return;
+  else if (m.nf === 'toggle') setPlay(!playing);
+  else if (m.nf === 'restart') document.getElementById('rs').click();
+});
+/* a click in the frame takes the keyboard into it; Space still pages the guide */
+addEventListener('keydown', e => {
+  if (e.key !== ' ' || e.defaultPrevented || e.target !== document.body || !HOSTED) return;
+  e.preventDefault();
+  try { parent.scrollBy({ top: (e.shiftKey ? -.875 : .875) * parent.innerHeight, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (_) {}
+});
 function loop(ts) {
   if (last === null) last = ts;
   const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
@@ -490,6 +523,20 @@ const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_h
 function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
 const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
 const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- controls
+   uiChip(x, y, w, h, label, state, alpha): a control drawn in the figure, as
+   Figure 18b's chips are: white with a grey edge; the one chosen navy with
+   white type; under the pointer steel with a navy edge; pressed steel2; off
+   (unavailable) pale. Its edge is a line(), which the overlap check sees.
+   state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
+function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
+  const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
+  text(label, x + w / 2, y + h / 2 + 5, { size: 15, align: 'center', alpha: a,
+    color: st.on ? '#fff' : st.off ? C.guide : st.hover ? C.ink : C.body });
+}
 
 /* ---------------------------------------------------------------- data
    b64f32(s): a Float32Array from base64, for arrays too long for JSON. */

@@ -27,6 +27,11 @@ Each figure consists of:
 - **The page**: `content/anim/nf-<name>.html`.
   - A self-contained canvas page in the same frame as the professor's own animations
     (`content/anim/fig*.html`): pause and restart buttons, click to toggle, paused off screen.
+  - In a guide's page, pause, restart and full screen sit in a row under the frame, beside
+    the caption (`site/preview.py` `BAR`, `site/parts/docs.py`). The frame's own pause and
+    restart stand down there (`engine.js` `HOSTED`, the class `chrome-out`), and the page
+    drives the frame over `postMessage`. No button lies on the figure. A button the figure
+    adds to `.ctl` (Figure 13's 3-D view) stays in the frame's bottom right corner.
   - `build_html()` inlines `engine.js` and your model's numbers (`DATA`) into it.
 - **The printed frame**: `content/anim/nf-<name>.webp`, the figure complete at its
   `POSTER_T`. Print, and a page without scripts, show this in place of the old picture.
@@ -78,7 +83,7 @@ document picture to its page; the controller (not you) adds your mapping.
   - Panel letters: 19 bold, "(a)", placed top left of each panel.
   - Nothing smaller than 14.
 - **Panel subtitles.** A panel may carry a subtitle of five words or fewer after its letter,
-  in `C.body`.
+  in `C.body`, lowercase, at 17 (`mlc_lib.sub()` sets it 35 units after the letter).
   - No bold sans titles.
   - No sentence-long annotations. The caption under the figure (his, fixed) explains.
   - Short labels are fine: 2 to 5 words at most.
@@ -102,6 +107,9 @@ document picture to its page; the controller (not you) adds your mapping.
     a defect, an echo, the highlighted mode, the operating point, a cut-on marker.
   - Signed fields (displacement, pressure) use `DIVERGING` (navy, white, crimson), with a
     colour bar and a numeric scale.
+  - Machine learning figures: weights, activations and vector entries are signed values:
+    positive blue, negative crimson (`signed()`, `SIGNED`, `S_POS`, `S_NEG` in
+    `mlb_common.JS_LIB` and `mlc_lib.LIB`, `DIVERGING` read from its other end), with a key.
   - No gradients on shapes, no shadows, no rounded card boxes, no emoji, no pastel
     rainbow legends.
 - **Shared conventions** (Figures 11, 12 and 13 must look like one family):
@@ -112,9 +120,23 @@ document picture to its page; the controller (not you) adds your mapping.
   - Where his caption names a colour (machine learning Figure 14: "orange",
     "purple"), the figure draws that colour; nowhere else is orange used.
   - A-scans and signals: `C.navy` traces, 1.6 to 2 stroke, zero line in `C.rule`.
+  - Machine learning figures:
+    - the forecast or new prediction a figure is about is crimson; what happened is open
+      navy marks;
+    - groups found in data: navy circles, `C.blue` squares, `C.sky` triangles; never
+      crimson;
+    - training `C.mist` or `C.steel`, validation crimson, test navy (`C.steel2` as a
+      band).
 - **Supports.** Draw them as TikZ does: `pin()` and `fixedEnd()`. Beams are 2.0 ink lines,
   and deformed shapes are blue.
 - **Legends.** Inside the axes, a thin 1 px box, white fill, serif 15.
+- **Controls drawn in a figure** (a choice of value, a replay): `uiChip()` in `engine.js`,
+  as Figure 18b's chips. White with a `C.guide` edge; the chosen one `C.navy` with white
+  type; under the pointer `C.steel` with a navy edge; pressed `C.steel2`; unavailable pale.
+  A keyboard stand-in (a transparent DOM button over it) gets a 2 px `#095A94` focus ring.
+  Its hit area is as large as the layout allows (24 CSS px at least where it can be). A
+  click on a control or on a hint that asks for one never also pauses the figure. Do not
+  copy the frame's play or restart glyphs for another meaning.
 
 ## The motion: manim, with the physics exact
 
@@ -155,6 +177,10 @@ document picture to its page; the controller (not you) adds your mapping.
 - **No dashes.** No em dash (U+2014) and no spaced en dash anywhere; `build_html` refuses
   them. Use a comma, a colon or parentheses. Use a minus sign in math (the engine
   converts `-`).
+- **Symbols in math.** A variable named in a label is set in math, as in its axis label
+  (`K = 3`, `step t`, `n = 200`). In `math()`, a word macro swallows the space after it:
+  write `'\\eta\\ = 0.3'`, not `'\\eta = 0.3'`. Percent signs close up (`80%`), and
+  thousands take a comma (`20,000`), as his text writes them.
 - **No personal data and no emails.**
 
 ## Nothing overlaps (round 12, binding)

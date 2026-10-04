@@ -24,7 +24,13 @@ from what it holds:
   to the scripts of the figure's generator and of the library it writes
   through (the JS strings of <module>.py; mla_shared.LIB, mlb_common.JS_LIB,
   mlc_lib.LIB). Each change is found in the page by its lines and two lines
-  around it, and must be found exactly once.
+  around it, and must be found exactly once;
+- the title and aria text: the page's own, or the generator's where it changed
+  them since the last commit (TITLE and ARIA, or the strings it hands
+  build_html, mlb_common.publish or mlc_lib.build).
+
+The page it starts from is the page as last committed, since the changes are
+counted from there too: reskin can be run again after more edits.
 
 Nothing is imported or run to do this. --verify (on by default) then checks
 the script against the generator itself where it can be imported (a copy of
@@ -159,6 +165,44 @@ def edits_for(name, script):
     return out
 
 
+def _label(source, var, argi):
+    """A module's title or aria text: the string it assigns to `var` at its top
+    level, or else the one it hands its page builder (build_html, publish,
+    build) as argument `argi`; None if neither is a plain string."""
+    if not source:
+        return None
+    tree = ast.parse(source)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == var for t in node.targets):
+            v = node.value
+            return v.value if isinstance(v, ast.Constant) and isinstance(v.value, str) else None
+    found = [n.args[argi].value for n in ast.walk(tree)
+             if isinstance(n, ast.Call) and getattr(n.func, "attr", getattr(n.func, "id", "")) in
+             ("build_html", "publish", "build") and len(n.args) > argi
+             and isinstance(n.args[argi], ast.Constant) and isinstance(n.args[argi].value, str)]
+    return found[0] if len(found) == 1 else None
+
+
+def labels_for(name, held):
+    """What the page holds for the frame, with a change made since the last
+    commit to its generator's title or aria text carried over (build_html
+    writes the aria text with its quotes as &quot;)."""
+    mod = os.path.join(HERE, module_of(name) + ".py")
+    out = dict(held)
+    if not os.path.isfile(mod):
+        return out
+    with open(mod, encoding="utf-8") as fh:
+        new_src = fh.read()
+    old_src = committed(mod)
+    for key, var, argi, esc in (("title", "TITLE", 1, lambda t: t), ("aria", "ARIA", 2, lambda t: t.replace('"', "&quot;"))):
+        o, n = _label(old_src, var, argi), _label(new_src, var, argi)
+        if o is not None and n is not None and o != n:
+            if held[key] != esc(o):
+                raise SystemExit(f"nf-{name}: its {key} is not the committed generator's; run the generator itself")
+            out[key] = esc(n)
+    return out
+
+
 # ------------------------------------------------------------------ verify
 PROBE = r'''
 import importlib.abc, importlib.machinery, importlib.util, json, sys, types
@@ -252,7 +296,9 @@ def reskin(name, trees, still=False, dry=False, verify=True):
     path = os.path.join(common.ANIM, f"nf-{name}.html")
     with open(path, encoding="utf-8") as fh:
         page = fh.read()
-    held, engine, script = split(page)
+    # the changes are counted from the last commit, so they are made in the page
+    # as committed: after more edits, reskin makes all of them once
+    held, engine, script = split(committed(path) or page)
     fresh_script = patch(script, edits_for(name, script), f"nf-{name}")
     if verify:
         old = generated(trees["old"], name)
@@ -266,8 +312,9 @@ def reskin(name, trees, still=False, dry=False, verify=True):
         how = "checked against its generator" if new is not None else "generator not importable here"
     else:
         how = "not checked"
+    labels = labels_for(name, held)
     with open(os.path.join(HERE, "engine.js"), encoding="utf-8") as fh:
-        fresh = common.HEAD.format(**held) + fh.read() + "\n" + fresh_script + TAIL
+        fresh = common.HEAD.format(**labels) + fh.read() + "\n" + fresh_script + TAIL
     for d in common.DASHES:
         if d in fresh:
             raise SystemExit(f"nf-{name}: a dash the site does not use ({d!r})")
@@ -277,9 +324,11 @@ def reskin(name, trees, still=False, dry=False, verify=True):
         print(f"nf-{name}: unchanged")
         return True
     new_held, new_engine, _ = split(fresh)
+    disk_held, disk_engine, disk_script = split(page)
     what = [k for k, gone in (("frame", fresh[:fresh.index("\nconst W = ")] != page[:page.index("\nconst W = ")]),
-                              ("engine", new_engine != engine), ("script", fresh_script != script)) if gone]
-    assert new_held == held
+                              ("engine", new_engine != disk_engine), ("script", fresh_script != disk_script)) if gone]
+    what += [k for k in ("title", "aria") if labels[k] != disk_held[k]]
+    assert new_held == labels and {k: held[k] for k in ("w", "h", "data")} == {k: labels[k] for k in ("w", "h", "data")}
     print(f"nf-{name}: new {', '.join(what)}; DATA kept; {how}")
     if dry:
         return True

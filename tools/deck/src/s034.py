@@ -23,8 +23,16 @@ from functools import lru_cache
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C
+from fig import Fig, C, fade, pop, wipe
+from fig import draw as draw_in          # draw() is this slide's first picture
 from s031 import legend, ramp, tw
+
+# The three pictures in turn (DECK_BRIEF.md "Animated slides"; the blocks'
+# moments are in s034.html): the input pairs arrive a hundred at a time and
+# their colour scale after them; the histogram of the outputs rises and its
+# tail is marked; the running mean draws out as N grows, its band uncovered
+# with it.
+ANIM = {"length": 10.7}
 from s032 import MEAN as EXACT
 from s033 import simulate, hist_area
 
@@ -56,24 +64,25 @@ def draw():
     f = Fig(526, H)
     ax = f.axes(96, TOP, 290, PH, xlim=(14.2, 28.8), ylim=(64, 133),
                 xticks=[15, 20, 25], yticks=range(70, 131, 10),
-                xlabel="Stiffness <m>k</m> (N/mm)", ylabel="Force <m>F</m> (N)")
+                xlabel="Stiffness <m>k</m> (N/mm)", ylabel="Force <m>F</m> (N)", anim=fade(.5, .4))
     n = 1500
     t = (Y[:n] - YR[0]) / (YR[1] - YR[0])
-    for x, yv, tt in zip(K[:n], F[:n], t):
+    for i, (x, yv, tt) in enumerate(zip(K[:n], F[:n], t)):
         X, Yp = ax.P(x, yv)
-        f.circle(X, Yp, 3.6, fill=SEQ(tt), clip=ax.clip)
+        f.circle(X, Yp, 3.6, fill=SEQ(tt), clip=ax.clip, anim=fade(.9 + .12 * (i // 100), .25))
     # the colour bar: the same scale, his ticks 3 to 8 mm
     bx, bw = ax.x + ax.w + 22, 20
     steps = 110
     for i in range(steps):
         y0 = TOP + PH - (i + 1) * PH / steps
-        f.rect(bx, y0, bw, PH / steps + 0.6, fill=SEQ((i + 0.5) / steps))
-    f.rect(bx, TOP, bw, PH, stroke=C.ink, width=1.5)
+        f.rect(bx, y0, bw, PH / steps + 0.6, fill=SEQ((i + 0.5) / steps), anim=fade(2.8, .4))
+    f.rect(bx, TOP, bw, PH, stroke=C.ink, width=1.5, anim=fade(2.8, .4))
     for v in range(3, 9):
         yy = TOP + PH - (v - YR[0]) / (YR[1] - YR[0]) * PH
-        f.line([(bx + bw, yy), (bx + bw + 8, yy)], stroke=C.ink, width=1.5, cap="butt")
-        f.text(bx + bw + 14, yy, str(v), "west", cls="tk")
-    f.text(bx + bw + 62, TOP + PH / 2, "<m>y = F/k</m> (mm)", "center", cls="axl", rot=-90)
+        f.line([(bx + bw, yy), (bx + bw + 8, yy)], stroke=C.ink, width=1.5, cap="butt", anim=fade(2.8, .4))
+        f.text(bx + bw + 14, yy, str(v), "west", cls="tk", anim=fade(2.8, .4))
+    f.text(bx + bw + 62, TOP + PH / 2, "<m>y = F/k</m> (mm)", "center", cls="axl", rot=-90,
+           anim=fade(2.8, .4))
     assert bx + bw + 62 + 16 < f.w
     return f.html()
 
@@ -83,25 +92,25 @@ def collect():
     box, lim = (100, TOP, 480, PH), dict(xlim=(2.5, 9.5), ylim=(0, 0.6))
     ax0 = f.axes(*box, frame=False, **lim)
     edges = np.round(np.arange(2.5, 9.5001, 0.05), 2)
-    h = hist_area(ax0, Y, edges)
+    h = hist_area(ax0, Y, edges, anim=wipe(3.9, .8, "up"))
     hot = edges[:-1] >= 7.0 - 1e-9
     xs = np.repeat(edges[np.r_[hot, True] & (edges >= 7.0 - 1e-9)], 2)[1:-1]
-    ax0.area(xs, np.repeat(h[hot], 2), 0.0, color=C.amber)
+    ax0.area(xs, np.repeat(h[hot], 2), 0.0, color=C.amber, anim=fade(4.8, .3))
     ax = f.axes(*box, xticks=[4, 6, 8], yticks=np.arange(0, 0.51, 0.1), ytick_nd=1,
-                xlabel="Displacement <m>y</m> (mm)", ylabel="Density", **lim)
-    ax.vline(Y.mean(), color=C.navy, width=3.5, dash=None)
+                xlabel="Displacement <m>y</m> (mm)", ylabel="Density", anim=fade(3.5, .4), **lim)
+    ax.vline(Y.mean(), color=C.navy, width=3.5, dash=None, anim=draw_in(5.0, .35))
     # his two labels, right of the peak, each clear of the bars under it
     mids = (edges[:-1] + edges[1:]) / 2
     x1, y1 = 6.2, 0.555
-    f.text(*ax.P(x1, y1), "mean 5.050 mm<br> SD 0.715 mm", "north west", size=LAB)
+    f.text(*ax.P(x1, y1), "mean 5.050 mm<br> SD 0.715 mm", "north west", size=LAB, anim=pop(5.3))
     assert h[mids >= x1].max() < y1 - (2 * 1.3 * LAB) / PH * 0.6 - 0.02
     x2, y2 = 5.85, 0.31
     lab = "<m>P(Y > 7 mm) = 0.74%</m>"
     X2, Y2 = ax.P(x2, y2)
-    f.text(X2, Y2, lab, "south west", size=LAB, color=C.accent)
+    f.text(X2, Y2, lab, "south west", size=LAB, color=C.accent, anim=pop(5.7))
     assert h[mids >= x2].max() < y2 - 0.015
     assert X2 + tw(lab, LAB) < ax.x + ax.w - 6
-    f.arrow((X2 + 150, Y2 + 6), ax.P(7.26, 0.028), color=C.accent, width=2.5)
+    f.arrow((X2 + 150, Y2 + 6), ax.P(7.26, 0.028), color=C.accent, width=2.5, anim=draw_in(5.8, .4))
     return f.html()
 
 
@@ -114,22 +123,25 @@ def error():
     idx = np.unique(np.concatenate([np.arange(10, 1000),
                                     np.geomspace(1000, N, 1200).astype(int)])) - 1
     se = 2 * s[idx] / np.sqrt(n[idx])
-    f.axes(*box, frame=False, **lim).area(n[idx], m[idx] + se, m[idx] - se, color=C.steel2)
+    f.axes(*box, frame=False, **lim).area(n[idx], m[idx] + se, m[idx] - se, color=C.steel2,
+                                          anim=wipe(7.6, 1.4))
     # decade ticks; the exponent inside <m> so it reads at the tick's size
     sup = "⁰¹²³⁴⁵⁶⁷⁸⁹"
     ax = f.axes(*box, xticks=[10.0 ** e for e in range(1, 6)],
                 xticklabels=[f"<m>10{sup[e]}</m>" for e in range(1, 6)],
                 yticks=np.arange(4.7, 5.41, 0.1), ytick_nd=1,
-                xlabel="Number of simulations <m>N</m>", ylabel="Estimated mean (mm)", **lim)
-    ax.plot([8, 3e5], [EXACT, EXACT], color=C.blue, width=3, dash="12 7")
-    ax.plot([8, 3e5], [5.0, 5.0], color=C.accent, width=3.5, dash="0.1 8")
-    ax.plot(n[idx], m[idx], color=C.navy, width=3.5)
+                xlabel="Number of simulations <m>N</m>", ylabel="Estimated mean (mm)",
+                anim=fade(6.5, .4), **lim)
+    ax.plot([8, 3e5], [EXACT, EXACT], color=C.blue, width=3, dash="12 7", anim=draw_in(6.9, .5))
+    ax.plot([8, 3e5], [5.0, 5.0], color=C.accent, width=3.5, dash="0.1 8", anim=draw_in(7.2, .5))
+    ax.plot(n[idx], m[idx], color=C.navy, width=3.5, anim=draw_in(7.6, 1.4))
     bx, by, bw, bh = legend(f, ax.x + ax.w - 10, ax.y + 10, [
         ("<m>± 2 SE = ± 2 SD/√N</m>", {"kind": "area", "color": C.steel2}),
         ("running mean", {"color": C.navy, "width": 3.5}),
         ("exact mean 5.050", {"color": C.blue, "width": 3, "dash": "12 7"}),
         ("first order 5.000", {"color": C.accent, "width": 3.5, "dash": "0.1 8"}),
-    ], size=LAB, row=31, pad=12, sample=40, anchor="north east")
+    ], size=LAB, row=31, pad=12, sample=40, anchor="north east",
+        anim=[pop(6.9), pop(7.6), pop(7.6), pop(6.9), pop(7.2)])
     # the legend sits over no data: the band's top under it stays below it
     n0 = 10 ** np.interp(bx, [ax.x, ax.x + ax.w], np.log10(lim["xlim"]))
     under = n[idx] >= n0

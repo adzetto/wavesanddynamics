@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 29: Nonlinear f, method 1: first order (tangent line)</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
+<section class="slide">
+ <style>
+  .n{display:inline-block;width:1.05em}
+  .big{margin-top:14px;font-size:40px}
+  .big .qq{margin-left:1.9em}
+  .one .p{margin-top:12px}
+  .cut{margin:34px 0 30px}
+  .steps2{row-gap:34px}
+  .steps2 .eqs{margin-top:12px}
+  .lede .l{display:block}
+ </style>
+ <header class="head">
+  <h1 class="title">Nonlinear <span class="m"><span class="mi">𝑓</span></span>, method 1: first order (tangent line)</h1>
+  <p class="lede"><span class="l">For a curved <span class="m"><span class="mi">𝑓</span></span>, replace it by its tangent at the input means, then apply the linear formulas.</span> <span class="l">If <span class="m"><span class="mi">𝑓</span></span> is already linear, this is exact.</span></p>
+ </header>
+ <main class="body">
+  <div class="one" data-in="0.3">
+   <h2 class="h"><span class="n">1</span> Approximate the function near the input means</h2>
+   <p class="eq big c-navy" data-in="1.0"><span class="m"><span class="mi">𝛿</span><sub><span class="mi">𝑖</span></sub> = <span class="mi">𝑋</span><sub><span class="mi">𝑖</span></sub> − <span class="mi">𝜇</span><sub><span class="mi">𝑖</span></sub><span class="qq"> </span><span class="mi">𝑐</span><sub><span class="mi">𝑖</span></sub> = <span class="op">∂</span><span class="mi">𝑓</span>/<span class="op">∂</span><span class="mi">𝑋</span><sub><span class="mi">𝑖</span></sub> <span class="w">at</span> <span class="mi">𝑋</span> = <span class="mi">𝜇</span><span class="qq"> </span><span class="mi">𝑌</span> <span class="op">≈</span> <span class="mi">𝑓</span>(<span class="mi">𝜇</span>) + Σ<sub><span class="mi">𝑖</span></sub> <span class="mi">𝑐</span><sub><span class="mi">𝑖</span></sub><span class="mi">𝛿</span><sub><span class="mi">𝑖</span></sub></span></p>
+   <p class="p" data-in="1.9"><span class="m"><span class="mi">𝛿</span><sub><span class="mi">𝑖</span></sub></span> is a deviation; <span class="m"><span class="mi">𝑐</span><sub><span class="mi">𝑖</span></sub></span> is the local slope. <span class="m"><span class="mi">𝑓</span>(<span class="mi">𝜇</span>)</span> means evaluate <span class="m"><span class="mi">𝑓</span></span> with every input set to its mean.</p>
+  </div>
+  <div class="hair cut" data-in="2.6" data-as="wipe" data-dur=".5"></div>
+  <div class="g steps2">
+   <div class="s6" data-in="3.0">
+    <h2 class="h"><span class="n">2</span> Take the expectation</h2>
+    <div class="eqs">
+     <p class="eq">Each deviation has mean zero: <span class="m"><span class="mi">𝐸</span>[<span class="mi">𝛿</span><sub><span class="mi">𝑖</span></sub>] = 0</span>.</p>
+     <p class="eq">Therefore <span class="m"><span class="mi">𝜇</span><sub><span class="mi">𝑌</span></sub> = <span class="mi">𝐸</span>[<span class="mi">𝑌</span>] <span class="op">≈</span> <span class="mi">𝑓</span>(<span class="mi">𝜇</span>)</span>.</p>
+    </div>
+   </div>
+   <div class="s6 o7" data-in="4.3">
+    <h2 class="h"><span class="n">3</span> Square the deviations and average</h2>
+    <div class="eqs c-blue">
+     <p class="eq"><span class="m"><span class="w">Var</span>(<span class="mi">𝑌</span>) <span class="op">≈</span> <span class="mi">𝐸</span>[(Σ<sub><span class="mi">𝑖</span></sub> <span class="mi">𝑐</span><sub><span class="mi">𝑖</span></sub><span class="mi">𝛿</span><sub><span class="mi">𝑖</span></sub>)<sup>2</sup>]</span></p>
+     <p class="eq"><span class="m">= Σ<sub><span class="mi">𝑖</span></sub> <span class="mi">𝑐</span><span class="ss"><sub><span class="mi">𝑖</span></sub><sup>2</sup></span><span class="mi">𝜎</span><span class="ss"><sub><span class="mi">𝑖</span></sub><sup>2</sup></span> + 2Σ<sub><span class="mi">𝑖</span>&lt;<span class="mi">𝑗</span></sub> <span class="mi">𝑐</span><sub><span class="mi">𝑖</span></sub><span class="mi">𝑐</span><sub><span class="mi">𝑗</span></sub> <span class="w">Cov</span>(<span class="mi">𝑋</span><sub><span class="mi">𝑖</span></sub>, <span class="mi">𝑋</span><sub><span class="mi">𝑗</span></sub>)</span></p>
+    </div>
+   </div>
+   <p class="p lines s6 o1 r2" data-in="3.7"><span>For a linear model, the tangent is the model.</span><span>For a curved model, this mean can be biased.</span></p>
+   <p class="p lines s6 o7 r2" data-in="5.1"><span>Squared terms give the individual variances.</span><span>Cross terms describe joint movement.</span><span>For independent inputs, cross terms vanish.</span></p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take" data-in="6.0" data-as="fade">Sensitivity coefficients appear because they are the slopes in a Taylor expansion.</p>
+  <p class="run"><span class="map">NONLINEAR CASE, METHOD 1 <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: approximate f by its tangent</span><span class="src">Sources: [1], [17], [43]</span><span class="num">29</span></p>
+ </footer>
+</section>
+
+<script type="application/json" id="deck-anim">{"length": 6.6, "label": "29", "stem": "s029"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

@@ -14,7 +14,13 @@ His notes: 30 simulated annual maxima, a fitted Gumbel, a 100-year quantile
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, grow, pop, sample
+
+# Data, model, decision (DECK_BRIEF.md "Animated slides"; the blocks'
+# moments are in s025.html): the 30 years rise one by one, then the fitted
+# quantile curve draws out to long return periods and the 100-year flood is
+# read off it.
+ANIM = {"length": 7.8}
 
 YEARS = 30
 Q, ORDER = sample(YEARS, stats.gumbel_r(165, 60), stats.uniform(), skip=1)
@@ -35,8 +41,10 @@ def observed():
     f = Fig(832, 424)
     ax = f.axes(124, 12, 690, 316, xlim=(-0.8, 31.2), ylim=(0, 420),
                 xticks=range(0, 31, 5), yticks=range(0, 401, 100),
-                xlabel="Year of observation", ylabel="Annual peak flow (m<m>³</m>/s)")
-    ax.bars(np.arange(1, YEARS + 1), FLOWS, width=0.72, color=C.steel2, stroke=C.navy)
+                xlabel="Year of observation", ylabel="Annual peak flow (m<m>³</m>/s)",
+                anim=fade(.6, .4))
+    ax.bars(np.arange(1, YEARS + 1), FLOWS, width=0.72, color=C.steel2, stroke=C.navy,
+            anim=grow(1.0, .4, .06))
     return f.html()
 
 
@@ -47,7 +55,7 @@ def extrapolation():
     ticks, labels = [1, 10, 100], ["<m>10⁰</m>", "<m>10¹</m>", "<m>10²</m>"]
     ax = f.axes(124, 12, 690, 316, xlim=(0.9, 260), ylim=(80, 490), xlog=True,
                 xticks=ticks, xticklabels=labels, yticks=range(100, 401, 100),
-                xlabel="Return period (years)", ylabel="Flow quantile (m<m>³</m>/s)")
+                xlabel="Return period (years)", ylabel="Flow quantile (m<m>³</m>/s)", anim=fade(3.9, .4))
     # pgfplots' minor ticks between the decades, inward, top and bottom
     for d in (1, 10, 100):
         for k in range(2, 10):
@@ -56,11 +64,11 @@ def extrapolation():
                 break
             X = float(ax.X(v))
             for y0, y1 in ((ax.y + ax.h, ax.y + ax.h - 6), (ax.y, ax.y + 6)):
-                f.line([(X, y0), (X, y1)], stroke=C.ink, width=1.5, cap="butt")
+                f.line([(X, y0), (X, y1)], stroke=C.ink, width=1.5, cap="butt", anim=fade(3.9, .4))
     T = np.geomspace(1.05, 220, 600)
-    ax.vline(100, color=C.accent, width=2.5, dash="10 7")
-    ax.plot(T, quantile(T), color=C.navy, width=4.5)
-    ax.mark(100, Q100, r=10)
+    ax.vline(100, color=C.accent, width=2.5, dash="10 7", anim=draw(5.3, .4))
+    ax.plot(T, quantile(T), color=C.navy, width=4.5, anim=draw(4.3, .8))
+    ax.mark(100, Q100, r=10, anim=pop(5.7))
     x, y = ax.P(100, Q100)
-    f.text(x - 22, y - 30, "1% annual exceedance", "east", color=C.accent)
+    f.text(x - 22, y - 30, "1% annual exceedance", "east", color=C.accent, anim=pop(5.9))
     return f.html()

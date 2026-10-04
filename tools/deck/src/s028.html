@@ -11,32 +11,32 @@
  </header>
  <main class="body g">
   <div class="s6 stack lin">
-   <div>
+   <div data-in="0.3">
     <h2 class="h">Linear model: exact moments</h2>
     <div class="eqs">
      <p class="eq"><m>Y = a₀ + a₁X₁ + a₂X₂</m></p>
      <p class="eq"><m>μʏ = a₀ + a₁μ₁ + a₂μ₂</m></p>
      <p class="eq"><m>σʏ² = a₁²σ₁² + a₂²σ₂² + 2a₁a₂Cov(X₁, X₂)</m></p>
-     <p class="eq">Load: <m>W = D + L</m>; &ensp;<m>D</m> 400 ± 20, &ensp;<m>L</m> 150 ± 40 kN</p>
-     <p class="eq"><m>μ<sub>W</sub> = 550</m> kN; &ensp;<m>σ<sub>W</sub> = √(20² + 40²) = 44.7</m> kN</p>
+     <p class="eq" data-in="1.3">Load: <m>W = D + L</m>; &ensp;<m>D</m> 400 ± 20, &ensp;<m>L</m> 150 ± 40 kN</p>
+     <p class="eq" data-in="1.7"><m>μ<sub>W</sub> = 550</m> kN; &ensp;<m>σ<sub>W</sub> = √(20² + 40²) = 44.7</m> kN</p>
     </div>
    </div>
-   <div>
+   <div data-in="2.5">
     <h2 class="h">Spring with <m>k</m> fixed at 20 N/mm</h2>
     <div class="eqs c-blue">
      <p class="eq"><m>Y = F/20 = 0.05 F</m></p>
      <p class="eq b"><m>μʏ = 5.00</m> mm; &ensp;<m>σʏ = 0.50</m> mm</p>
     </div>
-    <p class="ps lines steps"><span>Equal steps in <m>F</m> give equal steps in <m>Y</m>:</span><span><m>F = 90, 100, 110</m> N gives <m>Y = 4.5, 5.0, 5.5</m> mm.</span></p>
+    <p class="ps lines steps" data-in="4.9"><span>Equal steps in <m>F</m> give equal steps in <m>Y</m>:</span><span><m>F = 90, 100, 110</m> N gives <m>Y = 4.5, 5.0, 5.5</m> mm.</span></p>
    </div>
   </div>
   <div class="s6 o7">
    <div data-fig="line"></div>
-   <p class="p b c-navy lines normal"><span>Normal in, normal out:</span><span>a linear model keeps the shape of</span><span>the input distribution. ± denotes one SD.</span></p>
+   <p class="p b c-navy lines normal" data-in="7.0"><span>Normal in, normal out:</span><span>a linear model keeps the shape of</span><span>the input distribution. ± denotes one SD.</span></p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Linear: plug in the means for the mean; scale and add the variances for the spread. Exact.</p>
+  <p class="take" data-in="7.8" data-as="fade">Linear: plug in the means for the mean; scale and add the variances for the spread. Exact.</p>
   <p class="run"><span class="map">LINEAR CASE <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: exact formulas, no approximation</span><span class="src">Sources: [1], [3]</span><span class="num">28</span></p>
  </footer>
 </section>

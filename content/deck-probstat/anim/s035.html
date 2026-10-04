@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 35: Choosing a propagation method: linear or nonlinear?</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
 <section class="slide">
  <style>
   .methods{margin-top:6px}
@@ -5,14 +18,14 @@
  </style>
  <header class="head">
   <h1 class="title">Choosing a propagation method: linear or nonlinear?</h1>
-  <p class="lede">First ask: is <m>f</m> linear? Linear models have exact moments. Nonlinear models need a tangent, a curvature correction, or a simulation.</p>
+  <p class="lede">First ask: is <span class="m"><span class="mi">𝑓</span></span> linear? Linear models have exact moments. Nonlinear models need a tangent, a curvature correction, or a simulation.</p>
  </header>
  <main class="body">
   <table class="tab methods" data-in="0.3" data-as="wipe-down" data-dur="3.6">
    <colgroup><col style="width:20%"><col style="width:27%"><col style="width:26%"><col style="width:27%"></colgroup>
    <thead><tr><th>Method</th><th>What it does</th><th>Useful when</th><th>What to check</th></tr></thead>
    <tbody>
-    <tr><td>Exact linear moments</td><td>For <m>Y = b + ΣaᵢXᵢ</m>, calculate mean and variance exactly.</td><td>The model is linear over the input range.</td><td>Moments alone do not determine every output distribution.</td></tr>
+    <tr><td>Exact linear moments</td><td>For <span class="m"><span class="mi">𝑌</span> = <span class="mi">𝑏</span> + Σ<span class="mi">𝑎</span><sub><span class="mi">𝑖</span></sub><span class="mi">𝑋</span><sub><span class="mi">𝑖</span></sub></span>, calculate mean and variance exactly.</td><td>The model is linear over the input range.</td><td>Moments alone do not determine every output distribution.</td></tr>
     <tr><td>First-order Taylor</td><td>Replace a curved response by its local tangent.</td><td>Uncertainty is narrow; curvature is small.</td><td>Compare the function with its tangent over plausible inputs.</td></tr>
     <tr><td>Second-order Taylor</td><td>Keep quadratic terms to represent curvature.</td><td>Smooth, moderate curvature affects mean or spread.</td><td>It is still local; neglected higher terms may matter.</td></tr>
     <tr><td>Monte Carlo</td><td>Sample inputs; evaluate the original model many times.</td><td>Complex response, skewed outputs or quantiles matter.</td><td>Dependence, convergence, computing cost and rare events.</td></tr>
@@ -24,3 +37,9 @@
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: select a method that resolves the uncertainty you need</span><span class="src">Sources: [16], [17], [21], [43], [44]</span><span class="num">35</span></p>
  </footer>
 </section>
+
+<script type="application/json" id="deck-anim">{"length": 5.2, "label": "35", "stem": "s035"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

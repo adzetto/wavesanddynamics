@@ -10,7 +10,14 @@ tangent is drawn in orange because his words name it so ("The tangent
 (orange)"); everything else takes the deck's palette."""
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, seq
+
+# The curve, then its three stiffness values a line of words each
+# (DECK_BRIEF.md "Animated slides"; the blocks' moments are in s030.html):
+# k = 18, 20, 22 marked on it, their readings, the average of the outer two
+# above Y(20); the tangent comes last, with the words that say it cannot see
+# the bend. Each legend entry arrives with its line.
+ANIM = {"length": 8.6}
 
 F = 100.0
 
@@ -36,23 +43,26 @@ def curve():
     f = Fig(976, 454)
     ax = f.axes(112, 8, 848, 346, xlim=(13.2, 30.8), ylim=(3, 8.0),
                 xticks=range(14, 31, 2), yticks=range(3, 8),
-                xlabel="Stiffness <m>k</m> (N/mm), fixed <m>F = 100</m> N", ylabel="<m>Y</m> (mm)")
+                xlabel="Stiffness <m>k</m> (N/mm), fixed <m>F = 100</m> N", ylabel="<m>Y</m> (mm)",
+                anim=fade(.6, .4))
     k = np.linspace(13.2, 30.8, 700)
+    at = {18: 2.0, 20: 2.6, 22: 3.2}              # each with its line of words
     for kv in PTS:
-        ax.vline(kv, color=C.ink, width=2, dash="2 6", y0=3, y1=float(y(kv)))
-    ax.hline(AVG, color=C.blue, width=3, dash="16 7 3 7")
-    ax.plot(k, tangent(k), color=C.orange_edge, width=3.5, dash="13 8")   # "The tangent (orange)"
-    ax.plot(k, y(k), color=C.navy, width=4.5)
-    ax.scatter(PTS, y(PTS), r=9, color=C.navy)
+        ax.vline(kv, color=C.ink, width=2, dash="2 6", y0=3, y1=float(y(kv)), anim=draw(at[kv], .3))
+    ax.hline(AVG, color=C.blue, width=3, dash="16 7 3 7", anim=draw(4.0, .6))
+    ax.plot(k, tangent(k), color=C.orange_edge, width=3.5, dash="13 8",   # "The tangent (orange)"
+            anim=draw(6.1, .7))
+    ax.plot(k, y(k), color=C.navy, width=4.5, anim=draw(1.0, .8))
+    ax.scatter(PTS, y(PTS), r=9, color=C.navy, anim=seq(times=[at[kv] + .2 for kv in PTS]))
     # his two readings, each by its point
     x0, y0 = ax.P(15.3, 7.84)                     # above the curve, left of the legend
-    f.text(x0, y0, "<m>k = 18</m>: 5.56 mm <br>(+0.56)", "north west", color=C.accent)
-    ax.leader((x0 + 100, y0 + 66), (18, float(y(18))), gap=16, width=2)
+    f.text(x0, y0, "<m>k = 18</m>: 5.56 mm <br>(+0.56)", "north west", color=C.accent, anim=pop(2.3))
+    ax.leader((x0 + 100, y0 + 66), (18, float(y(18))), gap=16, width=2, anim=draw(2.4, .3))
     x1, y1 = ax.P(23.2, 4.66)
-    f.text(x1, y1, "<m>k = 22</m>: 4.55 mm (<m>−0.45</m>)", "west", color=C.accent)
-    ax.leader((x1 - 8, y1), (22, float(y(22))), gap=16, width=2)
+    f.text(x1, y1, "<m>k = 22</m>: 4.55 mm (<m>−0.45</m>)", "west", color=C.accent, anim=pop(3.5))
+    ax.leader((x1 - 8, y1), (22, float(y(22))), gap=16, width=2, anim=draw(3.6, .3))
     ax.legend([("<m>Y</m> = 100 / <m>k</m> (curve)", {"color": C.navy, "width": 4.5}),
                ("First order: tangent at <m>k = 20</m>", {"color": C.orange_edge, "width": 3.5, "dash": "13 8"}),
                ("Average of <m>k = 18</m> and 22: 5.05 mm", {"color": C.blue, "width": 3, "dash": "16 7 3 7"})],
-              at="north east", size=26, row=40)
+              at="north east", size=26, row=40, anim=[pop(1.0), pop(1.0), pop(6.2), pop(4.1)])
     return f.html()

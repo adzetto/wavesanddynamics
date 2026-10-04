@@ -16,8 +16,14 @@ from functools import lru_cache
 
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, wipe
 from s031 import legend
+
+# Why simulate, the four steps one by one, then the run itself
+# (DECK_BRIEF.md "Animated slides"; the blocks' moments are in s033.html):
+# the histogram of the outputs rises, the output at the mean inputs and the
+# simulated mean are marked, each with its legend entry.
+ANIM = {"length": 8.4}
 
 N = 200_000
 MU_K, SD_K = 20.0, 2.0
@@ -40,13 +46,13 @@ _, _, Y = simulate()
 assert f"{Y.mean():.3f}" == "5.052" and f"{Y.std(ddof=1):.3f}" == "0.717"
 
 
-def hist_area(ax, values, edges, color=C.mist):
+def hist_area(ax, values, edges, color=C.mist, anim=None):
     """A density histogram drawn as one filled outline (pgfplots' ybar
     interval, bars touching): at 0.05 mm bins, single bars would only buzz."""
     h, e = np.histogram(values, edges, density=True)
     xs = np.repeat(e, 2)[1:-1]
     ys = np.repeat(h, 2)
-    ax.area(xs, ys, 0.0, color=color)
+    ax.area(xs, ys, 0.0, color=color, anim=anim)
     return h
 
 
@@ -55,15 +61,15 @@ def histogram():
     # headroom over the peak (0.56) holds the legend clear of the bars
     box, lim = (126, 6, 682, 302), dict(xlim=(2.2, 9.5), ylim=(0, 0.8))
     ax0 = f.axes(*box, frame=False, **lim)
-    h = hist_area(ax0, Y, np.arange(2.2, 9.5001, 0.05))
+    h = hist_area(ax0, Y, np.arange(2.2, 9.5001, 0.05), anim=wipe(4.8, .8, "up"))
     ax = f.axes(*box, xticks=range(3, 10), yticks=np.arange(0, 0.71, 0.1), ytick_nd=1,
-                xlabel="Simulated displacement <m>Y</m> (mm)", ylabel="Density", **lim)
-    ax.vline(Y.mean(), color=C.navy, width=3.5, dash=None)
-    ax.vline(100 / 20, color=C.accent, width=3.5, dash="10 7")
+                xlabel="Simulated displacement <m>Y</m> (mm)", ylabel="Density", anim=fade(4.4, .4), **lim)
+    ax.vline(Y.mean(), color=C.navy, width=3.5, dash=None, anim=draw(6.0, .35))
+    ax.vline(100 / 20, color=C.accent, width=3.5, dash="10 7", anim=draw(5.6, .35))
     bx, by, bw, bh = legend(f, ax.x + ax.w - 12, ax.y + 12, [
         ("Output at mean inputs: 5.00", {"color": C.accent, "width": 3.5, "dash": "10 7"}),
         ("Simulated mean: 5.05", {"color": C.navy, "width": 3.5}),
-    ], size=24, row=36, sample=36, pad=12, anchor="north east")
+    ], size=24, row=36, sample=36, pad=12, anchor="north east", anim=[pop(5.6), pop(5.6), pop(6.0)])
     # the legend stays clear of the guides and of every bar under it
     x0 = 2.2 + (bx - ax.x) / ax.w * 7.3
     assert x0 > Y.mean() + 0.1

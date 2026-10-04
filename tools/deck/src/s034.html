@@ -12,25 +12,25 @@
  <main class="body">
   <div class="pics">
    <div class="pic">
-    <h2 class="h">1&ensp;Draw input pairs <m>(F, k)</m></h2>
+    <h2 class="h" data-in="0.3">1&ensp;Draw input pairs <m>(F, k)</m></h2>
     <div data-fig="draw"></div>
    </div>
    <div class="pic">
-    <h2 class="h">2&ensp;Compute <m>y</m> for each pair, collect</h2>
+    <h2 class="h" data-in="3.3">2&ensp;Compute <m>y</m> for each pair, collect</h2>
     <div data-fig="collect"></div>
    </div>
    <div class="pic">
-    <h2 class="h">3&ensp;More samples, smaller error</h2>
+    <h2 class="h" data-in="6.3">3&ensp;More samples, smaller error</h2>
     <div data-fig="error"></div>
    </div>
   </div>
-  <div class="panel notes">
+  <div class="panel notes" data-in="9.2">
    <p class="ps"><b class="c-accent">Tails:</b> first order assumes a normal <m>Y</m> and gives <m>P(Y > 7 mm) ≈ 0.23%</m>. Simulation gives 0.74%, about 3 times more.</p>
    <p class="ps"><b class="c-navy">Accuracy:</b> the error of the simulated mean shrinks like <m>SD/√N</m>. With <m>N = 200,000</m> it is about 0.0016 mm.</p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Monte Carlo needs no derivatives and captures skew and tails; its price is many model runs.</p>
+  <p class="take" data-in="10.1" data-as="fade">Monte Carlo needs no derivatives and captures skew and tails; its price is many model runs.</p>
   <p class="run"><span class="map">NONLINEAR CASE, METHOD 3 <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: numerical propagation through a model</span><span class="src">Sources: [21], [44]</span><span class="num">34</span></p>
  </footer>
 </section>

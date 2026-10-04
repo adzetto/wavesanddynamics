@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 27: Propagation roadmap: is f linear in the uncertain inputs?</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
 <section class="slide">
  <style>
   .road{display:grid;grid-template-columns:400px 80px 320px 112px 784px;align-items:start}
@@ -23,27 +36,27 @@
   .road .panel .ps{margin-top:0;font-size:28px}
  </style>
  <header class="head">
-  <h1 class="title">Propagation roadmap: is <m>f</m> linear in the uncertain inputs?</h1>
+  <h1 class="title">Propagation roadmap: is <span class="m"><span class="mi">𝑓</span></span> linear in the uncertain inputs?</h1>
   <p class="lede">This one question decides the method. Linear: exact formulas. Nonlinear: approximate (first or second order) or simulate (Monte Carlo).</p>
  </header>
  <main class="body road">
   <div class="node k-navy" id="inp" data-in="0.3">
    <h2 class="h">Uncertain inputs</h2>
-   <p class="ps lines"><span><m>X₁ … Xₙ</m>: means, SDs,</span><span>correlations</span></p>
+   <p class="ps lines"><span><span class="m"><span class="mi">𝑋</span><sub>1</sub> … <span class="mi">𝑋</span><sub><span class="mi">𝑛</span></sub></span>: means, SDs,</span><span>correlations</span></p>
   </div>
   <div class="node k-navy" id="eqn" data-in="1.1">
    <h2 class="h">Equation</h2>
-   <p class="eq"><m>Y = f(X₁ … Xₙ)</m></p>
+   <p class="eq"><span class="m"><span class="mi">𝑌</span> = <span class="mi">𝑓</span>(<span class="mi">𝑋</span><sub>1</sub> … <span class="mi">𝑋</span><sub><span class="mi">𝑛</span></sub>)</span></p>
   </div>
   <div class="node k-accent" id="q" data-in="1.9">
-   <h2 class="h">Is <m>f</m> linear</h2>
+   <h2 class="h">Is <span class="m"><span class="mi">𝑓</span></span> linear</h2>
    <p class="ps lines"><span>in the uncertain</span><span>inputs?</span></p>
   </div>
   <div class="cell yn"><p class="edge above c-navy" data-in="2.8">YES</p><p class="edge below c-blue" data-in="3.8">NO</p></div>
   <div class="node k-navy" id="lin" data-in="3.0">
    <h2 class="h">Linear: exact formulas (slide 28)</h2>
-   <p class="eq"><m>μʏ = a₀ + Σ aᵢμᵢ</m></p>
-   <p class="eq"><m>σʏ² = Σ aᵢ²σᵢ² + covariance terms</m></p>
+   <p class="eq"><span class="m"><span class="mi">𝜇</span><sub><span class="mi">𝑌</span></sub> = <span class="mi">𝑎</span><sub>0</sub> + Σ <span class="mi">𝑎</span><sub><span class="mi">𝑖</span></sub><span class="mi">𝜇</span><sub><span class="mi">𝑖</span></sub></span></p>
+   <p class="eq"><span class="m"><span class="mi">𝜎</span><span class="ss"><sub><span class="mi">𝑌</span></sub><sup>2</sup></span> = Σ <span class="mi">𝑎</span><span class="ss"><sub><span class="mi">𝑖</span></sub><sup>2</sup></span><span class="mi">𝜎</span><span class="ss"><sub><span class="mi">𝑖</span></sub><sup>2</sup></span> + <span class="w">covariance</span> <span class="w">terms</span></span></p>
   </div>
   <div id="meth">
    <div class="node k-blue" data-in="4.2"><h2 class="h">Method 1: first order, tangent (slides 29–30)</h2></div>
@@ -52,9 +65,9 @@
   </div>
   <div class="panel" data-in="5.7">
    <p class="ps b c-navy">Linear: inputs are only added and scaled by constants.</p>
-   <p class="ps"><m>W = D + L</m>,  <m>G = R − S</m>,  <m>Y = F/20</m> (<m>k</m> fixed)</p>
+   <p class="ps"><span class="m"><span class="mi">𝑊</span> = <span class="mi">𝐷</span> + <span class="mi">𝐿</span></span>,  <span class="m"><span class="mi">𝐺</span> = <span class="mi">𝑅</span> − <span class="mi">𝑆</span></span>,  <span class="m"><span class="mi">𝑌</span> = <span class="mi">𝐹</span>/20</span> (<span class="m"><span class="mi">𝑘</span></span> fixed)</p>
    <p class="ps b c-blue">Nonlinear: products, ratios, powers of inputs.</p>
-   <p class="ps"><m>Y = F/k</m>;  <m>M = w<span></span>L²/8</m> is linear in <m>w</m> but not in <m>L</m></p>
+   <p class="ps"><span class="m"><span class="mi">𝑌</span> = <span class="mi">𝐹</span>/<span class="mi">𝑘</span></span>;  <span class="m"><span class="mi">𝑀</span> = <span class="mi">𝑤</span><span></span><span class="mi">𝐿</span><sup>2</sup>/8</span> is linear in <span class="m"><span class="mi">𝑤</span></span> but not in <span class="m"><span class="mi">𝐿</span></span></p>
   </div>
   <i class="wire" data-from="#inp" data-to="#eqn" data-color="muted" data-in="0.75" data-dur=".35"></i>
   <i class="wire" data-from="#eqn" data-to="#q" data-color="muted" data-in="1.55" data-dur=".35"></i>
@@ -66,3 +79,9 @@
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: choose the propagation route before calculating</span><span class="src">Sources: [1], [17]</span><span class="num">27</span></p>
  </footer>
 </section>
+
+<script type="application/json" id="deck-anim">{"length": 7.2, "label": "27", "stem": "s027"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

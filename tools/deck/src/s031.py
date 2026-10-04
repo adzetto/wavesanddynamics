@@ -19,7 +19,13 @@ from functools import lru_cache
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, DATA_W
+from fig import Fig, C, DATA_W, draw, fade, pop
+
+# The two approximations, then the example that tells them apart
+# (DECK_BRIEF.md "Animated slides"; the blocks' moments are in s031.html):
+# the first order line Y = 0, then the parabola it misses; why the curvature
+# matters, and what it does to the variance.
+ANIM = {"length": 7.0}
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -63,30 +69,35 @@ def tw(s, size=28):
     return w * size
 
 
-def legend(f, x, y, entries, size=26, pad=16, row=40, sample=48, anchor="north west"):
+def legend(f, x, y, entries, size=26, pad=16, row=40, sample=48, anchor="north west", anim=None):
     """pgfplots' legend (a 1 px ink box on paper) with its `anchor` corner at
     (x, y) in figure px. entries: (label HTML, style) with style keys color,
-    width, dash, or kind="area" / "mark". Returns the box (x, y, w, h)."""
+    width, dash, or kind="area" / "mark". Returns the box (x, y, w, h).
+    anim= as fig.Axes.legend's: the whole legend, or a list, its box then
+    each entry."""
+    box, each = (anim[0], list(anim[1:])) if isinstance(anim, (list, tuple)) else (anim, [anim] * len(entries))
     bw = pad + sample + 14 + max(tw(t, size) for t, _ in entries) + pad + 4
     bh = pad * 2 + row * (len(entries) - 1) + size
     bx = x - bw if "east" in anchor else x - bw / 2 if anchor in ("north", "south") else x
     by = y - bh if anchor.startswith("south") else y
-    f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0)
-    for i, (t, st) in enumerate(entries):
+    f.rect(bx, by, bw, bh, fill=C.paper, stroke=C.ink, width=1.0, anim=box)
+    for i, ((t, st), a) in enumerate(zip(entries, each)):
         cy = by + pad + size / 2 + i * row
         kind = st.get("kind", "line")
         x0 = bx + pad
         if kind == "area":
-            f.rect(x0, cy - 11, sample, 22, fill=st.get("color", C.mist), fill_opacity=st.get("opacity"))
+            f.rect(x0, cy - 11, sample, 22, fill=st.get("color", C.mist), fill_opacity=st.get("opacity"),
+                   anim=a)
         elif kind == "mark":
-            f.circle(x0 + sample / 2, cy, st.get("r", 6), fill=st.get("color", C.navy))
+            f.circle(x0 + sample / 2, cy, st.get("r", 6), fill=st.get("color", C.navy), anim=a)
         else:
             f.line([(x0, cy), (x0 + sample, cy)], stroke=st.get("color", C.navy),
                    width=st.get("width", DATA_W - 1), dash=st.get("dash"),
-                   cap=st.get("cap", "round" if str(st.get("dash", "")).startswith("0.") else "butt"))
+                   cap=st.get("cap", "round" if str(st.get("dash", "")).startswith("0.") else "butt"),
+                   anim=a)
         # a radical is raised over its line; .ml's leading keeps the check from
         # reading that as a second, tightly set line
-        f.text(x0 + sample + 14, cy, t, "west", size=size, cls="ml" if "√" in t else "")
+        f.text(x0 + sample + 14, cy, t, "west", size=size, cls="ml" if "√" in t else "", anim=a)
     return bx, by, bw, bh
 
 
@@ -127,12 +138,13 @@ def parabola():
     f = Fig(832, 394)
     ax = f.axes(118, 8, 690, 296, xlim=(-3.3, 3.3), ylim=(-0.7, 9.7),
                 xticks=range(-3, 4), yticks=range(0, 9, 2), grid=True,
-                xlabel="<m>X</m> (standardized, dimensionless)", ylabel="<m>Y = X²</m>")
+                xlabel="<m>X</m> (standardized, dimensionless)", ylabel="<m>Y = X²</m>",
+                anim=fade(1.6, .4))
     x = np.linspace(-3, 3, 601)
-    ax.plot(x, x ** 2, color=C.blue, width=4.5)
-    ax.plot([-3.3, 3.3], [0, 0], color=C.accent, width=3.5, dash="12 8")
+    ax.plot(x, x ** 2, color=C.blue, width=4.5, anim=draw(2.7, .8))
+    ax.plot([-3.3, 3.3], [0, 0], color=C.accent, width=3.5, dash="12 8", anim=draw(2.0, .6))
     legend(f, ax.x + ax.w / 2, ax.y + 14, [
         ("Exact and second order: <m>Y = X²</m>", {"color": C.blue, "width": 4.5}),
         ("First order at <m>μ = 0</m>: <m>Y ≈ 0</m>", {"color": C.accent, "width": 3.5, "dash": "12 8"}),
-    ], anchor="north")
+    ], anchor="north", anim=[pop(2.0), pop(2.8), pop(2.1)])
     return f.html()

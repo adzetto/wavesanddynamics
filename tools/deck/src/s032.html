@@ -11,32 +11,32 @@
  </header>
  <main class="body g">
   <div class="s6">
-   <div class="first">
+   <div class="first" data-in="0.3">
     <h2 class="h">First order (tangent line at the means)</h2>
     <div class="eqs">
      <p class="eq"><m>c<sub>F</sub> = ∂Y/∂F = 1/20 = 0.05</m> <span class="m"><span class="w">mm/N</span></span></p>
      <p class="eq"><m>c<sub>k</sub> = ∂Y/∂k = −100/20² = −0.25</m> <span class="m"><span class="w">mm<sup>2</sup>/N</span></span></p>
-     <p class="eq"><m>μʏ ≈ 5.00 mm</m></p>
-     <p class="eq"><m>σʏ² ≈ (0.05 × 10)² + (−0.25 × 2)²</m></p>
-     <p class="eq"><m>σʏ ≈ 0.707 mm</m></p>
+     <p class="eq" data-in="1.0"><m>μʏ ≈ 5.00 mm</m></p>
+     <p class="eq" data-in="1.5"><m>σʏ² ≈ (0.05 × 10)² + (−0.25 × 2)²</m></p>
+     <p class="eq" data-in="2.0"><m>σʏ ≈ 0.707 mm</m></p>
     </div>
    </div>
-   <div class="second">
+   <div class="second" data-in="4.8">
     <h2 class="h">Second order (tangent plus curvature)</h2>
     <div class="eqs c-blue">
      <p class="eq"><m>∂²f/∂k² = 2F/k³ = 0.025</m> <b>at the means</b></p>
      <p class="eq"><m>μʏ ≈ 5 + ½(0.025)(2²) = 5.05 mm</m></p>
     </div>
    </div>
-   <p class="ps lines only"><span>Only the stiffness-curvature term survives here:</span><span><m>f<sub><span>F</span><span>F</span></sub> = 0</m> and <m>Cov(F, k) = 0</m>.</span></p>
+   <p class="ps lines only" data-in="6.2"><span>Only the stiffness-curvature term survives here:</span><span><m>f<sub><span>F</span><span>F</span></sub> = 0</m> and <m>Cov(F, k) = 0</m>.</span></p>
   </div>
   <div class="s6 o7">
    <div data-fig="spring"></div>
-   <p class="p b c-navy lines moments"><span>Exact model moments for these inputs:</span><span>Mean = 5.050 mm; SD = 0.716 mm</span><span>Monte Carlo (slides 33–34) agrees.</span></p>
+   <p class="p b c-navy lines moments" data-in="6.9"><span>Exact model moments for these inputs:</span><span>Mean = 5.050 mm; SD = 0.716 mm</span><span>Monte Carlo (slides 33–34) agrees.</span></p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Curvature shifts the mean displacement from 5.00 mm to 5.05 mm.</p>
+  <p class="take" data-in="7.7" data-as="fade">Curvature shifts the mean displacement from 5.00 mm to 5.05 mm.</p>
   <p class="run"><span class="map">NONLINEAR CASE, METHODS 1 AND 2 <span class="sep">/</span> SLIDE 2 MAP <span class="sep">/</span> Box 4: compare with the original model</span><span class="src">Sources: [17], [21]</span><span class="num">32</span></p>
  </footer>
 </section>

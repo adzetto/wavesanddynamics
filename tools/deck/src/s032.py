@@ -14,8 +14,14 @@ sigma_k = 16 to 24 N/mm, the plausible inputs, as his."""
 import numpy as np
 from scipy import integrate, stats
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop
 from s031 import legend
+
+# First order, then second (DECK_BRIEF.md "Animated slides"; the blocks'
+# moments are in s032.html): the exact curve over the plausible band, the
+# tangent at the means with the first order numbers, then the curvature
+# with the second order ones. Each legend entry arrives with its line.
+ANIM = {"length": 8.3}
 
 MF, SF = 100.0, 10.0                        # N
 MK, SK = 20.0, 2.0                          # N/mm, lognormal
@@ -43,19 +49,21 @@ def spring():
     f = Fig(832, 508)
     box, lim = (96, 8, 712, 396), dict(xlim=(9, 35), ylim=(1.0, 10.6))
     # the band first, then the axis on top of it (pgfplots' axis on top)
-    f.axes(*box, frame=False, **lim).area([MK - 2 * SK, MK + 2 * SK], [10.6, 10.6], 1.0, color=C.steel)
+    f.axes(*box, frame=False, **lim).area([MK - 2 * SK, MK + 2 * SK], [10.6, 10.6], 1.0, color=C.steel,
+                                          anim=fade(2.4, .4))
     ax = f.axes(*box, xticks=range(10, 36, 5), yticks=range(2, 11, 2), grid=True,
                 xlabel="Stiffness <m>k</m> (N/mm), fixed <m>F = 100</m> N",
-                ylabel="<m>Y</m> (mm)", **lim)
+                ylabel="<m>Y</m> (mm)", anim=fade(2.4, .4), **lim)
     k = np.linspace(10, 34, 600)
     d = k - MK
-    ax.plot(k, MF / MK + CK * d, color=C.accent, width=3.5, dash="12 8")
-    ax.plot(k, MF / MK + CK * d + 0.5 * FKK * d ** 2, color=C.blue, width=4.5, dash="0.1 9")
-    ax.plot(k, MF / k, color=C.navy, width=4.5)
-    ax.mark(MK, MF / MK, r=8, color=C.navy)
+    ax.plot(k, MF / MK + CK * d, color=C.accent, width=3.5, dash="12 8", anim=draw(3.7, .6))
+    ax.plot(k, MF / MK + CK * d + 0.5 * FKK * d ** 2, color=C.blue, width=4.5, dash="0.1 9",
+            anim=draw(5.2, .8))
+    ax.plot(k, MF / k, color=C.navy, width=4.5, anim=draw(2.8, .8))
+    ax.mark(MK, MF / MK, r=8, color=C.navy, anim=pop(4.3))
     legend(f, ax.x + ax.w - 14, ax.y + 14, [
         ("Exact nonlinear response", {"color": C.navy, "width": 4.5}),
         ("First order: tangent", {"color": C.accent, "width": 3.5, "dash": "12 8"}),
         ("Second order: curvature", {"color": C.blue, "width": 4.5, "dash": "0.1 9"}),
-    ], anchor="north east")
+    ], anchor="north east", anim=[pop(2.8), pop(2.8), pop(3.8), pop(5.3)])
     return f.html()

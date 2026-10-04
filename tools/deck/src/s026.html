@@ -12,16 +12,16 @@
   <p class="lede">A deterministic equation gives one output per input combination. Uncertain inputs create a distribution of outputs.</p>
  </header>
  <main class="body">
-  <p class="p defs"><span class="d"><m>Xᵢ =</m> uncertain input <m>i</m></span> <span class="d"><m>μᵢ = E[Xᵢ]</m>, its mean</span> <span class="d"><m>σᵢ =</m> its standard deviation</span></p>
-  <p class="p defs"><span class="d"><m>Y = f(X₁, …, Xₙ)</m>: uncertain output</span> <span class="d"><m>f</m>: the known calculation or physical model</span></p>
-  <div class="ex">
+  <p class="p defs" data-in="0.3"><span class="d"><m>Xᵢ =</m> uncertain input <m>i</m></span> <span class="d"><m>μᵢ = E[Xᵢ]</m>, its mean</span> <span class="d"><m>σᵢ =</m> its standard deviation</span></p>
+  <p class="p defs" data-in="0.9"><span class="d"><m>Y = f(X₁, …, Xₙ)</m>: uncertain output</span> <span class="d"><m>f</m>: the known calculation or physical model</span></p>
+  <div class="ex" data-in="1.7">
    <h2 class="h">A simple example with a simple equation: spring displacement <m>Y = F/k</m></h2>
    <p class="p lines"><span><m>X₁ =</m> force <m>F</m>: mean 100 N, SD 10 N <span class="gap"></span> <m>X₂ =</m> stiffness <m>k</m>: mean 20 N/mm, SD: 2 N/mm</span><span>Assume normal <m>F</m>, positive lognormal <m>k</m>, and independence. At the mean inputs, <m>Y = 5</m> mm.</span></p>
   </div>
   <div data-fig="histograms" class="hists"></div>
  </main>
  <footer class="foot">
-  <p class="take"><span class="l">We know how to calculate <m>Y</m>.</span> <span class="l">Propagation tells us how uncertain <m>Y</m> is; the method depends on whether <m>f</m> is linear (next slide).</span></p>
+  <p class="take" data-in="5.6" data-as="fade"><span class="l">We know how to calculate <m>Y</m>.</span> <span class="l">Propagation tells us how uncertain <m>Y</m> is; the method depends on whether <m>f</m> is linear (next slide).</span></p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: propagate uncertainty before asking about failure</span><span class="src">Sources: [1], [17]</span><span class="num">26</span></p>
  </footer>
 </section>

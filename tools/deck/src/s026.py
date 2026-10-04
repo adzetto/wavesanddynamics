@@ -9,7 +9,12 @@ inputs Y = 100/20 = 5 mm (his number)."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, fade, pop, sample, wipe
+
+# The definitions, the example, then its three histograms in the order the
+# calculation runs (DECK_BRIEF.md "Animated slides"; the blocks' moments are
+# in s026.html): F, then k, then the Y they make, each rising from its axis.
+ANIM = {"length": 6.4}
 
 N = 20000
 S2 = np.log(1 + (2 / 20) ** 2)
@@ -21,14 +26,14 @@ assert 100 / 20 == 5.0
 assert abs(F.mean() - 100) < 0.1 and abs(K.mean() - 20) < 0.02
 
 
-def hist(ax, values, edges, color, opacity):
+def hist(ax, values, edges, color, opacity, anim=None):
     """A density histogram as one filled outline: the bins touching, as a
     simulation's histogram is drawn (no gaps between bars)."""
     h, e = np.histogram(values, edges, density=True)
     xs = np.repeat(e, 2)[1:-1]
     ys = np.repeat(h, 2)
     pts = ax._pts(np.r_[xs[0], xs, xs[-1]], np.r_[0, ys, 0])
-    ax.f.poly(pts, fill=color, fill_opacity=opacity, clip=ax.clip)
+    ax.f.poly(pts, fill=color, fill_opacity=opacity, clip=ax.clip, anim=anim)
     return h
 
 
@@ -46,13 +51,14 @@ def histograms(height=300):
     f = Fig(1696, height)
     h = height - 104
     for i, (v, bins, xl, xt, top, yt, nd, lab, col, op, name) in enumerate(PANELS):
+        t = 2.5 + 0.9 * i
         ax = f.axes(118 + 576 * i, 8, 418, h, xlim=xl, ylim=(0, top), xticks=xt, yticks=yt,
-                    ytick_nd=nd, xlabel=lab, ylabel="Density")
-        hh = hist(ax, v, bins, col, op)
+                    ytick_nd=nd, xlabel=lab, ylabel="Density", anim=fade(t, .4))
+        hh = hist(ax, v, bins, col, op, anim=wipe(t + .3, .6, "up"))
         # his letter by the peak, as his picture has it: just right of the
         # histogram where it has fallen to 60% of its peak, level with the top
         j = np.argmax(hh)
         j += np.argmax(hh[j:] < 0.6 * hh.max())
         x, y = ax.P(bins[j + 1], hh.max())
-        f.text(x + 18, y, f"<m>{name}</m>", "north west", size=40, color=C.navy)
+        f.text(x + 18, y, f"<m>{name}</m>", "north west", size=40, color=C.navy, anim=pop(t + .8))
     return f.html()

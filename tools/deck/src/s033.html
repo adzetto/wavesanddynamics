@@ -14,29 +14,29 @@
  </header>
  <main class="body">
   <ul class="list ps b c-navy why">
-   <li>Works for linear and nonlinear models; no derivatives needed.</li>
-   <li>Most useful when the model is complex, curvature is strong, or tail probabilities matter.</li>
-   <li>Here it confirms the second-order mean of about 5.05 mm.</li>
+   <li data-in="0.3">Works for linear and nonlinear models; no derivatives needed.</li>
+   <li data-in="0.9">Most useful when the model is complex, curvature is strong, or tail probabilities matter.</li>
+   <li data-in="7.0">Here it confirms the second-order mean of about 5.05 mm.</li>
   </ul>
   <div class="g">
-   <div class="s6">
+   <div class="s6" data-in="1.6">
     <h2 class="h">Four repeatable steps</h2>
     <div class="steps">
-     <p class="ps lines"><span><span class="n">1 </span>Draw <m>F</m> and <m>k</m> from their input distributions.</span></p>
-     <p class="ps lines"><span><span class="n">2 </span>Compute <m>y = F/k</m> for that pair.</span></p>
-     <p class="ps lines"><span><span class="n">3 </span>Repeat <m>N</m> times to obtain <m>y₁, …, yɴ</m>.</span></p>
-     <p class="ps lines"><span><span class="n">4 </span>Plot a histogram; calculate mean, SD,</span><span>quantiles or a threshold probability.</span></p>
+     <p class="ps lines" data-in="1.9"><span><span class="n">1 </span>Draw <m>F</m> and <m>k</m> from their input distributions.</span></p>
+     <p class="ps lines" data-in="2.4"><span><span class="n">2 </span>Compute <m>y = F/k</m> for that pair.</span></p>
+     <p class="ps lines" data-in="2.9"><span><span class="n">3 </span>Repeat <m>N</m> times to obtain <m>y₁, …, yɴ</m>.</span></p>
+     <p class="ps lines" data-in="3.4"><span><span class="n">4 </span>Plot a histogram; calculate mean, SD,</span><span>quantiles or a threshold probability.</span></p>
     </div>
-    <p class="ps lines draws"><span>Illustrative draws <m>(F, k)</m> and outputs:</span><span>(100 N, 20 N/mm) gives 5.00 mm</span><span>(110 N, 18 N/mm) gives 6.11 mm</span><span>(90 N, 22 N/mm) gives 4.09 mm</span></p>
+    <p class="ps lines draws" data-in="4.0"><span>Illustrative draws <m>(F, k)</m> and outputs:</span><span>(100 N, 20 N/mm) gives 5.00 mm</span><span>(110 N, 18 N/mm) gives 6.11 mm</span><span>(90 N, 22 N/mm) gives 4.09 mm</span></p>
    </div>
    <div class="s6 o7 sim">
     <div data-fig="histogram"></div>
-    <p class="ps b c-blue lines"><span>200,000 simulations: mean <m>≈</m> 5.052 mm</span><span>Output SD <m>≈</m> 0.717 mm</span></p>
+    <p class="ps b c-blue lines" data-in="6.5"><span>200,000 simulations: mean <m>≈</m> 5.052 mm</span><span>Output SD <m>≈</m> 0.717 mm</span></p>
    </div>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Monte Carlo uses the original model; input assumptions and simulation error still matter.</p>
+  <p class="take" data-in="7.8" data-as="fade">Monte Carlo uses the original model; input assumptions and simulation error still matter.</p>
   <p class="run"><span class="map">NONLINEAR CASE, METHOD 3 <span class="sep">/</span> Box 4: simulation</span><span class="src">Sources: [20], [21], [44]</span><span class="num">33</span></p>
  </footer>
 </section>

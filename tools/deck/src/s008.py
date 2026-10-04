@@ -15,7 +15,11 @@ counts are bars, one per value."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, grow
+
+# the eight families arrive one after another (data-in in s008.html); in each
+# panel, on the panel's clock, the density draws and fills, or the bars grow
+ANIM = {"length": 6.5}
 
 W, H = 400, 150
 
@@ -35,7 +39,7 @@ def _panel(dist, lo, hi, discrete=False, kmax=None):
             if hgt < 0.5:
                 continue
             x0 = kk * step + step * 0.16
-            f.rect(x0 + step * 0.04, base - hgt, step * 0.6, hgt, fill=C.navy)
+            f.rect(x0 + step * 0.04, base - hgt, step * 0.6, hgt, fill=C.navy, anim=grow(.2 + .04 * kk, .35))
         return f.html()
     x = np.linspace(lo, hi, 700)
     y = dist.pdf(x)
@@ -44,8 +48,8 @@ def _panel(dist, lo, hi, discrete=False, kmax=None):
     X = (x - lo) / (hi - lo) * (W - 8) + 4
     Y = base - y * scale
     pts = list(zip(X, Y))
-    f.poly(pts + [(X[-1], base), (X[0], base)], fill=C.mist)
-    f.line(pts, stroke=C.navy, width=3)
+    f.poly(pts + [(X[-1], base), (X[0], base)], fill=C.mist, anim=fade(.85, .4))
+    f.line(pts, stroke=C.navy, width=3, anim=draw(.2, .7))
     return f.html()
 
 

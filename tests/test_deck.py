@@ -181,8 +181,10 @@ def test_a_slide_that_plays_brings_its_page_over_the_picture():
     then plays; at its end, or when the slide goes, the frame goes.
     Presenting, a step on while it plays completes it first."""
     page = prob_page(vector=True)
-    assert re.findall(r'<li data-anim="([^"]+)">', page) == ["deck/probability/anim/s065a.html"]
-    assert page.count("<li><img ") == PROB - 1
+    plays = [r["stem"] for r in rows() if r.get("anim")]
+    assert "s065a" in plays
+    assert re.findall(r'<li data-anim="([^"]+)">', page) == [f"deck/probability/anim/{s}.html" for s in plays]
+    assert page.count("<li><img ") == PROB - len(plays)
     for hook in ("f.src=src+'?wait'", "deckAnim:'play'", "deckAnim:'finish'", "e.source!==p.f.contentWindow",
                  "m==='ready'", "m==='done'", "if(!src||reduce.matches)return", "play(i)",
                  "k===i+1&&showing()&&playing&&playing.k===i&&!playing.done"):
@@ -459,7 +461,8 @@ def test_the_build_publishes_both_decks(tmp_path):
     # its slides that play play in (anim/)
     assert len(os.listdir(out / "deck" / "phd")) == 3 * 177
     assert len(os.listdir(out / "deck" / "probability")) == 3 * PROB + 2
-    assert sorted(os.listdir(out / "deck" / "probability" / "anim")) == ["anim.js", "deck.css", "deck.js", "s065a.html"]
+    plays = [f"{r['stem']}.html" for r in rows() if r.get("anim")]
+    assert sorted(os.listdir(out / "deck" / "probability" / "anim")) == sorted(["anim.js", "deck.css", "deck.js"] + plays)
     assert (out / "fonts" / "latinmodern-math-deck.woff2").is_file()
     for page, folder, count in (("presentation.html", "phd", 177),
                                 ("probability-statistics.html", "probability", PROB)):

@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 11: Statistics: learning about a population from a sample</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
 <section class="slide">
  <style>
   .three{display:grid;grid-template-columns:repeat(3,1fr);column-gap:80px}
@@ -14,11 +27,11 @@
   <div class="three top">
    <div class="node k-navy" id="pop" data-in="0.3">
     <h2 class="h">Population / process</h2>
-    <p class="ps lines"><span>All relevant concrete strengths</span><span>Unknown mean <m>μ</m> and variance <m>σ²</m></span></p>
+    <p class="ps lines"><span>All relevant concrete strengths</span><span>Unknown mean <span class="m"><span class="mi">𝜇</span></span> and variance <span class="m"><span class="mi">𝜎</span><sup>2</sup></span></span></p>
    </div>
    <div class="node k-accent" id="obs" data-in="1.1">
     <h2 class="h">Observed sample</h2>
-    <p class="ps lines"><span>A finite set of cylinder tests</span><span><m>x₁, x₂, …, xₙ</m></span></p>
+    <p class="ps lines"><span>A finite set of cylinder tests</span><span><span class="m"><span class="mi">𝑥</span><sub>1</sub>, <span class="mi">𝑥</span><sub>2</sub>, …, <span class="mi">𝑥</span><sub><span class="mi">𝑛</span></sub></span></span></p>
    </div>
    <div class="node k-blue" id="learn" data-in="1.9">
     <h2 class="h">Statistical learning</h2>
@@ -34,7 +47,7 @@
    </div>
    <div data-in="3.3">
     <h2 class="h">Estimate the population</h2>
-    <p class="p lines"><span>What is the unknown value?</span><span>Use <m>x̄</m> to estimate <m>μ</m>.</span><span>More data can improve precision.</span></p>
+    <p class="p lines"><span>What is the unknown value?</span><span>Use <span class="m"><span class="acc bar lo"><span class="mi">𝑥</span><span class="mk">̄</span></span></span> to estimate <span class="m"><span class="mi">𝜇</span></span>.</span><span>More data can improve precision.</span></p>
    </div>
    <div data-in="3.8">
     <h2 class="h c-blue">Assess the uncertainty</h2>
@@ -47,3 +60,9 @@
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 1–3: data, model fitting and uncertainty</span><span class="src">Sources: [3], [6]</span><span class="num">11</span></p>
  </footer>
 </section>
+
+<script type="application/json" id="deck-anim">{"length": 5.5, "label": "11", "stem": "s011"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

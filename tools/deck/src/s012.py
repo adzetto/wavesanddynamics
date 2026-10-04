@@ -22,7 +22,11 @@ Plotted: observed minus fitted against the fitted trips, around zero."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, pop, sample, seq
+
+# Fit: the Q-Q plot's points arrive from the lowest quantile up, then the
+# fitted line draws through them; Check: the residuals arrive around zero
+ANIM = {"length": 6.2}
 
 # his 32 tests: a seeded random draw, rescaled to his mean and SD
 SEED, N = 12, 32
@@ -50,16 +54,16 @@ def checks():
     # Normal Q-Q plot
     qa = f.axes(112, 60, 344, 404, xlim=(-2.5, 2.5), ylim=(24, 40),
                 xticks=[-2, -1, 0, 1, 2], yticks=[25, 30, 35, 40],
-                xlabel="Theoretical normal quantiles", ylabel="Observed strength (MPa)")
+                xlabel="Theoretical normal quantiles", ylabel="Observed strength (MPa)", anim=fade(.7, .4))
     z = np.array([-2.5, 2.5])
-    qa.plot(z, FIT.mean() + FIT.std() * z, color=C.accent, width=3)
-    qa.scatter(Z, OBS, r=6.5, color=C.navy)
-    f.text(112 + 172, 60 - 16, "Normal Q–Q plot", "south", **TITLE)
+    qa.plot(z, FIT.mean() + FIT.std() * z, color=C.accent, width=3, anim=draw(2.1, .55))
+    qa.scatter(Z, OBS, r=6.5, color=C.navy, anim=seq(1.0, .033, visual=.25))
+    f.text(112 + 172, 60 - 16, "Normal Q–Q plot", "south", **TITLE, anim=pop(.8))
     # Regression residuals
     ra = f.axes(616, 60, 344, 404, xlim=(2, 13), ylim=(-3, 3),
                 xticks=[4, 6, 8, 10, 12], yticks=[-2, -1, 0, 1, 2],
-                xlabel="Fitted trips", ylabel="Observed minus fitted")
-    ra.hline(0, color=C.accent, width=3, dash=None)
-    ra.scatter(FITTED, RESID, r=6.5, color=C.navy)
-    f.text(616 + 172, 60 - 16, "Regression residuals", "south", **TITLE)
+                xlabel="Fitted trips", ylabel="Observed minus fitted", anim=fade(3.0, .4))
+    ra.hline(0, color=C.accent, width=3, dash=None, anim=draw(3.25, .45))
+    ra.scatter(FITTED, RESID, r=6.5, color=C.navy, anim=seq(3.6, .03, visual=.25))
+    f.text(616 + 172, 60 - 16, "Regression residuals", "south", **TITLE, anim=pop(3.1))
     return f.html()

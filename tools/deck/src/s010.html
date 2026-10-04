@@ -13,43 +13,43 @@
  </header>
  <main class="body">
   <div class="g six">
-   <div class="node k-navy s4">
+   <div class="node k-navy s4" data-in="0.30">
     <h2 class="h f"><m>p(x)</m></h2>
     <p class="ps"><b>One quantity</b></p>
     <p class="note">Distribution: Concrete strength</p>
    </div>
-   <div class="node k-navy s4">
+   <div class="node k-navy s4" data-in="0.75">
     <h2 class="h f"><m>p(x, y)</m></h2>
     <p class="ps"><b>Several together</b></p>
     <p class="note">Joint distribution: Load and capacity</p>
    </div>
-   <div class="node k-navy s4">
+   <div class="node k-navy s4" data-in="1.20">
     <h2 class="h f"><m>p(y | x)</m></h2>
     <p class="ps"><b><m>y</m> given predictors <m>x</m></b></p>
     <p class="note">Regression: Strength given w/c ratio</p>
    </div>
-   <div class="node k-blue s4">
+   <div class="node k-blue s4" data-in="1.65">
     <h2 class="h f"><m>p(θ | data)</m></h2>
     <p class="ps"><b>Unknown parameters</b></p>
     <p class="note">Bayesian model: Mean strength after 25 tests</p>
    </div>
-   <div class="node k-blue s4">
+   <div class="node k-blue s4" data-in="2.10">
     <h2 class="h f"><m>p(x₁, x₂, …, xₜ)</m></h2>
     <p class="ps"><b>A whole history</b></p>
     <p class="note">Stochastic process: Traffic over one day</p>
    </div>
-   <div class="node k-blue s4">
+   <div class="node k-blue s4" data-in="2.55">
     <h2 class="h f"><m>p(xₜ | z₁ … zₜ)</m></h2>
     <p class="ps"><b>Hidden state from sensors</b></p>
     <p class="note">Kalman filter: Displacement now</p>
    </div>
   </div>
-  <div class="panel core">
+  <div class="panel core" data-in="3.3">
    <p class="ps"><b class="c-navy">So distributions and regression are not two separate kinds of model:</b> regression is a distribution whose mean moves with <m>x</m>. The rest add more variables, uncertain parameters, time or hidden states.</p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">Every probabilistic model answers one question: how is probability spread, and over what?</p>
+  <p class="take" data-in="4.5" data-as="fade">Every probabilistic model answers one question: how is probability spread, and over what?</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–5: the common core behind every model</span><span class="src">Sources: [6], [10], [22]</span><span class="num">10</span></p>
  </footer>
 </section>

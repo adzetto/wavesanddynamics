@@ -11,6 +11,13 @@ from scipy import stats
 
 from fig import Fig, C, mix, sample
 
+# The map builds in the order data travels (DECK_BRIEF.md "Animated slides";
+# the moments are in s002.html): the data, the three optional statistics
+# stages and the paths through them, the probability models and risk, then
+# the two ways of reading the result for a decision; each arrow draws just
+# before the box it leads to. Each small figure arrives with its box.
+ANIM = {"length": 10.9}
+
 LAB = 20                 # label size on this slide (the map's small print)
 W1, W4, W5 = 228, 340, 350   # figure widths: stages 1 to 3, box 4, box 5
 

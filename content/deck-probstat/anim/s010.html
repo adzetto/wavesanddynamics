@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 10: One core idea: every model is a probability distribution</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
+<section class="slide">
+ <style>
+  .six{row-gap:22px;margin-top:2px;grid-auto-rows:1fr}
+  .six .node{padding:18px 26px 22px;align-self:stretch}
+  .six .f{font-size:42px;line-height:1.2}
+  .six .ps{margin-top:10px}
+  .six .note{margin-top:2px;text-wrap:balance}
+  .core{margin-top:22px}
+ </style>
+ <header class="head">
+  <h1 class="title">One core idea: every model is a probability distribution</h1>
+  <p class="lede">Yes: at the core there is one model, the probability distribution. Regression, Bayesian models, processes and state-space models are distributions of different things.</p>
+ </header>
+ <main class="body">
+  <div class="g six">
+   <div class="node k-navy s4" data-in="0.30">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝑥</span>)</span></h2>
+    <p class="ps"><b>One quantity</b></p>
+    <p class="note">Distribution: Concrete strength</p>
+   </div>
+   <div class="node k-navy s4" data-in="0.75">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝑥</span>, <span class="mi">𝑦</span>)</span></h2>
+    <p class="ps"><b>Several together</b></p>
+    <p class="note">Joint distribution: Load and capacity</p>
+   </div>
+   <div class="node k-navy s4" data-in="1.20">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝑦</span> | <span class="mi">𝑥</span>)</span></h2>
+    <p class="ps"><b><span class="m"><span class="mi">𝑦</span></span> given predictors <span class="m"><span class="mi">𝑥</span></span></b></p>
+    <p class="note">Regression: Strength given w/c ratio</p>
+   </div>
+   <div class="node k-blue s4" data-in="1.65">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝜃</span> | <span class="w">data</span>)</span></h2>
+    <p class="ps"><b>Unknown parameters</b></p>
+    <p class="note">Bayesian model: Mean strength after 25 tests</p>
+   </div>
+   <div class="node k-blue s4" data-in="2.10">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝑥</span><sub>1</sub>, <span class="mi">𝑥</span><sub>2</sub>, …, <span class="mi">𝑥</span><sub><span class="mi">𝑡</span></sub>)</span></h2>
+    <p class="ps"><b>A whole history</b></p>
+    <p class="note">Stochastic process: Traffic over one day</p>
+   </div>
+   <div class="node k-blue s4" data-in="2.55">
+    <h2 class="h f"><span class="m"><span class="mi">𝑝</span>(<span class="mi">𝑥</span><sub><span class="mi">𝑡</span></sub> | <span class="mi">𝑧</span><sub>1</sub> … <span class="mi">𝑧</span><sub><span class="mi">𝑡</span></sub>)</span></h2>
+    <p class="ps"><b>Hidden state from sensors</b></p>
+    <p class="note">Kalman filter: Displacement now</p>
+   </div>
+  </div>
+  <div class="panel core" data-in="3.3">
+   <p class="ps"><b class="c-navy">So distributions and regression are not two separate kinds of model:</b> regression is a distribution whose mean moves with <span class="m"><span class="mi">𝑥</span></span>. The rest add more variables, uncertain parameters, time or hidden states.</p>
+  </div>
+ </main>
+ <footer class="foot">
+  <p class="take" data-in="4.5" data-as="fade">Every probabilistic model answers one question: how is probability spread, and over what?</p>
+  <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–5: the common core behind every model</span><span class="src">Sources: [6], [10], [22]</span><span class="num">10</span></p>
+ </footer>
+</section>
+
+<script type="application/json" id="deck-anim">{"length": 5.3, "label": "10", "stem": "s010"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

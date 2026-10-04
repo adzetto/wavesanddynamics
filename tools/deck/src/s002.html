@@ -58,11 +58,11 @@
   <p class="lede"><span>Five stages carry data to a decision. The first 3 are optional, sometimes the model is already known, and you can skip straight to using it.</span><span>Probabilistic models (that we will cover in this class) are distribution and regression based.</span></p>
  </header>
  <main class="body map">
-  <div class="data" id="data"><div data-fig="data_icon"></div><span class="dl">DATA</span></div>
+  <div class="data" id="data" data-in="0.3"><div data-fig="data_icon"></div><span class="dl">DATA</span></div>
 
   <div class="statcol">
-   <div id="stats">
-    <div class="stage">
+   <div id="stats" data-in="1.0" data-as="fade" data-dur=".3">
+    <div class="stage" data-in="1.1">
      <div class="sh"><span class="badge">1</span><h2 class="st">GOODNESS FIT</h2></div>
      <p class="sd">checks whether the family you assumed is a plausible fit for the data</p>
      <div class="mm"><div data-fig="chi"></div><h3 class="mn">chi square test</h3>
@@ -71,7 +71,7 @@
       <p class="md">points should fall near a line if the family fits well</p></div>
      <p class="aside"><b class="b">also used: </b>Kolmogorov Smirnov, Anderson Darling, Shapiro Wilk</p>
     </div>
-    <div class="stage">
+    <div class="stage" data-in="2.0">
      <div class="sh"><span class="badge">2</span><h2 class="st">ESTIMATION</h2></div>
      <p class="sd">a best fit number from a sample, on its own just a point, not yet a probability</p>
      <div class="mm"><div data-fig="moments"></div>
@@ -79,7 +79,7 @@
      <div class="mm"><div data-fig="fit_line"></div><h3 class="mn">correlation and regression</h3>
       <p class="md">covariance and <m>r</m> show the linkage, least squares fits the line</p></div>
     </div>
-    <div class="stage">
+    <div class="stage" data-in="2.9">
      <div class="sh"><span class="badge">3</span><h2 class="st">INFERENCE</h2></div>
      <p class="sd">attaches a probability to that estimate: how sure, and how wide</p>
      <div class="mm"><div data-fig="interval"></div><h3 class="mn">confidence and hypothesis tests</h3>
@@ -88,7 +88,7 @@
       <p class="md">is the slope real, is the fit valid, how wide is the prediction</p></div>
     </div>
    </div>
-   <div class="paths">
+   <div class="paths" data-in="3.8" data-as="fade" data-dur=".6">
     <p class="ph">STATISTICS SECTION: OPTIONAL, DEPENDING ON THE PROBLEM</p>
     <div class="pl">
      <div class="pb"><span class="badge">1</span></div><p class="pt">checking an assumed model against fresh data</p>
@@ -101,7 +101,7 @@
    </div>
   </div>
 
-  <div class="node" id="models">
+  <div class="node" id="models" data-in="5.0">
    <div class="sh"><span class="badge">4</span><h2 class="st">PROBABILITY MODELS</h2></div>
    <p class="sd">the rules for combining and describing random outcomes</p>
    <div class="mm"><div data-fig="venn"></div><h3 class="mn">counting rules and Bayes</h3>
@@ -109,7 +109,7 @@
    <div class="mm"><div data-fig="two_families"></div><h3 class="mn">random variables and distributions</h3>
     <p class="md">normal, lognormal, binomial, …, each with its own mean and spread</p></div>
   </div>
-  <div class="node" id="risk">
+  <div class="node" id="risk" data-in="6.0">
    <h2 class="st">RISK AND RELIABILITY</h2>
    <p class="sd">turns the model into the chance of a real engineering outcome</p>
    <div class="mm"><div data-fig="propagate"></div><h3 class="mn">uncertainty propagation</h3>
@@ -119,29 +119,29 @@
   </div>
 
   <div class="dec1">
-   <div class="d5"><span class="badge">5</span><h2 class="st">DECISION</h2></div>
-   <p class="dsent">Reading probabilities 2 different way is a separate choice</p>
-   <div class="node" id="pw">
+   <div class="d5" data-in="7.0"><span class="badge">5</span><h2 class="st">DECISION</h2></div>
+   <p class="dsent" data-in="7.4" data-as="fade">Reading probabilities 2 different way is a separate choice</p>
+   <div class="node" id="pw" data-in="8.1">
     <p class="grp">Point Wise Decision</p>
     <div class="item"><p class="it">REGRESSION</p><div data-fig="point_regression"></div><p class="id">the predicted number, used directly</p></div>
     <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="point_design"></div><p class="id">the mean, or a single chosen quantile</p></div>
     <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="point_beta"></div><p class="id">pass or fail against a safety index</p></div>
    </div>
   </div>
-  <div class="node" id="pr">
+  <div class="node" id="pr" data-in="9.1">
    <p class="grp">Probabilistic Decision</p>
    <div class="item"><p class="it">REGRESSION</p><div data-fig="prob_regression"></div><p class="id">the chance the true value exceeds a limit</p></div>
    <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="prob_exceed"></div><p class="id">the chance of exceeding that value</p></div>
    <div class="item"><p class="it">RELIABILITY (FOSM)</p><div data-fig="prob_shortfall"></div><p class="id">the actual chance capacity falls short</p></div>
   </div>
 
-  <i class="wire" data-from="#data" data-to="#stats" data-color="sky"></i>
-  <i class="wire" data-from="#stats" data-to="#models" data-color="sky"></i>
-  <i class="wire" data-from="#stats" data-to="#risk" data-color="sky"></i>
-  <i class="wire" data-from="#models" data-to="#pw" data-color="sky"></i>
-  <i class="wire" data-from="#risk" data-to="#pr" data-color="sky"></i>
+  <i class="wire" data-from="#data" data-to="#stats" data-color="sky" data-in="0.75" data-dur=".4"></i>
+  <i class="wire" data-from="#stats" data-to="#models" data-color="sky" data-in="4.6" data-dur=".45"></i>
+  <i class="wire" data-from="#stats" data-to="#risk" data-color="sky" data-in="5.6" data-dur=".45"></i>
+  <i class="wire" data-from="#models" data-to="#pw" data-color="sky" data-in="7.7" data-dur=".45"></i>
+  <i class="wire" data-from="#risk" data-to="#pr" data-color="sky" data-in="8.7" data-dur=".45"></i>
  </main>
  <footer class="foot">
-  <p class="take">The reason that we teach probability first (opposite of the workflow) is that we need to know probability to learn statistics</p>
+  <p class="take" data-in="10.1" data-as="fade">The reason that we teach probability first (opposite of the workflow) is that we need to know probability to learn statistics</p>
  </footer>
 </section>

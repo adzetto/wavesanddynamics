@@ -161,7 +161,11 @@ def test_the_manifest_is_the_deck_in_order():
         rows = json.load(fh)
     assert [r["label"] for r in rows] == his.LABELS
     assert [r["stem"] for r in rows] == [his.stem(x) for x in his.LABELS]
-    assert [r["label"] for r in rows if "anim" in r] == ["65a"]
+    # the slides that play say how long; each has its page beside the shared files
+    plays = [r for r in rows if "anim" in r]
+    assert "65a" in [r["label"] for r in plays] and all(r["anim"] > 0 for r in plays)
+    anim = os.path.join(ROOT, "content", "deck-probstat", "anim")
+    assert sorted(os.listdir(anim)) == sorted(["anim.js", "deck.css", "deck.js"] + [f"{r['stem']}.html" for r in plays])
     for r in rows:
         page = open(os.path.join(DECK, "src", f"{r['stem']}.html"), encoding="utf-8").read()
         h1 = re.search(r'<h1 class="title[^"]*">(.*?)</h1>', page, re.S).group(1)
@@ -333,7 +337,7 @@ def test_the_runtime_keeps_to_its_contract():
 def test_the_page_a_slide_plays_in_is_on_disk_with_what_it_needs():
     import json
     anim = os.path.join(ROOT, "content", "deck-probstat", "anim")
-    assert sorted(os.listdir(anim)) == ["anim.js", "deck.css", "deck.js", "s065a.html"]
+    assert {"anim.js", "deck.css", "deck.js", "s065a.html"} <= set(os.listdir(anim))
     page = open(os.path.join(anim, "s065a.html"), encoding="utf-8").read()
     cfg = json.loads(re.search(r'<script type="application/json" id="deck-anim">(.*?)</script>', page, re.S).group(1))
     assert cfg == {"length": kalman().ANIM["length"], "label": "65a", "stem": "s065a"}
@@ -390,7 +394,9 @@ def test_the_kalman_loop_plays_from_empty_to_its_photograph():
             last = im.convert("RGB").resize((1920, 1080), Image.Resampling.LANCZOS)
         with Image.open(os.path.join(ROOT, "content", "deck-probstat", "s065a.png")) as im:
             photo = im.convert("RGB")
-        assert render._worst(photo, last) <= render.ANIM_TOL + 20
+        # the photograph may come from another machine (his file and the
+        # photographs live on Windows): the vector check's measure, over 10 px
+        assert render._worst(photo, last, radius=10) <= render.VEC_TOL
         # played fast, it ends and stops asking for frames
         pg.goto(url + "?speed=20")
         pg.wait_for_function("window.DeckAnim && DeckAnim.state === 'done'", timeout=15000)

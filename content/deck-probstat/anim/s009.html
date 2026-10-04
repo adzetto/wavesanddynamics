@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" class="anim-page anim-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Slide 9: Probabilistic models: distributions, regression and more</title>
+<link rel="stylesheet" href="deck.css">
+<style>html.anim-page,html.anim-page body{width:100%;height:100%;overflow:hidden;background:#fff}
+html.anim-page .slide{transform-origin:0 0}
+html.anim-wait .slide{visibility:hidden}</style>
+</head>
+<body>
 <section class="slide">
  <style>
   .models{margin-top:6px;font-size:28px}
@@ -16,7 +29,7 @@
     <tr><td>Distribution</td><td>One uncertain quantity</td><td>Concrete strength, annual peak flow</td><td>Slides 8, 13, 25</td></tr>
     <tr><td>Joint distribution</td><td>Several quantities that vary together</td><td>Load and capacity rising together</td><td>Slides 7, 37</td></tr>
     <tr><td>Regression</td><td>A distribution whose mean depends on predictors</td><td>Strength vs water-to-cement ratio</td><td>Slides 22–24</td></tr>
-    <tr><td>Logistic regression, fragility curve</td><td>Probability of a yes/no outcome vs a predictor</td><td><m>P(damage)</m> vs earthquake shaking</td><td>This slide</td></tr>
+    <tr><td>Logistic regression, fragility curve</td><td>Probability of a yes/no outcome vs a predictor</td><td><span class="m"><span class="mi">𝑃</span>(<span class="w">damage</span>)</span> vs earthquake shaking</td><td>This slide</td></tr>
     <tr><td>Bayesian model</td><td>Uncertainty about the parameters themselves</td><td>Updating mean strength with tests</td><td>Slides 14–20</td></tr>
     <tr><td>Stochastic process</td><td>Uncertainty over time or space</td><td>Traffic, vibration, deterioration</td><td>Slides 40–60</td></tr>
     <tr><td>State-space model</td><td>A hidden state seen through noisy sensors</td><td>Tracking bridge displacement</td><td>Slides 65–67</td></tr>
@@ -28,3 +41,9 @@
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–5: the models used across this guide</span><span class="src">Sources: [1], [10], [12], [13], [22], [41]</span><span class="num">9</span></p>
  </footer>
 </section>
+
+<script type="application/json" id="deck-anim">{"length": 5.3, "label": "9", "stem": "s009"}</script>
+<script src="deck.js"></script>
+<script src="anim.js"></script>
+</body>
+</html>

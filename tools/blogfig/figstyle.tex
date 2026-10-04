@@ -1,0 +1,98 @@
+\usepackage{amsmath,amssymb}
+\usepackage{accents}
+\usetikzlibrary{arrows.meta,calc,patterns.meta}
+\definecolor{fsLine}{gray}{0}
+\definecolor{fsRed}{RGB}{255,0,0}
+\definecolor{fsBlue}{RGB}{0,0,255}
+\definecolor{fsGreen}{RGB}{0,176,0}
+\definecolor{fsGreenText}{RGB}{0,140,0}
+\definecolor{fsBodyFill}{gray}{0.90}
+\definecolor{fsElemFill}{gray}{0.85}
+\definecolor{fsCutFill}{gray}{0.95}
+\definecolor{fsLoadFill}{RGB}{255,226,226}
+\definecolor{fsFormula}{RGB}{199,196,226}
+\newdimen\FigThin  \FigThin=0.354pt
+\newdimen\FigMed   \FigMed=0.709pt
+\newdimen\FigHeavy \FigHeavy=1.417pt
+\newdimen\FigHair  \FigHair=0.25pt
+\DeclareRobustCommand{\FigVec}[1]{\underaccent{\tilde}{#1}}
+\newcommand{\FigTr}{\operatorname{tr}}
+\tikzset{
+  fs tip stress/.tip={Triangle[length=9.3pt,width=4.2pt,
+    line width=0.354pt]},
+  fs tip med/.tip={Triangle[length=6.6pt,width=3.1pt,
+    line width=0.354pt]},
+  fs tip axis/.tip={Triangle[length=5.58pt,width=2.5pt,
+    line width=0.354pt]},
+  fs tip dim/.tip={Triangle[length=5.58pt,width=2.5pt,
+    line width=0.354pt]},
+  fs/.style={line cap=butt, line join=miter, miter limit=10,
+    every node/.style={inner sep=0pt, outer sep=0pt}},
+  fs thin/.style={line width=\FigThin, draw=fsLine},
+  fs med/.style={line width=\FigMed, draw=fsLine},
+  fs heavy/.style={line width=\FigHeavy, draw=fsLine},
+  fs body/.style={line width=\FigMed, draw=fsLine, fill=fsElemFill},
+  fs hidden/.style={line width=\FigThin, draw=fsLine,
+    dash pattern=on 2.6pt off 1.9pt},
+  fs aux/.style={line width=\FigThin, draw=fsLine,
+    dash pattern=on 2.5pt off 2.5pt},
+  fs axis/.style={line width=\FigThin, draw=fsBlue, -{fs tip axis}},
+  fs axlabel/.style={text=fsBlue},
+  fs stress/.style={line width=\FigMed, draw=fsRed, -{fs tip stress}},
+  fs slabel/.style={text=fsRed},
+  fs vec/.style={line width=\FigMed, draw=fsLine, -{fs tip med}},
+  fs vec thin/.style={line width=\FigThin, draw=fsLine, -{fs tip med}},
+  fs vec aux/.style={fs aux, -{fs tip med}},
+  fs label/.style={text=fsLine},
+  fs angle/.style={line width=\FigThin, draw=fsGreen, -{fs tip axis}},
+  fs angle plain/.style={line width=\FigThin, draw=fsGreen},
+  fs anglabel/.style={text=fsGreenText},
+  fs curve/.style={line width=\FigMed, draw=fsLine, line join=round},
+  fs point/.style={circle, draw=fsLine, fill=white,
+    line width=\FigThin, minimum size=2.8pt},
+  fs hatch/.style={line width=\FigHair, draw=fsLine!55},
+  fs wall/.style={line width=\FigMed, draw=fsLine},
+  fs box/.style={draw=fsLine, line width=\FigThin, fill=white,
+    rounded corners=1.5pt, inner sep=3.5pt, align=center},
+  fs formula/.style={fill=fsFormula, inner sep=2.5pt},
+  fs region/.style={fill=fsLoadFill},
+}
+\newcommand{\FigPanel}[2]{\node[anchor=base west, text=fsBlue,
+  font=\bfseries] at #1 {#2};}
+% ---------------------------------------------------------------- blog figures
+% The house style above is adzetto/Continuum_Mechanics_Notes' (figures/common/
+% figstyle.tex, v3), as it is. What follows is the blog's: pgfplots axes in
+% the same line weights for the data the posts plot, and a few keys for the
+% block diagrams some posts draw.
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{
+  fs plot/.style={
+    axis line style={line width=\FigThin, draw=fsLine},
+    every tick/.style={line width=\FigThin, draw=fsLine},
+    major tick length=2.5pt, minor tick length=1.5pt, tick align=inside,
+    tick label style={font=\small},
+    label style={font=\normalsize},
+    legend style={draw=fsLine, line width=\FigThin, fill=white, font=\small,
+      inner xsep=2.5pt, inner ysep=1.5pt, row sep=-0.5pt},
+    legend cell align=left,
+    every axis plot/.append style={line width=\FigMed, line join=round},
+    grid style={line width=\FigHair, draw=fsLine!25},
+    scaled ticks=false, clip mode=individual,
+    every tick label/.append style={inner sep=2pt},
+    xticklabel style={yshift=-1.2pt}, yticklabel style={xshift=-1.2pt},
+    every axis label/.append style={inner sep=2pt},
+    every legend/.append style={inner sep=2pt},
+  },
+}
+\tikzset{
+  fs block/.style={draw=fsLine, line width=\FigThin, fill=white, inner sep=3pt,
+    align=center},
+  fs neuron/.style={circle, draw=fsLine, line width=\FigMed, fill=fsElemFill,
+    inner sep=0pt},
+  fs dot/.style={circle, fill=fsLine, inner sep=0pt},
+  fs flow/.style={line width=\FigThin, draw=fsLine, -{fs tip axis}},
+  fs dim/.style={line width=\FigThin, draw=fsGreen, -{fs tip dim}},
+  fs dimlabel/.style={text=fsGreenText},
+}

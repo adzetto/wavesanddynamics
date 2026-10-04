@@ -1964,10 +1964,49 @@ def lead(post):
     return ""
 
 
+# His figures redrawn in the house style of the course notes (tools/blogfig/,
+# 4 Oct 2026): content/blog-figs/<slug>/<stem>.svg stands in for the figure
+# cut out of a screenshot of his text, text/<stem>.png, wherever it exists.
+BLOGFIGS = os.path.join(ROOT, "content", "blog-figs")
+SVG_PX = 1.6                 # px to the pt: a 10 pt label at 16 px, until the column scales it down
+
+
+def redrawn(slug, name):
+    """The redrawn figure for his cut-out picture `name` (data-crop) of post
+    `slug`: (path, width, height), its size in px, or None if there is none."""
+    path = os.path.join(BLOGFIGS, slug, os.path.splitext(name)[0] + ".svg")
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        head = fh.read(600)
+    m = re.search(r'<svg\b[^>]*?\swidth="([\d.]+)(?:pt)?"[^>]*?\sheight="([\d.]+)(?:pt)?"', head)
+    if not m:
+        sys.exit(f"{os.path.relpath(path, ROOT)}: no width and height on its <svg>")
+    return path, round(float(m.group(1)) * SVG_PX), round(float(m.group(2)) * SVG_PX)
+
+
+def cut_out(slug, name, k, here):
+    """Publish the figure `name` cut out of a screenshot of his text, the k-th
+    picture of post `slug`, into the post's folder `here`: its redrawing, the
+    SVG as it is, where there is one, else the cut-out picture as a lossless
+    WebP. Returns (file name, width, height)."""
+    stem = os.path.splitext(name)[0]
+    fig = redrawn(slug, name)
+    if fig:
+        out_name = f"{k:02d}-{stem}.svg"
+        os.makedirs(here, exist_ok=True)
+        shutil.copyfile(fig[0], os.path.join(here, out_name))
+        return out_name, fig[1], fig[2]
+    out_name = f"{k:02d}-{stem}.webp"
+    cw, ch = derive(os.path.join(BLOGSRC, slug, "text", name), os.path.join(here, out_name), lossless=True)
+    return out_name, cw, ch
+
+
 def blog_picture(post):
     """The post's first figure, for its card on the Blog: the first picture
     cut out of a screenshot of his text (text/<stem>.html, data-crop), which
-    post_page() publishes as post/<slug>/<k>-<name>.webp at its own size.
+    post_page() publishes as post/<slug>/<k>-<name>.webp at its own size, or
+    as post/<slug>/<k>-<name>.svg where it is redrawn (redrawn()).
     His other pictures are pages of text and the film's poster is YouTube's,
     so a post without a cut-out figure has no picture. Returns {"src", "w",
     "h"}, the path from blog.html, or None."""
@@ -1979,10 +2018,13 @@ def blog_picture(post):
             continue
         m = re.search(r'<img data-crop="([^"]+)"', open(page, encoding="utf-8").read())
         if m:
+            stem = os.path.splitext(m.group(1))[0]
+            fig = redrawn(slug, m.group(1))
+            if fig:
+                return {"src": f"post/{slug}/{k:02d}-{stem}.svg", "w": fig[1], "h": fig[2]}
             with Image.open(os.path.join(BLOGSRC, slug, "text", m.group(1))) as im:
                 w, h = im.size
-            return {"src": f"post/{slug}/{k:02d}-{os.path.splitext(m.group(1))[0]}.webp",
-                    "w": w, "h": h}
+            return {"src": f"post/{slug}/{k:02d}-{stem}.webp", "w": w, "h": h}
     return None
 
 
@@ -2045,7 +2087,8 @@ def post_page(post, out, no_word, newer=None, older=None, blog=None):
             sys.exit(f"post/{slug}.docx: the copy differs from its original")
         figs[f["node"]] = {"href": f"{slug}.docx", "bytes": os.path.getsize(dst)}
     # A screenshot of his text is set as text: content/blog/<slug>/text/<stem>.html
-    # replaces the picture; a figure cut out of it is <img data-crop="x.png" alt="...">.
+    # replaces the picture; a figure cut out of it is <img data-crop="x.png" alt="...">,
+    # published as the cut-out picture, or as its redrawing where there is one.
     typed = {}
     for k, (node, info) in enumerate(zip(pics, post["images"]), 1):
         stem = os.path.splitext(info["file"])[0]
@@ -2057,10 +2100,7 @@ def post_page(post, out, no_word, newer=None, older=None, blog=None):
             text = mathtex.typed(text, os.path.relpath(src, ROOT).replace(os.sep, "/"))
 
             def crop(m, k=k):
-                name = m.group(1)
-                out_name = f"{k:02d}-{os.path.splitext(name)[0]}.webp"
-                cw, ch = derive(os.path.join(BLOGSRC, slug, "text", name),
-                                os.path.join(here, out_name), lossless=True)
+                out_name, cw, ch = cut_out(slug, m.group(1), k, here)
                 return (f'<figure class="shot"><img src="{slug}/{out_name}" width="{cw}" '
                         f'height="{ch}" loading="lazy" decoding="async"')
             text = re.sub(r'<img data-crop="([^"]+)"', crop, text)

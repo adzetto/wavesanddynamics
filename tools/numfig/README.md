@@ -200,6 +200,26 @@ Print the key numbers when the generator runs.
 2. The figure is not in the page until the controller maps it. Test the page itself
    through `common.frames` and `still`.
 
+## Restyling a figure
+
+A change of look (its buttons, its colours, its type) changes the frame (`common.HEAD`),
+the engine or the figure's script, and none of its numbers. Running the generator again
+would train its model again: slow, impossible where torch or statsmodels is missing, and
+with another library version perhaps other numbers. Instead:
+
+1. Edit the figure's `JS` string in `<name>.py` (or `engine.js`, `common.HEAD`, or a
+   library: `mla_shared.LIB`, `mlb_common.JS_LIB`, `mlc_lib.LIB`).
+2. Run `python tools/numfig/reskin.py <name> --still` (`<name>` without `nf-`; `--all-ml`
+   for the machine learning figures, `--all` for every page).
+
+`reskin.py` rebuilds the page from the title, aria text, size and DATA it holds, the
+current frame and engine, and its own script with your edits made in it. Each edit is
+found in the page by its lines and the lines around them, exactly once. Where the
+generator can be imported here, the script is also checked against the one it writes. A
+page whose script the committed generator would not write is refused: run the generator
+itself. `--still` photographs the poster again and fails on a collision the old page did
+not have.
+
 ## Files you own
 
 Only your `tools/numfig/<name>.py`, `tools/numfig/<name>.check.txt`, and

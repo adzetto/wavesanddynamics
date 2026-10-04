@@ -123,15 +123,19 @@ pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
 document.getElementById('rs').addEventListener('click', e => {
   e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
 });
-cv.addEventListener('click', () => setPlay(!playing));
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
 function loop(ts) {
   if (last === null) last = ts;
   const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
   if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
   requestAnimationFrame(loop);
 }
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
 function start() {
-  if (STILL) document.querySelector('.ctl').style.display = 'none';
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
   setPlay(playing);
   if (!playing) t = posterT();
   new ResizeObserver(fit).observe(cv);

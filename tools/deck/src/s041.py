@@ -19,7 +19,13 @@ The four keep his colours (navy, orange, purple, teal: the deck's navy,
 accent, blue and sky), their plots bare as his: the axis lines, no numbers."""
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, seq
+
+# The four families one at a time, each tracing out its history
+# (DECK_BRIEF.md "Animated slides"; the headings' moments are in
+# s041.html): the chain steps year by year, the walk day by day, the
+# arrivals count up, the vibration draws; then the table that sorts them.
+ANIM = {"length": 8.2}
 
 P = np.array([[0.8, 0.2, 0.0], [0.0, 0.7, 0.3], [0.0, 0.0, 1.0]])
 assert np.allclose(P.sum(axis=1), 1)
@@ -51,9 +57,9 @@ def _axes(f, xlim, ylim, **kw):
 def markov():
     f = Fig(LEFT, FH)
     ax = _axes(f, (-0.8, 20.8), (-0.25, 2.25), yticks=[0, 1, 2],
-               yticklabels=["Good", "Degr.", "Failed"])
+               yticklabels=["Good", "Degr.", "Failed"], anim=fade(.5, .4))
     t = np.arange(len(STATES) + 1)
-    ax.step(t, np.r_[STATES, STATES[-1]], color=C.navy, width=5)
+    ax.step(t, np.r_[STATES, STATES[-1]], color=C.navy, width=5, anim=seq(.8, .06))
     return f.html()
 
 
@@ -61,10 +67,10 @@ def walk(seed=49):
     f = Fig(RIGHT, FH)
     rng = np.random.default_rng(seed)
     x = np.r_[0.0, np.cumsum(rng.normal(0, 0.3, 39))]
-    ax = _axes(f, (-1.5, 40.5), (x.min() - 0.4, x.max() + 0.4))
+    ax = _axes(f, (-1.5, 40.5), (x.min() - 0.4, x.max() + 0.4), anim=fade(1.8, .4))
     d = np.arange(40)
-    ax.plot(d, x, color=C.accent, width=3.5)
-    ax.scatter(d, x, r=4.5, color=C.accent)
+    ax.plot(d, x, color=C.accent, width=3.5, anim=seq(2.1, .025))
+    ax.scatter(d, x, r=4.5, color=C.accent, anim=seq(2.1, .025, visual=.2))
     return f.html()
 
 
@@ -75,8 +81,9 @@ def poisson(seed=241, rate=2.0, hours=7.0):
     t = t[t < hours]
     n = len(t)
     assert n == 14                    # his rate x 7 h = 14 expected
-    ax = _axes(f, (-0.2, hours + 0.1), (-0.8, n + 0.8))
-    ax.step(np.r_[0, t, hours], np.r_[0, np.arange(1, n + 1), n], color=C.blue, width=4)
+    ax = _axes(f, (-0.2, hours + 0.1), (-0.8, n + 0.8), anim=fade(3.1, .4))
+    ax.step(np.r_[0, t, hours], np.r_[0, np.arange(1, n + 1), n], color=C.blue, width=4,
+            anim=seq(3.4, .06))
     return f.html()
 
 
@@ -96,6 +103,6 @@ def vibration(seed=47, dur=6.0):
     t = np.linspace(0, dur, 1500)
     ph = rng.uniform(0, 2 * np.pi, len(fr))
     x = (np.sqrt(2 * G * df)[:, None] * np.cos(2 * np.pi * fr[:, None] * t + ph[:, None])).sum(0)
-    ax = _axes(f, (-0.15, dur + 0.15), (x.min() - 0.3, x.max() + 0.3))
-    ax.plot(t, x, color=C.sky, width=3)
+    ax = _axes(f, (-0.15, dur + 0.15), (x.min() - 0.3, x.max() + 0.3), anim=fade(4.4, .4))
+    ax.plot(t, x, color=C.sky, width=3, anim=draw(4.7, .9))
     return f.html()

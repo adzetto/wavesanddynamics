@@ -13,7 +13,13 @@ four equally likely values of Z, its 1/8, 3/8, 5/8 and 7/8 quantiles (fig.sample
 import numpy as np
 from scipy.stats import norm
 
-from fig import Fig, C, SERIES, sample
+from fig import Fig, C, SERIES, draw, fade, pop, sample
+
+# One panel, then the other (DECK_BRIEF.md "Animated slides"; the blocks'
+# moments are in s044.html): the four time averages draw out together as
+# the record lengthens, settling on the common mean on the left and on
+# their own offsets on the right.
+ANIM = {"length": 7.2}
 
 L = np.arange(1, 701)
 rng = np.random.default_rng(4401)
@@ -28,21 +34,23 @@ W, H = 832, 470
 BOX = (104, 48, 704, 330)
 
 
-def _panel(title, curves):
+def _panel(title, curves, t0):
     f = Fig(W, H)
     x, y, w, h = BOX
-    f.text(x, y - 12, title, "south west", size=28, color=C.ink, font="serif", weight=600)
+    f.text(x, y - 12, title, "south west", size=28, color=C.ink, font="serif", weight=600,
+           anim=pop(t0))
     ax = f.axes(x, y, w, h, xlim=(-15, 715), ylim=(-YL, YL), xticks=range(0, 701, 100),
-                yticks=[-2, -1, 0, 1, 2], xlabel="Record length", ylabel="Time average")
-    ax.hline(0, width=2)
+                yticks=[-2, -1, 0, 1, 2], xlabel="Record length", ylabel="Time average",
+                anim=fade(t0 + .1, .4))
+    ax.hline(0, width=2, anim=fade(t0 + .4, .3))
     for k, c in enumerate(curves):
-        ax.plot(L, c, color=SERIES[k], width=3)
+        ax.plot(L, c, color=SERIES[k], width=3, anim=draw(t0 + .6, 1.6))
     return f.html()
 
 
 def independent():
-    return _panel("Independent zero-mean samples", MEANS)
+    return _panel("Independent zero-mean samples", MEANS, 0.3)
 
 
 def constant():
-    return _panel("Random constant: <m>X(t) = Z</m>", [np.full(len(L), z) for z in Z])
+    return _panel("Random constant: <m>X(t) = Z</m>", [np.full(len(L), z) for z in Z], 3.3)

@@ -13,7 +13,13 @@ accent, navy and blue."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C, sample
+from fig import Fig, C, draw, fade, pop, sample
+
+# The definition, then the three cases one after another (DECK_BRIEF.md
+# "Animated slides"; the blocks' moments are in s037.html): each case's
+# pairs arrive a hundred at a time, then its margin's density, the limit
+# G = 0 and the failure tail, and its SD and failure probability.
+ANIM = {"length": 8.7}
 
 MR, SR, MS, SS = 100.0, 10.0, 70.0, 8.0
 RHOS = (-0.6, 0.0, 0.6)
@@ -34,47 +40,51 @@ XL = 14 + TICKS + 8                  # a plot's bottom to its x label's top
 BAND = XL + LABEL                    # a plot's bottom to its x label's foot
 
 
-def _xlabel(f, ax, s):
+def _xlabel(f, ax, s, anim=None):
     """The x label at this slide's tighter step under its tick numbers
     (fig.py spaces it for 28 px ticks)."""
-    f.text(ax.x + ax.w / 2, ax.y + ax.h + XL, s, "north", cls="axl")
+    f.text(ax.x + ax.w / 2, ax.y + ax.h + XL, s, "north", cls="axl", anim=anim)
 
 
-def _column(rho, ymax, yticks):
+def _column(rho, ymax, yticks, t0):
+    """One case; its play starts at t0, with its heading (s037.html)."""
     y1 = 6 + PH1 + BAND + 22         # the subtitle's top: well clear of the label above
     y2 = y1 + LABEL + 8              # the density's top: close under its subtitle
     f = Fig(W, y2 + PH2 + BAND + 4)
     # top: the pairs
     ax = f.axes(X0, 6, PW, PH1, xlim=(68, 134), ylim=(42, 98), xticks=[80, 100, 120],
                 yticks=[60, 80], ylabel="Demand <m>S</m> (kN)",
-                ylabel_gap=14 + TICKS + 12 + LABEL / 2 + 6)
-    _xlabel(f, ax, "Capacity <m>R</m> (kN)")
+                ylabel_gap=14 + TICKS + 12 + LABEL / 2 + 6, anim=fade(t0 + .2, .4))
+    _xlabel(f, ax, "Capacity <m>R</m> (kN)", anim=fade(t0 + .2, .4))
     r, s = sample(500, stats.norm(MR, SR), stats.norm(MS, SS), rho=rho)
-    ax.scatter(r, s, r=3.6, color=COL[rho], opacity=0.55)
+    ax.scatter(r, s, r=3.6, color=COL[rho], opacity=0.55,
+               anim=lambda i: fade(t0 + .5 + .12 * (i // 100), .25))
     # between: his subtitle, over the plot it describes
     f.text(X0 + PW / 2, y1, f"SD = {SD[rho]:.2f} kN; failure = {100 * PF[rho]:.3f}%", "north",
-           size=LABEL)
+           size=LABEL, anim=pop(t0 + 1.9))
     # bottom: the margin
     box, lim = (X0, y2, PW, PH2), dict(xlim=(-30, 90), ylim=(0, ymax))
     g = stats.norm(MR - MS, SD[rho])
     xs = np.linspace(-25, 0, 200)
-    f.axes(*box, frame=False, **lim).area(xs, g.pdf(xs), color=C.orange)   # "orange tail"
+    f.axes(*box, frame=False, **lim).area(xs, g.pdf(xs), color=C.orange,   # "orange tail"
+                                          anim=fade(t0 + 1.7, .3))
     bx = f.axes(*box, xticks=[-25, 0, 25, 50, 75], yticks=yticks, ytick_nd=2,
-                ylabel="Density", ylabel_gap=14 + 2 * TICKS + 12 + LABEL / 2 + 2, **lim)
-    _xlabel(f, bx, "Resulting margin <m>G</m> (kN)")
+                ylabel="Density", ylabel_gap=14 + 2 * TICKS + 12 + LABEL / 2 + 2,
+                anim=fade(t0 + 1.0, .4), **lim)
+    _xlabel(f, bx, "Resulting margin <m>G</m> (kN)", anim=fade(t0 + 1.0, .4))
     x = np.linspace(-25, 85, 600)
-    bx.plot(x, g.pdf(x), color=COL[rho], width=3.5)
-    bx.vline(0, color=C.orange_edge, width=2.5, dash=None)
+    bx.plot(x, g.pdf(x), color=COL[rho], width=3.5, anim=draw(t0 + 1.2, .5))
+    bx.vline(0, color=C.orange_edge, width=2.5, dash=None, anim=draw(t0 + 1.5, .3))
     return f.html()
 
 
 def col_a():
-    return _column(-0.6, 0.0265, [0, 0.01, 0.02])
+    return _column(-0.6, 0.0265, [0, 0.01, 0.02], t0=0.9)
 
 
 def col_b():
-    return _column(0.0, 0.0335, [0, 0.01, 0.02, 0.03])
+    return _column(0.0, 0.0335, [0, 0.01, 0.02, 0.03], t0=2.9)
 
 
 def col_c():
-    return _column(0.6, 0.052, [0, 0.02, 0.04])
+    return _column(0.6, 0.052, [0, 0.02, 0.04], t0=4.9)

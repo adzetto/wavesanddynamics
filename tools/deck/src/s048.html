@@ -14,23 +14,23 @@
  <main class="body g">
   <div class="s8">
    <div data-fig="estimate"></div>
-   <div class="panel jag">
+   <div class="panel jag" data-in="7.8">
     <h2 class="h c-accent">Why so jagged?</h2>
     <p class="ps">Each value rests on a single Fourier coefficient, so its scatter is about as large as the value. A longer record gives more points, not smoother ones.</p>
    </div>
   </div>
   <div class="s4 o9 steps">
-   <h2 class="h">Three steps</h2>
-   <h3 class="h c-blue step">1&ensp;FFT: <m>X(f) = Σ x[n] e<span class="mk">^(</span><sup>−i2πf<span></span>nΔt</sup><span class="mk">)</span></m></h3>
-   <p class="ps">A fast way to get the Fourier coefficients: complex, with amplitude and phase.</p>
-   <h3 class="h c-blue step">2&ensp;Periodogram: <m>P(f) = (Δt/N)·|X(f)|²</m></h3>
-   <p class="ps">Square the magnitude, scale to <m>x²</m> per Hz, drop the phase.</p>
-   <h3 class="h c-blue step">3&ensp;Link to slide 47</h3>
-   <p class="ps"><m>P(f)</m> is the Fourier transform of the sample autocorrelation: the same time-to-frequency link, applied to data.</p>
+   <h2 class="h" data-in="2.2">Three steps</h2>
+   <h3 class="h c-blue step" data-in="2.5">1&ensp;FFT: <m>X(f) = Σ x[n] e<span class="mk">^(</span><sup>−i2πf<span></span>nΔt</sup><span class="mk">)</span></m></h3>
+   <p class="ps" data-in="2.8">A fast way to get the Fourier coefficients: complex, with amplitude and phase.</p>
+   <h3 class="h c-blue step" data-in="3.4">2&ensp;Periodogram: <m>P(f) = (Δt/N)·|X(f)|²</m></h3>
+   <p class="ps" data-in="3.7">Square the magnitude, scale to <m>x²</m> per Hz, drop the phase.</p>
+   <h3 class="h c-blue step" data-in="6.9">3&ensp;Link to slide 47</h3>
+   <p class="ps" data-in="7.2"><m>P(f)</m> is the Fourier transform of the sample autocorrelation: the same time-to-frequency link, applied to data.</p>
   </div>
  </main>
  <footer class="foot">
-  <p class="take">The FFT computes; the periodogram estimates. One periodogram is right on average but very jagged.</p>
+  <p class="take" data-in="8.7" data-as="fade">The FFT computes; the periodogram estimates. One periodogram is right on average but very jagged.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Box 4: dependence over time</span><span class="src">Sources: [22], [23], [24]</span><span class="num">48</span></p>
  </footer>
 </section>

@@ -14,7 +14,13 @@ P(f_k) = 2 (dt/N) |X(f_k)|^2 at f_k = k/(N dt), a step of 0.01 Hz.
 Slide 49 takes the same record from here."""
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop
+
+# The record, the two steps that turn it into a periodogram, the
+# periodogram and the true spectrum under it (DECK_BRIEF.md "Animated
+# slides"; the blocks' moments are in s048.html), then the link back to
+# slide 47 and why the estimate is so jagged.
+ANIM = {"length": 9.3}
 
 FS, DT, N = 20.0, 0.05, 2000
 R_POLE, F_RES = 0.985, 4.0
@@ -74,22 +80,23 @@ def estimate():
     f = Fig(W, H)
     x, y, w, h = REC
     f.text(x, y - 12, "Record: 100 s at 20 Hz (<m>N = 2000</m>)", "south west", size=28,
-           color=C.navy, font="serif", weight=600)
+           color=C.navy, font="serif", weight=600, anim=pop(.3))
     ax = f.axes(x, y, w, h, xlim=(-2, 102), ylim=(-3.9, 3.9), xticks=range(0, 101, 20),
-                yticks=[-3, 0, 3], xlabel="Time (s)", ylabel="<m>x</m>", ylabel_gap=62)
-    ax.plot(T, X, color=C.navy, width=1.1)
+                yticks=[-3, 0, 3], xlabel="Time (s)", ylabel="<m>x</m>", ylabel_gap=62,
+                anim=fade(.4, .4))
+    ax.plot(T, X, color=C.navy, width=1.1, anim=draw(.8, 1.2))
 
     x, y, w, h = PER
     f.text(x, y - 12, "One periodogram: right on average, jagged", "south west", size=28,
-           color=C.navy, font="serif", weight=600)
+           color=C.navy, font="serif", weight=600, anim=pop(4.2))
     yt, yl = log_axis(-6, 1)
     ax = f.axes(x, y, w, h, xlim=(-0.3, 10.3), ylim=YLOG, ylog=True, xticks=range(0, 11, 2),
                 yticks=yt, yticklabels=yl, xlabel="Frequency (Hz)",
-                ylabel="PSD (<m>x²</m> per Hz)", ylabel_gap=102)
-    ax.plot(F, P, color=C.mist, width=1.2)
-    ax.plot(FT, G(FT), color=C.accent, width=3, dash="12 7")
+                ylabel="PSD (<m>x²</m> per Hz)", ylabel_gap=102, anim=fade(4.3, .4))
+    ax.plot(F, P, color=C.mist, width=1.2, anim=draw(4.7, 1.2))
+    ax.plot(FT, G(FT), color=C.accent, width=3, dash="12 7", anim=draw(6.0, .8))
     # his two legend entries, set beside their curves
-    ax.text(3.62, 10 ** 0.62, "True spectrum", "east", size=26, color=C.accent)
+    ax.text(3.62, 10 ** 0.62, "True spectrum", "east", size=26, color=C.accent, anim=pop(6.3))
     ax.text(5.05, 10 ** -1.15, "Periodogram (one FFT <br>of the whole record)", "south west",
-            size=24, color="var(--sky-ink)")
+            size=24, color="var(--sky-ink)", anim=pop(5.5))
     return f.html()

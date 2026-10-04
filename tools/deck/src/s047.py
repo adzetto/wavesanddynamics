@@ -16,7 +16,13 @@ peaks every 0.5 s shrink by exp(-0.25) = 0.78, and his spectrum peaks at 4).
 import numpy as np
 from scipy.integrate import quad
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop
+
+# Signal, autocorrelation, spectrum, each with its panel of words
+# (DECK_BRIEF.md "Animated slides"; the panels' moments are in s047.html):
+# the record draws, then R(tau) with its value at 0 and its rhythm, then G(f)
+# with its peak and the area that is the variance.
+ANIM = {"length": 9.8}
 
 A, F0, DT = 0.5, 2.0, 0.01
 
@@ -53,49 +59,51 @@ W, H = 544, 440
 BOX = (106, 46, 424, 300)
 
 
-def _frame(title):
+def _frame(title, t):
     f = Fig(W, H)
     x, y, w, h = BOX
-    f.text(x, y - 12, title, "south west", size=28, color=C.navy, font="serif", weight=600)
+    f.text(x, y - 12, title, "south west", size=28, color=C.navy, font="serif", weight=600,
+           anim=pop(t))
     return f
 
 
 def signal():
-    f = _frame("1&ensp;Signal in time: <m>x(t)</m>")
+    f = _frame("1&ensp;Signal in time: <m>x(t)</m>", .3)
     ax = f.axes(*BOX, xlim=(-0.12, 5.12), ylim=(-3.4, 3.4), xticks=range(0, 6),
                 yticks=[-2, -1, 0, 1, 2], xlabel="Time <m>t</m> (s)",
-                ylabel="<m>x</m> (normalized)")
-    ax.plot(T, X, color=C.navy, width=2.5)
-    ax.text(0.04, -3.24, "variance scaled to 1", "south west", size=24, color=C.muted)
+                ylabel="<m>x</m> (normalized)", anim=fade(.4, .4))
+    ax.plot(T, X, color=C.navy, width=2.5, anim=draw(.8, 1.4))
+    ax.text(0.04, -3.24, "variance scaled to 1", "south west", size=24, color=C.muted, anim=pop(2.1))
     return f.html()
 
 
 def autocorrelation():
-    f = _frame("2&ensp;Autocorrelation: <m>R(τ)</m>")
+    f = _frame("2&ensp;Autocorrelation: <m>R(τ)</m>", 3.0)
     ax = f.axes(*BOX, xlim=(-0.08, 3.08), ylim=(-1.02, 1.72), xticks=[0, 0.5, 1, 1.5, 2, 2.5, 3],
                 yticks=[-0.5, 0, 0.5, 1],
-                xlabel="Lag <m>τ</m> (s)", ylabel="<m>R(τ)</m>")
-    ax.hline(0, color=C.guide, dash=None, width=1.5)
+                xlabel="Lag <m>τ</m> (s)", ylabel="<m>R(τ)</m>", anim=fade(3.1, .4))
+    ax.hline(0, color=C.guide, dash=None, width=1.5, anim=fade(3.4, .3))
     tau = np.linspace(0, 3, 1501)
-    ax.plot(tau, R(tau), color=C.accent, width=3.5)
+    ax.plot(tau, R(tau), color=C.accent, width=3.5, anim=draw(3.5, 1.0))
     # R(0): the variance
-    ax.mark(0, 1, r=8)
-    ax.text(0.28, 1.45, "<m>R(0) = variance = 1</m>", "west", size=26, color=C.accent)
-    ax.leader(ax.P(0.245, 1.43), (0, 1), gap=14, width=2)
+    ax.mark(0, 1, r=8, anim=pop(4.5))
+    ax.text(0.28, 1.45, "<m>R(0) = variance = 1</m>", "west", size=26, color=C.accent, anim=pop(4.6))
+    ax.leader(ax.P(0.245, 1.43), (0, 1), gap=14, width=2, anim=draw(4.7, .3))
     # the rhythm: the peaks come back every 0.5 s
     ax.text(1.22, 1.22, "repeats every 0.5 s <br>(a 2 Hz rhythm)", "north west", size=26,
-            color=C.body)
-    f.arrow(ax.P(1.19, 1.02), ax.P(1.03, 0.67), color=C.body, width=2)
+            color=C.body, anim=pop(5.0))
+    f.arrow(ax.P(1.19, 1.02), ax.P(1.03, 0.67), color=C.body, width=2, anim=draw(5.1, .35))
     return f.html()
 
 
 def spectrum():
-    f = _frame("3&ensp;Spectrum: <m>G(f)</m>")
+    f = _frame("3&ensp;Spectrum: <m>G(f)</m>", 6.1)
     ax = f.axes(*BOX, xlim=(-0.12, 5.12), ylim=(-0.12, 4.4), xticks=range(0, 6),
                 yticks=range(0, 5), xlabel="Frequency <m>f</m> (Hz)",
-                ylabel="<m>G(f)</m>&ensp;(<m>x²</m> per Hz)")
-    ax.area(F, G(F), color=C.steel2)
-    ax.plot(F, G(F), color=C.blue, width=3.5)
-    ax.text(2.28, 3.55, "peak at 2 Hz", "west", size=26, color=C.blue)
-    ax.text(2.7, 2.1, "shaded area <br><m>= variance = 1</m>", "west", size=26, color=C.body)
+                ylabel="<m>G(f)</m>&ensp;(<m>x²</m> per Hz)", anim=fade(6.2, .4))
+    ax.area(F, G(F), color=C.steel2, anim=fade(7.3, .5))
+    ax.plot(F, G(F), color=C.blue, width=3.5, anim=draw(6.6, 1.0))
+    ax.text(2.28, 3.55, "peak at 2 Hz", "west", size=26, color=C.blue, anim=pop(7.5))
+    ax.text(2.7, 2.1, "shaded area <br><m>= variance = 1</m>", "west", size=26, color=C.body,
+            anim=pop(7.9))
     return f.html()

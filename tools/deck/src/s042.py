@@ -16,7 +16,13 @@ The five records of each panel are a fixed draw (numpy's PCG64 with the seeds
 below), the same every run."""
 import numpy as np
 
-from fig import Fig, C, SERIES
+from fig import Fig, C, SERIES, draw, fade, grow, pop
+
+# How to read them, then the two processes in turn (DECK_BRIEF.md "Animated
+# slides"; the blocks' moments are in s042.html): each panel's +-2 SD band,
+# its five records one after another, then the variance in its three windows
+# rising bar by bar; then the definition.
+ANIM = {"length": 9.1}
 
 T = np.arange(0, 201)                        # s
 PHI = 0.7
@@ -61,8 +67,8 @@ BAR_Y, BAR_H = 456, 110                       # variance panels
 YL = 8.4
 
 
-def _title(f, x, y, words, color):
-    f.text(x, y, words, "south west", size=28, color=color, font="serif", weight=600)
+def _title(f, x, y, words, color, anim=None):
+    f.text(x, y, words, "south west", size=28, color=color, font="serif", weight=600, anim=anim)
 
 
 def stationarity():
@@ -75,26 +81,28 @@ def stationarity():
     ]
     assert np.abs(X_LEFT).max() < YL and np.abs(X_RIGHT).max() < YL
     for k, (x0, xs, var, band, edge, wv, bar, title, tcol) in enumerate(panels):
-        _title(f, x0, TS_Y - 12, title, tcol)
+        t = 0.9 + 3.2 * k                        # the stationary process, then the other
+        _title(f, x0, TS_Y - 12, title, tcol, anim=pop(t))
         ax = f.axes(x0, TS_Y, BOX_W, TS_H, xlim=(-6, 206), ylim=(-YL, YL),
                     xticks=[0, 50, 100, 150, 200], yticks=[-8, -4, 0, 4, 8],
-                    xlabel="Time (s)", ylabel="Response" if k == 0 else None)
+                    xlabel="Time (s)", ylabel="Response" if k == 0 else None, anim=fade(t + .1, .4))
         sd = np.sqrt(var)
-        ax.area(T, 2 * sd, -2 * sd, color=band)
-        ax.plot(T, 2 * sd, color=edge, width=1.5)
-        ax.plot(T, -2 * sd, color=edge, width=1.5)
-        ax.hline(0)
+        ax.area(T, 2 * sd, -2 * sd, color=band, anim=fade(t + .5, .4))
+        ax.plot(T, 2 * sd, color=edge, width=1.5, anim=draw(t + .5, .6))
+        ax.plot(T, -2 * sd, color=edge, width=1.5, anim=draw(t + .5, .6))
+        ax.hline(0, anim=fade(t + .5, .4))
         for i, x in enumerate(xs):
-            ax.plot(T, x, color=[C.navy, C.blue, C.sky, C.deep, C.muted][i], width=2)
+            ax.plot(T, x, color=[C.navy, C.blue, C.sky, C.deep, C.muted][i], width=2,
+                    anim=draw(t + .9 + .15 * i, .8))
         ax.legend([("±2 SD band", {"kind": "area", "color": band})], at="north west",
-                  pad=10, row=30, sample=40, size=24, inset=10)
+                  pad=10, row=30, sample=40, size=24, inset=10, anim=pop(t + .6))
 
-        _title(f, x0, BAR_Y - 12, "Variance in three time windows", C.ink)
+        _title(f, x0, BAR_Y - 12, "Variance in three time windows", C.ink, anim=pop(t + 2.3))
         bx = f.axes(x0, BAR_Y, BOX_W, BAR_H, xlim=(-6, 206), ylim=(0, 5), box=False,
                     ticks="out", xticks=[30, 100, 170],
                     xticklabels=["0–60 s", "70–130 s", "140–200 s"], yticks=[0, 2, 4],
-                    ylabel="Variance", ylabel_gap=58)
-        bx.bars([30, 100, 170], wv, width=60, color=bar)
-        for (a, b), v in zip(WINDOWS, wv):
-            bx.text((a + b) / 2, v, f"{v:.1f}", "south", dy=-6)
+                    ylabel="Variance", ylabel_gap=58, anim=fade(t + 2.4, .4))
+        bx.bars([30, 100, 170], wv, width=60, color=bar, anim=grow(t + 2.6, .4, .15))
+        for j, ((a, b), v) in enumerate(zip(WINDOWS, wv)):
+            bx.text((a + b) / 2, v, f"{v:.1f}", "south", dy=-6, anim=pop(t + 2.8 + .15 * j))
     return f.html()

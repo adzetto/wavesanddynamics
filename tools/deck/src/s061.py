@@ -9,7 +9,13 @@ is zero error, the true theta."""
 import numpy as np
 from scipy import stats
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop
+
+# Target, observation, estimator, then what makes a rule better
+# (DECK_BRIEF.md "Animated slides"; the blocks' moments are in s061.html):
+# the two estimators' errors draw around zero, the unbiased wide one first,
+# then the biased narrow one, each with its legend entry.
+ANIM = {"length": 6.4}
 from s053 import tw
 from s058 import legend_rows, _top
 
@@ -31,12 +37,12 @@ def errors():
               np.ceil(100 * B.pdf(0.5) * 1.08) / 100)
     ax = f.axes(x, y, w, h, xlim=(-3.3, 4.3), ylim=(-0.03, top), xticks=range(-3, 5),
                 yticks=[0, 0.2, 0.4, 0.6, 0.8], xlabel="Estimation error <m>θ̂ − θ</m>",
-                ylabel="Density")
-    ax.vline(0, color=C.blue, width=2.5, dash="8 6")
+                ylabel="Density", anim=fade(3.2, .4))
+    ax.vline(0, color=C.blue, width=2.5, dash="8 6", anim=draw(3.6, .4))
     e = np.linspace(-3.3, 4.3, 900)
-    ax.plot(e, A.pdf(e), color=C.navy, width=4)
-    ax.plot(e, B.pdf(e), color=C.accent, width=4)
-    bx, by, bw, bh = legend_rows(ax, rows)
+    ax.plot(e, A.pdf(e), color=C.navy, width=4, anim=draw(3.9, .7))
+    ax.plot(e, B.pdf(e), color=C.accent, width=4, anim=draw(4.7, .7))
+    bx, by, bw, bh = legend_rows(ax, rows, anim=[pop(3.9), pop(3.9), pop(4.7)])
     under = (ax.X(e) > bx - 6) & (ax.X(e) < bx + bw + 6)
     assert (ax.Y(np.maximum(A.pdf(e), B.pdf(e))[under]) > by + bh + 6).all()
     return f.html()

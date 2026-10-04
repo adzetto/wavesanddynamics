@@ -24,7 +24,13 @@ import re
 
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, seq, wipe
+
+# The three steps, then forty hours of them (DECK_BRIEF.md "Animated
+# slides"; the blocks' moments are in s065.html): the unknown truth, then
+# each hour's reading with the estimate stepping after it inside its band.
+# Each legend entry arrives with what it names.
+ANIM = {"length": 7.4}
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
@@ -47,35 +53,40 @@ def textw(s, px):
     return sum(_ADV.get(ord(c), 0.5) for c in plain) * px
 
 
-def legend(f, x, y, entries, size=24, row=36, pad=14, sample=46, gap=12, cols=1, colgap=34):
+def legend(f, x, y, entries, size=24, row=36, pad=14, sample=46, gap=12, cols=1, colgap=34,
+           anim=None):
     """pgfplots' legend with its top-left corner at figure px (x, y): a white
     box with a 1 px ink rule, a sample and his words on each row, filled
     column by column (cols > 1 as matplotlib's ncol). A style is a dict: kind
     "line" (color, width, dash), "dot" (color, r, opacity), "band" (fill,
-    color: a line over a band) or "area" (fill, stroke). Returns the box."""
+    color: a line over a band) or "area" (fill, stroke). Returns the box.
+    anim= as fig.Axes.legend's: the whole legend, or a list, its box then
+    each entry."""
+    box, each = (anim[0], list(anim[1:])) if isinstance(anim, (list, tuple)) else (anim, [anim] * len(entries))
     rows = -(-len(entries) // cols)
     colw = [max(textw(t, size) for t, _ in entries[c * rows:(c + 1) * rows])
             for c in range(cols)]
     w = 2 * pad + sum(sample + gap + cw for cw in colw) + colgap * (cols - 1)
     h = 2 * pad + size + row * (rows - 1)
-    f.rect(x, y, w, h, fill=C.paper, stroke=C.ink, width=1.0)
-    for i, (t, st) in enumerate(entries):
+    f.rect(x, y, w, h, fill=C.paper, stroke=C.ink, width=1.0, anim=box)
+    for i, ((t, st), a) in enumerate(zip(entries, each)):
         c, r = divmod(i, rows)
         cx = x + pad + sum(sample + gap + cw + colgap for cw in colw[:c])
         cy = y + pad + size / 2 + r * row
         x0, x1 = cx, cx + sample
         kind = st.get("kind", "line")
         if kind == "dot":
-            f.circle((x0 + x1) / 2, cy, st.get("r", 6), fill=st["color"], opacity=st.get("opacity"))
+            f.circle((x0 + x1) / 2, cy, st.get("r", 6), fill=st["color"], opacity=st.get("opacity"), anim=a)
         elif kind in ("band", "area"):
             f.rect(x0, cy - 11, sample, 22, fill=st["fill"], stroke=st.get("stroke"),
-                   width=st.get("stroke_width", 1.5))
+                   width=st.get("stroke_width", 1.5), anim=a)
             if kind == "band":
-                f.line([(x0, cy), (x1, cy)], stroke=st["color"], width=st.get("width", 4), cap="butt")
+                f.line([(x0, cy), (x1, cy)], stroke=st["color"], width=st.get("width", 4), cap="butt",
+                       anim=a)
         else:
             f.line([(x0, cy), (x1, cy)], stroke=st["color"], width=st.get("width", 3.5),
-                   dash=st.get("dash"), cap="butt")
-        f.text(x1 + gap, cy, t, "west", size=size)
+                   dash=st.get("dash"), cap="butt", anim=a)
+        f.text(x1 + gap, cy, t, "west", size=size, anim=a)
     return x, y, w, h
 
 
@@ -146,20 +157,20 @@ def track():
     f = Fig(976, 596)
     ax = f.axes(120, 14, 836, 480, xlim=(-1.5, 40.5), ylim=(-1, 25),
                 xticks=range(0, 41, 5), yticks=range(0, 21, 5),
-                xlabel="Time step (e.g. hour)", ylabel="Displacement (mm)")
+                xlabel="Time step (e.g. hour)", ylabel="Displacement (mm)", anim=fade(2.2, .4))
     band_lo, band_hi = XH - 2 * np.sqrt(P), XH + 2 * np.sqrt(P)
-    ax.area(T, band_hi, band_lo, color=C.steel2)
-    ax.plot(T, TRUE, color=C.ink, width=2.6, dash="11 7")
-    ax.plot(T, XH, color=C.blue, width=4.5)
+    ax.area(T, band_hi, band_lo, color=C.steel2, anim=wipe(3.45, 1.95, ease="linear"))
+    ax.plot(T, TRUE, color=C.ink, width=2.6, dash="11 7", anim=draw(2.6, .8))
+    ax.plot(T, XH, color=C.blue, width=4.5, anim=seq(3.45, .05))   # each hour after its reading
     for t, z in zip(T, Z):
         X, Y = ax.P(t, z)
-        f.circle(X, Y, 8.2, fill=C.paper)
-        f.circle(X, Y, 6.5, fill=C.amber)
+        f.circle(X, Y, 8.2, fill=C.paper, anim=pop(3.4 + .05 * t, .25))
+        f.circle(X, Y, 6.5, fill=C.amber, anim=pop(3.4 + .05 * t, .25))
     box = legend(f, ax.x + 18, ax.y + 18, [
         ("sensor readings (noise SD 3 mm)", {"kind": "dot", "color": C.amber, "r": 6.5}),
         ("true displacement (unknown)", {"color": C.ink, "width": 2.6, "dash": "11 7"}),
         ("Kalman estimate ±2 SD", {"kind": "band", "fill": C.steel2, "color": C.blue, "width": 4.5}),
-    ])
+    ], anim=[pop(2.6), pop(3.4), pop(2.6), pop(3.45)])
     data = np.vstack([dense(ax, T, band_hi), dense(ax, T, TRUE), np.column_stack([ax.X(T), ax.Y(Z)])])
     assert clear(box, data, margin=10), "the legend sits on the data"
     return f.html()

@@ -13,20 +13,20 @@
  <main class="body">
   <div class="g cases">
    <div class="s6">
-    <h2 class="h">Case A: concrete strength (slides 18–19)</h2>
+    <h2 class="h" data-in="0.3">Case A: concrete strength (slides 18–19)</h2>
     <div data-fig="case_a"></div>
-    <div class="panel"><p class="ps">Old 30 MPa (variance 4), data 32 MPa (variance 0.36). <m>w = 4 / 4.36 = 0.92  →  31.83 MPa</m></p></div>
+    <div class="panel" data-in="2.8"><p class="ps">Old 30 MPa (variance 4), data 32 MPa (variance 0.36). <m>w = 4 / 4.36 = 0.92  →  31.83 MPa</m></p></div>
    </div>
    <div class="s6 o7">
-    <h2 class="h">Case B: bridge displacement (slides 65–66)</h2>
+    <h2 class="h" data-in="3.4">Case B: bridge displacement (slides 65–66)</h2>
     <div data-fig="case_b"></div>
-    <div class="panel"><p class="ps">Old 10 mm (variance 4), data 14 mm (variance 9). <m>w = 4 / 13 = 0.31  →  11.23 mm</m></p></div>
+    <div class="panel" data-in="5.9"><p class="ps">Old 10 mm (variance 4), data 14 mm (variance 9). <m>w = 4 / 13 = 0.31  →  11.23 mm</m></p></div>
    </div>
   </div>
-  <p class="eq c-blue rule"><b>Same rule:</b> <m>new = old + w × (data − old),   w = var(old) / [var(old) + var(data)]</m></p>
+  <p class="eq c-blue rule" data-in="6.6"><b>Same rule:</b> <m>new = old + w × (data − old),   w = var(old) / [var(old) + var(data)]</m></p>
  </main>
  <footer class="foot">
-  <p class="take">Different problems, same rule: each source counts in proportion to its precision.</p>
+  <p class="take" data-in="7.5" data-as="fade">Different problems, same rule: each source counts in proportion to its precision.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–4: one estimation idea across methods</span><span class="src">Sources: [10], [40], [41], [47]</span><span class="num">67</span></p>
  </footer>
 </section>

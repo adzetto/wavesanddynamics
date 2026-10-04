@@ -12,8 +12,14 @@ posterior mean: K = 31% of the way from 10 to the reading 14."""
 import numpy as np
 from scipy.stats import norm
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop
 from s065 import clear, legend, textw
+
+# The two sources, then their combination (DECK_BRIEF.md "Animated slides";
+# the blocks' moments are in s066.html): the prior and the reading draw
+# with their means; with the estimate comes the posterior, narrower than
+# both, and the step from the prior mean toward the reading.
+ANIM = {"length": 6.8}
 
 MU0, SD0, Z, SDV = 10.0, 2.0, 14.0, 3.0
 K = SD0 ** 2 / (SD0 ** 2 + SDV ** 2)
@@ -33,30 +39,30 @@ def update():
     f = Fig(976, 584)
     ax = f.axes(122, 12, 834, 474, xlim=(0, 20), ylim=(0, 0.5),
                 xticks=range(0, 21, 2), yticks=[0, 0.1, 0.2, 0.3, 0.4],
-                xlabel="Displacement (mm)", ylabel="Probability density")
+                xlabel="Displacement (mm)", ylabel="Probability density", anim=fade(.8, .4))
     x = np.linspace(0, 20, 1201)
     prior, sensor, post = norm.pdf(x, MU0, SD0), norm.pdf(x, Z, SDV), norm.pdf(x, MU1, SD1)
-    ax.area(x, post, color=C.steel2)
+    ax.area(x, post, color=C.steel2, anim=fade(3.7, .5))
     # the arrow: prior mean to posterior mean, just over the posterior's peak
     peak = norm.pdf(MU1, MU1, SD1)
     ya = peak + 20 / (ax.h / 0.5)
-    for m, col in ((MU0, C.navy), (MU1, C.blue), (Z, C.accent)):
-        ax.vline(m, color=col, width=2, dash="5 6", y1=ya)
-    ax.plot(x, prior, color=C.navy, width=4)
-    ax.plot(x, sensor, color=C.accent, width=4, dash="14 9")
-    ax.plot(x, post, color=C.blue, width=4.5)
+    for m, col, t in ((MU0, C.navy, 1.4), (MU1, C.blue, 3.9), (Z, C.accent, 2.2)):
+        ax.vline(m, color=col, width=2, dash="5 6", y1=ya, anim=draw(t, .35))
+    ax.plot(x, prior, color=C.navy, width=4, anim=draw(1.2, .6))
+    ax.plot(x, sensor, color=C.accent, width=4, dash="14 9", anim=draw(2.0, .6))
+    ax.plot(x, post, color=C.blue, width=4.5, anim=draw(3.6, .7))
     (x0, y0), (x1, _) = ax.P(MU0, ya), ax.P(MU1, ya)
-    f.arrow((x0, y0), (x1 - 2, y0), color=C.blue, width=3)
+    f.arrow((x0, y0), (x1 - 2, y0), color=C.blue, width=3, anim=draw(4.1, .5))
     size = 26
     lw = textw(LABEL, size)
-    f.text((x0 + x1) / 2, y0 - 12, LABEL, "south", size=size, color=C.blue)
+    f.text((x0 + x1) / 2, y0 - 12, LABEL, "south", size=size, color=C.blue, anim=pop(4.4))
     lab = ((x0 + x1) / 2 - lw / 2, y0 - 12 - size * 1.1, lw, size * 1.1)
     box = legend(f, ax.x + 16, ax.y + 16, [
         ("Model prediction (prior): 10 mm, SD 2", {"color": C.navy, "width": 4}),
         ("Sensor reading: 14 mm, SD 3", {"color": C.accent, "width": 4, "dash": "14 9"}),
         ("Updated estimate (posterior): 11.23 mm, SD 1.66",
          {"kind": "band", "fill": C.steel2, "color": C.blue, "width": 4.5}),
-    ])
+    ], anim=[pop(1.2), pop(1.2), pop(2.0), pop(3.6)])
     curves = np.vstack([np.column_stack([ax.X(x), ax.Y(y)]) for y in (prior, sensor, post)])
     assert clear(box, curves, 12) and clear(lab, curves, 12), "a label sits on a curve"
     assert lab[1] > box[1] + box[3] + 16, "the arrow's label runs into the legend"

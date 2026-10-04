@@ -16,8 +16,13 @@ have no axis of their own there, only the quantity (MPa, mm)."""
 import numpy as np
 from scipy.stats import norm
 
-from fig import Fig, C, num
+from fig import Fig, C, draw, fade, num, pop
 from s065 import clear, textw
+
+# Case A, then case B, then the rule they share (DECK_BRIEF.md "Animated
+# slides"; the blocks' moments are in s067.html): in each, the old estimate,
+# the new data, then their combination, each with its words.
+ANIM = {"length": 8.1}
 
 
 def combine(old, var_old, data, var_data):
@@ -39,20 +44,20 @@ for old, vo, data, vd, new, vn in ((30, 4, 32, 0.36, NEW_A, VAR_A), (10, 4, 14, 
 SIZE = 24                      # his legend words, set beside their curves
 
 
-def _label(f, ax, xv, yf, s, anchor, color):
+def _label(f, ax, xv, yf, s, anchor, color, anim=None):
     """His words at data x and a fraction yf of the panel's height (a <br>
     breaks a long one in two); returns the label's box in figure px."""
     X, Y = float(ax.X(xv)), ax.y + ax.h * (1 - yf)
     lines = s.split("<br>")
     w = max(textw(t, SIZE) for t in lines)
     h = SIZE * (1.05 if len(lines) == 1 else 1.3 * len(lines))
-    f.text(X, Y, s, anchor, size=SIZE, color=color)
+    f.text(X, Y, s, anchor, size=SIZE, color=color, anim=anim)
     dx = {"west": 0, "east": -w, "south": -w / 2, "north": -w / 2}[anchor]
     dy = {"west": -h / 2, "east": -h / 2, "south": -h, "north": 0}[anchor]
     return X + dx, Y + dy, w, h
 
 
-def _panel(xlim, ticks, unit, old, data, new, labels):
+def _panel(xlim, ticks, unit, old, data, new, labels, t0):
     """One case: the old estimate (navy), the new data (accent, dashed) and
     the combined estimate (a blue-edged fill) over the quantity's axis."""
     f = Fig(832, 372)
@@ -61,21 +66,22 @@ def _panel(xlim, ticks, unit, old, data, new, labels):
     ys = [d.pdf(x) for d in (old, data, new)]
     top = max(float(y.max()) for y in ys) / 0.95
     ys = [y / top for y in ys]
-    ax.area(x, ys[2], color=C.steel2)
-    ax.plot(x, ys[2], color=C.blue, width=2.2)
-    ax.plot(x, ys[0], color=C.navy, width=4)
-    ax.plot(x, ys[1], color=C.accent, width=4, dash="14 9")
+    at = (t0 + .4, t0 + 1.0, t0 + 1.7)              # old, data, combined
+    ax.area(x, ys[2], color=C.steel2, anim=fade(at[2], .5))
+    ax.plot(x, ys[2], color=C.blue, width=2.2, anim=draw(at[2], .6))
+    ax.plot(x, ys[0], color=C.navy, width=4, anim=draw(at[0], .6))
+    ax.plot(x, ys[1], color=C.accent, width=4, dash="14 9", anim=draw(at[1], .6))
     # the quantity's axis: a baseline with outward ticks, as his
     yb = ax.y + ax.h + 4
-    f.line([(ax.x, yb), (ax.x + ax.w, yb)], stroke=C.ink, width=2, cap="butt")
+    f.line([(ax.x, yb), (ax.x + ax.w, yb)], stroke=C.ink, width=2, cap="butt", anim=fade(t0 + .2, .4))
     for t in ticks:
         X = float(ax.X(t))
-        f.line([(X, yb), (X, yb + 10)], stroke=C.ink, width=2, cap="butt")
-        f.text(X, yb + 22, num(t), "north", cls="tk")
-    f.text(ax.x + ax.w / 2, yb + 22 + 28 + 14, unit, "north", cls="axl")
+        f.line([(X, yb), (X, yb + 10)], stroke=C.ink, width=2, cap="butt", anim=fade(t0 + .2, .4))
+        f.text(X, yb + 22, num(t), "north", cls="tk", anim=fade(t0 + .2, .4))
+    f.text(ax.x + ax.w / 2, yb + 22 + 28 + 14, unit, "north", cls="axl", anim=fade(t0 + .2, .4))
     curves = np.vstack([np.column_stack([ax.X(x), ax.Y(y)]) for y in ys])
-    for (xv, yf, s, anchor), color in zip(labels, (C.navy, C.accent, C.blue)):
-        box = _label(f, ax, xv, yf, s, anchor, color)
+    for (xv, yf, s, anchor), color, t in zip(labels, (C.navy, C.accent, C.blue), at):
+        box = _label(f, ax, xv, yf, s, anchor, color, anim=pop(t + .3))
         assert clear(box, curves, 10), f"{s!r} sits on a curve"
         assert box[0] >= ax.x - 1 and box[0] + box[2] <= ax.x + ax.w + 1, f"{s!r} leaves the panel"
     return f.html()
@@ -87,7 +93,7 @@ def case_a():
                       (24.0, 0.42, "prior belief: 30 MPa (SD 2)", "west"),
                       (32.9, 0.72, "25 tests: 32 MPa (SE 0.6)", "west"),
                       (31.15, 0.9, "combined: 31.83 MPa", "east"),
-                  ])
+                  ], t0=0.3)
 
 
 def case_b():
@@ -96,4 +102,4 @@ def case_b():
                       (7.6, 0.84, "model prediction: <br>10 mm (SD 2)", "east"),
                       (17.4, 0.52, "sensor: 14 mm (SD 3)", "west"),
                       (12.9, 0.9, "combined: 11.23 mm", "west"),
-                  ])
+                  ], t0=3.4)

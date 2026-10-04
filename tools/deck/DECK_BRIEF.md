@@ -387,12 +387,15 @@ reader who asks for less motion (or a printer, or a page without scripts) sees o
 - **The marks of a figure** (`fig.py`) take `anim=`, and each call of `Fig` and `Axes` takes it:
   `draw(t0, dur)` (a stroke draws itself along its length, its dashes kept; a fill fades),
   `pop(t0, visual)` (it fades in and settles: a mark from 60 % of its size, a label from 10 px
-  below), `fade(t0, dur)`, `wipe(t0, dur, dir)`, `grow(t0, dur, stagger)` (bars and stems from
+  below), `fade(t0, dur)`, `wipe(t0, dur, dir)` (eased; `ease="linear"` at a steady pace, for a
+  band that keeps up with a `seq` along the same axis), `grow(t0, dur, stagger)` (bars and stems from
   their base), `seq(t0, dt)` (marks one after another; on one line, the line extends through
   its points) and `keys(times, values, prop)` (a value from keyframe to keyframe: `xy`, `x`,
   `y`, `h`, `p`, `o`, `s`, `d`, `text`; its last value is the slide's). Combine them with `+`:
   `pop(4.9) + keys([4.9, 5.3], [xa, xf], prop="x")`. Times are seconds from the figure's start;
-  `spec.end` is when it has arrived, to start the next thing from.
+  `spec.end` is when it has arrived, to start the next thing from. A legend's `anim=` is one
+  spec for all of it, or a list: its box, then each entry, so an entry arrives with what it
+  names (`fig.Axes.legend` and the slides' own legends alike).
 - **A ghost** (`ghost=True`) shows only while the slide plays and must leave (`out(t0)`) before
   the end: the 25 tests that become their average. On a slide of his a ghost's words may only be
   numbers (they are not his).
@@ -418,6 +421,13 @@ reader who asks for less motion (or a printer, or a page without scripts) sees o
   The review adds `review/sNNN-anim.png`, the frames on one sheet, and `review/sNNN-anim-<t>.png`.
   Look at every frame: a label that sits on another while the slide plays is as wrong as one on
   the photograph.
+- **A finished slide, given its animation:** `render.py 13-24 --anim-only` writes each slide's
+  animation page and its manifest line and nothing else: never its photograph, its web copies
+  or the vectors. It holds the slide to HEAD's byte for byte once what plays is taken out
+  (`data-in`, `data-as`, `data-dur`, `data-anim`, `data-cues`, ghosts) and refuses a slide
+  that differs; that check holds his words too, so his PowerPoint is not needed. What the
+  layout check finds in a slide so held is reported ("as at HEAD"), not refused: the machine
+  that renders may measure the fonts a hair differently from the one that took the photograph.
 
 ## 15. Rendering side by side
 

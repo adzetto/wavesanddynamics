@@ -14,23 +14,23 @@
  </header>
  <main class="body">
   <div class="route rules">
-   <div class="node k-navy" id="tgt">
+   <div class="node k-navy" id="tgt" data-in="0.3">
     <h2 class="h">Unknown target <m>θ</m></h2>
     <p class="ps lines"><span>Mean <m>μ</m> or variance <m>σ²</m></span><span>Stiffness <m>k</m> or hidden state <m>xₖ</m></span></p>
    </div>
-   <div class="node k-accent" id="obs">
+   <div class="node k-accent" id="obs" data-in="1.1">
     <h2 class="h">Observation model</h2>
     <p class="ps lines"><span>Model <m>h(θ)</m>; noise <m>v</m></span><span>Measured <m>y = h(θ) + v</m></span></p>
    </div>
-   <div class="node k-blue" id="est">
+   <div class="node k-blue" id="est" data-in="1.9">
     <h2 class="h">Estimator <m>θ̂ = T(D)</m></h2>
     <p class="ps lines"><span>A rule extracts information</span><span>from the observed data</span></p>
    </div>
   </div>
-  <i class="wire" data-from="#tgt" data-to="#obs"></i>
-  <i class="wire" data-from="#obs" data-to="#est"></i>
+  <i class="wire" data-from="#tgt" data-to="#obs" data-in="0.75" data-dur=".35"></i>
+  <i class="wire" data-from="#obs" data-to="#est" data-in="1.55" data-dur=".35"></i>
   <div class="g better">
-   <div class="s5">
+   <div class="s5" data-in="2.7">
     <h2 class="h">What makes one rule better?</h2>
     <div class="mse c-blue">
      <p class="eq"><m>MSE(θ̂)</m></p><p class="eq"><m>= E[(θ̂ − θ)²]</m></p>
@@ -42,7 +42,7 @@
   </div>
  </main>
  <footer class="foot">
-  <p class="take">An estimator is a rule applied to data. An estimate is the value that rule returns for one dataset.</p>
+  <p class="take" data-in="5.8" data-as="fade">An estimator is a rule applied to data. An estimate is the value that rule returns for one dataset.</p>
   <p class="run"><span class="map">SLIDE 2 MAP <span class="sep">/</span> Boxes 2–3, now extended to stochastic models in box 4</span><span class="src">Sources: [6], [38]</span><span class="num">61</span></p>
  </footer>
 </section>

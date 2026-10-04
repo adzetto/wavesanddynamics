@@ -13,8 +13,14 @@ The draw is numpy's PCG64 generator, seed 0 (a time series needs a random
 order in time, which fig.sample's Halton points do not give)."""
 import numpy as np
 
-from fig import Fig, C
+from fig import Fig, C, draw, fade, pop, seq, wipe
 from s065 import clear, dense, legend
+
+# The filter at work (DECK_BRIEF.md "Animated slides"; the blocks' moments
+# are in s068.html): the observations arrive step by step with the estimate
+# and its interval following them; the simulated truth comes last, inside
+# the interval. Then the three uses.
+ANIM = {"length": 7.3}
 
 N, Q, R, SEED = 90, 0.035, 0.65, 0
 
@@ -48,18 +54,18 @@ def filtered():
     f = Fig(1696, 484)
     ax = f.axes(108, 14, 1572, 378, xlim=(-2, 91), ylim=(-3.4, 4.4),
                 xticks=range(0, 81, 20), yticks=range(-3, 4),
-                xlabel="Measurement step", ylabel="Displacement (mm)")
+                xlabel="Measurement step", ylabel="Displacement (mm)", anim=fade(.3, .4))
     lo, hi = XH - 1.96 * np.sqrt(P), XH + 1.96 * np.sqrt(P)
-    ax.area(T, hi, lo, color=C.steel2)
-    ax.scatter(T, Z, r=5.5, color=C.amber, opacity=0.8)
-    ax.plot(T, TRUE, color=C.ink, width=2.6, dash="11 7")
-    ax.plot(T, XH, color=C.navy, width=4)
+    ax.area(T, hi, lo, color=C.steel2, anim=wipe(.85, 2.67, ease="linear"))
+    ax.scatter(T, Z, r=5.5, color=C.amber, opacity=0.8, anim=seq(.8, .03, visual=.25))
+    ax.plot(T, TRUE, color=C.ink, width=2.6, dash="11 7", anim=draw(3.8, .9))
+    ax.plot(T, XH, color=C.navy, width=4, anim=seq(.85, .03))
     box = legend(f, ax.x + 18, ax.y + 16, [
         ("Noisy observations", {"kind": "dot", "color": C.amber, "r": 5.5, "opacity": 0.8}),
         ("95% posterior interval", {"kind": "area", "fill": C.steel2}),
         ("Simulated truth", {"color": C.ink, "width": 2.6, "dash": "11 7"}),
         ("Kalman estimate", {"color": C.navy, "width": 4}),
-    ], cols=2)
+    ], cols=2, anim=[pop(.8), pop(.8), pop(.85), pop(3.8), pop(.85)])
     data = np.vstack([dense(ax, T, hi), dense(ax, T, TRUE), np.column_stack([ax.X(T), ax.Y(Z)])])
     assert clear(box, data, margin=10), "the legend sits on the data"
     return f.html()

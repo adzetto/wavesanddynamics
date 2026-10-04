@@ -11,7 +11,7 @@
                  draws itself, its dashes kept), pop (it fades in and
                  settles: a mark from 60 % of its size, a label from 10 px
                  below), fade, out (a ghost leaves), wipe (uncovered from a
-                 side), grow (from its base, on a spring) and keys (a value
+                 side, eased or at a steady pace), grow (from its base, on a spring) and keys (a value
                  from keyframe to keyframe: where it is, a bar's height, how
                  much of a stroke, opacity, scale, a path's data, a number).
      data-ghost  a mark only the playing slide shows; it must leave (out)
@@ -231,7 +231,10 @@
           break;
         case 'fade': s.o *= seg(tau, p.d); break;
         case 'out': s.o *= 1 - seg(tau, p.d); if (tau >= p.d) s.on = false; break;
-        case 'wipe': s.wipe = {r: seg(tau, p.d), dir: p.dir || 'right'}; break;
+        case 'wipe':                          // eased, or at a steady pace (e: 'linear')
+          s.wipe = {r: p.e === 'linear' ? (p.d > 0 ? clamp(tau / p.d) : +(tau >= 0)) : seg(tau, p.d),
+                    dir: p.dir || 'right'};
+          break;
         case 'grow':
           s.sy *= spring(tau, p.v);
           if (tau <= 0) s.o = 0;               // a bar of no height would still show its stroke

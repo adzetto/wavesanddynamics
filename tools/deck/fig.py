@@ -192,10 +192,11 @@ def out(t0, dur=0.3):
     return Spec("out", t0, d=dur)
 
 
-def wipe(t0, dur=0.6, dir="right"):
+def wipe(t0, dur=0.6, dir="right", ease=None):
     """An area is uncovered from one side (right: from the left edge on;
-    up: from its base)."""
-    return Spec("wipe", t0, d=dur, dir=dir)
+    up: from its base), eased in and out, or with ease="linear" at a steady
+    pace (to keep up with a seq along the same axis)."""
+    return Spec("wipe", t0, d=dur, dir=dir, **({"e": ease} if ease else {}))
 
 
 def grow(t0, dur=0.5, stagger=0.0):

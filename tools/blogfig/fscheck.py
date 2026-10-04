@@ -36,7 +36,7 @@ ROW_GAP = 2.0            # pt, glyphs on one row closer than this are one label
 DPI = 1200
 K = DPI / 72.0           # px per pt (PDF units; 1 bp = 1.0038 pt, ignored)
 MAX_MM = 165.0
-MAX_WIDTH = MAX_MM / 25.4 * 72.0 + 2.0
+MAX_WIDTH = MAX_MM / 25.4 * 72.0 + 8.0      # and the page's 4 pt margin each side (make.py)
 
 
 def bez(p0, p1, p2, p3, n=24):

@@ -2018,9 +2018,10 @@ def redrawn(slug, name):
         return None
     with open(path, encoding="utf-8") as fh:
         head = fh.read(600)
-    m = re.search(r'<svg\b[^>]*?\swidth="([\d.]+)(?:pt)?"[^>]*?\sheight="([\d.]+)(?:pt)?"', head)
+    # its size in pt is its viewBox (its width and height are 100%: alone it fills the window)
+    m = re.search(r'<svg\b[^>]*?\sviewBox="0 0 ([\d.]+) ([\d.]+)"', head)
     if not m:
-        sys.exit(f"{os.path.relpath(path, ROOT)}: no width and height on its <svg>")
+        sys.exit(f"{os.path.relpath(path, ROOT)}: no viewBox on its <svg>")
     return path, round(float(m.group(1)) * SVG_PX), round(float(m.group(2)) * SVG_PX)
 
 
@@ -2039,6 +2040,22 @@ def cut_out(slug, name, k, here):
     out_name = f"{k:02d}-{stem}.webp"
     cw, ch = derive(os.path.join(BLOGSRC, slug, "text", name), os.path.join(here, out_name), lossless=True)
     return out_name, cw, ch
+
+
+def shot(slug, k, here, name, rest, measure):
+    """The figure for <img data-crop="name"...rest...> in a screenshot of his text,
+    the k-th picture of post `slug`: published by cut_out(), its alt text first
+    after its source, as preview.zoom() reads a picture. Drawn smaller than it
+    is (as wide as the column or wider, and 480px or more: the rule of every
+    picture of a post), it is marked fig--zoom, and zoom() links it to its own
+    file, where a phone's reader can read its small type."""
+    out_name, cw, ch = cut_out(slug, name, k, here)
+    alt = re.search(r'\balt="([^"]*)"', rest)
+    others = re.sub(r'\s*\balt="[^"]*"', "", rest).rstrip(" /")
+    big = cw >= 480 and cw > measure * 0.9
+    return (f'<figure class="shot{" fig--zoom" if big else ""}"><img src="{slug}/{out_name}" '
+            f'alt="{alt.group(1) if alt else ""}" width="{cw}" height="{ch}" loading="lazy" '
+            f'decoding="async"{others}>')
 
 
 def blog_picture(post):
@@ -2138,11 +2155,8 @@ def post_page(post, out, no_word, newer=None, older=None, blog=None):
             import mathtex
             text = mathtex.typed(text, os.path.relpath(src, ROOT).replace(os.sep, "/"))
 
-            def crop(m, k=k):
-                out_name, cw, ch = cut_out(slug, m.group(1), k, here)
-                return (f'<figure class="shot"><img src="{slug}/{out_name}" width="{cw}" '
-                        f'height="{ch}" loading="lazy" decoding="async"')
-            text = re.sub(r'<img data-crop="([^"]+)"', crop, text)
+            text = re.sub(r'<img data-crop="([^"]+)"([^>]*)>',
+                          lambda m, k=k: shot(slug, k, here, m.group(1), m.group(2), measure), text)
             typed[node["id"]] = f'<div class="typed">{text}</div>'
     close = tight(nodes)
     preview.plan(nodes, figs)

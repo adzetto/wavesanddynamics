@@ -9,11 +9,11 @@ body(), the TikZ picture as a string: Python computes the geometry and reads
 the data, TeX only gives the style. A figure that places its labels by
 their boxes asks geom.size(); the first time it is asked for a label TeX has
 not measured, make.py measures them all and asks for the picture again.
-make.py writes the wrapper (10 pt Computer Modern, figstyle.tex), runs
+make.py writes the wrapper (10 pt Computer Modern, a 4 pt margin, figstyle.tex), runs
 pdflatex, the checks of fscheck.py (label clearance >= 1.5 pt, label pairs
 >= 1.5 pt, no bare arrow tips, width <= 165 mm) and pdftocairo:
-content/blog-figs/<slug>/<stem>.svg, glyphs outlined and its numbers to
-0.01 pt (slim()), which build.py publishes in the picture's place, and
+content/blog-figs/<slug>/<stem>.svg, glyphs outlined, its numbers to
+0.01 pt, on white paper (slim()), which build.py publishes in the picture's place, and
 build/blogfig/<name>.png to look at. Exit code 1 if a figure does not compile
 or fails a check: a figure that fails is not written.
 """
@@ -31,7 +31,7 @@ BUILD = os.path.join(ROOT, "build", "blogfig")
 OUT = os.path.join(ROOT, "content", "blog-figs")
 sys.path.insert(0, HERE)
 FIGS = ["som_fig1", "som_fig2", "som_fig3", "ldv_speckle", "moo_fig1", "moo_fig2", "moo_fig3", "swpt_fig1"]
-WRAP = r"""\documentclass[10pt,tikz,border=1pt]{{standalone}}
+WRAP = r"""\documentclass[10pt,tikz,border=4pt]{{standalone}}
 \input{{figstyle}}
 \begin{{document}}
 {body}
@@ -45,7 +45,10 @@ def run(cmd, cwd):
 
 def slim(path):
     """The SVG as pdftocairo wrote it, its numbers to 0.01 pt (a hundredth of a
-    point is a thirtieth of a pixel on the page) and no space between its tags."""
+    point is a thirtieth of a pixel on the page) and no space between its tags,
+    on white paper: the site draws a figure's white into the page in its light
+    scheme (mix-blend-mode: multiply) and shows it as a white card in its dark
+    one, where a transparent figure's black lines would vanish."""
     def r(m):
         t = f"{float(m.group(0)):.2f}".rstrip("0").rstrip(".")
         return "0" if t in ("-0", "") else t
@@ -53,6 +56,15 @@ def slim(path):
         s = f.read()
     s = re.sub(r"-?\d+\.\d{3,}", r, s)
     s = re.sub(r">\s+<", "><", s)
+    vb = re.search(r'<svg\b[^>]*\sviewBox="0 0 ([\d.]+) ([\d.]+)"[^>]*>', s)
+    paper = f'<rect width="{vb.group(1)}" height="{vb.group(2)}" fill="#fff"/>'
+    at = s.find("</defs>")
+    at = at + len("</defs>") if at >= 0 else vb.end()
+    s = s[:at] + paper + s[at:]
+    # opened on its own (a post links a wide figure to its file) it fills the window, its
+    # proportions kept by the viewBox; in a page the <img> gives its size (build.redrawn)
+    s = re.sub(r'(<svg\b[^>]*?)\swidth="[\d.]+(?:pt)?"\s+height="[\d.]+(?:pt)?"',
+               r'\1 width="100%" height="100%"', s, count=1)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(s)
 

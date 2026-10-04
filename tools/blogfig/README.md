@@ -77,3 +77,21 @@ over it, it is carried through by a monotone spline through what can be read
 no fonts to load), then `make.slim`: numbers to 0.01 pt and no space between
 tags. Dots are strokes of no length with round caps, so a dot is a few bytes.
 `build/blogfig/<name>.png` is the picture to look at.
+
+`make.slim` also does three things for the page the figure is shown in:
+
+- **White paper.** It lays a white rectangle under the picture. In the light
+  scheme the site blends a figure's white into the page (`mix-blend-mode:
+  multiply`). In the dark scheme it shows the figure as a white card, and on
+  a transparent figure the black lines would vanish.
+- **Fills the window alone.** The `<svg>` is `width="100%" height="100%"`,
+  and its viewBox keeps the size in pt and the proportions. In a page, the
+  `<img>` gives the size: `build.redrawn` reads the viewBox at 1.6 px to the
+  pt. Opened on its own, the figure fills the window.
+- **A 4 pt margin** (`standalone`'s border) keeps the outermost strokes off the
+  card's rounded corners. `fscheck` adds it to the width it allows.
+
+A figure drawn smaller than it is is marked `fig--zoom` by `build.shot`, and
+`preview.zoom` links it to its own file. That is a figure 480 px wide or
+more, and wider than nine tenths of the column, as for every picture of a
+post. A phone's reader can open it there to read its small type.

@@ -41,8 +41,12 @@ def test_every_figure_module_names_its_post_and_picture_and_is_built():
 def test_each_svg_is_whole_sized_slim_and_no_wider_than_the_page(path):
     doc = xml.dom.minidom.parse(path)
     svg = doc.documentElement
-    w, h = float(svg.getAttribute("width")), float(svg.getAttribute("height"))
-    assert 0 < w <= make_width_pt() and 0 < h < 600
+    x0, y0, w, h = map(float, svg.getAttribute("viewBox").split())
+    assert (x0, y0) == (0, 0) and 0 < w <= make_width_pt() and 0 < h < 600
+    # alone it fills the window; on white paper, which the site draws into its page
+    assert (svg.getAttribute("width"), svg.getAttribute("height")) == ("100%", "100%")
+    paper = [r for r in doc.getElementsByTagName("rect") if r.getAttribute("fill") == "#fff"]
+    assert paper and (float(paper[0].getAttribute("width")), float(paper[0].getAttribute("height"))) == (w, h)
     text = open(path, encoding="utf-8").read()
     assert not re.search(r"\d\.\d{3,}", text), "numbers kept past 0.01 pt (make.slim)"
     assert os.path.getsize(path) < 250_000
@@ -62,8 +66,8 @@ def test_redrawn_gives_the_figure_its_size_at_sixteen_tenths_of_a_pixel_to_the_p
     svg = xml.dom.minidom.parse(path).documentElement
     got = build.redrawn(slug, stem + ".png")
     assert got[0] == path
-    assert got[1:] == (round(float(svg.getAttribute("width")) * 1.6),
-                       round(float(svg.getAttribute("height")) * 1.6))
+    _, _, w, h = map(float, svg.getAttribute("viewBox").split())
+    assert got[1:] == (round(w * 1.6), round(h * 1.6))
     assert build.redrawn(slug, "no-such-picture.png") is None
 
 
@@ -115,3 +119,23 @@ def test_digitized_data_names_the_picture_it_was_read_from():
         with open(os.path.join(data, f), encoding="utf-8") as fh:
             src = json.load(fh)["source"]
         assert re.fullmatch(r"post/[a-z0-9-]+/\d\d-[a-z0-9-]+\.webp", src), f
+
+
+def test_a_wide_redrawn_figure_links_to_its_own_file_and_a_narrow_one_does_not(tmp_path, monkeypatch):
+    import preview
+    fake_post(tmp_path, monkeypatch, True)
+    figs = tmp_path / "blog-figs" / "p1"
+    (figs / "wide.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" width="450" height="200" '
+                                   'viewBox="0 0 450 200"></svg>', encoding="utf-8")
+    here = str(tmp_path / "out" / "post" / "p1")
+    cap = "<figcaption><i>Figure 1. His caption.</i></figcaption></figure>"
+    wide = build.shot("p1", 1, here, "wide.png", ' alt="Figure 1: what it shows"', 672)
+    assert wide == ('<figure class="shot fig--zoom"><img src="p1/01-wide.svg" alt="Figure 1: what it shows" '
+                    'width="720" height="320" loading="lazy" decoding="async">')
+    linked = preview.zoom(wide + cap)
+    assert linked.startswith('<figure class="shot fig--zoom"><a class="figzoom" href="p1/01-wide.svg">'
+                             '<img src="p1/01-wide.svg" alt="Figure 1: what it shows"')
+    assert linked.endswith(preview.EXPAND + "</a>" + cap)
+    narrow = build.shot("p1", 2, here, "fig1.png", ' alt="Figure 2"', 672)
+    assert narrow.startswith('<figure class="shot"><img src="p1/02-fig1.svg" alt="Figure 2" width="401" ')
+    assert preview.zoom(narrow + cap) == narrow + cap

@@ -176,7 +176,7 @@ say(f"  common zone = [{common_zone[0]:.1f}, {common_zone[1]:.1f}] Hz")
 
 SLOW = 200
 say("")
-say(f"TIME: slowed {SLOW} x: every wave oscillates at f/{SLOW} on screen"
+say(f"TIME: shown {SLOW} x slower: every wave oscillates at f/{SLOW} on screen"
     f" ({f_edges[0]/SLOW:.2f} Hz for SS1 up to {f_edges[3]/SLOW:.2f} Hz for CC2).")
 
 check = "\n".join(lines) + "\n"
@@ -207,6 +207,10 @@ const TS = 0.35, RAMP = 0.25;             // the physics starts at TS, full spee
 function clock() { const s = t - TS; return s <= 0 ? 0 : s < RAMP ? s * s / (2 * RAMP) : s - RAMP / 2; }
 const phase = f => 2 * Math.PI * f / SLOW * clock();
 const lab = t0 => settle(t0, .28);        // labels arrive
+/* landscape (5 Oct 2026): (a) and (c) side by side, (b) across the figure,
+   (d) and (e) side by side; type: subtitles 18, labels and ticks 16 to 17 */
+const SUB = 18, LBL = 16, TICK = 16;
+const COL = [18, 518], COLW = 464;        // the two columns: left edges, width
 
 /* a beam row: n spans of length Lp from x0 at height y, pins, dots at both ends */
 function beamRow(x0, y, Lp, n, prog, o = {}) {
@@ -218,7 +222,7 @@ function beamRow(x0, y, Lp, n, prog, o = {}) {
     if (a > 0) pin(x0 + i * Lp, y, { s: pinS, alpha: a });
   }
   if (dots) for (const s of [-1, 1]) for (let k = 1; k <= 3; k++) {
-    const xx = s < 0 ? x0 - 8 - 7 * k : x0 + n * Lp + 8 + 7 * k;
+    const xx = s < 0 ? x0 - 6 - 7 * k : x0 + n * Lp + 6 + 7 * k;
     dot(xx, y, 1.5, { color: C.ink, alpha: alpha * (s < 0 ? clamp(prog * 6) : clamp(prog * 6 - 5)) });
   }
 }
@@ -240,69 +244,73 @@ function dimk(x1, x2, y, label, o) {
   math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', alpha });
 }
 function sub(letter, x, y, words, a) {
-  panel(letter, x, y, { alpha: a });
-  if (words) text(words, x + 38, y, { size: 16, color: C.body, alpha: a });
+  const w = panel(letter, x, y, { alpha: a });
+  if (words) text(words, x + w + 8, y, { size: SUB, color: C.body, alpha: a });
 }
 
-/* ------------------------------------------------ (a) the two band edge waves */
+/* ------------------------------------------------ (a) the two band edge waves, one over the other */
 function drawA() {
-  sub('a', 18, 34, 'two freely propagating waves', lab(0));
-  const y = 108, Lp = 128, A = 36;
+  sub('a', COL[0], 32, 'two freely propagating waves', lab(0));
+  const Lp = 118, A = 28, x0 = 66;
   const rows = [
-    { x0: 62, w: DATA.a.ss, sgn: s => (s % 2 ? -1 : 1), f: DATA.a.fss,
+    { y: 90, w: DATA.a.ss, sgn: s => (s % 2 ? -1 : 1), f: DATA.a.fss,
       lab: 'first mode, simply supported span', mu: '\\mu\\ = i\\pi' },
-    { x0: 560, w: DATA.a.cc, sgn: s => 1, f: DATA.a.fcc,
+    { y: 226, w: DATA.a.cc, sgn: s => 1, f: DATA.a.fcc,
       lab: 'first mode, fixed fixed span', mu: '\\mu\\ = 0' },
   ];
   rows.forEach((r, k) => {
-    beamRow(r.x0, y, Lp, 3, seg(.05 * k, .35));
+    beamRow(x0, r.y, Lp, 3, seg(.05 * k, .35));
     const q = Math.cos(phase(r.f));
-    const pts = wavePts(r.x0, y, Lp, 3, A * q, (s, i) => r.sgn(s) * r.w[i]);
+    const pts = wavePts(x0, r.y, Lp, 3, A * q, (s, i) => r.sgn(s) * r.w[i]);
     line(pts, { color: C.blue, width: 2.4, progress: seg(.2 + .05 * k, .4) });
-    const la = lab(.45 + .05 * k);
-    if (k === 0) { const da = lab(.5); if (da > 0) dimk(r.x0 + 3, r.x0 + Lp - 3, y + 52, 'L', { alpha: da, size: 16 }); }
-    text(r.lab, r.x0 + 1.5 * Lp, y + 80 + 5 * (1 - la), { size: 15, color: C.body, align: 'center', alpha: la });
-    math(`f = ${r.f.toFixed(1)}\\,\\rm{Hz},\\ \\ ${r.mu}`, r.x0 + 1.5 * Lp, y + 101 + 5 * (1 - la),
-         { size: 15, align: 'center', color: C.ink, alpha: la });
+    const la = lab(.45 + .05 * k), yl = r.y + (k === 0 ? 78 : 64) + 5 * (1 - la);
+    if (k === 0) { const da = lab(.5); if (da > 0) dimk(x0 + 3, x0 + Lp - 3, r.y + 46, 'L', { alpha: da, size: 17 }); }
+    // the mode's name and its numbers, one line under its beam
+    const fm = `f = ${r.f.toFixed(1)}\\,\\rm{Hz},\\ \\ ${r.mu}`;
+    const w1 = text(r.lab + ',', 0, -1e4, { size: LBL, alpha: 0 }), w2 = math(fm, 0, -1e4, { size: 17, alpha: 0 });
+    const xl = x0 + 1.5 * Lp - (w1 + 8 + w2) / 2;
+    text(r.lab + ',', xl, yl, { size: LBL, color: C.body, alpha: la });
+    math(fm, xl + w1 + 8, yl, { size: 17, color: C.ink, alpha: la });
   });
 }
 
-/* ------------------------------------------------ (b) the spectrum */
+/* ------------------------------------------------ (b) the spectrum, across the figure */
 function drawB() {
-  const y0 = 238;
-  sub('b', 18, y0, 'propagation zones', lab(.04));
-  const ax = { x: 112, y: y0 + 88, w: 846, h: 132 };
+  const y0 = 330;
+  sub('b', COL[0], y0, 'propagation zones', lab(.04));
+  const ax = { x: 108, y: y0 + 80, w: 850, h: 100 };
   const [e1, e2, e3, e4] = DATA.edges;
   const X = v => ax.x + v / DATA.fmax * ax.w;
-  // zones behind the axis
+  // zones behind the axis, each named in two lines inside it, clear of its edge guides
   const za = seg(.2, .3), zl = lab(.45);
-  if (za > 0) for (const [lo, hi, name] of [[e1, e2, '1st propagation zone'], [e3, e4, '2nd propagation zone']]) {
+  if (za > 0) for (const [lo, hi, name] of [[e1, e2, '1st propagation'], [e3, e4, '2nd propagation']]) {
     ctx.save(); ctx.globalAlpha = za; ctx.fillStyle = C.steel;
     ctx.fillRect(X(lo), ax.y, X(hi) - X(lo), ax.h); ctx.restore();
-    text(name, (X(lo) + X(hi)) / 2, ax.y + 22, { size: 14, color: C.navy, align: 'center', alpha: zl });   // clear of the edge guides
+    text(name, (X(lo) + X(hi)) / 2, ax.y + 22, { size: LBL, color: C.navy, align: 'center', alpha: zl });
+    text('zone', (X(lo) + X(hi)) / 2, ax.y + 41, { size: LBL, color: C.navy, align: 'center', alpha: zl });
   }
   const g = axes({ ...ax, xlim: [0, DATA.fmax], ylim: [0, 1.5],
     xticks: [0, 100, 200, 300, 400, 500, 600, 700], yticks: [0, .5, 1, 1.5],
-    xlabel: '\\rm{frequency}\\ \\ f\\ (\\rm{Hz})', ylabel: '\\rm{Re}\\,\\mu', ylabelGap: 50, progress: seg(.04, .4),
-    yfmt: v => v === 0 ? '0' : v.toFixed(1) });
+    xlabel: '\\rm{frequency}\\ \\ f\\ (\\rm{Hz})', ylabel: '\\rm{Re}\\,\\mu', ylabelGap: 54, progress: seg(.04, .4),
+    yfmt: v => v === 0 ? '0' : v.toFixed(1), tickSize: TICK });
   // attenuation per span: the computed curve
   const F = DATA.spec.f, D = DATA.spec.d;
   const pts = F.map((f, i) => [g.X(f), g.Y(D[i])]);
   g.inside(() => line(pts, { color: C.navy, width: 2.2, progress: seg(.28, .45) }));
-  text('attenuation per span', g.X(294), g.Y(1.3), { size: 15, color: C.navy, align: 'center', alpha: lab(.7) });
+  text('attenuation per span', g.X(294), g.Y(.2), { size: LBL, color: C.navy, align: 'center', alpha: lab(.7) });   // under its arch
   // edge guides and the span modes that bound the zones, arriving from above
   const sk = [[e1, DATA.b.ss1, 'ss'], [e2, DATA.b.cc1, 'cc'], [e3, DATA.b.ss2, 'ss'], [e4, DATA.b.cc2, 'cc']];
   sk.forEach(([f, w, kind], k) => {
     const s = lab(.5 + .05 * k);
     if (s <= 0) return;
-    const cx = X(f), yb = y0 + 44 - 8 * (1 - s), Lp = 62, A = 11, xs = cx - Lp / 2;
+    const cx = X(f), yb = y0 + 38 - 8 * (1 - s), Lp = 62, A = 10, xs = cx - Lp / 2;
     line([[cx, ax.y], [cx, ax.y + ax.h]], { color: C.guide, width: 1, dash: [5, 4], alpha: s });
     line([[xs, yb], [xs + Lp, yb]], { color: C.ink, width: 1.5, alpha: s });
     const q = Math.cos(phase(f));
     line(XI.map((v, i) => [xs + v * Lp, yb - A * q * w[i]]), { color: C.blue, width: 1.8, alpha: s });
     if (kind === 'ss') { pin(xs, yb, { s: 8, alpha: s }); pin(xs + Lp, yb, { s: 8, alpha: s }); }
     else { fixedEnd(xs, yb, { h: 18, dir: 1, alpha: s }); fixedEnd(xs + Lp, yb, { h: 18, dir: -1, alpha: s }); }
-    text(f.toFixed(1), cx, yb + 34, { size: 14, color: C.muted, align: 'center', alpha: s });
+    text(f.toFixed(1), cx, ax.y - 8, { size: TICK, color: C.body, align: 'center', alpha: s });
   });
   // the operating points of (d) and (e), gliding along the computed curve
   const interp = f => { let i = 1; while (i < F.length - 1 && F[i] < f) i++;
@@ -311,55 +319,56 @@ function drawB() {
     const s = settle(t0, .45);
     if (s <= 0) return;
     const ff = lerp(0.25, f, s), px = g.X(ff), py = g.Y(interp(ff));
-    dot(px, py, 4.2, { color: C.accent, fill: C.accent, alpha: clamp(s * 3) });
+    dot(px, py, 4.5, { color: C.accent, fill: C.accent, alpha: clamp(s * 3) });
     // the name arrives with its point: it would cut the curve where it climbs steeply on the way
-    text(name, px, py - 11, { size: 15, bold: true, color: C.accent, align: 'center', alpha: clamp((s - .9) / .08) });
+    text(name, px, py - 11, { size: LBL, bold: true, color: C.accent, align: 'center', alpha: clamp((s - .9) / .08) });
   });
 }
 
 /* ------------------------------------------------ (c) three slightly different spans */
 function drawC() {
-  const y0 = 524;
-  sub('c', 18, y0, 'a nearly periodic beam', lab(.08));
-  const Ls = DATA.c.L, sc = 262, y = y0 + 84, x0 = 62;
+  const y0 = 32;
+  sub('c', COL[1], y0, 'a nearly periodic beam', lab(.08));
+  const Ls = DATA.c.L, sc = 250, y = y0 + 60, x0 = 556;
   const xs = [x0]; Ls.forEach(l => xs.push(xs[xs.length - 1] + l * sc));
   const p = seg(.08, .4);
-  line([[x0 - 26, y], [xs[3] + 26, y]], { color: C.ink, width: 1.8, progress: p });
-  xs.forEach(x => { const a = clamp(((p * (xs[3] - x0 + 52) - 26 - (x - x0)) / 20) + 1); if (a > 0) pin(x, y, { s: 12, alpha: a }); });
+  line([[x0 - 16, y], [xs[3] + 16, y]], { color: C.ink, width: 1.8, progress: p });
+  xs.forEach(x => { const a = clamp(((p * (xs[3] - x0 + 32) - 16 - (x - x0)) / 20) + 1); if (a > 0) pin(x, y, { s: 12, alpha: a }); });
   for (const s of [-1, 1]) for (let k = 1; k <= 3; k++)
-    dot(s < 0 ? x0 - 30 - 7 * k : xs[3] + 30 + 7 * k, y, 1.5, { alpha: s < 0 ? clamp(p * 6) : clamp(p * 6 - 5) });
+    dot(s < 0 ? x0 - 20 - 7 * k : xs[3] + 20 + 7 * k, y, 1.5, { alpha: s < 0 ? clamp(p * 6) : clamp(p * 6 - 5) });
   const dash = [null, [9, 5], [2.5, 3.5]];
   Ls.forEach((l, i) => {
     const cx = (xs[i] + xs[i + 1]) / 2, a = lab(.5 + .05 * i);
-    text(`span ${i + 1}`, cx, y - 22 + 5 * (1 - a), { size: 15, color: C.body, align: 'center', alpha: a });
+    text(`span ${i + 1}`, cx, y - 22 + 5 * (1 - a), { size: LBL, color: C.body, align: 'center', alpha: a });
     if (a > 0) {
       dim(xs[i] + 3, xs[i + 1] - 3, y + 34, '', { alpha: a });
-      math(`L_{${i + 1}} = ${l.toFixed(2)}\\,\\rm{m}`, cx, y + 60 + 5 * (1 - a), { size: 15, align: 'center', alpha: a });
+      math(`L_{${i + 1}} = ${l.toFixed(2)}\\,\\rm{m}`, cx, y + 61 + 5 * (1 - a), { size: 17, align: 'center', alpha: a });
     }
   });
   // the zones: each span's first zone as a pair of lines, the common zone shaded
-  const ax = { x: 600, y: y0 + 8, w: 358, h: 128 };
+  const ax = { x: 600, y: y0 + 138, w: 300, h: 96 };
   const g = axes({ ...ax, xlim: [80, 240], ylim: [0, 4], xticks: [80, 120, 160, 200, 240], yticks: [],
-    xlabel: '\\rm{frequency}\\ \\ f\\ (\\rm{Hz})', progress: seg(.12, .4) });
+    progress: seg(.12, .4), tickSize: TICK });
+  math('f\\ (\\rm{Hz})', ax.x + ax.w + 28, ax.y + ax.h + TICK + 6, { size: 17, alpha: seg(.3, .25) });
   const [clo, chi] = DATA.c.common, ca = seg(.62, .25);
   if (ca > 0) {
     ctx.save(); ctx.globalAlpha = ca; ctx.fillStyle = C.steel;
     ctx.fillRect(g.X(clo), ax.y + 1, g.X(chi) - g.X(clo), ax.h - 2); ctx.restore();
-    text('common zone', (g.X(clo) + g.X(chi)) / 2, g.Y(.45) + 5, { size: 15, color: C.navy, align: 'center', alpha: lab(.7) });
+    text('common zone', (g.X(clo) + g.X(chi)) / 2, ax.y + ax.h - 9, { size: LBL, color: C.navy, align: 'center', alpha: lab(.7) });
   }
   DATA.c.zones.forEach(([lo, hi], i) => {
-    const yy = g.Y(3.4 - i), pz = seg(.3 + .05 * i, .3);
-    for (const f of [lo, hi]) line([[g.X(f), yy - 15], [g.X(f), yy + 15]], { color: C.navy, width: 2.2, dash: dash[i], progress: pz });
+    const yy = ax.y + 16 + 23 * i, pz = seg(.3 + .05 * i, .3);
+    for (const f of [lo, hi]) line([[g.X(f), yy - 9], [g.X(f), yy + 9]], { color: C.navy, width: 2.2, dash: dash[i], progress: pz });
     line([[g.X(lo), yy], [g.X(hi), yy]], { color: C.navy, width: 1.1, dash: dash[i], progress: pz, alpha: .8 });
-    text(`span ${i + 1}`, ax.x - 8, yy + 5, { size: 15, align: 'right', alpha: lab(.35 + .05 * i) });
+    text(`span ${i + 1}`, ax.x - 8, yy + 5, { size: LBL, align: 'right', alpha: lab(.35 + .05 * i) });
   });
 }
 
-/* ------------------------------------------------ (d), (e) one wave in a zone, one outside */
-function drawRow(letter, words, y0, t0, kind) {
-  sub(letter, 18, y0, words, lab(t0));
-  const y = y0 + 62, x0 = 66, Lp = 108.5, n = 8, A = 38;
-  beamRow(x0, y, Lp, n, seg(t0, .4), { pinS: 11 });
+/* ------------------------------------------------ (d), (e) one wave in a zone, one outside, side by side */
+function drawRow(letter, words, cx0, y0, t0, kind) {
+  sub(letter, cx0, y0, words, lab(t0));
+  const y = y0 + 58, x0 = cx0 + 34, Lp = 66, n = 6, A = 28;
+  beamRow(x0, y, Lp, n, seg(t0, .4), { pinS: 10 });
   const ph = phase(kind === 'd' ? DATA.d.f : DATA.e.f);
   let pts;
   if (kind === 'd') {
@@ -378,24 +387,24 @@ function drawRow(letter, words, y0, t0, kind) {
     for (const sg of [-1, 1]) {
       const env = [];
       for (let k = 0; k <= 160; k++) { const u = xm + k / 160 * (n - xm); env.push([x0 + u * Lp, y - sg * A * am * Math.exp(-d * (u - xm))]); }
-      line(env, { color: kind === 'd' ? C.guide : C.accent, width: 1.2, dash: [5, 4], alpha: ea, progress: ea });
+      line(env, { color: C.guide, width: 1.2, dash: [5, 4], alpha: ea, progress: ea });
     }
   }
   line(pts, { color: C.blue, width: 2.4, progress: seg(t0 + .18, .4) });
-  const la = lab(t0 + .68);
-  if (kind === 'd') math(`f = ${DATA.d.f.toFixed(0)}\\,\\rm{Hz},\\ \\ \\rm{Re}\\,\\mu\\ = 0`, 958, y0, { size: 16, align: 'right', alpha: la });
+  const la = lab(t0 + .68), xr = cx0 + COLW;
+  if (kind === 'd') math(`f = ${DATA.d.f.toFixed(0)}\\,\\rm{Hz},\\ \\ \\rm{Re}\\,\\mu\\ = 0`, xr, y0, { size: 17, align: 'right', alpha: la });
   else math(`f = ${DATA.e.f.toFixed(0)}\\,\\rm{Hz},\\ \\ \\rm{Re}\\,\\mu\\ = ${DATA.e.delta.toFixed(2)},\\ \\ e^{-\\rm{Re}\\,\\mu} = ${Math.exp(-DATA.e.delta).toFixed(2)}`,
-            958, y0, { size: 16, align: 'right', alpha: la });
+            xr, y0 + 30, { size: 17, align: 'right', alpha: la });
 }
 
 function draw() {
   drawA(); drawB(); drawC();
-  drawRow('d', 'inside a propagation zone', 750, .12, 'd');
-  drawRow('e', 'outside a propagation zone', 890, .17, 'e');
+  drawRow('d', 'inside a propagation zone', COL[0], 596, .12, 'd');
+  drawRow('e', 'outside a propagation zone', COL[1], 596, .17, 'e');
   const fa = lab(.95);
-  text('steel bar 40 × 10 mm, E = 210 GPa, ρ = 7850 kg/m³, pin supports every L = 0.5 m',
-       18, H - 14, { size: 14, color: C.muted, alpha: fa });
-  text(`time slowed ${SLOW} ×`, W - 18, H - 14, { size: 14, color: C.muted, align: 'right', alpha: fa });
+  math('\\rm{steel bar 40} \\times\\ 10\\,\\rm{mm},\\ \\ E = 210\\,\\rm{GPa},\\ \\ \\rho\\ = 7850\\,\\rm{kg/m}^{3},\\ \\ ' +
+       '\\rm{pin supports every}\\ L = 0.5\\,\\rm{m}', 18, H - 12, { size: 15, color: C.muted, alpha: fa });
+  text(`shown ${SLOW} × slower`, W - 18, H - 12, { size: 15, color: C.muted, align: 'right', alpha: fa });
 }
 boot();
 """
@@ -423,5 +432,5 @@ ARIA = ("Five panels computed from an exact periodic beam model: the two band ed
         "travelling at full amplitude; and a wave outside a zone decaying span by span.")
 
 if __name__ == "__main__":
-    common.build_html(NAME, TITLE, ARIA, 1000, 1034, DATA, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, 720, DATA, JS)
     print(common.still(NAME))

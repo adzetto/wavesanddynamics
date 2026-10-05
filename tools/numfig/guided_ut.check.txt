@@ -10,7 +10,7 @@ MODEL
   60 km/s, each sign change refined by Brent (1e-12 m/s). Branches S0, A0, A1 followed by
   continuation on a 0.5 kHz grid from 0.5 to 280 kHz, and checked against a full rescan
   at 10, 100, 200 and 275 kHz. Group velocity: central differences of exact roots, df = 2 Hz.
-  Scan twice as fine: largest change of a root 9.1e-14 (relative).
+  Scan twice as fine: largest change of a root 7.1e-14 (relative).
 
 OPERATING POINTS (f = 50 kHz, f d = 0.5 MHz mm)
   S0: c_p = 5391.3 m/s, c_g = 5364.2 m/s, dc_p/df = -0.544 (m/s)/kHz  (flat, non dispersive)
@@ -35,7 +35,7 @@ VALIDATION AGAINST CLOSED FORMS
      more slowly, spreads less, so the smeared envelope peaks before the centre frequency's
      group delay.)
 
-MODE SHAPES AT 50 kHz (traction free null vector; |det| scaled 1.9e-15)
+MODE SHAPES AT 50 kHz (traction free null vector; |det| scaled 2.0e-15)
   S0: u_x varies -1.80 % from mid-plane to surface; |u_z(h)|/|u_x(0)| = 0.121
   A0: u_z varies -7.25 % from mid-plane to surface; |u_x(h)|/|u_z(0)| = 0.532
   The page colours the plate with each mode's dominant component (u_x for S0, u_z for
@@ -57,5 +57,11 @@ SYNTHESIS
   once the echo is back).
 
 DISPLAY
-  Model time slowed 7000 times (1.4 x the 5000 of Figure 13). Plate 2.15 m long drawn at 400 units/m; its thickness
+  Model time shown 7,000 x slower, as Figure 13 (b) (1.4 x the 5,000 the SHM guide uses), said on the page.
+  Plate 2.15 m long drawn at 400 units/m; its thickness
   is drawn 8.5 times enlarged (said in the parameter line).
+  The plate is a thin slab in an oblique view, as Figure 4 draws its plate (5 Oct 2026): its top face
+  recedes 14 by 10 units and carries the front face's field, sheared onto it; the model is plane strain,
+  so the wave is the same across the plate's width, and the defect, a notch across the width, cuts the
+  top face from edge to edge. Crimson marks the defect and its echo alone (5 Oct 2026): the operating
+  points and their slopes navy, the burst band steel, the A1 cut-on grey as in Figure 4.

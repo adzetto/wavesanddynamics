@@ -271,7 +271,7 @@ say("")
 say("DRAWING")
 say(f"  bridge 1.2 units per metre; the mode's largest deck deflection drawn 9 units; real time ({F1:.3f} Hz).")
 say(f"  detail A: 2.5 units per mm; the plate's u_z drawn 6 units at most and through the diverging palette;")
-say(f"  time slowed {SLOW_W:.0e} x (one burst every {P_W*SLOW_W:.1f} s on screen).")
+say(f"  shown {SLOW_W:,.0f} x slower, said in the detail (one burst every {P_W*SLOW_W:.1f} s on screen); the bridge in real time.")
 wt_lib.write_check(NAME, lines)
 
 # ------------------------------------------------------------------ data for the page
@@ -288,6 +288,7 @@ DATA = {
     "pyl": [p[::3] + [p[-1]] for p in pyl], "stay": stay,
     "w": {"k": ks.tolist(), "f": freqs.tolist(), "ar": np.real(amp).tolist(), "ai": np.imag(amp).tolist(),
           "xt": X_T, "xc": X_C, "R": R_CRACK, "T": float(np.sqrt(1 - R_CRACK ** 2)), "P": P_W, "slow": SLOW_W,
+          "slowtxt": f"shown {SLOW_W:,.0f} × slower",
           "peak": peak, "th": TH, "cg": float(cg), "tb": T_B},
 }
 
@@ -429,7 +430,9 @@ function draw() {
   spans.forEach(([a0, a1]) => dim(XB(a0) + 1, XB(a1) - 1, yd, (a1 - a0).toFixed(0) + '\\,\\rm{m}', { size: 16, alpha: aT * .9, color: C.body }));
   text('A', ax + 7, ay - 22, { size: 17, italic: true, color: C.ink, alpha: aT });
   text('A', CX - CR * .78 - 14, CY - CR * .66, { size: 17, italic: true, color: C.ink, alpha: aT });
-  math('A_0,\\ 200\\,\\rm{kHz}', CX, CY + CR - 22, { size: 17, color: C.body, align: 'center', alpha: aT });
+  math('A_0,\\ 200\\,\\rm{kHz}', CX, CY + CR - 20, { size: 17, color: C.body, align: 'center', alpha: aT });
+  // the wave is slowed (the bridge beside it runs in real time): said, as every figure of the guide says it
+  text(WV.slowtxt, CX, CY + CR - 46, { size: 15, color: C.muted, align: 'center', alpha: aT });
 }
 boot();
 """

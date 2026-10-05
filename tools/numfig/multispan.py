@@ -44,7 +44,14 @@ PARAMS = {"a": (58.6, 62.5, 3.5e8),            # left span, right span (m), join
           "b": (64.3, 29.4, 7.9e8)}            # from --fit (k_max 4.08e8, 8.29e8), rounded
 NMODES = 8
 NPTS = 121
-SLOW = 6
+# time: each row slowed by its own round factor (5 Oct 2026: no mode faster than
+# about 1 Hz on screen), the smallest of FACTORS that keeps it at or below FMAX_SCREEN
+FACTORS = (2, 5, 10, 20, 40, 50, 100)
+FMAX_SCREEN = 0.8
+
+
+def slow_for(f):
+    return next(n for n in FACTORS if f / n <= FMAX_SCREEN)
 
 
 def target(key):
@@ -189,7 +196,7 @@ say("  0.5 to 2.4 % (b), the 22.90 Hz row about 2 % for every r; no clearer, so 
 say("  Rounded: lengths to 0.1 m, k to two figures (down); residuals rechecked below.")
 say("")
 
-DATA = {"slow": SLOW, "cases": {}}
+DATA = {"cases": {}}
 results = {}
 all_ok = True
 for key in ("a", "b"):
@@ -227,7 +234,7 @@ for key in ("a", "b"):
         if ratio < 0.25:
             mag = max(n for n in (2, 3, 5, 10, 20, 30, 50, 100) if n * ratio <= 0.8)
         rows.append({"f": md["f"], "w1": md["w"][0], "w2": md["w"][1], "dom": md["dom"],
-                     "label": HIS[key][r_], "mag": mag})
+                     "label": HIS[key][r_], "mag": mag, "slow": slow_for(md["f"])})
     DATA["cases"][key] = {"L": [L1, L2], "k": k, "rows": rows}
 
 say("CHECK 1: finite element cross check, same spring (Hermite cubic, consistent mass)")
@@ -285,7 +292,12 @@ say("  Solid: the exact mode, one scale for both spans (the kink over the middle
 say("  the joint). Dashed: the other span alone, magnified by the factor printed beside")
 say("  it, where it moves less than a quarter of the dominating span.")
 say(f"  Labels: his values (every residual within {TOL:g} %: {'yes' if all_ok else 'NO'}).")
-say(f"TIME: slowed {SLOW} x; each mode oscillates at its computed frequency / {SLOW}.")
+say(f"TIME: each row shown slower by its own round factor (printed beside its frequency), the smallest of")
+say(f"  {', '.join(map(str, FACTORS))} that keeps it at or below {FMAX_SCREEN} Hz on screen; each mode oscillates at its")
+say("  computed frequency / its factor:")
+for key in ("a", "b"):
+    say(f"  ({key}) " + "; ".join(f"{r['label']}: computed {r['f']:.3f} Hz / {r['slow']} = {r['f'] / r['slow']:.3f} Hz"
+                            for r in DATA["cases"][key]["rows"]))
 if not all_ok:
     raise SystemExit("a residual exceeds 2 %: rerun --fit")
 check = "\n".join(lines) + "\n"
@@ -294,13 +306,14 @@ with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newlin
     fh.write(check)
 
 JS = r"""
-const POSTER_T = __POSTER_T__;            // the moment every mode is nearest its extreme
-const SLOW = DATA.slow;
+const POSTER_T = __POSTER_T__;            // every mode at its extreme (each row is phased so)
 const TS = 0.35, RAMP = 0.25;             // the physics starts at TS, full speed by TS + RAMP
 function clock() { const s = t - TS; return s <= 0 ? 0 : s < RAMP ? s * s / (2 * RAMP) : s - RAMP / 2; }
+const CP = POSTER_T - TS - RAMP / 2;      // the physics clock at the still
 const lab = t0 => settle(t0, .28);        // labels arrive
-const SC = 2.85;                           // px per metre, both panels
-const ROW0 = 118, DY = 124, A = 30;
+const SC = 2.75;                           // px per metre, both panels
+const ROW0 = 120, DY = 124, A = 30;
+const LBW = 134, GAP = 14;                 // the label block left of each row, right-aligned; then the beam
 
 /* a rotational spring over the middle pin, as TikZ draws one: a spiral */
 function spiral(cx, cy, r, alpha) {
@@ -312,17 +325,18 @@ function spiral(cx, cy, r, alpha) {
 function column(key, cx0, letter, words, tl) {
   const cs = DATA.cases[key], [L1, L2] = cs.L;
   const ha = lab(tl);
-  panel(letter, cx0, 36, { alpha: ha });
-  text(words, cx0 + 36, 36, { size: 16, color: C.body, alpha: ha });
-  const bx = cx0 + 110, xs = [bx, bx + L1 * SC, bx + (L1 + L2) * SC];
+  const pw = panel(letter, cx0, 34, { alpha: ha });
+  text(words, cx0 + pw + 8, 34, { size: 18, color: C.body, alpha: ha });
+  const lx = cx0 + LBW, bx = lx + GAP, xs = [bx, bx + L1 * SC, bx + (L1 + L2) * SC];
   cs.rows.forEach((r, k) => {
     const y = ROW0 + k * DY, t0 = tl + .07 * k;
     const p = seg(t0, .3);
     line([[xs[0], y], [xs[2], y]], { color: C.ink, width: 1.8, progress: p });
     xs.forEach(x => { const a = p > 0 ? clamp((p - (x - xs[0]) / (xs[2] - xs[0])) * 8 + 1) : 0; if (a > 0) pin(x, y, { s: 12, alpha: a }); });
     const sa = lab(t0 + .2);
-    if (sa > 0) { spiral(xs[1], y - 14, 8, sa); if (k === 0) math('k', xs[1] - 12, y - 17, { size: 15, align: 'right', alpha: sa }); }
-    const q = Math.cos(2 * Math.PI * r.f / SLOW * clock());
+    if (sa > 0) { spiral(xs[1], y - 14, 8, sa); if (k === 0) math('k', xs[1] - 12, y - 17, { size: 17, align: 'right', alpha: sa }); }
+    // each row on its own clock: its computed frequency over its round factor (printed under it)
+    const q = Math.cos(2 * Math.PI * r.f / r.slow * (clock() - CP));
     const n = r.w1.length, pts = [], ghost = [[], []];
     const X1 = i => xs[0] + i / (n - 1) * L1 * SC, X2 = i => xs[1] + i / (n - 1) * L2 * SC;
     for (let i = 0; i < n; i++) { pts.push([X1(i), y - A * q * r.w1[i]]); ghost[0].push([X1(i), y - A * r.w1[i]]); ghost[1].push([X1(i), y + A * r.w1[i]]); }
@@ -337,64 +351,59 @@ function column(key, cx0, letter, words, tl) {
       const w = r.dom === 0 ? r.w2 : r.w1, X = r.dom === 0 ? X2 : X1, ma = seg(t0 + .5, .3);
       if (ma > 0) {
         line(w.map((v, i) => [X(i), y - A * q * r.mag * v]), { color: C.sky, width: 1.5, dash: [4, 3], alpha: ma });
-        const lx = bx - 24, ly = y + 27;               // under his frequency: a dashed sample, the factor
-        const tw = text(`×${r.mag}`, lx, ly, { size: 14, color: C.muted, align: 'right', alpha: ma });
-        line([[lx - tw - 24, ly - 5], [lx - tw - 5, ly - 5]], { color: C.sky, width: 1.5, dash: [4, 3], alpha: ma });
+        const ly = y + 49;                              // under the factor: a dashed sample, the magnification
+        const tw = text(`×${r.mag}`, lx, ly, { size: 16, color: C.body, align: 'right', alpha: ma });
+        line([[lx - tw - 26, ly - 5], [lx - tw - 6, ly - 5]], { color: C.sky, width: 1.5, dash: [4, 3], alpha: ma });
       }
     }
     line(pts, { color: C.blue, width: 2.4, progress: seg(t0 + .12, .4) });
-    // his frequency, and the span that dominates, arriving
+    // his frequency, its slowing, and the span that dominates, arriving
     const fa = lab(t0 + .08);
-    if (fa > 0) math(r.label.replace(' Hz', '\\,\\rm{Hz}'), bx - 24 - 8 * (1 - fa), y + 6, { size: 17, align: 'right', alpha: fa });
+    if (fa > 0) {
+      math(r.label.replace(' Hz', '\\,\\rm{Hz}'), lx - 8 * (1 - fa), y + 6, { size: 18, align: 'right', alpha: fa });
+      text(`shown ${r.slow} × slower`, lx - 8 * (1 - fa), y + 28, { size: 15, color: C.muted, align: 'right', alpha: fa });
+    }
     const da = lab(t0 + .55);
     if (da > 0) {
       const mx = (xs[r.dom] + xs[r.dom + 1]) / 2;
-      text('Dominating span', mx, y - A - 12 + 6 * (1 - da), { size: 15, color: C.accent, align: 'center', alpha: da });
+      text('Dominating span', mx, y - A - 12 + 6 * (1 - da), { size: 16, color: C.body, align: 'center', alpha: da });
     }
   });
   // the span lengths and the joint under the last row
-  const yd = ROW0 + 3 * DY + 44, la = lab(tl + .7);
+  const yd = ROW0 + 3 * DY + 66, la = lab(tl + .7);
   if (la > 0) {
-    dim(xs[0] + 2, xs[1] - 2, yd, `${L1.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 15 });
-    dim(xs[1] + 2, xs[2] - 2, yd, `${L2.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 15 });
+    dim(xs[0] + 2, xs[1] - 2, yd, `${L1.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 16 });
+    dim(xs[1] + 2, xs[2] - 2, yd, `${L2.toFixed(1)}\\,\\rm{m}`, { alpha: la, size: 16 });
     const e = Math.floor(Math.log10(cs.k)), mant = (cs.k / Math.pow(10, e)).toFixed(1);
-    math(`k = ${mant}\\ \\times\\ 10^{${e}}\\,\\rm{N}\\,\\rm{m/rad}`, xs[1], yd + 30 + 5 * (1 - la), { size: 15, align: 'center', alpha: la });
+    math(`k = ${mant}\\ \\times\\ 10^{${e}}\\,\\rm{N}\\,\\rm{m/rad}`, xs[1], yd + 32 + 5 * (1 - la), { size: 17, align: 'center', alpha: la });
   }
 }
 
 function draw() {
-  column('a', 16, 'a', 'similar span lengths', 0);
-  column('b', 516, 'b', 'more different span lengths', .035);
+  column('a', 18, 'a', 'similar span lengths', 0);
+  column('b', 518, 'b', 'more different span lengths', .035);
   const fa = lab(.95);
-  text('girder EI = 1.0 × 10¹¹ N m², m = 10 t/m on three pins; k: rotational spring joining the spans; dashed: other span magnified',
-       16, H - 12, { size: 14, color: C.muted, alpha: fa });
-  text(`time slowed ${SLOW} ×`, W - 16, H - 12, { size: 14, color: C.muted, align: 'right', alpha: fa });
+  math('\\rm{girder}\\ EI = 1.0 \\times\\ 10^{11}\\,\\rm{N\\,m}^{2},\\ m = 10\\,\\rm{t/m},\\ \\rm{on three pins};\\ \\ ' +
+       'k\\rm{: rotational spring; dashed: the other span, magnified}', 18, H - 14, { size: 15, color: C.muted, alpha: fa });
 }
 boot();
 """
 
 
-def poster_time(freqs, ts=0.35, ramp=0.25, t_lo=1.45, t_hi=40.0):
-    """The still: the moment after the intro when every mode is nearest its
-    extreme (largest smallest |cos(phase)|), on the page's clock."""
-    tt = np.arange(t_lo, t_hi, 0.001)
-    c = tt - ts - ramp / 2
-    m = np.min(np.abs(np.cos(2 * np.pi * np.outer(np.array(freqs) / SLOW, c))), axis=0)
-    j = int(np.argmax(m - 0.002 * (tt - t_lo)))
-    return float(tt[j]), float(m[j])
-
-
-POSTER, POSTER_M = poster_time([r["f"] for key in ("a", "b") for r in DATA["cases"][key]["rows"]])
+# The still: 3 s, the intro over; every row's free vibration is phased to be at its
+# extreme then (a free mode's phase is its initial condition's: each row keeps its
+# own frequency and factor, only the moment of its extreme is chosen)
+POSTER = 3.0
 JS = JS.replace("__POSTER_T__", f"{POSTER:.3f}")
-print(f"POSTER_T = {POSTER:.3f} s: every mode at >= {100*POSTER_M:.1f} % of its amplitude")
+print(f"POSTER_T = {POSTER:.3f} s: every mode at its extreme")
 
 TITLE = "Figure 7: Vibrational modes of multi span beams"
 ARIA = ("Two columns of computed vibration modes of a two span beam on three pin supports whose spans "
-        "are joined over the middle pin by a rotational spring, each mode oscillating at a rate "
-        "proportional to its frequency: (a) spans of similar length, (b) spans of more different "
-        "length. Each mode is labelled with its frequency, and the span with the larger amplitude is "
-        "marked as the dominating span.")
+        "are joined over the middle pin by a rotational spring, each mode oscillating in slow motion, "
+        "slowed by the factor printed under its frequency: (a) spans of similar length, (b) spans of "
+        "more different length. Each mode is labelled with its frequency, and the span with the larger "
+        "amplitude is marked as the dominating span.")
 
 if __name__ == "__main__":
-    common.build_html(NAME, TITLE, ARIA, 1000, 614, DATA, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, 656, DATA, JS)
     print(common.still(NAME))

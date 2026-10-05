@@ -103,4 +103,8 @@ DRAWING
   the joint). Dashed: the other span alone, magnified by the factor printed beside
   it, where it moves less than a quarter of the dominating span.
   Labels: his values (every residual within 2 %: yes).
-TIME: slowed 6 x; each mode oscillates at its computed frequency / 6.
+TIME: each row shown slower by its own round factor (printed beside its frequency), the smallest of
+  2, 5, 10, 20, 40, 50, 100 that keeps it at or below 0.8 Hz on screen; each mode oscillates at its
+  computed frequency / its factor:
+  (a) 1.3 Hz: computed 1.294 Hz / 2 = 0.647 Hz; 1.45 Hz: computed 1.478 Hz / 2 = 0.739 Hz; 5.2 Hz: computed 5.113 Hz / 10 = 0.511 Hz; 5.92 Hz: computed 5.816 Hz / 10 = 0.582 Hz
+  (b) 1.23 Hz: computed 1.254 Hz / 2 = 0.627 Hz; 4.95 Hz: computed 4.856 Hz / 10 = 0.486 Hz; 5.8 Hz: computed 5.878 Hz / 10 = 0.588 Hz; 22.90 Hz: computed 23.118 Hz / 40 = 0.578 Hz

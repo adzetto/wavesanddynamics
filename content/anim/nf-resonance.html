@@ -33,7 +33,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Computed from an exact beam model as a frequency sweep that slows into each resonance and rests there: waves spreading from a harmonic force on an infinite beam and its flat response; the same force on a finite simply supported beam and its frequency response with four resonance peaks; the fourth mode as two waves travelling in opposite directions and their standing wave; and the first four mode shapes."></canvas>
+  <canvas id="c" role="img" aria-label="Computed from an exact beam model as a frequency sweep that slows into each resonance and rests there, each frame the steady state at the frequency of the moment: waves spreading from a harmonic force on an infinite beam and its flat response; the same force on a finite simply supported beam and its frequency response with four resonance peaks; the fourth mode as two waves travelling in opposite directions and their standing wave; and the first four mode shapes."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
@@ -637,7 +637,7 @@ function infShape(f, xs) {
 }
 const ORD = ['st', 'nd', 'rd', 'th'];
 function nearMode(l) { for (let n = 0; n < 4; n++) if (Math.abs(l - Math.log10(DATA.fn[n])) < 0.045) return n; return -1; }
-function sub(letter, x, y, words, a) { panel(letter, x, y, { alpha: a }); text(words, x + 36, y, { size: 16, color: C.body, alpha: a }); }
+function sub(letter, x, y, words, a) { panel(letter, x, y, { alpha: a }); text(words, x + 36, y, { size: 18, color: C.body, alpha: a }); }
 /* (b) and (d) share one dB scale; its top leaves room inside the frame for the peak labels */
 const YLIM = [-36, 34];
 const LX0 = 130, PXM = 320;                               // (a) and (c): the span from x = 130, 320 px per metre
@@ -655,17 +655,17 @@ function draw() {
   line(xsA.map((x, i) => [X(x), ya - 24 * (wa[i][0] * eph[0] - wa[i][1] * eph[1])]), { color: C.blue, width: 2.4, progress: seg(.18, .4) });
   const fa = lab(.4);
   arrow(X(DATA.xF), ya - 58, X(DATA.xF), ya - 30, { width: 1.5, head: 8, alpha: fa });
-  math('F\\,e^{i\\omega t}', X(DATA.xF) + 8, ya - 46, { size: 15, alpha: fa });
-  arrow(X(.45), ya - 50, X(.75), ya - 50, { width: 1.3, head: 8, alpha: fa, color: C.body });
-  arrow(X(.02), ya - 50, X(-.14), ya - 50, { width: 1.3, head: 8, alpha: fa, color: C.body });
-  text('Direction of travel', X(.6), ya - 58, { size: 14, color: C.body, align: 'center', alpha: fa });
+  math('F\\,e^{i\\omega t}', X(DATA.xF) + 8, ya - 44, { size: 17, alpha: fa });
+  arrow(X(.47), ya - 46, X(.79), ya - 46, { width: 1.3, head: 8, alpha: fa, color: C.body });
+  arrow(X(.02), ya - 46, X(-.14), ya - 46, { width: 1.3, head: 8, alpha: fa, color: C.body });
+  text('Direction of travel', X(.63), ya - 54, { size: 16, color: C.body, align: 'center', alpha: fa });
   // ---------------------------------------------------------------- (b) its response: flat
   sub('b', 18, 168, 'response of the infinite beam', lab(.04));
   const gb = axes({ x: 120, y: 188, w: 352, h: 58, xlim: [1, Math.log10(500)], ylim: YLIM,
     xticks: [1, Math.log10(20), Math.log10(50), 2, Math.log10(200), Math.log10(500)], yticks: [-30, 0, 20],
-    xfmt: v => String(Math.round(Math.pow(10, v))), progress: seg(.04, .4), ylabel: '\\rm{dB}', ylabelGap: 44 });
+    xfmt: v => String(Math.round(Math.pow(10, v))), progress: seg(.04, .4), ylabel: '\\rm{dB}', ylabelGap: 46, tickSize: 16 });
   gb.inside(() => line([[gb.X(1), gb.Y(0)], [gb.X(3), gb.Y(0)]], { color: C.navy, width: 2.2, progress: seg(.25, .4) }));
-  math('w = w_{\\infty}', gb.X(Math.log10(12)), gb.Y(0) - 7, { size: 15, color: C.navy, alpha: lab(.5) });
+  math('w = w_{\\infty}', gb.X(Math.log10(12)), gb.Y(0) - 7, { size: 17, color: C.navy, alpha: lab(.5) });
   const ma = lab(.55);
   if (c > 0 || ma > 0) dot(gb.X(lfNow), gb.Y(0), 4.2, { color: C.accent, fill: C.accent, alpha: ma });
   // ---------------------------------------------------------------- (c) finite beam
@@ -679,33 +679,33 @@ function draw() {
   line(XS.map((x, i) => [X(x), yc - Ac * (ws[i][0] * eph[0] - ws[i][1] * eph[1])]), { color: C.blue, width: 2.4, progress: seg(.25, .4) });
   const fc = lab(.45);
   arrow(X(DATA.xF), yc - 62, X(DATA.xF), yc - 42, { width: 1.5, head: 8, alpha: fc });
-  math('F\\,e^{i\\omega t}', X(DATA.xF) + 8, yc - 50, { size: 15, alpha: fc });
-  text('supported at both ends', X(.5), yc + 56, { size: 15, color: C.body, align: 'center', alpha: fc });
+  math('F\\,e^{i\\omega t}', X(DATA.xF) + 8, yc - 48, { size: 17, alpha: fc });
+  text('supported at both ends', X(.5), yc + 56, { size: 16, color: C.body, align: 'center', alpha: fc });
   // ---------------------------------------------------------------- (d) its response: peaks
   sub('d', 18, 438, 'response of the finite beam', lab(.12));
   const gd = axes({ x: 120, y: 458, w: 352, h: 142, xlim: [1, Math.log10(500)], ylim: YLIM,
     xticks: [1, Math.log10(20), Math.log10(50), 2, Math.log10(200), Math.log10(500)], yticks: [-30, -20, -10, 0, 10, 20],
-    xfmt: v => String(Math.round(Math.pow(10, v))), progress: seg(.12, .4), grid: true,
-    xlabel: '\\rm{frequency}\\ \\ f\\ (\\rm{Hz})', ylabel: '|w/w_{\\infty}|\\ (\\rm{dB})', ylabelGap: 50 });
+    xfmt: v => String(Math.round(Math.pow(10, v))), progress: seg(.12, .4), grid: true, tickSize: 16,
+    xlabel: '\\rm{frequency}\\ \\ f\\ (\\rm{Hz})', ylabel: '|w/w_{\\infty}|\\ (\\rm{dB})', ylabelGap: 52 });
   gd.inside(() => {
     line([[gd.X(1), gd.Y(0)], [gd.X(3), gd.Y(0)]], { color: C.guide, width: 1.1, dash: [5, 4], alpha: seg(.5, .3) });
     line(DATA.lf.map((v, i) => [gd.X(v), gd.Y(DATA.dB[i])]), { color: C.navy, width: 2.2, progress: seg(.3, .45) });
   });
-  text('infinite beam', gd.X(Math.log10(46)), gd.Y(0) - 5, { size: 14, color: C.muted, align: 'center', alpha: lab(.6) });
+  text('infinite beam', gd.X(Math.log10(46)), gd.Y(0) - 6, { size: 16, color: C.body, align: 'center', alpha: lab(.6) });
   DATA.fn.forEach((f, n) => {
     const a = lab(.55 + .05 * n), hot = n === nm, col = hot ? C.accent : C.ink;
     const px = gd.X(Math.log10(f)), py = gd.Y(DATA.pk[n]) - 11 - 4 * (1 - a), s = `f_{${n + 1}}`;
     // TikZ node[fill=white]: the peak's name hides the light grid behind it, never the curve below it
-    const w = math(s, 0, -1e4, { size: 15, alpha: 0 });
-    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(px - w / 2 - 2, py - 12, w + 4, 17); ctx.restore();
-    math(s, px, py, { size: 15, align: 'center', color: col, alpha: a });
+    const w = math(s, 0, -1e4, { size: 17, alpha: 0 });
+    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(px - w / 2 - 2, py - 14, w + 4, 20); ctx.restore();
+    math(s, px, py, { size: 17, align: 'center', color: col, alpha: a });
   });
   if (c > 0 || ma > 0) {
     let i = 1; while (i < DATA.lf.length - 1 && DATA.lf[i] < lfNow) i++;
     const v = lerp(DATA.dB[i - 1], DATA.dB[i], (lfNow - DATA.lf[i - 1]) / (DATA.lf[i] - DATA.lf[i - 1]));
     gd.inside(() => line([[gd.X(lfNow), gd.Y(-36)], [gd.X(lfNow), gd.Y(v)]], { color: C.accent, width: 1, alpha: .45 * ma }));
     dot(gd.X(lfNow), gd.Y(v), 4.2, { color: C.accent, fill: C.accent, alpha: ma });
-    math(`f = ${fNow < 100 ? fNow.toFixed(1) : fNow.toFixed(0)}\\,\\rm{Hz}`, 472, 438, { size: 15, align: 'right', color: C.accent, alpha: ma });
+    math(`f = ${fNow < 100 ? fNow.toFixed(1) : fNow.toFixed(0)}\\,\\rm{Hz}`, 472, 438, { size: 18, align: 'right', color: C.accent, alpha: ma });
   }
   // ---------------------------------------------------------------- (e) the 4th mode's two waves
   const RX = x => 560 + x * 360, cr = cRel(), w4 = 2 * Math.PI * DATA.fn[3] / SLOW, k4 = 4 * Math.PI / DATA.L;
@@ -719,11 +719,11 @@ function draw() {
   line(xe.map(x => [RX(x), ye - 30 * .5 * Math.sin(k4 * x - th4)]), { color: C.blue, width: 2.2, progress: seg(.22, .4) });
   line(xe.map(x => [RX(x), ye - 30 * .5 * Math.sin(k4 * x + th4)]), { color: C.sky, width: 2, dash: [7, 5], progress: seg(.27, .4) });
   const ea = lab(.45);
-  arrow(RX(.08), ye - 52, RX(.36), ye - 52, { width: 1.3, head: 8, alpha: ea, color: C.blue });
-  arrow(RX(.92), ye - 52, RX(.64), ye - 52, { width: 1.3, head: 8, alpha: ea, color: C.sky });
-  text('Direction of travel', RX(.22), ye - 60, { size: 14, color: C.body, align: 'center', alpha: ea });
-  text('Direction of travel', RX(.78), ye - 60, { size: 14, color: C.body, align: 'center', alpha: ea });
-  math('f = f_{4}', RX(.5), ye + 46, { size: 15, align: 'center', alpha: ea });
+  arrow(RX(.06), ye - 50, RX(.38), ye - 50, { width: 1.3, head: 8, alpha: ea, color: C.blue });
+  arrow(RX(.94), ye - 50, RX(.62), ye - 50, { width: 1.3, head: 8, alpha: ea, color: C.sky });
+  text('Direction of travel', RX(.22), ye - 58, { size: 16, color: C.body, align: 'center', alpha: ea });
+  text('Direction of travel', RX(.78), ye - 58, { size: 16, color: C.body, align: 'center', alpha: ea });
+  math('f = f_{4}', RX(.5), ye + 48, { size: 17, align: 'center', alpha: ea });
   // ---------------------------------------------------------------- (f) their sum, a standing wave
   sub('f', 520, 236, '4th modal dynamic response', lab(.06));
   const yf = 326, pf = seg(.08, .35);
@@ -737,13 +737,13 @@ function draw() {
   line(xe.map(x => [RX(x), yf - 36 * Math.sin(k4 * x) * Math.cos(th4)]), { color: C.blue, width: 2.4, progress: seg(.3, .4) });
   for (let j = 1; j < 4; j++) dot(RX(j / 4), yf, 3.2, { color: C.ink, fill: '#fff', width: 1.3, alpha: lab(.55) });
   const la = lab(.7);
-  line([[836, 231], [862, 231]], { color: C.blue, width: 2.4, alpha: la }); text('now', 868, 236, { size: 14, color: C.body, alpha: la });
-  line([[908, 231], [934, 231]], { color: C.mist, width: 1.6, alpha: la }); text('earlier', 940, 236, { size: 14, color: C.body, alpha: la });
+  line([[808, 230], [834, 230]], { color: C.blue, width: 2.4, alpha: la }); text('now', 840, 236, { size: 16, color: C.body, alpha: la });
+  line([[888, 230], [914, 230]], { color: C.mist, width: 1.6, alpha: la }); text('earlier', 920, 236, { size: 16, color: C.body, alpha: la });
   // ---------------------------------------------------------------- (g) the first four modes
   sub('g', 520, 438, 'first four modal shapes', lab(.1));
   const yg = 516, half = 44;
   for (let n = 0; n < 4; n++) {
-    const cx = 590 + n * 108, hot = n === nm, col = hot ? C.accent : C.blue, t0 = .12 + .05 * n;
+    const cx = 580 + n * 116, hot = n === nm, col = hot ? C.accent : C.blue, t0 = .12 + .05 * n;
     const pg = seg(t0, .3);
     line([[cx - half, yg], [cx + half, yg]], { color: C.ink, width: 1.5, progress: pg });
     if (pg > 0) { pin(cx - half, yg, { s: 9 }); pin(cx + half, yg, { s: 9, alpha: clamp(pg * 4 - 3) }); }
@@ -751,16 +751,15 @@ function draw() {
     line(Array.from({ length: 61 }, (_, i) => [cx - half + 2 * half * i / 60, yg - 24 * Math.sin((n + 1) * Math.PI * i / 60) * q]),
          { color: col, width: hot ? 2.6 : 2.2, progress: seg(t0 + .2, .35) });
     const a = lab(.5 + .05 * n);
-    math(`${n + 1}^{\\rm{${ORD[n]}}}`, cx, yg + 40, { size: 15, align: 'center', color: hot ? C.accent : C.ink, alpha: a });
-    text('resonance mode', cx, yg + 58, { size: 14, align: 'center', color: hot ? C.accent : C.body, alpha: a });
-    math(`${DATA.fn[n].toFixed(1)}\\,\\rm{Hz}`, cx, yg + 78, { size: 14, align: 'center', color: C.muted, alpha: a });
+    math(`${n + 1}^{\\rm{${ORD[n]}}}`, cx, yg + 42, { size: 17, align: 'center', color: hot ? C.accent : C.ink, alpha: a });
+    text('resonance', cx, yg + 62, { size: 16, align: 'center', color: hot ? C.accent : C.body, alpha: a });   // stacked, as his (g)
+    text('mode', cx, yg + 81, { size: 16, align: 'center', color: hot ? C.accent : C.body, alpha: a });
+    math(`${DATA.fn[n].toFixed(1)}\\,\\rm{Hz}`, cx, yg + 104, { size: 16, align: 'center', color: C.body, alpha: a });
   }
   const pa = lab(.9);
-  text('steel bar 40 × 10 mm, L = 1 m, E = 210 GPa, ρ = 7850 kg/m³, loss factor η = 0.05, force at x = 0.13 L',
-       18, H - 32, { size: 14, color: C.muted, alpha: pa });
-  const mw = math('w_{\\infty}', 18, H - 12, { size: 14, color: C.muted, alpha: pa });
-  text(': the same force on an infinite beam; the page sweeps f and rests at each resonance, each frame the steady state', 18 + mw, H - 12, { size: 14, color: C.muted, alpha: pa });
-  text(`time slowed ${SLOW} ×`, W - 18, H - 12, { size: 14, color: C.muted, align: 'right', alpha: pa });
+  math('\\rm{steel bar 40} \\times\\ 10\\,\\rm{mm},\\ \\ L = 1\\,\\rm{m},\\ \\ E = 210\\,\\rm{GPa},\\ \\ \\rho\\ = 7850\\,\\rm{kg/m}^{3},\\ \\ ' +
+       '\\rm{loss factor}\\ \\eta\\ = 0.05,\\ \\ \\rm{force at}\\ x = 0.13\\,L', 18, H - 14, { size: 15, color: C.muted, alpha: pa });
+  text(`shown ${SLOW} × slower`, W - 18, H - 14, { size: 15, color: C.muted, align: 'right', alpha: pa });
 }
 boot();
 </script>

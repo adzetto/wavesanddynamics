@@ -63,7 +63,15 @@ PROCESSING
   contribution to the pixel).
 
 PAGE
-  nf-bulk-ut.html 66 kB (draws at once; the data below loads behind it)
-  nf-bulk-ut-field-0..3.png: 201 frames 250 x 125, 0.05 us apart, 7 bit, in the order they play: frames 0-24 15 kB, 25-69 108 kB, 70-129 373 kB, 130-200 681 kB
-  nf-bulk-ut-tfm.png 205 kB (32 partial images 281 x 271); total 1.45 MB
-  time slowed 1.1 x 10^6 in (a) and (b): 10 us of the model in 11 s; (c) fires its 32 elements at the same pace (1.375 x the first design, 8 s for the 10 us)
+  nf-bulk-ut.html 72 kB (draws at once; the data below loads behind it)
+  nf-bulk-ut-field-0..3.png: 201 frames 250 x 125, 0.05 us apart, 7 bit, in the order they play: frames 0-24 14 kB, 25-69 83 kB, 70-129 262 kB, 130-200 537 kB
+    the faint ripples within 1 step of zero (15.7 % of the pixels) stored as zero: largest change
+    of a value 0.0119 p0 (rounding alone 0.0040 p0; the colour range is +-0.5 p0, a step of the ramp
+    from the steel itself is dE < 2)
+    As round 2 stored them (PNG, no quiet floor): 1181 kB; now 896 kB (24 % less)
+  nf-bulk-ut-tfm.png 90 kB (32 partial images 281 x 271, in the page's 30 dB; round 2's of 40 dB 206 kB);
+    each PNG the smallest of every row filter and two zlib strategies at level 9 (_png_max)
+    total 1.06 MB
+  shown 1,100,000 x slower in (a) and (b): 10 us of the model in 11 s; (c) fires its 32 elements at the same pace (1.375 x the first design, 8 s for the 10 us)
+  after the 10 us the field cross-fades to the snapshot of the still (no rewind), which holds 2.6 s
+  the page's own decoding (Chromium, the page's grab()) against the files' pixels: nf-bulk-ut-field-0.png identical, nf-bulk-ut-field-1.png identical, nf-bulk-ut-field-2.png identical, nf-bulk-ut-field-3.png identical, nf-bulk-ut-tfm.png identical

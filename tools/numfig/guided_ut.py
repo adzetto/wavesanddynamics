@@ -47,8 +47,8 @@ T_DEF = np.sqrt(1 - R_DEF ** 2)
 X_END = 2.15         # the plate drawn from 0 to X_END (m), cut (continues) there
 TP = 2.5e-3          # synthesis period (s): the spectrum's line spacing is 1/TP
 THRESH = 1e-3        # spectral lines kept: amplitude above THRESH of the largest
-SLOW = 5000.0        # real seconds per model second: what Figure 13 and the SHM guide's pages import (keep)
-SLOW_PAGE = 7000.0   # this page's own: 1.4 times SLOW (29 Sep, "a little slower")
+SLOW = 5000.0        # real seconds per model second: what the SHM guide's pages import (keep)
+SLOW_PAGE = 7000.0   # this page's own, and Figure 13's (b): 1.4 times SLOW (29 Sep, "a little slower")
 PPM, PH_DRAW = 400, 34   # drawing units per metre along the plate; drawn thickness
 
 
@@ -284,9 +284,14 @@ for (const m of ['S0', 'A0']) {
    first gap is already under way when the page opens */
 const GAP = 0.8, T0 = 0.35 - GAP, SLOW = G.slow;
 const TC = G.tc;                                   // burst centre (s)
-const PX0 = 90, PPM = G.ppm, PY = 100, PH = G.ph;  // plate: x = 0 at PX0, PPM units per metre
+const PX0 = 90, PPM = G.ppm, PY = 108, PH = G.ph;  // plate: x = 0 at PX0, PPM units per metre
+/* the plate as a thin slab in an oblique view, as Figure 4 draws its plate: its top
+   face recedes DX3, DY3 up and to the right. The model is plane strain, so the wave
+   is the same across the plate's width: the top face carries the front face's field,
+   and the defect (a notch across the width) cuts the top face from edge to edge. */
+const DX3 = 14, DY3 = 10;
 const XU = x => PX0 + x * PPM;
-const ACC = C.accent, FLAW = '#781E2C', LBL = 15, S = .28;
+const ACC = C.accent, FLAW = '#781E2C', LBL = 16, SUB = 18, TICK = 16, S = .28;   // crimson: the defect and its echo alone
 // a diverging ramp for the displacement field whose zero is the steel itself
 const FLUT = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#E3EBF2', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
 
@@ -373,15 +378,31 @@ function paintField(u, alpha) {
   ctx.beginPath(); ctx.rect(XU(0), PY, XU(G.xend) - XU(0), PH); ctx.clip();
   ctx.drawImage(FIM.cvs, 0, 1, NX, 1, XU(-DXM / 2), PY, NX * DXM * PPM, PH);
   ctx.restore();
+  // the top face: the same field, sheared onto it (u, v) -> (u + DX3 v, PY - DY3 v)
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.imageSmoothingEnabled = true; topPath(); ctx.clip();
+  ctx.transform(1, 0, DX3, -DY3, 0, PY);
+  ctx.drawImage(FIM.cvs, 0, 1, NX, 1, XU(-DXM / 2), 0, NX * DXM * PPM, 1);
+  ctx.restore();
+}
+function topPath() {                               // the top face, as a path (for its fill and its clip)
+  const x0 = XU(0), x1 = XU(G.xend);
+  ctx.beginPath(); ctx.moveTo(x0, PY); ctx.lineTo(x1, PY); ctx.lineTo(x1 + DX3, PY - DY3); ctx.lineTo(x0 + DX3, PY - DY3); ctx.closePath();
+}
+function topCut(x, o = {}) {                      // the top face's edge at the cut: zigzag, as the front's
+  const pts = [], n = 4, a = 3;
+  for (let i = 0; i <= n; i++) { const v = i / n, e = (i % 2 ? a : -a) * (i > 0 && i < n ? 1 : 0); pts.push([x + DX3 * v + e, PY - DY3 * v]); }
+  line(pts, { color: C.ink, width: 1.3, ...o });
 }
 function cutEdge(x, y0, y1, o = {}) {            // a zigzag cut: the plate continues
   const pts = [], n = 6, a = 4;
   for (let i = 0; i <= n; i++) pts.push([x + (i % 2 ? a : -a) * (i > 0 && i < n ? 1 : 0), lerp(y0 - 3, y1 + 3, i / n)]);
   line(pts, { color: C.ink, width: 1.3, ...o });
 }
-function notch(xc, o = {}) {                      // the defect: a surface notch
+function notch(xc, o = {}) {                      // the defect: a surface notch across the width
   const w = 5, dp = PH * 0.45, x = XU(xc);
   ctx.save(); ctx.globalAlpha *= (o.alpha ?? 1);
+  ctx.beginPath(); ctx.moveTo(x - w / 2, PY); ctx.lineTo(x + w / 2, PY); ctx.lineTo(x + w / 2 + DX3, PY - DY3); ctx.lineTo(x - w / 2 + DX3, PY - DY3); ctx.closePath();
+  ctx.fillStyle = o.fill || ACC; ctx.fill(); ctx.strokeStyle = FLAW; ctx.lineWidth = 1.1; ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x - w / 2, PY - .5); ctx.lineTo(x - w / 2, PY + dp - w / 2);
   ctx.arc(x, PY + dp - w / 2, w / 2, Math.PI, 0, true); ctx.lineTo(x + w / 2, PY - .5); ctx.closePath();
   ctx.fillStyle = o.fill || ACC; ctx.fill(); ctx.strokeStyle = FLAW; ctx.lineWidth = 1.1; ctx.stroke(); ctx.restore();
@@ -392,9 +413,9 @@ function colourBar(x, y, w, labs, alpha) {
   for (const [v, s] of [[-1, '-1'], [0, '0'], [1, '1']]) {
     const xx = x + (v + 1) / 2 * w;
     line([[xx, y + 8], [xx, y + 11]], { color: C.ink, width: .8, alpha });
-    math(s, xx, y + 25, { size: 14, align: 'center', alpha });
+    math(s, xx, y + 26, { size: TICK, align: 'center', alpha });
   }
-  for (const [lab, a] of labs) if (a > 0) math(lab, x - 10, y + 9, { size: LBL, align: 'right', alpha: alpha * a });
+  for (const [lab, a] of labs) if (a > 0) math(lab, x - 10, y + 9, { size: 17, align: 'right', alpha: alpha * a });
 }
 function interp(xs, ys, x) {
   let lo = 0, hi = xs.length - 1;
@@ -437,14 +458,14 @@ function panelA(st) {
   for (const c of CY) {                           // what is on show, and the model clock
     const a = cycA(c, st);
     if (a <= 0) continue;
-    math(c.say, 58, 34, { size: 16, color: C.body, alpha: a });
-    math(`t = ${Math.max(0, Math.round(cycTm(c, st) * 1e6))}\\,\\rm{µs}`, 950, 34, { size: LBL, align: 'right', alpha: a });
+    math(c.say, 58, 34, { size: SUB, color: C.body, alpha: a });
+    math(`t = ${Math.max(0, Math.round(cycTm(c, st) * 1e6))}\\,\\rm{µs}`, 950, 34, { size: 17, align: 'right', alpha: a });
   }
-  math('\\rm{time slowed }' + G.slowtex, 950, 56, { size: 14, color: C.muted, align: 'right', alpha: seg(.5, .3) });
+  text(G.slowtxt, 950, 56, { size: 15, color: C.muted, align: 'right', alpha: seg(.5, .3) });
 
   // the plate: steel, the outline drawing itself; the far face heavier
   const x0 = XU(0), x1 = XU(G.xend), pa = seg(0, .4);
-  ctx.save(); ctx.globalAlpha *= seg(.05, .25); ctx.fillStyle = C.steel; ctx.fillRect(x0, PY, x1 - x0, PH); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= seg(.05, .25); ctx.fillStyle = C.steel; ctx.fillRect(x0, PY, x1 - x0, PH); topPath(); ctx.fill(); ctx.restore();
   let fieldOn = 0;
   if (st.cyc) {
     const c = st.cyc;
@@ -453,16 +474,17 @@ function panelA(st) {
   }
   line([[x1, PY], [x0, PY], [x0, PY + PH], [x1, PY + PH]], { color: C.ink, width: 1.6, progress: pa });
   line([[x0, PY + PH], [x1, PY + PH]], { color: C.ink, width: 2.4, progress: pa });
-  cutEdge(x1, PY, PY + PH, { alpha: seg(.3, .2) });
+  line([[x0, PY], [x0 + DX3, PY - DY3], [x1 + DX3, PY - DY3]], { color: C.ink, width: 1.2, progress: pa });
+  cutEdge(x1, PY, PY + PH, { alpha: seg(.3, .2) }); topCut(x1, { alpha: seg(.3, .2) });
 
   // transducer on the top face at the left end; the defect, a surface notch
   const tIn = settle(.12, S), dIn = settle(.18, S);
-  ctx.save(); ctx.globalAlpha *= tIn; ctx.fillStyle = C.navy; ctx.fillRect(XU(0), PY - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
+  ctx.save(); ctx.globalAlpha *= tIn; ctx.fillStyle = C.navy; ctx.fillRect(XU(0) + 4, PY - DY3 / 2 - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
   const ae = cycA(CY[2], st, .28, .45);
   let flash = 0;
   if (st.cyc === CY[2] && st.tm > 0 && st.tm < G.ncyc / G.f0) flash = Math.sin(Math.PI * st.tm * G.f0 / G.ncyc) ** 2;  // the source's own Hann envelope
   ctx.save(); ctx.translate(0, -8 * (1 - dIn)); notch(G.D, { alpha: dIn, fill: flash > 0 ? mix(ACC, C.amber, flash) : ACC }); ctx.restore();
-  const lIn = settle(.25, S), ly = PY - 20 - 6 * (1 - lIn);
+  const lIn = settle(.25, S), ly = PY - DY3 - 20 - 6 * (1 - lIn);
   // one name gives way to the other in turn (out, then in), never both at once in one place
   const aOld = lIn * clamp(1 - 2 * ae), aNew = lIn * clamp(2 * ae - 1);
   text('transducer', XU(0) - 4, ly, { size: LBL, color: C.body, alpha: aOld });
@@ -478,23 +500,23 @@ function panelA(st) {
   [0, .5, 1, 1.5, 2].forEach((v, i) => {
     const a = seg(.15 + .05 * i, .25);
     line([[XU(v), ya], [XU(v), ya - 5]], { color: C.ink, width: 1.1, alpha: a });
-    math(fmt(v), XU(v), ya + 19, { size: 15, align: 'center', alpha: a });
+    math(fmt(v), XU(v), ya + 20, { size: TICK, align: 'center', alpha: a });
   });
-  math('x\\ (\\rm{m})', XU(2) + 36, ya + 19, { size: 16, align: 'left', alpha: seg(.4, .25) });
+  math('x\\ (\\rm{m})', XU(2) + 36, ya + 20, { size: 17, align: 'left', alpha: seg(.4, .25) });
   const aA0 = cycA(CY[1], st);
-  colourBar(XU(1.62), ya + 30, 110, [[G.S0.lab, 1 - aA0], [G.A0.lab, aA0]], seg(.45, .3));
+  colourBar(XU(1.76), ya + 30, 110, [[G.S0.lab, 1 - aA0], [G.A0.lab, aA0]], seg(.45, .3));
   // the plate thickness, dimensioned at the free left end
   const da = seg(.35, .25), xd = XU(0) - 16;
   arrow(xd, PY + PH / 2, xd, PY, { width: 1, head: 6, alpha: da }); arrow(xd, PY + PH / 2, xd, PY + PH, { width: 1, head: 6, alpha: da });
-  math('d', xd - 7, PY + PH / 2 + 6, { size: 16, align: 'right', alpha: da });
+  math('d', xd - 7, PY + PH / 2 + 6, { size: 17, align: 'right', alpha: da });
   // what was computed, under the plate
   const pl = seg(.55, .3);
-  text(G.params[0], XU(0), ya + 44, { size: 14, color: C.muted, alpha: pl });
-  text(G.params[1], XU(0), ya + 62, { size: 14, color: C.muted, alpha: pl });
+  math(G.params[0], XU(0), ya + 44, { size: 15, color: C.muted, alpha: pl });
+  math(G.params[1], XU(0), ya + 63, { size: 15, color: C.muted, alpha: pl });
 }
 /* arrows over the packets: their centres move at the mode's group velocity */
 function packetArrows(st, al) {
-  const c = st.cyc, cg = G[c.mode].cg, dt = st.tm - TC, y = PY - 8;
+  const c = st.cyc, cg = G[c.mode].cg, dt = st.tm - TC, y = PY - DY3 - 8;
   const put = (x, dir, lab, col) => {
     if (x < 0.1 || x > G.xend - 0.08) return;
     const xm = XU(x), L = 26;
@@ -514,57 +536,58 @@ function packetArrows(st, al) {
 const BX = { x: 90, y: 262, w: 360, h: 262 };
 function panelB(st) {
   panel('b', 20, 246, { alpha: seg(.05, .25) });
-  text('operating points', 58, 246, { size: 16, color: C.body, alpha: settle(.1, S) });
+  text('operating points', 58, 246, { size: SUB, color: C.body, alpha: settle(.1, S) });
   const A = axes({ ...BX, xlim: [0, G.fmax], ylim: [0, 7], xticks: [0, 50, 100, 150, 200, 250],
                    yticks: [0, 1, 2, 3, 4, 5, 6, 7], grid: true, progress: seg(.05, .4),
-                   xlabel: '\\rm{frequency }f\\ (\\rm{kHz})', ylabel: '\\rm{phase velocity }c_{\\rm{p}}\\ (\\rm{km/s})', ylabelGap: 40 });
+                   xlabel: '\\rm{frequency }f\\ (\\rm{kHz})', ylabel: '\\rm{phase velocity }c_{\\rm{p}}\\ (\\rm{km/s})', ylabelGap: 42,
+                   tickSize: TICK });
   // the tone burst's -6 dB band: the stretch of each curve the burst samples
   const bA = seg(.45, .3);
-  ctx.save(); ctx.globalAlpha *= bA * .9; ctx.fillStyle = C.wash;
+  ctx.save(); ctx.globalAlpha *= bA; ctx.fillStyle = C.steel;
   ctx.fillRect(A.X(G.band[0]), BX.y + 1, A.X(G.band[1]) - A.X(G.band[0]), BX.h - 2); ctx.restore();
-  text('burst band', A.X((G.band[0] + G.band[1]) / 2), BX.y + BX.h - 8, { size: 14, color: C.muted, align: 'center', alpha: bA });
+  text('burst band', A.X((G.band[0] + G.band[1]) / 2), BX.y + BX.h - 9, { size: LBL, color: C.body, align: 'center', alpha: bA });
   // shear and Rayleigh speeds: A0 and S0 tend to c_R at high frequency
   const rA = seg(.35, .3);
   for (const [v, lab, dy] of [[G.cT, '\\rm{shear}', -6], [G.cR, '\\rm{Rayleigh}', 16]]) {
     A.inside(() => line([[A.X(0), A.Y(v)], [A.X(G.fmax), A.Y(v)]], { color: C.guide, width: 1, dash: [5, 4], alpha: rA }));
-    const w = math(lab === '\\rm{shear}' ? 'c_{\\rm{T}}' : 'c_{\\rm{R}}', A.X(4), A.Y(v) + dy, { size: 15, color: C.muted, alpha: rA });
-    math(lab, A.X(4) + w + 6, A.Y(v) + dy, { size: 14, color: C.muted, alpha: rA });
+    const w = math(lab === '\\rm{shear}' ? 'c_{\\rm{T}}' : 'c_{\\rm{R}}', A.X(4), A.Y(v) + dy, { size: 17, color: C.body, alpha: rA });
+    math(lab, A.X(4) + w + 6, A.Y(v) + dy, { size: LBL, color: C.body, alpha: rA });
   }
   const curve = (f, c, t0) => A.inside(() => line(f.map((v, i) => [A.X(v), A.Y(c[i])]), { color: C.blue, width: 2.4, progress: seg(t0, .4) }));
   curve(G.disp.f, G.disp.S0, .15); curve(G.disp.f, G.disp.A0, .2); curve(G.disp.fA1, G.disp.A1, .25);
   const la0 = settle(.5, S), la1 = settle(.55, S), la2 = settle(.6, S);
-  math('S_0', A.X(168), A.Y(5.15) - 12 - 5 * (1 - la0), { size: 17, alpha: la0 });
-  math('A_0', A.X(150), A.Y(2.45) + 26 + 5 * (1 - la1), { size: 17, alpha: la1 });
-  math('A_1', A.X(G.a1lab[0]) - 4, A.Y(G.a1lab[1]) + 22, { size: 17, align: 'left', alpha: la2 });
-  // where A1 cuts on (k = 0), as Figure 4 marks its cut-on frequencies
+  math('S_0', A.X(168), A.Y(5.15) - 12 - 5 * (1 - la0), { size: 18, alpha: la0 });
+  math('A_0', A.X(150), A.Y(2.45) + 27 + 5 * (1 - la1), { size: 18, alpha: la1 });
+  math('A_1', A.X(G.a1lab[0]) - 8, A.Y(G.a1lab[1]) + 23, { size: 18, align: 'left', alpha: la2 });
+  // where A1 cuts on (k = 0), marked in grey as Figure 4 marks its cut-on frequencies
   const ca = settle(.6, S), xc = A.X(G.fc_a1);
-  ctx.save(); ctx.globalAlpha *= ca; ctx.fillStyle = ACC; ctx.beginPath();
+  ctx.save(); ctx.globalAlpha *= ca; ctx.fillStyle = C.guide; ctx.beginPath();
   ctx.moveTo(xc, BX.y + 1 + 7); ctx.lineTo(xc - 5, BX.y + 1); ctx.lineTo(xc + 5, BX.y + 1); ctx.closePath(); ctx.fill(); ctx.restore();
-  text('cut-on', xc, BX.y - 5, { size: 14, color: ACC, align: 'center', alpha: ca });
+  text('cut-on', xc, BX.y - 6, { size: LBL, color: C.body, align: 'center', alpha: ca });
   // the operating points glide along the computed curves onto 50 kHz
   const g = settle(.5, .35), fx = G.f0 / 1e3;
   for (const md of ['S0', 'A0']) {
     const f = lerp(4, fx, g), c = interp(G.disp.f, G.disp[md], f), cx = G[md].cp / 1e3, sl = G[md].slope;
-    A.inside(() => line([[A.X(fx - 34), A.Y(cx - 34 * sl)], [A.X(fx + 34), A.Y(cx + 34 * sl)]], { color: ACC, width: 1.6, alpha: seg(.8, .25) }));
+    A.inside(() => line([[A.X(fx - 34), A.Y(cx - 34 * sl)], [A.X(fx + 34), A.Y(cx + 34 * sl)]], { color: C.navy, width: 1.6, alpha: seg(.8, .25) }));
     const act = md === 'S0' ? Math.max(cycA(CY[0], st, .4, .4), cycA(CY[2], st, .4, .4)) : cycA(CY[1], st, .4, .4);
-    if (act > 0 && g > 0) dot(A.X(f), A.Y(c), 5 + 5 * act, { color: ACC, fill: null, width: 1.2, alpha: act * Math.min(1, g * 4) });
-    if (g > 0) dot(A.X(f), A.Y(c), 5, { color: ACC, fill: ACC, alpha: Math.min(1, g * 4) });
+    if (act > 0 && g > 0) dot(A.X(f), A.Y(c), 5 + 5 * act, { color: C.navy, fill: null, width: 1.3, alpha: act * Math.min(1, g * 4) });
+    if (g > 0) dot(A.X(f), A.Y(c), 5, { color: C.navy, fill: C.navy, alpha: Math.min(1, g * 4) });
   }
   const lo = settle(.85, S);
-  text('non dispersive', A.X(fx - 12), A.Y(G.S0.cp / 1e3) - 16 - 5 * (1 - lo), { size: LBL, color: C.body, alpha: lo });
-  text('dispersive', A.X(fx + 10), A.Y(G.A0.cp / 1e3) + 22 + 5 * (1 - lo), { size: LBL, color: C.body, alpha: lo });
+  text('non dispersive', A.X(fx - 14), A.Y(G.S0.cp / 1e3) - 17 - 5 * (1 - lo), { size: LBL, color: C.body, alpha: lo });
+  text('dispersive', A.X(fx + 10), A.Y(G.A0.cp / 1e3) + 24 + 5 * (1 - lo), { size: LBL, color: C.body, alpha: lo });
 }
 
 /* ------------------------------------------------------------ (c), (d) received */
 const AX = { x: 590, w: 360, h: 104 };
 function ascan(which, y0, letter, sub, st, tIn) {
-  panel(letter, 520, y0 - 12, { alpha: seg(tIn, .25) });
-  math(sub, 553, y0 - 12, { size: 16, color: C.body, alpha: settle(tIn + .05, S) });
+  panel(letter, 520, y0 - 13, { alpha: seg(tIn, .25) });
+  math(sub, 555, y0 - 13, { size: SUB, color: C.body, alpha: settle(tIn + .05, S) });
   const bottom = which === 'A0', tmaxu = G.tmax * 1e6;
   const A = axes({ x: AX.x, y: y0, w: AX.w, h: AX.h, xlim: [0, tmaxu], ylim: [-1.15, 1.15],
                    xticks: [0, 200, 400, 600, 800, 1000, 1200, 1400], yticks: [-1, 0, 1],
                    xfmt: bottom ? (v => fmt(v)) : (v => ''), xlabel: bottom ? 't\\ (\\rm{µs})' : '',
-                   ylabel: 'u/u_0', ylabelGap: 38, progress: seg(tIn, .4) });
+                   ylabel: 'u/u_0', ylabelGap: 40, progress: seg(tIn, .4), tickSize: TICK });
   A.inside(() => line([[A.X(0), A.Y(0)], [A.X(tmaxu), A.Y(0)]], { color: C.rule, width: 1 }));
   const tr = TRACE[which], n = tr.length, dtu = G.dt_tr * 1e6, cyc = CY.find(c => c.id === which);
   const [wa, wb] = G[which].win_us;
@@ -584,11 +607,11 @@ function ascan(which, y0, letter, sub, st, tIn) {
   // the arrival the group velocity predicts: burst centre + 2D/c_g
   const tg = 2 * G.D / G[which].cg, ta = A.X((G.tc + tg) * 1e6), la = seg(tIn + .5, .3), lb = settle(tIn + .6, S);
   A.inside(() => line([[ta, y0 + 26], [ta, y0 + AX.h]], { color: C.guide, width: 1, dash: [5, 4], alpha: la }));
-  dimk(A.X(G.tc * 1e6), ta, y0 + 15, `2D/c_{\\rm{g}} = ${Math.round(tg * 1e6)}\\,\\rm{µs}`, { size: 14, color: C.ink, alpha: la });
-  keepText('initial pulse', A.X(70), A.Y(-.62), { size: 14, color: C.body, alpha: lb });
+  dimk(A.X(G.tc * 1e6), ta, y0 + 15, `2D/c_{\\rm{g}} = ${Math.round(tg * 1e6)}\\,\\rm{µs}`, { size: LBL, color: C.ink, alpha: la });
+  keepText('initial pulse', A.X(70), A.Y(-.6), { size: LBL, color: C.body, alpha: lb });
   // beside the echo, clear of the guide: after the compact S0 echo; right of the guide under the smeared A0 one
-  if (which === 'S0') keepText('defect echo', A.X(wb) + 8, A.Y(.42), { size: 14, color: ACC, alpha: lb });
-  else keepText('defect echo', ta + 6, A.Y(-.62), { size: 14, color: ACC, alpha: lb });
+  if (which === 'S0') keepText('defect echo', A.X(wb) + 8, A.Y(.42), { size: LBL, color: ACC, alpha: lb });
+  else keepText('defect echo', ta + 6, A.Y(-.6), { size: LBL, color: ACC, alpha: lb });
   // the time cursor of this trace's cycle
   const ca = seg(st.b + cyc.r0, .2) * (1 - seg(st.b + cyc.r1, .3));
   if (ca > 0 && st.tau > cyc.r0 - .01) {
@@ -670,11 +693,13 @@ def build():
     dx = 2.5e-3
     nx = int(round(X_END / dx)) + 1
     exag = PH_DRAW / (D_PLATE * PPM)
-    params = [f"steel plate, d = 10 mm (drawn {exag:g} × thicker), E = 210 GPa, ν = 0.29, ρ = 7850 kg/m³",
-              f"3 cycle Hann burst at 50 kHz; defect at {D_DEF:g} m, reflection {R_DEF:g}"]
+    # the parameter lines, set as math (variables italic, units upright)
+    params = [r"\rm{steel plate,}\ d = 10\,\rm{mm}\ (\rm{drawn}\ " + f"{exag:g}" + r"\ \times\ \rm{thicker}),\ \ "
+              r"E = 210\,\rm{GPa},\ \ \nu\ = 0.29,\ \ \rho\ = 7850\,\rm{kg/m}^{3}",
+              r"\rm{3 cycle Hann burst at 50 kHz; defect at}\ " + f"{D_DEF:g}" + r"\,\rm{m},\ \rm{reflection}\ " + f"{R_DEF:g}"]
     keep = a1 < 7.6e3                                  # (b) shows c_p up to 7 km/s, as Figure 4 does
     data = dict(
-        slow=SLOW_PAGE, slowtex=sci_tex(SLOW_PAGE), tc_us=tc * 1e6, f0=F0, ncyc=NCYC, D=D_DEF, R=R_DEF, T=T_DEF, xend=X_END, nx=nx, dx=dx,
+        slow=SLOW_PAGE, slowtxt=f"shown {SLOW_PAGE:,.0f} × slower", tc_us=tc * 1e6, f0=F0, ncyc=NCYC, D=D_DEF, R=R_DEF, T=T_DEF, xend=X_END, nx=nx, dx=dx,
         ppm=PPM, ph=PH_DRAW, fmax=fmax / 1e3, cR=C_R / 1e3, cT=C_T / 1e3, fc_a1=fc_a1 / 1e3, band=band,
         tmax_us=tmax * 1e6, dt_tr_us=dt_tr * 1e6, tend_ae_us=tend_ae * 1e6, poster_tm_us=poster_tm * 1e6,
         disp=dict(f=fgrid / 1e3, S0=s0 / 1e3, A0=a0 / 1e3, fA1=fa1[keep] / 1e3, A1=a1[keep] / 1e3),
@@ -815,8 +840,14 @@ def validate(r):
     say("  once the echo is back).")
     say("")
     say("DISPLAY")
-    say(f"  Model time slowed {SLOW_PAGE:g} times ({SLOW_PAGE / SLOW:g} x the {SLOW:g} of Figure 13). Plate {X_END:g} m long drawn at {PPM} units/m; its thickness")
+    say(f"  Model time shown {SLOW_PAGE:,.0f} x slower, as Figure 13 (b) ({SLOW_PAGE / SLOW:g} x the {SLOW:,.0f} the SHM guide uses), said on the page.")
+    say(f"  Plate {X_END:g} m long drawn at {PPM} units/m; its thickness")
     say(f"  is drawn {r['exag']:g} times enlarged (said in the parameter line).")
+    say("  The plate is a thin slab in an oblique view, as Figure 4 draws its plate (5 Oct 2026): its top face")
+    say("  recedes 14 by 10 units and carries the front face's field, sheared onto it; the model is plane strain,")
+    say("  so the wave is the same across the plate's width, and the defect, a notch across the width, cuts the")
+    say("  top face from edge to edge. Crimson marks the defect and its echo alone (5 Oct 2026): the operating")
+    say("  points and their slopes navy, the burst band steel, the A1 cut-on grey as in Figure 4.")
     txt = "\n".join(L) + "\n"
     with open(os.path.join(common.HERE, "guided_ut.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)

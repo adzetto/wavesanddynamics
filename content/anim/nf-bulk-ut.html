@@ -37,8 +37,8 @@ html,body{margin:0;padding:0;background:#fff;}
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 872;
-const DATA = {"wb":50.0,"db":25.0,"cl":5.9,"t0":0.3,"flaw":{"x":[30.46722,30.47224,30.47095,30.46337,30.44951,30.42945,30.40327,30.37109,30.33302,30.28926,30.23997,30.18537,30.12569,30.0612,29.99216,29.91887,29.84164,29.76082,29.67673,29.58975,29.50024,29.40859,29.31519,29.22044,29.12475,29.02852,28.93217,28.83611,28.74075,28.6465,28.55377,28.46295,28.37442,28.28858,28.20578,28.12638,28.05073,27.97914,27.91192,27.84936,27.79172,27.73926,27.6922,27.65074,27.61506,27.58531,27.56161,27.54408,27.53278,27.52776,27.52905,27.53663,27.55049,27.57055,27.59673,27.62891,27.66698,27.71074,27.76003,27.81463,27.87431,27.9388,28.00784,28.08113,28.15836,28.23918,28.32327,28.41025,28.49976,28.59141,28.68481,28.77956,28.87525,28.97148,29.06783,29.16389,29.25925,29.3535,29.44623,29.53705,29.62558,29.71142,29.79422,29.87362,29.94927,30.02086,30.08808,30.15064,30.20828,30.26074,30.3078,30.34926,30.38494,30.41469,30.43839,30.45592,30.46722],"z":[11.68813,11.72718,11.7674,11.80862,11.85066,11.89333,11.93646,11.97987,12.02336,12.06675,12.10985,12.15249,12.19447,12.23562,12.27576,12.31472,12.35233,12.38843,12.42287,12.4555,12.48617,12.51477,12.54116,12.56523,12.58689,12.60603,12.62257,12.63645,12.64761,12.65599,12.66156,12.6643,12.66419,12.66124,12.65546,12.64687,12.63552,12.62144,12.6047,12.58537,12.56353,12.53928,12.51272,12.48397,12.45314,12.42037,12.3858,12.34958,12.31187,12.27282,12.2326,12.19138,12.14934,12.10667,12.06354,12.02013,11.97664,11.93325,11.89015,11.84751,11.80553,11.76438,11.72424,11.68528,11.64767,11.61157,11.57713,11.5445,11.51383,11.48523,11.45884,11.43477,11.41311,11.39397,11.37743,11.36355,11.35239,11.34401,11.33844,11.3357,11.33581,11.33876,11.34454,11.35313,11.36448,11.37856,11.3953,11.41463,11.43647,11.46072,11.48728,11.51603,11.54686,11.57963,11.6142,11.65042,11.68813],"top":[29.57835,11.3354]},"probe":[24.0,34.0],"el":{"c":[15.7,16.3,16.9,17.5,18.1,18.7,19.3,19.9,20.5,21.1,21.7,22.3,22.9,23.5,24.1,24.7,25.3,25.9,26.5,27.1,27.7,28.3,28.9,29.5,30.1,30.7,31.3,31.9,32.5,33.1,33.7,34.3],"w":0.52},"ascan":{"t0":-0.29792,"dt":0.00833,"n":1200,"v":"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"},"echo":{"tf":3.84056,"tb":8.48845,"af":0.27075,"ab":0.59032,"tf_th":3.84251,"tb_th":8.47458,"wf":[3.61042,4.18542],"wb":[8.24375,8.71875]},"field":{"n":201,"w":250,"h":125,"chunks":[{"n0":0,"n1":25,"cols":10,"src":"nf-bulk-ut-field-0.png"},{"n0":25,"n1":70,"cols":10,"src":"nf-bulk-ut-field-1.png"},{"n0":70,"n1":130,"cols":10,"src":"nf-bulk-ut-field-2.png"},{"n0":130,"n1":201,"cols":10,"src":"nf-bulk-ut-field-3.png"}],"span":126,"dt":0.05,"clip":0.5},"tfm":{"n":32,"w":281,"h":271,"cols":8,"x":[-14.0,14.0],"z":[0.0,27.0],"dr":40.0,"peak":[4.0,11.4],"bw":25.1},"amp":"BQYHCQgLDQ8RFBYZGx4gIyUnKSorKyspKCUjIR8cGhgGBwkICw0PERMWGRseICMmKCssLi4uLiwqKCYjIR4cGgcJCAsMDhETFhgbHiEjJiksLjAxMjIxLy0rKCYjIR4cCQgLDA4QExUYGx4hJCcqLTAyNDU2NTQyMC4rKSYjIB4ICwwOEBMVGBseISQnKi0xNDY4OTo5ODY0MS4sKSYjIAsNDhATFRgaHSAkJyouMjU4Oz0+Pj08Ojc1Mi8sKSYjDQ8RExUYGh0gJCcrLjI2Oj1AQUJCQUA+Ozk2My8sKSUPERMVGBodICQnKy8zNzs/QkVGR0dGREJAPTo3My8sKBETFhgbHSAkJysvMzc8QERHSktMTEtJR0VCPjs3My8rFBYYGx4gJCcrLzM4PEFFSU1PUFFRUE5MSkdDPzs3Mi4WGRseISQnKy8zOD1CRktPUlRWVlZVVFJPTEhEPzs2MRkbHiEkJysvMzg9QkdMUFRXWVtcXFtaWFVRTUlDPjk0Gx4hJCcqLjM3PEJHTFFVWVxeYGFhYWBdWldSTUdCPDYeICMnKi4yNzxBRkxRVlpeYWRlZ2dnZmNgXFdRS0U/OSAjJiotMjY7QEVLUFVaXmJmaGtsbW1raWVgW1VOSEI8IyYpLTE1Oj9ESU9UWV5iZmptcHJycnBtaWReWFFLRD4lKCwwNDg9QkdNUldcYWZqbnJ1dnd3dXFtZ2FaVE1HQScrLjI2O0BFSk9UWV5kaG1ydnl7e3p4dG9qY11WUEpEKSwwNDg9QUZLUFZbYGVrcHV5fH1+fXp2cWtlX1lSTEYqLjE1OT5CR0xRVlxhZ2xydnt9f399e3dybGdhW1ROSCsuMjY6PkJHTFFWXGFnbXJ3e35/f316dnJtaGJcVlBJKy4yNTk9QUZLUFVbYWdtcnd6fX19e3l2cm1oY11XUEorLjE0ODxARElOVFpgZmtwdXh6e3p5d3RxbWhjXVZQSSksLzI2Oj5CR0xSWF1jaW1xdHZ3dnZ0cm9rZ2FcVU5IKCotMDQ3O0BFSk9VWmBlaW1vcXJycnFvbGlkX1lTTEUlKCsuMTU5PUJHTFFXXGBkZ2prbG1tbWtpZWFcVk9IQSMmKCsuMjY6PkNITVJXW15hY2VnaGhoZ2RhXVdRSkM8ISMmKSwvMzc7P0RJTVFVWFpdX2FiY2NhX1xXUktFPjcfISMmKSwvMzc7P0NHS05RVFZZW1xdXVxZVlFLRT84MhweISMmKSwvMzc7PkJFSEtNUFJUVldWVVNPSkU/OTMtGhweICMmKSwvMjY5PD9CREdKTE5QUFBOTEhDPjgzLSgYGhweICMlKCsuMTQ2OTw+QURGSElKSUhFQTw3Mi0oJA==","slow":1100000.0,"tend":10.0,"pace":1.375,"slowtex":"1.1 \\times\\ 10^{6}"};
+const W = 1000, H = 728;
+const DATA = {"wb":50.0,"db":25.0,"cl":5.9,"t0":0.3,"flaw":{"x":[30.46722,30.47224,30.47095,30.46337,30.44951,30.42945,30.40327,30.37109,30.33302,30.28926,30.23997,30.18537,30.12569,30.0612,29.99216,29.91887,29.84164,29.76082,29.67673,29.58975,29.50024,29.40859,29.31519,29.22044,29.12475,29.02852,28.93217,28.83611,28.74075,28.6465,28.55377,28.46295,28.37442,28.28858,28.20578,28.12638,28.05073,27.97914,27.91192,27.84936,27.79172,27.73926,27.6922,27.65074,27.61506,27.58531,27.56161,27.54408,27.53278,27.52776,27.52905,27.53663,27.55049,27.57055,27.59673,27.62891,27.66698,27.71074,27.76003,27.81463,27.87431,27.9388,28.00784,28.08113,28.15836,28.23918,28.32327,28.41025,28.49976,28.59141,28.68481,28.77956,28.87525,28.97148,29.06783,29.16389,29.25925,29.3535,29.44623,29.53705,29.62558,29.71142,29.79422,29.87362,29.94927,30.02086,30.08808,30.15064,30.20828,30.26074,30.3078,30.34926,30.38494,30.41469,30.43839,30.45592,30.46722],"z":[11.68813,11.72718,11.7674,11.80862,11.85066,11.89333,11.93646,11.97987,12.02336,12.06675,12.10985,12.15249,12.19447,12.23562,12.27576,12.31472,12.35233,12.38843,12.42287,12.4555,12.48617,12.51477,12.54116,12.56523,12.58689,12.60603,12.62257,12.63645,12.64761,12.65599,12.66156,12.6643,12.66419,12.66124,12.65546,12.64687,12.63552,12.62144,12.6047,12.58537,12.56353,12.53928,12.51272,12.48397,12.45314,12.42037,12.3858,12.34958,12.31187,12.27282,12.2326,12.19138,12.14934,12.10667,12.06354,12.02013,11.97664,11.93325,11.89015,11.84751,11.80553,11.76438,11.72424,11.68528,11.64767,11.61157,11.57713,11.5445,11.51383,11.48523,11.45884,11.43477,11.41311,11.39397,11.37743,11.36355,11.35239,11.34401,11.33844,11.3357,11.33581,11.33876,11.34454,11.35313,11.36448,11.37856,11.3953,11.41463,11.43647,11.46072,11.48728,11.51603,11.54686,11.57963,11.6142,11.65042,11.68813],"top":[29.57835,11.3354]},"probe":[24.0,34.0],"el":{"c":[15.7,16.3,16.9,17.5,18.1,18.7,19.3,19.9,20.5,21.1,21.7,22.3,22.9,23.5,24.1,24.7,25.3,25.9,26.5,27.1,27.7,28.3,28.9,29.5,30.1,30.7,31.3,31.9,32.5,33.1,33.7,34.3],"w":0.52},"ascan":{"t0":-0.29792,"dt":0.00833,"n":1200,"v":"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"},"echo":{"tf":3.84056,"tb":8.48845,"af":0.27075,"ab":0.59032,"tf_th":3.84251,"tb_th":8.47458,"wf":[3.61042,4.18542],"wb":[8.24375,8.71875]},"field":{"n":201,"w":250,"h":125,"chunks":[{"n0":0,"n1":25,"cols":10,"src":"nf-bulk-ut-field-0.png"},{"n0":25,"n1":70,"cols":10,"src":"nf-bulk-ut-field-1.png"},{"n0":70,"n1":130,"cols":10,"src":"nf-bulk-ut-field-2.png"},{"n0":130,"n1":201,"cols":10,"src":"nf-bulk-ut-field-3.png"}],"span":126,"dt":0.05,"clip":0.5},"tfm":{"n":32,"w":281,"h":271,"cols":8,"x":[-14.0,14.0],"z":[0.0,27.0],"dr":30.0,"peak":[4.0,11.4],"bw":25.1},"amp":"BQYHCQgLDQ8RFBYZGx4gIyUnKSorKyspKCUjIR8cGhgGBwkICw0PERMWGRseICMmKCssLi4uLiwqKCYjIR4cGgcJCAsMDhETFhgbHiEjJiksLjAxMjIxLy0rKCYjIR4cCQgLDA4QExUYGx4hJCcqLTAyNDU2NTQyMC4rKSYjIB4ICwwOEBMVGBseISQnKi0xNDY4OTo5ODY0MS4sKSYjIAsNDhATFRgaHSAkJyouMjU4Oz0+Pj08Ojc1Mi8sKSYjDQ8RExUYGh0gJCcrLjI2Oj1AQUJCQUA+Ozk2My8sKSUPERMVGBodICQnKy8zNzs/QkVGR0dGREJAPTo3My8sKBETFhgbHSAkJysvMzc8QERHSktMTEtJR0VCPjs3My8rFBYYGx4gJCcrLzM4PEFFSU1PUFFRUE5MSkdDPzs3Mi4WGRseISQnKy8zOD1CRktPUlRWVlZVVFJPTEhEPzs2MRkbHiEkJysvMzg9QkdMUFRXWVtcXFtaWFVRTUlDPjk0Gx4hJCcqLjM3PEJHTFFVWVxeYGFhYWBdWldSTUdCPDYeICMnKi4yNzxBRkxRVlpeYWRlZ2dnZmNgXFdRS0U/OSAjJiotMjY7QEVLUFVaXmJmaGtsbW1raWVgW1VOSEI8IyYpLTE1Oj9ESU9UWV5iZmptcHJycnBtaWReWFFLRD4lKCwwNDg9QkdNUldcYWZqbnJ1dnd3dXFtZ2FaVE1HQScrLjI2O0BFSk9UWV5kaG1ydnl7e3p4dG9qY11WUEpEKSwwNDg9QUZLUFZbYGVrcHV5fH1+fXp2cWtlX1lSTEYqLjE1OT5CR0xRVlxhZ2xydnt9f399e3dybGdhW1ROSCsuMjY6PkJHTFFWXGFnbXJ3e35/f316dnJtaGJcVlBJKy4yNTk9QUZLUFVbYWdtcnd6fX19e3l2cm1oY11XUEorLjE0ODxARElOVFpgZmtwdXh6e3p5d3RxbWhjXVZQSSksLzI2Oj5CR0xSWF1jaW1xdHZ3dnZ0cm9rZ2FcVU5IKCotMDQ3O0BFSk9VWmBlaW1vcXJycnFvbGlkX1lTTEUlKCsuMTU5PUJHTFFXXGBkZ2prbG1tbWtpZWFcVk9IQSMmKCsuMjY6PkNITVJXW15hY2VnaGhoZ2RhXVdRSkM8ISMmKSwvMzc7P0RJTVFVWFpdX2FiY2NhX1xXUktFPjcfISMmKSwvMzc7P0NHS05RVFZZW1xdXVxZVlFLRT84MhweISMmKSwvMzc7PkJFSEtNUFJUVldWVVNPSkU/OTMtGhweICMmKSwvMjY5PD9CREdKTE5QUFBOTEhDPjgzLSgYGhweICMlKCsuMTQ2OTw+QURGSElKSUhFQTw3Mi0oJA==","slow":1100000.0,"tend":10.0,"pace":1.375,"slowtxt":"shown 1,100,000 \u00d7 slower"};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
    `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
@@ -604,37 +604,41 @@ function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i =
    (c) the array's firing order and the delay-law paths of each transmitter
    to the flaw's pixel, each path's opacity its measured contribution, (d) the
    TFM image over transmitters 1 ... k (nf-bulk-ut-tfm.png, dB of the complete
-   image). Labels ride the fronts at the model's c_L. */
-const S = 9.2, BW = DATA.wb * S, BD = DATA.db * S;          // blocks: 9.2 units per mm
-const A = {x: 76, y: 96}, CC = {x: 76, y: 492};            // blocks (a) and (c)
-const PB = {x: 628, y: 96, w: 348, h: BD};                  // A scan axes
-const SD = 10.5, PD = {x: 628, y: 492, w: 28 * SD, h: 27 * SD};   // image axes
+   image), on the blocks' own scale.
+   Labels ride the fronts at the model's c_L. */
+const S = 8, BW = DATA.wb * S, BD = DATA.db * S;            // blocks, and the image of (d): 8 units per mm
+const A = {x: 76, y: 90}, CC = {x: 76, y: 444};            // blocks (a) and (c)
+const PB = {x: 596, y: 90, w: 370, h: BD};                  // A scan axes
+const PD = {x: 596, y: 444, w: 28 * S, h: 27 * S};          // image axes
 const FL = '#781E2C', DRD = 30;                             // flaw outline, dB shown
+const LBL = 16;
 const XB = (b, x) => b.x + x * S, YB = (b, z) => b.y + z * S;
 const AS = b64f32(DATA.ascan.v), AMP = b64i8(DATA.amp);
 
 /* the clock. The intro is over by 0.8 s and the physics starts at TI. A
    cycle: (a) and (b) sweep the model's 10 us in S1 = 11 s while (c) fires its
    32 elements and (d) sums them, at the same pace (DATA.pace, the slowing
-   over the first design's 8 s); (a) eases back to the snapshot the still
-   shows; a hold; a fade; again. */
-const TI = 0.6, S1 = DATA.tend * DATA.slow / 1e6, RW = 1.0, HOLD = 2.4, FADE = 0.6;
+   over the first design's 8 s); the last frame cross-fades to the snapshot
+   the still shows (no rewind: time never runs backwards); a hold; a fade; again. */
+const TI = 0.6, S1 = DATA.tend * DATA.slow / 1e6, XF = 0.8, HOLD = 2.6, FADE = 0.6;
 const TSNAP = 3.35;                                         // model time of the snapshot, us
 const SLOT = Array.from({length: 32}, (_, k) => DATA.pace * (0.18 + 0.22 * Math.max(0, 1 - k / 5)));
 const FIRE = SLOT.map((_, k) => SLOT.slice(0, k).reduce((a, b) => a + b, 0));
-const PER = S1 + RW + HOLD + FADE;
-const POSTER_T = TI + S1 + RW + 1.2;
+const PER = S1 + XF + HOLD + FADE;
+const POSTER_T = TI + S1 + XF + 1.2;
 
+/* ts: the model time of the frame on show; mix: the share of the snapshot
+   over it (0 while the sweep runs, 1 once the cross-fade is over) */
 function state() {
-  if (t < TI) return {u: -1, ts: 0, rec: -1, k: -1, fade: 1, c0: TI};
+  if (t < TI) return {u: -1, ts: 0, mix: 0, rec: -1, k: -1, fade: 1, c0: TI};
   const u = (t - TI) % PER, c0 = t - u;
-  let ts = TSNAP, rec = DATA.tend;
-  if (u < S1) { ts = DATA.tend * u / S1; rec = ts; }
-  else if (u < S1 + RW) ts = DATA.tend - (DATA.tend - TSNAP) * easeInOut((u - S1) / RW);
+  let ts = DATA.tend, rec = DATA.tend, mix = 1;
+  if (u < S1) { ts = DATA.tend * u / S1; rec = ts; mix = 0; }
+  else if (u < S1 + XF) mix = easeInOut((u - S1) / XF);
   let k = -1;
   for (let i = 0; i < 32; i++) if (u >= FIRE[i]) k = i;
-  const fade = 1 - easeInOut(clamp((u - S1 - RW - HOLD) / FADE));
-  return {u, ts, rec, k, fade, c0};
+  const fade = 1 - easeInOut(clamp((u - S1 - XF - HOLD) / FADE));
+  return {u, ts, mix, rec, k, fade, c0};
 }
 /* a label arriving on Motion's spring: alpha and a small drop */
 function arrive(t0) { const s = settle(t0, .28); return {a: clamp(s), dy: (1 - s) * -8}; }
@@ -666,23 +670,24 @@ const rest = first.then(async () => {
 });
 function offscreen(w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'); return {c, g, img: g.createImageData(w, h)};
+  const g = c.getContext('2d'); return {c, g, img: g.createImageData(w, h), cur: -1};
 }
-const FC = offscreen(DATA.field.w, DATA.field.h), TC = offscreen(DATA.tfm.w, DATA.tfm.h);
+/* two frames at a time: the one on show, and the snapshot fading in over it */
+const FC = offscreen(DATA.field.w, DATA.field.h), FS = offscreen(DATA.field.w, DATA.field.h), TC = offscreen(DATA.tfm.w, DATA.tfm.h);
 /* the field's ramp: DIVERGING with the steel itself as zero, as Figures 12 and 13 */
 const FLUT = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#E3EBF2', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
 const FMAP = new Uint16Array(256);           // stored byte -> FLUT entry
 for (let b = 0; b < 256; b++) FMAP[b] = 3 * Math.round(clamp(((b - 128) / DATA.field.span * 2 + 1) / 2) * 255);
-let fcur = -1, tcur = '';
-function fieldFrame(n) {                     // true once frame n is in FC
+let tcur = '';
+function fieldFrame(n, buf) {                // true once frame n is in buf
   const ch = DATA.field.chunks;
   let i = 0;
   while (i < ch.length - 1 && n >= ch[i].n1) i++;
   const F = FLD[i];
   if (!F) return false;
-  if (n === fcur) return true;
-  fcur = n;
-  const {w, h} = DATA.field, m = n - ch[i].n0, c = m % ch[i].cols, r = Math.floor(m / ch[i].cols), d = FC.img.data;
+  if (n === buf.cur) return true;
+  buf.cur = n;
+  const {w, h} = DATA.field, m = n - ch[i].n0, c = m % ch[i].cols, r = Math.floor(m / ch[i].cols), d = buf.img.data;
   for (let z = 0; z < h; z++) {
     let s = (r * h + z) * F.W + c * w, o = z * w * 4;
     for (let x = 0; x < w; x++, s++, o += 4) {
@@ -690,10 +695,12 @@ function fieldFrame(n) {                     // true once frame n is in FC
       d[o] = FLUT[L]; d[o + 1] = FLUT[L + 1]; d[o + 2] = FLUT[L + 2]; d[o + 3] = 255;
     }
   }
-  FC.g.putImageData(FC.img, 0, 0);
+  buf.g.putImageData(buf.img, 0, 0);
   return true;
 }
-/* the image after transmitters 1 ... k+1, blended from the one before by w */
+const frameOf = ts => clamp(Math.round(ts / DATA.field.dt), 0, DATA.field.n - 1);
+/* the image after transmitters 1 ... k+1, cross-faded from the one before by w
+   (the bytes are the shades shown: DATA.tfm.dr is the 30 dB shown) */
 function tfmImage(k, w) {
   const key = k + ':' + w.toFixed(3);
   if (key === tcur) return;
@@ -740,11 +747,20 @@ function tri(x, y, s, color, alpha) {        // a marker pointing down at (x, y)
 /* a label riding a front at depth z (mm), its arrow the way the front moves */
 function ride(s, x, z, up, col, a) {
   if (a <= 0) return;
-  const y0 = YB(A, up ? z - 1.2 : z + 1.2), y1 = YB(A, up ? z - 3.7 : z + 3.7);
+  const y0 = YB(A, up ? z - 1.2 : z + 1.2), y1 = YB(A, up ? z - 4.2 : z + 4.2);
   arrow(XB(A, x), y0, XB(A, x), y1, {color: col, width: 1.4, head: 7, alpha: a});
-  text(s, XB(A, x + 1.1), (y0 + y1) / 2 + 5, {size: 15, color: col, alpha: a});
+  text(s, XB(A, x + 1.2), (y0 + y1) / 2 + 6, {size: 17, color: col, alpha: a});
 }
-const param = (s, x, y, a) => math(s, x, y, {size: 14, color: C.muted, alpha: a});
+/* the fronts' names at model time ts, at a share a of full strength */
+function rides(ts, a) {
+  if (a <= 0) return;
+  const ta = ts - DATA.t0, c = DATA.cl, [xt, zt] = DATA.flaw.top;
+  const win = (a0, a1, b0, b1) => clamp((ta - a0) / (a1 - a0)) * (1 - clamp((ta - b0) / (b1 - b0)));
+  ride('incident pulse', 33, c * ta, false, C.ink, a * win(0.5, 0.8, 3.2, 3.5));
+  ride('flaw echo', xt, 2 * zt - c * ta, true, C.accent, a * win(2.25, 2.55, 3.08, 3.25));
+  ride('back wall echo', 33, 2 * DATA.db - c * ta, true, C.ink, a * win(4.6, 4.9, 7.45, 7.75));
+}
+const param = (s, x, y, a) => math(s, x, y, {size: 15, color: C.muted, alpha: a});
 /* labels the A scan's playhead passes behind: their ink boxes, kept as they
    are drawn; gapLine() is a vertical line broken 3 units clear of each */
 const KEEP = [];
@@ -776,9 +792,14 @@ function dimk(x1, x2, y, label, o) {
 /* ---------------------------------------------------------------- (a) */
 function drawA(st) {
   steel(A, seg(0, 0.3));
-  if (t >= TI && st.fade > 0 && fieldFrame(clamp(Math.round(st.ts / DATA.field.dt), 0, DATA.field.n - 1))) {
-    ctx.save(); ctx.globalAlpha *= st.fade; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(FC.c, A.x, A.y, BW, BD); ctx.restore();
+  if (t >= TI && st.fade > 0) {
+    const show = (ts, buf, a) => {
+      if (a <= 0 || !fieldFrame(frameOf(ts), buf)) return;
+      ctx.save(); ctx.globalAlpha *= a; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(buf.c, A.x, A.y, BW, BD); ctx.restore();
+    };
+    if (st.mix < 1) show(st.ts, FC, st.fade);                // the frame on show
+    if (st.mix > 0) show(TSNAP, FS, st.fade * st.mix);       // the snapshot, cross-fading in over it
   }
   blockOutline(A, seg(0, 0.4));
   flawShape(A, seg(0.3, 0.25));
@@ -787,28 +808,27 @@ function drawA(st) {
   ctx.fillRect(XB(A, p0), A.y - 16 + (1 - s) * -20, (p1 - p0) * S, 16); ctx.restore();
   const da = seg(0.35, 0.3), xd = A.x - 17;                 // the thickness d, as Figure 12 marks it
   arrow(xd, A.y + 1, xd, A.y + BD - 1, {width: 1.1, head: 7, both: true, alpha: da});
-  math('d', xd - 8, A.y + BD / 2 + 6, {size: 17, align: 'right', alpha: da});
-  const g = arrive(0.35), bw = 100, bx = A.x + BW - bw, by = A.y + BD + 18;   // colour bar, as Figure 12
-  ramp(FLUT, bx, by + g.dy, bw, 8, false, g.a);
+  math('d', xd - 8, A.y + BD / 2 + 6, {size: 18, align: 'right', alpha: da});
+  const g = arrive(0.35), bx = A.x + BW + 12;               // colour bar beside the block, as (d)'s
+  ramp(FLUT, bx, A.y + g.dy, 11, BD, true, g.a);
   for (const v of [-0.5, 0, 0.5]) {
-    const x = bx + (v / DATA.field.clip + 1) / 2 * bw;
-    line([[x, by + 8 + g.dy], [x, by + 12 + g.dy]], {width: 1, alpha: g.a});
-    math(fmt(v), x, by + 27 + g.dy, {size: 15, align: 'center', alpha: g.a});
+    const y = A.y + (1 - (v / DATA.field.clip + 1) / 2) * BD + g.dy;
+    line([[bx + 11, y], [bx + 15, y]], {width: 1, alpha: g.a});
+    math(fmt(v), bx + 19, y + 5, {size: LBL, alpha: g.a});
   }
-  math('p/p_{0}', bx - 8, by + 9 + g.dy, {size: 16, align: 'right', alpha: g.a});
+  math('p/p_{0}', bx + 5.5, A.y - 17 + g.dy, {size: 17, align: 'center', alpha: g.a});
   if (t >= TI) {                                             // the model's clock, as Figure 12 shows it
-    const a = st.fade * clamp((t - st.c0) / 0.2);
-    math(`t = ${(st.ts - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 34, {size: 16, align: 'right', alpha: a});
-    const ta = st.ts - DATA.t0, c = DATA.cl, [xt, zt] = DATA.flaw.top;
-    const win = (a0, a1, b0, b1) => clamp((ta - a0) / (a1 - a0)) * (1 - clamp((ta - b0) / (b1 - b0)));
-    ride('incident pulse', 36.5, c * ta, false, C.ink, st.fade * win(0.5, 0.8, 3.2, 3.5));
-    ride('flaw echo', xt, 2 * zt - c * ta, true, C.accent, st.fade * win(2.25, 2.55, 3.08, 3.25));
-    ride('back wall echo', 36.5, 2 * DATA.db - c * ta, true, C.ink, st.fade * win(4.6, 4.9, 7.45, 7.75));
+    const a = st.fade * clamp((t - st.c0) / 0.2), m = st.mix;
+    const aOld = a * clamp(1 - 2 * m), aNew = a * clamp(2 * m - 1);   // one gives way to the other, never both
+    math(`t = ${(st.ts - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 32, {size: 17, align: 'right', alpha: aOld});
+    math(`t = ${(TSNAP - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 32, {size: 17, align: 'right', alpha: aNew});
+    rides(st.ts, st.fade * (1 - m));
+    rides(TSNAP, st.fade * m);
   }
-  const pa = seg(0.5, 0.3);
-  math('\\rm{time slowed }' + DATA.slowtex, A.x + BW, 54, {size: 14, color: C.muted, align: 'right', alpha: pa});
-  param('\\rm{steel }50 \\times\\ 25\\ \\rm{mm},\\ c_{\\rm{L}} = 5900\\ \\rm{m/s},\\ c_{\\rm{T}} = 3230\\ \\rm{m/s}', A.x, by + 10, pa);
-  param('\\rm{probe 10 mm, 5 MHz, 3 cycle Hann burst}', A.x, by + 29, pa);
+  const pa = seg(0.5, 0.3), py = A.y + BD + 26;
+  text(DATA.slowtxt, A.x + BW, 54, {size: 15, color: C.muted, align: 'right', alpha: pa});
+  param('\\rm{steel }50 \\times\\ 25\\,\\rm{mm},\\ \\ c_{\\rm{L}} = 5900\\,\\rm{m/s},\\ \\ c_{\\rm{T}} = 3230\\,\\rm{m/s}', A.x, py, pa);
+  param('\\rm{probe 10 mm, 5 MHz, 3 cycle Hann burst}', A.x, py + 19, pa);
 }
 
 /* ---------------------------------------------------------------- (b) */
@@ -816,14 +836,14 @@ function drawB(st) {
   const pr = seg(0.05, 0.4), la = seg(0.3, 0.3);
   const ax = axes({x: PB.x, y: PB.y, w: PB.w, h: PB.h, xlim: [-0.5, 10], ylim: [-1.15, 1.15],
                    xticks: [0, 2, 4, 6, 8, 10], yticks: [-1, 0, 1], xlabel: 't\\ \\rm{(\u00b5s)}',
-                   ylabel: 'v/v_{0}', progress: pr, ylabelGap: 38});
+                   ylabel: 'v/v_{0}', progress: pr, ylabelGap: 40, tickSize: 16});
   line([[PB.x, ax.Y(0)], [PB.x + PB.w, ax.Y(0)]], {color: C.rule, width: 1, alpha: pr});
   for (const z of [0, 5, 10, 15, 20, 25]) {                 // depth of the reflector, z = c t / 2
     const x = ax.X(2 * z / DATA.cl);
     line([[x, PB.y], [x, PB.y + 5]], {width: 1.1, alpha: la});
-    math(String(z), x, PB.y - 7, {size: 15, align: 'center', alpha: la});
+    math(String(z), x, PB.y - 7, {size: 16, align: 'center', alpha: la});
   }
-  math('z = c_{\\rm{L}}t/2\\ \\rm{(mm)}', PB.x + PB.w / 2, PB.y - 29, {size: 16, align: 'center', alpha: la});
+  math('z = c_{\\rm{L}}t/2\\ \\rm{(mm)}', PB.x + PB.w / 2, PB.y - 30, {size: 17, align: 'center', alpha: la});
   if (st.rec < 0 || st.fade <= 0) return;
   const a = st.fade, tr = st.rec - DATA.t0, {t0: q0, dt: dq, n} = DATA.ascan;
   const m = Math.min(n - 1, Math.floor((tr - q0) / dq));
@@ -840,7 +860,7 @@ function drawB(st) {
   const lab = (s, tt, x, v, col, align) => {                 // each echo named once it is recorded
     if (tr < tt) return;
     const g = arrive(when(tt));
-    s.split('\n').forEach((r, i) => keepText(r, ax.X(x), ax.Y(v) + g.dy + 16 * i, {size: 15, color: col, align, alpha: g.a * a}));
+    s.split('\n').forEach((r, i) => keepText(r, ax.X(x), ax.Y(v) + g.dy + 18 * i, {size: LBL, color: col, align, alpha: g.a * a}));
   };
   /* the arrivals 2d/c predicts: a guide, and the time as Figure 12 marks it */
   const pred = [[E.tf, E.tf_th, -0.45, '2z_{\\rm{f}}/c_{\\rm{L}}'],
@@ -849,15 +869,22 @@ function drawB(st) {
     if (tr < te + 0.3) continue;
     const g = arrive(when(te + 0.3));
     line([[ax.X(tt), PB.y], [ax.X(tt), PB.y + PB.h]], {color: C.guide, width: 1, dash: [5, 4], alpha: g.a * a});
-    dimk(ax.X(0), ax.X(tt), ax.Y(v), s, {size: 14, color: C.body, alpha: g.a * a});
+    dimk(ax.X(0), ax.X(tt), ax.Y(v), s, {size: 16, color: C.body, alpha: g.a * a});
   }
   lab('initial\npulse', 0.35, 0.45, 0.86, C.body, 'left');
   lab('flaw echo', E.tf + 0.3, E.tf_th + 0.15, E.af + 0.14, C.accent, 'left');
   lab('back wall echo', E.tb + 0.3, E.tb_th - 0.15, E.ab + 0.2, C.body, 'right');
-  // the playhead, last: it passes behind the labels, never through them
-  const tc = st.ts - DATA.t0, xc = ax.X(tc), ca = a * clamp((t - st.c0) / 0.2);
-  gapLine(xc, PB.y, PB.y + PB.h, {color: C.ink, width: 1, alpha: 0.45 * ca});
-  dot(xc, ax.Y(AS[clamp(Math.round((tc - q0) / dq), 0, n - 1)]), 3, {color: C.navy, alpha: ca});
+  // the playhead, last: it passes behind the labels, never through them; at the
+  // cross-fade the one at 10 us gives way to the snapshot's
+  const ca = a * clamp((t - st.c0) / 0.2);
+  const head = (ts, al) => {
+    if (al <= 0) return;
+    const tc = ts - DATA.t0, xc = ax.X(tc);
+    gapLine(xc, PB.y, PB.y + PB.h, {color: C.ink, width: 1, alpha: 0.45 * al});
+    dot(xc, ax.Y(AS[clamp(Math.round((tc - q0) / dq), 0, n - 1)]), 3, {color: C.navy, alpha: al});
+  };
+  head(st.ts, ca * (1 - st.mix));
+  head(TSNAP, ca * st.mix);
 }
 
 /* ---------------------------------------------------------------- (c) */
@@ -866,7 +893,7 @@ function drawC(st) {
   const ga = seg(0.4, 0.3);                                  // the region imaged in (d)
   for (const x of [DATA.wb / 2 + DATA.tfm.x[0], DATA.wb / 2 + DATA.tfm.x[1]])
     line([[XB(CC, x), CC.y], [XB(CC, x), CC.y + BD]], {color: C.guide, width: 1, dash: [5, 4], alpha: ga});
-  text('region imaged in (d)', XB(CC, DATA.wb / 2), YB(CC, 23.6), {size: 15, align: 'center', color: C.muted, alpha: ga});
+  text('region imaged in (d)', XB(CC, DATA.wb / 2), YB(CC, 23.4), {size: LBL, align: 'center', color: C.body, alpha: ga});
   const c = DATA.el.c, hw = DATA.el.w / 2, F = [XB(CC, DATA.wb / 2 + DATA.tfm.peak[0]), YB(CC, DATA.tfm.peak[1])];
   const rays = (k, a, pa, pb) => {                           // transmitter k: out to the flaw, back to all
     if (a <= 0) return;
@@ -883,7 +910,8 @@ function drawC(st) {
   const x0 = XB(CC, c[0] - hw), x1 = XB(CC, c[31] + hw);
   ctx.save(); ctx.globalAlpha *= clamp(s);
   ctx.fillStyle = C.navy; ctx.fillRect(x0, ya, x1 - x0, 16);
-  const lit = (j, a) => { if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.amber; ctx.fillRect(XB(CC, c[j] - hw), ya, DATA.el.w * S, 16); ctx.restore(); } };
+  // the element that fires, lit in the array's light blue (the crimson is the flaw's alone)
+  const lit = (j, a) => { if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.sky; ctx.fillRect(XB(CC, c[j] - hw), ya, DATA.el.w * S, 16); ctx.restore(); } };
   if (k > 0) lit(k - 1, st.fade * (1 - seg(t0k, 0.12)));
   if (k >= 0) lit(k, st.fade * seg(t0k, 0.06));
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.8;
@@ -891,8 +919,8 @@ function drawC(st) {
   ctx.restore();
   if (k >= 0) {                                              // the marker steps along the array
     const g = settle(t0k, 0.16), xm = k > 0 ? lerp(XB(CC, c[k - 1]), XB(CC, c[k]), g) : XB(CC, c[0]);
-    tri(xm, CC.y - 20, 7, C.amber, st.fade * (k > 0 ? 1 : clamp(g)));
-    text(`transmitter ${k + 1} of 32`, CC.x + BW, CC.y - 30, {size: 15, align: 'right', color: C.body, alpha: st.fade});
+    tri(xm, CC.y - 20, 7, C.blue, st.fade * (k > 0 ? 1 : clamp(g)));
+    text(`transmitter ${k + 1} of 32`, CC.x + BW, CC.y - 32, {size: 17, align: 'right', color: C.body, alpha: st.fade});
   }
   param('32\\ \\rm{elements, pitch 0.6 mm; each transmits in turn, all receive}', CC.x, CC.y + BD + 26, seg(0.5, 0.3));
 }
@@ -905,10 +933,11 @@ function drawD(st) {
     tfmImage(st.k, seg(st.c0 + FIRE[st.k], 0.15));
     ctx.save(); ctx.beginPath(); ctx.rect(PD.x, PD.y, PD.w, PD.h); ctx.clip();
     ctx.globalAlpha *= st.fade; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(TC.c, X(T.x[0] - px / 2), Y(T.z[0] - px / 2), T.w * px * SD, T.h * px * SD); ctx.restore();
+    ctx.drawImage(TC.c, X(T.x[0] - px / 2), Y(T.z[0] - px / 2), T.w * px * S, T.h * px * S); ctx.restore();
   }
   axes({x: PD.x, y: PD.y, w: PD.w, h: PD.h, xlim: T.x, ylim: [27, 0], xticks: [-10, -5, 0, 5, 10],
-        yticks: [0, 5, 10, 15, 20, 25], xlabel: 'x\\ \\rm{(mm)}', ylabel: 'z\\ \\rm{(mm)}', progress: seg(0.15, 0.4), ylabelGap: 38});
+        yticks: [0, 5, 10, 15, 20, 25], xlabel: 'x\\ \\rm{(mm)}', ylabel: 'z\\ \\rm{(mm)}', progress: seg(0.15, 0.4),
+        ylabelGap: 40, tickSize: 16});
   line(DATA.flaw.x.map((x, i) => [X(x - DATA.wb / 2), Y(DATA.flaw.z[i])]),
        {color: C.accent, width: 1.3, dash: [3.5, 2.5], close: true, alpha: seg(0.45, 0.3)});
   const g = arrive(0.4), bx = PD.x + PD.w + 16;
@@ -916,23 +945,23 @@ function drawD(st) {
   for (const v of [0, -10, -20, -30]) {
     const y = PD.y - v / DRD * PD.h + g.dy;
     line([[bx + 11, y], [bx + 15, y]], {width: 1, alpha: g.a});
-    math(fmt(v), bx + 19, y + 5, {size: 15, alpha: g.a});
+    math(fmt(v), bx + 19, y + 5, {size: LBL, alpha: g.a});
   }
-  text('dB', bx + 5.5, PD.y - 9 + g.dy, {size: 15, align: 'center', alpha: g.a});
+  text('dB', bx + 5.5, PD.y - 10 + g.dy, {size: LBL, align: 'center', alpha: g.a});
   if (st.k >= 5) {
     const h = arrive(st.c0 + FIRE[5]), a = h.a * st.fade;
-    text('flaw', X(T.peak[0] - 2.4), Y(T.peak[1] - 1.4) + h.dy, {size: 16, align: 'right', color: C.ink, alpha: a});
-    text('back wall', X(-13.2), Y(T.bw - 1.8) + h.dy, {size: 16, color: C.ink, alpha: a});
+    text('flaw', X(T.peak[0] - 2.6), Y(T.peak[1] - 1.6) + h.dy, {size: 17, align: 'right', color: C.ink, alpha: a});
+    text('back wall', X(-13.2), Y(T.bw - 2.0) + h.dy, {size: 17, color: C.ink, alpha: a});
   }
-  param('\\rm{total focusing method, }32 \\times\\ 32\\ \\rm{paths}', PD.x - 38, PD.y + PD.h + 74, seg(0.5, 0.3));
+  param('\\rm{total focusing method, }32 \\times\\ 32\\ \\rm{paths}', 584, 406, seg(0.5, 0.3));
 }
 
 function titles() {
   const g = arrive(0);
-  for (const [l, s, x, y] of [['a', 'single probe, pulse echo', 18, 34], ['b', 'A scan', 572, 34],
-                              ['c', 'array probe, many paths', 18, 424], ['d', 'B scan image', 572, 424]]) {
+  for (const [l, s, x, y] of [['a', 'single probe, pulse echo', 18, 32], ['b', 'A scan', 548, 32],
+                              ['c', 'array probe, many paths', 18, 384], ['d', 'B scan image', 548, 384]]) {
     const w = panel(l, x, y + g.dy, {alpha: g.a});
-    text(s, x + w + 8, y + g.dy, {size: 17, color: C.body, alpha: g.a});
+    text(s, x + w + 8, y + g.dy, {size: 18, color: C.body, alpha: g.a});
   }
 }
 

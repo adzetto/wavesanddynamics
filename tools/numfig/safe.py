@@ -50,10 +50,9 @@ def sig2(v):
     return round(v / 10 ** e, 1) * 10 ** e
 
 
-def slow_tex(r):
-    """The slow-motion label, as Figure 4 writes it."""
-    e = int(np.floor(np.log10(r)))
-    return f"\\rm{{shown}}\\ {r / 10 ** e:.1f}\\ \\times\\ 10^{{{e}}}\\ \\rm{{times slower than real time}}"
+def slow_txt(r):
+    """The slow-motion label, as the guide's figures write it (5 Oct 2026: one wording)."""
+    return f"shown {r:,.0f} × slower"
 
 
 def compute():
@@ -133,7 +132,7 @@ def check(R, slow_a, slow_b):
     p(f"  Timoshenko (Cowper's shear coefficient) gives {tim/2/np.pi:.3f} Hz ({R['w_safe_a']/tim-1:+.1e} from SAFE):")
     p(f"  at kh = {R['ka']*sm.H:.3f} the shear and rotary inertia that Euler-Bernoulli neglects cost"
       f" {1 - R['w_safe_a']/R['wa']:.2%}.")
-    p(f"  clock: slowed {slow_a:,.0f} times (a round factor), so the displayed period is {slow_a / fa:.3f} s")
+    p(f"  clock: shown {slow_a:,.0f} x slower (a round factor, said on the page), so the displayed period is {slow_a / fa:.3f} s")
     p("")
     p("(b) SAFE: Figure 4's bar and its mesh (dispersion.check.txt: the bar's curves and their convergence)")
     p(f"  the same mesh as Figure 4's bar, node for node (dispersion.bar_mesh): {same_mesh_as_figure_4()}")
@@ -161,7 +160,7 @@ def check(R, slow_a, slow_b):
     p("  Kawashima and Rose (2004), Fig. 2 (dispersion.check.txt, THE BAR)")
     p("  u(x, y, z, t) = Re{U(y, z) exp(i(kx - wt))}, U_x = i V_x: the axial part is a quarter")
     p("  period out of phase with the transverse part, which tilts the sections as the wave passes.")
-    p(f"  bar drawn over {L_B*1e3:.0f} mm = {L_B/LAM_B:.0f} wavelengths; clock: slowed {slow_b:,.0f} times (a round factor),")
+    p(f"  bar drawn over {L_B*1e3:.0f} mm = {L_B/LAM_B:.0f} wavelengths; clock: shown {slow_b:,.0f} x slower (a round factor),")
     p(f"  so the displayed period is {slow_b / fb:.3f} s")
     return "\n".join(L) + "\n"
 
@@ -226,7 +225,7 @@ function dimk(x1, x2, y, label, o) {
 function drawA() {
   panel('a', 18, 34, {alpha: lab(0)});
   const s0 = lab(.03);
-  text('analytical approach', 52, 34 + rise(s0), {size: 17, color: C.body, alpha: s0});
+  text('analytical approach', 52, 34 + rise(s0), {size: 18, color: C.body, alpha: s0});
   const amp = settle(T_A0, .5), ph = 2 * Math.PI * (t - T_PA) / A.Td;
   const w = x => A.A * amp * Math.cos(A.k * x - ph);          // m, the exact wave
   const X = x => BX0 + x * PXM, Yw = x => BY - GAIN * w(x);
@@ -243,8 +242,8 @@ function drawA() {
   const ga = lab(.20), gy = 206;
   arrow(BX0, gy, BX0 + 40, gy, {width: 1.1, head: 7, alpha: ga});
   arrow(BX0, gy, BX0, gy - 32, {width: 1.1, head: 7, alpha: ga});
-  math('x', BX0 + 45, gy + 5, {size: 16, alpha: ga});
-  math('w', BX0 - 5, gy - 38, {size: 16, alpha: ga});
+  math('x', BX0 + 45, gy + 5, {size: 17, alpha: ga});
+  math('w', BX0 - 5, gy - 38, {size: 17, alpha: ga});
   // the element picked out
   const i0 = Math.round(A.x0 / A.L * n), i1 = Math.round((A.x0 + A.dx) / A.L * n);
   const ea = settle(.45, .28);
@@ -252,7 +251,7 @@ function drawA() {
     line(up.slice(i0, i1 + 1).concat(dn.slice(i0, i1 + 1).reverse()),
          {color: C.accent, width: 1.6, fill: C.wash, close: true, alpha: ea});
     // named under the beam's lowest reach: the wave never carries the name onto the axis line
-    math('\\rm{d}x', X(A.x0 + A.dx / 2), BY + GAIN * A.A + HD / 2 + 21, {size: 16, align: 'center', alpha: ea});
+    math('\\rm{d}x', X(A.x0 + A.dx / 2), BY + GAIN * A.A + HD / 2 + 22, {size: 17, align: 'center', alpha: ea});
   }
   // enlarged: the drawn shape less its rigid motion (the chord, in linear theory), times MAG
   const m = 40, wl = w(A.x0), wr = w(A.x0 + A.dx);
@@ -288,16 +287,18 @@ function drawA() {
       momentArc(c[0], c[1], Math.atan2(side * ty, side * tx), 48, Mn, C.navy);
     }
     const L0 = ec[0], L1 = ec[m], r = rise(la);
-    math('V', L0[0] - 14, L0[1] + 76 + r, {size: 17, align: 'right', alpha: la});
-    math('M', L0[0] - 44, L0[1] - 54 + r, {size: 17, align: 'right', alpha: la});
-    math('V + \\rm{d}V', L1[0] + 14, L1[1] + 76 + r, {size: 17, alpha: la});
-    math('M + \\rm{d}M', L1[0] + 44, L1[1] - 54 + r, {size: 17, alpha: la});
+    math('V', L0[0] - 14, L0[1] + 76 + r, {size: 18, align: 'right', alpha: la});
+    math('M', L0[0] - 44, L0[1] - 54 + r, {size: 18, align: 'right', alpha: la});
+    math('V + \\rm{d}V', L1[0] + 14, L1[1] + 76 + r, {size: 18, alpha: la});
+    math('M + \\rm{d}M', W - 16, L1[1] - 54 + r, {size: 18, align: 'right', alpha: la});   // inside the right margin
   }
-  if (eg >= 1) dimk(ec[0][0], ec[m][0], EL.y + 86, '\\rm{d}x', {alpha: lab(.95), size: 16});
+  if (eg >= 1) dimk(ec[0][0], ec[m][0], EL.y + 86, '\\rm{d}x', {alpha: lab(.95), size: 17});
   const qa = lab(1.0);
-  if (qa > 0) eqn(292, 284 + rise(qa), qa);
-  const pa = lab(1.05), pw = text(D.pa, 18, 348, {size: 14, color: C.muted, alpha: pa});
-  math(D.slowa, 18 + pw + 6, 348, {size: 14, color: C.muted, alpha: pa});
+  if (qa > 0) eqn(EL.x + EL.len / 2, 280 + rise(qa), qa);       // under the element it comes from
+  // the parameter lines, variables in math, under the beam
+  const pa = lab(1.05), pw = text(D.pa[0], 18, 290, {size: 15, color: C.muted, alpha: pa});
+  math(D.pa[1], 18 + pw + 5, 290, {size: 15, color: C.muted, alpha: pa});
+  text(D.slowa, 18, 310, {size: 15, color: C.muted, alpha: pa});
 }
 
 /* EI d4w/dx4 + rho A d2w/dt2 = 0, set as TeX sets it */
@@ -325,7 +326,7 @@ const B = D.b;
 const NYN = 2 * B.ny + 1, NZN = 2 * B.nz + 1, NN = NYN * NZN;
 const U = (() => { const q = b64i8(B.U), v = new Float32Array(q.length); for (let i = 0; i < q.length; i++) v[i] = q[i] / 127; return v; })();
 const S = B.s, FX = B.fx, CA = Math.cos(B.al), SA = Math.sin(B.al);
-const O = {x: 150, y: 680};                // the section's centre at x = 0
+const O = {x: 150, y: 634};                // the section's centre at x = 0
 const proj = (x, y, z) => [O.x + y * S + x * S * FX * CA, O.y - z * S - x * S * FX * SA];
 const T_B0 = .45, T_PB = D.tpb, NX = 150;  // the wave arrives; its phase origin
 const YS = Array.from({length: NYN}, (_, i) => -B.bw / 2 + B.bw * i / (NYN - 1));
@@ -335,9 +336,9 @@ const TOP = Array.from({length: NYN}, (_, i) => TL + i);                     // 
 const RIGHT = Array.from({length: NZN}, (_, j) => j * NYN + NYN - 1);        // bottom to top
 
 function drawB() {
-  panel('b', 18, 398, {alpha: lab(.05)});
+  panel('b', 18, 352, {alpha: lab(.05)});
   const s0 = lab(.08);
-  text('SAFE method', 52, 398 + rise(s0), {size: 17, color: C.body, alpha: s0});
+  text('SAFE method', 52, 352 + rise(s0), {size: 18, color: C.body, alpha: s0});
   const amp = B.amp * settle(T_B0, .5), ph = 2 * Math.PI * (t - T_PB) / B.Td;
   // node n at axial position x (mm), displaced by Re{U e^{i(kx - wt)}}, U_x = i V_x
   const P = (n, x) => {
@@ -372,32 +373,37 @@ function drawB() {
   for (let j = 0; j < NZN; j += 2) line(Array.from({length: NYN}, (_, i) => fr[j * NYN + i]), {color: C.ink, width: .6, alpha: .75, progress: md});
   line(B.loop.map(n => fr[n]), {color: C.ink, width: 1.5, close: true, progress: md});
   // axes
-  const aa = lab(.70), g = [330, 776], L = 34;
+  // the triad: y across, z up, x along the bar (its receding axis, drawn longer so its tip and
+  // name stand clear of y's); each name beyond its arrow's tip
+  const aa = lab(.70), g = [330, 730], L = 34, LX = 64;
   arrow(g[0], g[1], g[0] + L, g[1], {width: 1.1, head: 7, alpha: aa});
   arrow(g[0], g[1], g[0], g[1] - L, {width: 1.1, head: 7, alpha: aa});
-  arrow(g[0], g[1], g[0] + L * CA, g[1] - L * SA, {width: 1.1, head: 7, alpha: aa});
-  math('y', g[0] + L + 5, g[1] + 5, {size: 16, alpha: aa});
-  math('z', g[0] - 4, g[1] - L - 6, {size: 16, alpha: aa});
-  math('x', g[0] + L * CA + 5, g[1] - L * SA - 3, {size: 16, alpha: aa});
+  arrow(g[0], g[1], g[0] + LX * CA, g[1] - LX * SA, {width: 1.1, head: 7, alpha: aa});
+  math('y', g[0] + L - 3, g[1] + 20, {size: 17, alpha: aa});
+  math('z', g[0] - 5, g[1] - L - 7, {size: 17, alpha: aa});
+  math('x', g[0] + LX * CA + 6, g[1] - LX * SA + 5, {size: 17, alpha: aa});
   // what is discrete and what is analytical
   const ta = lab(.80), f0 = proj(0, 0, -B.bh / 2), ty = f0[1] + 36 + rise(ta);
-  const w1 = text('finite elements over ', 0, -1e4, {size: 16, alpha: 0}), w2 = math('(y, z)', 0, -1e4, {size: 16, alpha: 0});
-  text('finite elements over ', f0[0] - (w1 + w2) / 2, ty, {size: 16, color: C.body, alpha: ta});
-  math('(y, z)', f0[0] - (w1 + w2) / 2 + w1, ty, {size: 16, alpha: ta});
+  const w1 = text('finite elements over ', 0, -1e4, {size: 17, alpha: 0}), w2 = math('(y, z)', 0, -1e4, {size: 17, alpha: 0});
+  text('finite elements over ', f0[0] - (w1 + w2) / 2, ty, {size: 17, color: C.body, alpha: ta});
+  math('(y, z)', f0[0] - (w1 + w2) / 2 + w1, ty, {size: 17, alpha: ta});
   const s1 = proj(B.L * .5, -B.bw / 2, B.bh / 2 + 8);
   ctx.save(); ctx.translate(s1[0], s1[1]); ctx.rotate(-B.al);
-  const w3 = text('analytical along ', 0, -1e4, {size: 16, alpha: 0}), w4 = math('x', 0, -1e4, {size: 16, alpha: 0});
-  text('analytical along ', -(w3 + w4) / 2, rise(ta), {size: 16, color: C.body, alpha: ta});
-  math('x', -(w3 + w4) / 2 + w3, rise(ta), {size: 16, alpha: ta});
+  const w3 = text('analytical along ', 0, -1e4, {size: 17, alpha: 0}), w4 = math('x', 0, -1e4, {size: 17, alpha: 0});
+  text('analytical along ', -(w3 + w4) / 2, rise(ta), {size: 17, color: C.body, alpha: ta});
+  math('x', -(w3 + w4) / 2 + w3, rise(ta), {size: 17, alpha: ta});
   ctx.restore();
   // the harmonic term
   const ha = lab(.90);
-  math('u(x,y,z,t) = U(y,z)e^{i(kx - ωt)}', 820, 428 + rise(ha), {size: 24, align: 'center', alpha: ha});
-  // the mesh, then the wave and the panel's one clock: its slow-motion factor
-  const pb = lab(1.0);
-  text(D.pb, 18, H - 34, {size: 14, color: C.muted, alpha: pb});
-  const pw = text(D.pb2, 18, H - 14, {size: 14, color: C.muted, alpha: pb});
-  math(B.slow, 18 + pw + 6, H - 14, {size: 14, color: C.muted, alpha: pb});
+  math('u(x,y,z,t) = U(y,z)e^{i(kx - ωt)}', 820, 382 + rise(ha), {size: 24, align: 'center', alpha: ha});
+  // the mesh, then the wave and the panel's one clock (its slow-motion factor): in the corner
+  // under the bar, right-aligned, variables in math
+  const pb = lab(1.0), xr = W - 18;
+  D.pb.forEach((ln, i) => {
+    const y = 674 + 20 * i, wd = ln.reduce((a, [k, v]) => a + (k === 't' ? text(v, 0, -1e4, {size: 15, alpha: 0}) : math(v, 0, -1e4, {size: 15, alpha: 0})), 0);
+    let x = xr - wd;
+    for (const [k, v] of ln) x += k === 't' ? text(v, x, y, {size: 15, color: C.muted, alpha: pb}) : math(v, x, y, {size: 15, color: C.muted, alpha: pb});
+  });
 }
 
 function draw() { drawA(); drawB(); }
@@ -424,15 +430,17 @@ def main():
         "b": {"ny": MESH[0], "nz": MESH[1], "bw": sm.B * 1e3, "bh": sm.H * 1e3,
               "U": common.i8(v * 127), "loop": R["loop"].tolist(), "lam": LAM_B * 1e3,
               "L": L_B * 1e3, "s": s_px, "fx": fx, "al": al,
-              "amp": 2.2, "Td": td_b, "slow": slow_tex(slow_b)},
-        "pb": (f"SAFE: {MESH[0]} × {MESH[1]} quadratic elements of {hb:.3g} mm ({LAM_B*1e3/hb:.0f} per wavelength), "
-               f"{R['ndof']} dof, the mesh of Figure 4"),
-        "pb2": (f"fundamental bending mode, λ = {LAM_B*1e3:.0f} mm, f = {fb/1e3:.1f} kHz, "
-                f"phase velocity {R['wb'][0]/R['kb']:.0f} m/s;"),
+              "amp": 2.2, "Td": td_b},
+        # the parameter lines: runs of text ('t') and math ('m'), variables italic, units upright
+        "pb": [[["t", f"SAFE: {MESH[0]} × {MESH[1]} quadratic elements of {hb:.3g} mm ({LAM_B*1e3/hb:.0f} per wavelength),"]],
+               [["t", f"{R['ndof']} dof, the mesh of Figure 4; fundamental bending mode,"]],
+               [["m", f"\\lambda\\ = {LAM_B*1e3:.0f}\\,\\rm{{mm}},\\ f = {fb/1e3:.1f}\\,\\rm{{kHz}},\\ "
+                      f"\\rm{{phase velocity}}\\ {R['wb'][0]/R['kb']:.0f}\\,\\rm{{m/s}};\\ "],
+                ["t", slow_txt(slow_b)]]],
     }
-    data["pa"] = (f"Euler-Bernoulli: steel {sm.B*1e3:.0f} × {sm.H*1e3:.0f} mm, λ = {LAM_A:g} m, "
-                  f"f = {fa:.0f} Hz, phase velocity {R['wa']/R['ka']:.0f} m/s;")
-    data["slowa"] = slow_tex(slow_a)
+    data["pa"] = ["Euler-Bernoulli:", (f"\\rm{{steel}}\\ {sm.B*1e3:.0f} \\times\\ {sm.H*1e3:.0f}\\,\\rm{{mm}},\\ \\lambda\\ = {LAM_A:g}\\,\\rm{{m}},\\ "
+                                     f"f = {fa:.0f}\\,\\rm{{Hz}},\\ \\rm{{phase velocity}}\\ {R['wa']/R['ka']:.0f}\\,\\rm{{m/s}}")]
+    data["slowa"] = slow_txt(slow_a)
     title = "Figure 5: Two ways of obtaining the governing equation of motion for a wave propagating in a beam"
     aria = ("A bending wave travels along a long steel beam; a small element of it is enlarged with the shear "
             "forces and bending moments on its faces, which change as the wave passes, above the beam's equation "
@@ -450,8 +458,8 @@ def main():
         print(common.frames(NAME, [0.4, 1.0, 1.6, 2.2, 3.0, 4.2, 5.0]))
 
 
-HEIGHT = 860
-OVERLAP_T = [0.4, 1.0, 1.6, 2.2, POSTER, 4.2, 5.0, 7.5]
+HEIGHT = 764
+OVERLAP_T = [0.4, 0.8, 1.0, 1.3, 1.6, 2.2, POSTER, 3.6, 4.2, 5.0, 5.7, 6.4, 7.5, 9.0]
 
 
 def overlap_lines():

@@ -15,7 +15,7 @@ Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same b
   SAFE at the same k: f = 187.140 Hz, -0.26% from Euler-Bernoulli;
   Timoshenko (Cowper's shear coefficient) gives 187.130 Hz (+5.0e-05 from SAFE):
   at kh = 0.126 the shear and rotary inertia that Euler-Bernoulli neglects cost 0.26%.
-  clock: slowed 560 times (a round factor), so the displayed period is 2.985 s
+  clock: shown 560 x slower (a round factor, said on the page), so the displayed period is 2.985 s
 
 (b) SAFE: Figure 4's bar and its mesh (dispersion.check.txt: the bar's curves and their convergence)
   the same mesh as Figure 4's bar, node for node (dispersion.bar_mesh): True
@@ -35,9 +35,9 @@ Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same b
   Kawashima and Rose (2004), Fig. 2 (dispersion.check.txt, THE BAR)
   u(x, y, z, t) = Re{U(y, z) exp(i(kx - wt))}, U_x = i V_x: the axial part is a quarter
   period out of phase with the transverse part, which tilts the sections as the wave passes.
-  bar drawn over 150 mm = 3 wavelengths; clock: slowed 110,000 times (a round factor),
+  bar drawn over 150 mm = 3 wavelengths; clock: shown 110,000 x slower (a round factor),
   so the displayed period is 2.448 s
 
 LAYOUT
-  common.overlaps at t = 0.4, 1, 1.6, 2.2, 3, 4.2, 5, 7.5 s: no label collisions, no crossings
-  page 58 KB, still 80 KB
+  common.overlaps at t = 0.4, 0.8, 1, 1.3, 1.6, 2.2, 3, 3.6, 4.2, 5, 5.7, 6.4, 7.5, 9 s: no label collisions, no crossings
+  page 59 KB, still 79 KB

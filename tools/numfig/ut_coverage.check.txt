@@ -51,7 +51,7 @@ THE PULSE (a), his note of 5 Oct 2026: the vertical waves
      flaw 2, top at 2.9 mm: 0.9796 us (0.9796 us); its echo comes home 2.398 us before the back wall's would
   CHECK: the page's own fronts (frontsA) against the Python port at 10 moments of the pulses (positions [1, 2, 117, 119, 120, 121, 123, 280, 281]):
      largest difference 0.0e+00 (mm, m and |g| alike); fronts compared: 5, 5, 5, 5, 5, 5, 5, 5, 10, 8
-  Time slowed 2 x 10^5 for the pulse (5 us of the model per second): down and back through the 10 mm
+  The pulse shown 200,000 x slower (5 us of the model per second): down and back through the 10 mm
   in 3.378 us, 0.676 s on the page; from its first crest leaving to its last home 3.755 us, 0.751 s.
 
 THE PACE (a): designed; which positions exist and what each covers is the model
@@ -77,9 +77,15 @@ VALIDATION (b)
   The page's own sum against numpy at three moments: largest difference 7.8e-06.
 
 DISPLAY
+  Both strips are the plate of Figure 12 as a thin slab in an oblique view (its top face receding 14 by
+  10 units); the front face is the section the strip shows. In (b) the top face carries the guided wave's
+  field and coverage too (plane strain: the same across the width); in (a) it is left plain, the probe
+  inspecting only its own track.
   1000 x 760. Both strips on one scale, 400 units/m; the plate's thickness drawn 8.5 times enlarged; the window
   under the probe drawn to scale (12 units/mm, 36 mm wide), its beam pale (steel to mist) so the fronts
-  read on it. Guided wave time slowed 5000 times; the pulse in (a) 2 x 10^5 times, each labelled.
+  read on it. The guided wave shown 7,000 x slower (as Figure 12); the pulse in (a) 200,000 x slower,
+  each labelled "shown N x slower". At each loop's start the probe, the window under it and the readouts
+  settle in again (they faded out with the loop before), as in the first.
   In the strip the probe's -6 dB zone fills downward with its pulse where it dwells, down to the back
   wall, or to a lamination's top where one covers the whole beam (below it is its shadow); the plate is
   drawn 8.5 times thicker there, so the fronts themselves are drawn in the window, at their true width.

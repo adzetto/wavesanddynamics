@@ -21,7 +21,7 @@ over the same face. (a) and (b) are one run with a 10 mm probe over the
 flaw. (c) and (d) are 32 runs, one per element of a 32 element array (full
 matrix capture), imaged with the total focusing method.
 
-Writes content/anim/nf-bulk-ut.html (+ -field.png, -tfm.png), the still
+Writes content/anim/nf-bulk-ut.html (+ -field-*.png, -tfm.png), the still
 nf-bulk-ut.webp, and tools/numfig/bulk_ut.check.txt. The simulations are
 cached in the temp directory (about 3 minutes on 16 threads without it).
 """
@@ -61,7 +61,8 @@ FRAME_EVERY, REC_EVERY = 12, 2      # 0.05 us per frame, 1/120 us per sample
 BOX = 5                             # 5 x 5 cells per field pixel (0.2 mm)
 FCLIP = 0.5                         # field colour range, +- p0
 TFM_DX, TFM_X, TFM_Z = 0.1, 14.0, 27.0
-DR = 40.0                           # dB stored in the TFM atlas
+DR = 30.0                           # dB stored in the TFM atlas: the page's own range, a byte is what it shows
+QUIET = 1                           # field steps within this many of zero are stored as zero (below sight)
 PAD = 2
 
 
@@ -316,6 +317,47 @@ def _png(a):
     return b.getvalue()
 
 
+def _png_max(a):
+    """A grey uint8 image as the smallest PNG this writer finds: each PNG row filter
+    (one for all rows) and the adaptive choice, each through zlib at level 9 with its
+    default and its filtered strategy (no other library; about a tenth smaller than
+    PIL's optimize on these fields). Checked by decoding it again."""
+    import struct
+    import zlib
+    v = a.astype(np.int16)
+    h, w = v.shape
+    up = np.vstack([np.zeros((1, w), np.int16), v[:-1]])
+    left = np.hstack([np.zeros((h, 1), np.int16), v[:, :-1]])
+    ul = np.hstack([np.zeros((h, 1), np.int16), up[:, :-1]])
+    p = left + up - ul
+    pa, pb, pc = np.abs(p - left), np.abs(p - up), np.abs(p - ul)
+    paeth = np.where((pa <= pb) & (pa <= pc), left, np.where(pb <= pc, up, ul))
+    rows = [((v - pred) & 0xFF).astype(np.uint8) for pred in (0, left, up, (left + up) >> 1, paeth)]
+    score = np.stack([np.abs(r.astype(np.int8).astype(np.int16)).sum(1) for r in rows])
+    pick = score.argmin(0)                                       # the usual heuristic: least |residual| a row
+    adaptive = np.choose(pick[:, None], rows)
+    best = None
+    for kinds, body in [(np.full(h, f), rows[f]) for f in range(5)] + [(pick, adaptive)]:
+        data = np.hstack([kinds[:, None].astype(np.uint8), body]).tobytes()
+        for strategy in (zlib.Z_DEFAULT_STRATEGY, zlib.Z_FILTERED):
+            c = zlib.compressobj(9, zlib.DEFLATED, 15, 9, strategy)
+            z = c.compress(data) + c.flush()
+            if best is None or len(z) < len(best):
+                best = z
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 0, 0, 0, 0))
+           + chunk(b"IDAT", best) + chunk(b"IEND", b""))
+    assert np.array_equal(np.array(Image.open(io.BytesIO(png))), a), "the PNG does not decode to the image"
+    return png
+
+
+def quiet(k, steps=QUIET):
+    """Quantized field steps with those within `steps` of zero set to zero: the
+    model's faint ripples below one step of the colour ramp from the steel itself
+    (dE under 2), which cost a sixth of the field's bytes."""
+    return np.where(np.abs(k) <= steps, 0, k)
+
+
 def _atlas(frames, cols):
     n, h, w = frames.shape
     rows = -(-n // cols)
@@ -323,6 +365,39 @@ def _atlas(frames, cols):
     for k in range(n):
         r, c = divmod(k, cols)
         out[r * h:(r + 1) * h, c * w:(c + 1) * w] = frames[k]
+    return out
+
+
+def decoded_in_page(names):
+    """Each data file's pixels as the page decodes them (FLD[i], TFM after the
+    still has loaded) against PIL's: [(name, identical)]."""
+    import shutil
+    import threading
+    from playwright.sync_api import sync_playwright
+    tmp = tempfile.mkdtemp(prefix="numfig-")
+    out = []
+    try:
+        os.makedirs(os.path.join(tmp, "anim"))
+        shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
+        for n in os.listdir(common.ANIM):
+            if n.startswith("nf-bulk-ut") and not n.endswith(".webp"):
+                shutil.copy(os.path.join(common.ANIM, n), os.path.join(tmp, "anim", n))
+        srv = common._server(tmp)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page()
+            pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-bulk-ut.html?still")
+            pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=30000)
+            for k, n in enumerate(names):
+                got = bytes(pg.evaluate(f"Array.from({'TFM' if 'tfm' in n else f'FLD[{k}]'}.px)"))
+                with Image.open(os.path.join(common.ANIM, n)) as im:
+                    want = np.array(im.convert("L")).tobytes()
+                out.append((n, got == want))
+            b.close()
+        srv.shutdown()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     return out
 
 
@@ -503,30 +578,42 @@ def main():
     say("  TFM: I(x, z) = | sum_i sum_j H[h_ij](t0 + (|x - e_i| + |x - e_j|)/cL) |, H the analytic")
     say(f"  signal, t0 = {T0:g} us, {TFM_DX} mm pixels over x = +-{TFM_X:g} mm, z = 0 ... {TFM_Z:g} mm.")
     say("  (d) builds up the mean over transmitters 1 ... k (the partial sum over k), each exact,")
-    say(f"  in dB of the complete image's peak, 30 dB range (the partial images peak at most"
+    say(f"  in dB of the complete image's peak, {DR:g} dB range (the partial images peak at most"
         f" {20 * np.log10(part.max() / peak):+.1f} dB).")
     say("  The fan in (c) is the delay-law path of the flaw's")
     say("  peak pixel; each line's opacity is that pair's |H[h_ij]| at its delay (the pair's")
     say("  contribution to the pixel).")
 
     # ---- data for the page
-    # the field, 7 bit (63 levels a sign, steps of p0/126), in chunks the page
-    # loads in the order it plays them: the first is on screen at once
-    q = (128 + 2 * np.clip(np.round(field / FCLIP * 63), -63, 63)).astype(np.uint8)
+    # the field, 7 bit (63 levels a sign, steps of p0/126), the faint ripples within
+    # QUIET steps of zero stored as zero, in PNG chunks (the page loads them as images,
+    # which the production host serves) in the order it plays them: the first is on
+    # screen at once
+    k_all = np.clip(np.round(field / FCLIP * 63), -63, 63)
+    k_q = quiet(k_all)
+    q = (128 + 2 * k_q).astype(np.uint8)
     q = q.transpose(0, 2, 1)                                             # frames (z, x)
-    chunks, fsizes = [], []
+    q_png = (128 + 2 * k_all).astype(np.uint8).transpose(0, 2, 1)       # as round 2 stored it, for the sizes
+    chunks, fsizes, psizes = [], [], []
     for i, (a, b_) in enumerate(zip(FIELD_CUTS[:-1], FIELD_CUTS[1:])):
-        png = _png(_atlas(q[a:b_], 10))
+        img = _png_max(_atlas(q[a:b_], 10))
         src = f"nf-bulk-ut-field-{i}.png"
         with open(os.path.join(common.ANIM, src), "wb") as fh:
-            fh.write(png)
+            fh.write(img)
         chunks.append({"n0": a, "n1": b_, "cols": 10, "src": src})
-        fsizes.append(len(png))
-    old = os.path.join(common.ANIM, "nf-bulk-ut-field.png")                # the single atlas of round 1
-    if os.path.exists(old):
-        os.remove(old)
+        fsizes.append(len(img))
+        psizes.append(len(_png(_atlas(q_png[a:b_], 10))))
+    for old in ["nf-bulk-ut-field.png", "nf-bulk-ut-tfm.bin"] + [f"nf-bulk-ut-field-{i}.bin" for i in range(8)]:
+        old = os.path.join(common.ANIM, old)                             # round 1's single atlas; no .bin data
+        if os.path.exists(old):
+            os.remove(old)
+    zeroed = float(np.mean((np.abs(k_all) <= QUIET) & (k_all != 0)))
+    err_q = float(np.abs(k_q * FCLIP / 63 - np.clip(field, -FCLIP, FCLIP)).max())
+    err_r = float(np.abs(k_all * FCLIP / 63 - np.clip(field, -FCLIP, FCLIP)).max())
+    # the TFM images in the page's own 30 dB: a stored byte is the shade shown
     b = np.clip(np.round(255 * (1 + db / DR)), 0, 255).astype(np.uint8)
-    tpng = _png(_atlas(b.transpose(0, 2, 1), 8))
+    tpng = _png_max(_atlas(b.transpose(0, 2, 1), 8))
+    tpng_old = len(_png(_atlas(np.clip(np.round(255 * (1 + db / 40.0)), 0, 255).astype(np.uint8).transpose(0, 2, 1), 8)))
     with open(os.path.join(common.ANIM, "nf-bulk-ut-tfm.png"), "wb") as fh:
         fh.write(tpng)
     keep = ts <= 10.0
@@ -552,7 +639,7 @@ def main():
         "tfm": {"n": NE, "w": int(xs.size), "h": int(zs.size), "cols": 8, "x": [xs[0], xs[-1]],
                 "z": [zs[0], zs[-1]], "dr": DR, "peak": [fx, fz], "bw": bw_z},
         "amp": common.i8(np.round(amp * 127)),
-        "slow": SLOW_PAGE, "tend": T_PE, "pace": SLOW_PAGE / SLOW, "slowtex": sci_tex(SLOW_PAGE),
+        "slow": SLOW_PAGE, "tend": T_PE, "pace": SLOW_PAGE / SLOW, "slowtxt": f"shown {SLOW_PAGE:,.0f} × slower",
     }
     js = JS
     path = common.build_html(
@@ -569,13 +656,26 @@ def main():
     say(f"  nf-bulk-ut-field-0..{len(chunks) - 1}.png: {field.shape[0]} frames {field.shape[1]} x"
         f" {field.shape[2]}, 0.05 us apart, 7 bit, in the order they play: frames "
         + ", ".join(f"{c['n0']}-{c['n1'] - 1} {s / 1e3:.0f} kB" for c, s in zip(chunks, fsizes)))
-    say(f"  nf-bulk-ut-tfm.png {len(tpng) / 1e3:.0f} kB ({NE} partial images {xs.size} x {zs.size});"
-        f" total {(html + sum(fsizes) + len(tpng)) / 1e6:.2f} MB")
-    say(f"  time slowed {SLOW_PAGE / 1e6:g} x 10^6 in (a) and (b): {T_PE:g} us of the model in {T_PE * SLOW_PAGE / 1e6:g} s;"
+    say(f"    the faint ripples within {QUIET} step of zero ({100 * zeroed:.1f} % of the pixels) stored as zero: largest change")
+    say(f"    of a value {err_q:.4f} p0 (rounding alone {err_r:.4f} p0; the colour range is +-{FCLIP:g} p0, a step of the ramp")
+    say("    from the steel itself is dE < 2)")
+    say(f"    As round 2 stored them (PNG, no quiet floor): {sum(psizes) / 1e3:.0f} kB; now {sum(fsizes) / 1e3:.0f} kB"
+        f" ({100 * (1 - sum(fsizes) / sum(psizes)):.0f} % less)")
+    say(f"  nf-bulk-ut-tfm.png {len(tpng) / 1e3:.0f} kB ({NE} partial images {xs.size} x {zs.size}, in the page's {DR:g} dB;"
+        f" round 2's of 40 dB {tpng_old / 1e3:.0f} kB);")
+    say("    each PNG the smallest of every row filter and two zlib strategies at level 9 (_png_max)")
+    say(f"    total {(html + sum(fsizes) + len(tpng)) / 1e6:.2f} MB")
+    say(f"  shown {SLOW_PAGE:,.0f} x slower in (a) and (b): {T_PE:g} us of the model in {T_PE * SLOW_PAGE / 1e6:g} s;"
         f" (c) fires its 32 elements at the same pace ({SLOW_PAGE / SLOW:g} x the first design, 8 s for the 10 us)")
+    say("  after the 10 us the field cross-fades to the snapshot of the still (no rewind), which holds 2.6 s")
+    print(common.still("bulk-ut"))
+    same = decoded_in_page([c["src"] for c in chunks] + ["nf-bulk-ut-tfm.png"])
+    say("  the page's own decoding (Chromium, the page's grab()) against the files' pixels: "
+        + ", ".join(f"{n} {'identical' if ok else 'DIFFERENT'}" for n, ok in same))
+    if not all(ok for _, ok in same):
+        raise SystemExit("a data file decodes to other bytes in the page")
     with open(os.path.join(common.HERE, "bulk_ut.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(rep) + "\n")
-    print(common.still("bulk-ut"))
     if "--frames" in sys.argv:
         for p in common.frames("bulk-ut", [0.6, 1.5, 3.0, 5.0, 6.8, 9.0, 11.5, 12.8, 13.8, 15.2, 16.5, 21.0, 27.0]):
             print(p)
@@ -584,7 +684,7 @@ def main():
 SLOW = 8e5                           # 10 us in 8 s: the time scale sd_waves.py imports (keep)
 SLOW_PAGE = 1.1e6                    # this page's own, 10 us in 11 s: 1.375 x slower (29 Sep, "a little slower")
 FIELD_CUTS = [0, 25, 70, 130, 201]   # field chunks: 15, 110, 380, 680 kB
-H = 872
+H = 728
 JS = r"""
 /* Figure 11 from the EFIT model in bulk_ut.py.
    (a) the model's field p/p0 every 0.05 us (nf-bulk-ut-field-*.png, loaded
@@ -592,37 +692,41 @@ JS = r"""
    (c) the array's firing order and the delay-law paths of each transmitter
    to the flaw's pixel, each path's opacity its measured contribution, (d) the
    TFM image over transmitters 1 ... k (nf-bulk-ut-tfm.png, dB of the complete
-   image). Labels ride the fronts at the model's c_L. */
-const S = 9.2, BW = DATA.wb * S, BD = DATA.db * S;          // blocks: 9.2 units per mm
-const A = {x: 76, y: 96}, CC = {x: 76, y: 492};            // blocks (a) and (c)
-const PB = {x: 628, y: 96, w: 348, h: BD};                  // A scan axes
-const SD = 10.5, PD = {x: 628, y: 492, w: 28 * SD, h: 27 * SD};   // image axes
+   image), on the blocks' own scale.
+   Labels ride the fronts at the model's c_L. */
+const S = 8, BW = DATA.wb * S, BD = DATA.db * S;            // blocks, and the image of (d): 8 units per mm
+const A = {x: 76, y: 90}, CC = {x: 76, y: 444};            // blocks (a) and (c)
+const PB = {x: 596, y: 90, w: 370, h: BD};                  // A scan axes
+const PD = {x: 596, y: 444, w: 28 * S, h: 27 * S};          // image axes
 const FL = '#781E2C', DRD = 30;                             // flaw outline, dB shown
+const LBL = 16;
 const XB = (b, x) => b.x + x * S, YB = (b, z) => b.y + z * S;
 const AS = b64f32(DATA.ascan.v), AMP = b64i8(DATA.amp);
 
 /* the clock. The intro is over by 0.8 s and the physics starts at TI. A
    cycle: (a) and (b) sweep the model's 10 us in S1 = 11 s while (c) fires its
    32 elements and (d) sums them, at the same pace (DATA.pace, the slowing
-   over the first design's 8 s); (a) eases back to the snapshot the still
-   shows; a hold; a fade; again. */
-const TI = 0.6, S1 = DATA.tend * DATA.slow / 1e6, RW = 1.0, HOLD = 2.4, FADE = 0.6;
+   over the first design's 8 s); the last frame cross-fades to the snapshot
+   the still shows (no rewind: time never runs backwards); a hold; a fade; again. */
+const TI = 0.6, S1 = DATA.tend * DATA.slow / 1e6, XF = 0.8, HOLD = 2.6, FADE = 0.6;
 const TSNAP = 3.35;                                         // model time of the snapshot, us
 const SLOT = Array.from({length: 32}, (_, k) => DATA.pace * (0.18 + 0.22 * Math.max(0, 1 - k / 5)));
 const FIRE = SLOT.map((_, k) => SLOT.slice(0, k).reduce((a, b) => a + b, 0));
-const PER = S1 + RW + HOLD + FADE;
-const POSTER_T = TI + S1 + RW + 1.2;
+const PER = S1 + XF + HOLD + FADE;
+const POSTER_T = TI + S1 + XF + 1.2;
 
+/* ts: the model time of the frame on show; mix: the share of the snapshot
+   over it (0 while the sweep runs, 1 once the cross-fade is over) */
 function state() {
-  if (t < TI) return {u: -1, ts: 0, rec: -1, k: -1, fade: 1, c0: TI};
+  if (t < TI) return {u: -1, ts: 0, mix: 0, rec: -1, k: -1, fade: 1, c0: TI};
   const u = (t - TI) % PER, c0 = t - u;
-  let ts = TSNAP, rec = DATA.tend;
-  if (u < S1) { ts = DATA.tend * u / S1; rec = ts; }
-  else if (u < S1 + RW) ts = DATA.tend - (DATA.tend - TSNAP) * easeInOut((u - S1) / RW);
+  let ts = DATA.tend, rec = DATA.tend, mix = 1;
+  if (u < S1) { ts = DATA.tend * u / S1; rec = ts; mix = 0; }
+  else if (u < S1 + XF) mix = easeInOut((u - S1) / XF);
   let k = -1;
   for (let i = 0; i < 32; i++) if (u >= FIRE[i]) k = i;
-  const fade = 1 - easeInOut(clamp((u - S1 - RW - HOLD) / FADE));
-  return {u, ts, rec, k, fade, c0};
+  const fade = 1 - easeInOut(clamp((u - S1 - XF - HOLD) / FADE));
+  return {u, ts, mix, rec, k, fade, c0};
 }
 /* a label arriving on Motion's spring: alpha and a small drop */
 function arrive(t0) { const s = settle(t0, .28); return {a: clamp(s), dy: (1 - s) * -8}; }
@@ -654,23 +758,24 @@ const rest = first.then(async () => {
 });
 function offscreen(w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'); return {c, g, img: g.createImageData(w, h)};
+  const g = c.getContext('2d'); return {c, g, img: g.createImageData(w, h), cur: -1};
 }
-const FC = offscreen(DATA.field.w, DATA.field.h), TC = offscreen(DATA.tfm.w, DATA.tfm.h);
+/* two frames at a time: the one on show, and the snapshot fading in over it */
+const FC = offscreen(DATA.field.w, DATA.field.h), FS = offscreen(DATA.field.w, DATA.field.h), TC = offscreen(DATA.tfm.w, DATA.tfm.h);
 /* the field's ramp: DIVERGING with the steel itself as zero, as Figures 12 and 13 */
 const FLUT = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#E3EBF2', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
 const FMAP = new Uint16Array(256);           // stored byte -> FLUT entry
 for (let b = 0; b < 256; b++) FMAP[b] = 3 * Math.round(clamp(((b - 128) / DATA.field.span * 2 + 1) / 2) * 255);
-let fcur = -1, tcur = '';
-function fieldFrame(n) {                     // true once frame n is in FC
+let tcur = '';
+function fieldFrame(n, buf) {                // true once frame n is in buf
   const ch = DATA.field.chunks;
   let i = 0;
   while (i < ch.length - 1 && n >= ch[i].n1) i++;
   const F = FLD[i];
   if (!F) return false;
-  if (n === fcur) return true;
-  fcur = n;
-  const {w, h} = DATA.field, m = n - ch[i].n0, c = m % ch[i].cols, r = Math.floor(m / ch[i].cols), d = FC.img.data;
+  if (n === buf.cur) return true;
+  buf.cur = n;
+  const {w, h} = DATA.field, m = n - ch[i].n0, c = m % ch[i].cols, r = Math.floor(m / ch[i].cols), d = buf.img.data;
   for (let z = 0; z < h; z++) {
     let s = (r * h + z) * F.W + c * w, o = z * w * 4;
     for (let x = 0; x < w; x++, s++, o += 4) {
@@ -678,10 +783,12 @@ function fieldFrame(n) {                     // true once frame n is in FC
       d[o] = FLUT[L]; d[o + 1] = FLUT[L + 1]; d[o + 2] = FLUT[L + 2]; d[o + 3] = 255;
     }
   }
-  FC.g.putImageData(FC.img, 0, 0);
+  buf.g.putImageData(buf.img, 0, 0);
   return true;
 }
-/* the image after transmitters 1 ... k+1, blended from the one before by w */
+const frameOf = ts => clamp(Math.round(ts / DATA.field.dt), 0, DATA.field.n - 1);
+/* the image after transmitters 1 ... k+1, cross-faded from the one before by w
+   (the bytes are the shades shown: DATA.tfm.dr is the 30 dB shown) */
 function tfmImage(k, w) {
   const key = k + ':' + w.toFixed(3);
   if (key === tcur) return;
@@ -728,11 +835,20 @@ function tri(x, y, s, color, alpha) {        // a marker pointing down at (x, y)
 /* a label riding a front at depth z (mm), its arrow the way the front moves */
 function ride(s, x, z, up, col, a) {
   if (a <= 0) return;
-  const y0 = YB(A, up ? z - 1.2 : z + 1.2), y1 = YB(A, up ? z - 3.7 : z + 3.7);
+  const y0 = YB(A, up ? z - 1.2 : z + 1.2), y1 = YB(A, up ? z - 4.2 : z + 4.2);
   arrow(XB(A, x), y0, XB(A, x), y1, {color: col, width: 1.4, head: 7, alpha: a});
-  text(s, XB(A, x + 1.1), (y0 + y1) / 2 + 5, {size: 15, color: col, alpha: a});
+  text(s, XB(A, x + 1.2), (y0 + y1) / 2 + 6, {size: 17, color: col, alpha: a});
 }
-const param = (s, x, y, a) => math(s, x, y, {size: 14, color: C.muted, alpha: a});
+/* the fronts' names at model time ts, at a share a of full strength */
+function rides(ts, a) {
+  if (a <= 0) return;
+  const ta = ts - DATA.t0, c = DATA.cl, [xt, zt] = DATA.flaw.top;
+  const win = (a0, a1, b0, b1) => clamp((ta - a0) / (a1 - a0)) * (1 - clamp((ta - b0) / (b1 - b0)));
+  ride('incident pulse', 33, c * ta, false, C.ink, a * win(0.5, 0.8, 3.2, 3.5));
+  ride('flaw echo', xt, 2 * zt - c * ta, true, C.accent, a * win(2.25, 2.55, 3.08, 3.25));
+  ride('back wall echo', 33, 2 * DATA.db - c * ta, true, C.ink, a * win(4.6, 4.9, 7.45, 7.75));
+}
+const param = (s, x, y, a) => math(s, x, y, {size: 15, color: C.muted, alpha: a});
 /* labels the A scan's playhead passes behind: their ink boxes, kept as they
    are drawn; gapLine() is a vertical line broken 3 units clear of each */
 const KEEP = [];
@@ -764,9 +880,14 @@ function dimk(x1, x2, y, label, o) {
 /* ---------------------------------------------------------------- (a) */
 function drawA(st) {
   steel(A, seg(0, 0.3));
-  if (t >= TI && st.fade > 0 && fieldFrame(clamp(Math.round(st.ts / DATA.field.dt), 0, DATA.field.n - 1))) {
-    ctx.save(); ctx.globalAlpha *= st.fade; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(FC.c, A.x, A.y, BW, BD); ctx.restore();
+  if (t >= TI && st.fade > 0) {
+    const show = (ts, buf, a) => {
+      if (a <= 0 || !fieldFrame(frameOf(ts), buf)) return;
+      ctx.save(); ctx.globalAlpha *= a; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(buf.c, A.x, A.y, BW, BD); ctx.restore();
+    };
+    if (st.mix < 1) show(st.ts, FC, st.fade);                // the frame on show
+    if (st.mix > 0) show(TSNAP, FS, st.fade * st.mix);       // the snapshot, cross-fading in over it
   }
   blockOutline(A, seg(0, 0.4));
   flawShape(A, seg(0.3, 0.25));
@@ -775,28 +896,27 @@ function drawA(st) {
   ctx.fillRect(XB(A, p0), A.y - 16 + (1 - s) * -20, (p1 - p0) * S, 16); ctx.restore();
   const da = seg(0.35, 0.3), xd = A.x - 17;                 // the thickness d, as Figure 12 marks it
   arrow(xd, A.y + 1, xd, A.y + BD - 1, {width: 1.1, head: 7, both: true, alpha: da});
-  math('d', xd - 8, A.y + BD / 2 + 6, {size: 17, align: 'right', alpha: da});
-  const g = arrive(0.35), bw = 100, bx = A.x + BW - bw, by = A.y + BD + 18;   // colour bar, as Figure 12
-  ramp(FLUT, bx, by + g.dy, bw, 8, false, g.a);
+  math('d', xd - 8, A.y + BD / 2 + 6, {size: 18, align: 'right', alpha: da});
+  const g = arrive(0.35), bx = A.x + BW + 12;               // colour bar beside the block, as (d)'s
+  ramp(FLUT, bx, A.y + g.dy, 11, BD, true, g.a);
   for (const v of [-0.5, 0, 0.5]) {
-    const x = bx + (v / DATA.field.clip + 1) / 2 * bw;
-    line([[x, by + 8 + g.dy], [x, by + 12 + g.dy]], {width: 1, alpha: g.a});
-    math(fmt(v), x, by + 27 + g.dy, {size: 15, align: 'center', alpha: g.a});
+    const y = A.y + (1 - (v / DATA.field.clip + 1) / 2) * BD + g.dy;
+    line([[bx + 11, y], [bx + 15, y]], {width: 1, alpha: g.a});
+    math(fmt(v), bx + 19, y + 5, {size: LBL, alpha: g.a});
   }
-  math('p/p_{0}', bx - 8, by + 9 + g.dy, {size: 16, align: 'right', alpha: g.a});
+  math('p/p_{0}', bx + 5.5, A.y - 17 + g.dy, {size: 17, align: 'center', alpha: g.a});
   if (t >= TI) {                                             // the model's clock, as Figure 12 shows it
-    const a = st.fade * clamp((t - st.c0) / 0.2);
-    math(`t = ${(st.ts - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 34, {size: 16, align: 'right', alpha: a});
-    const ta = st.ts - DATA.t0, c = DATA.cl, [xt, zt] = DATA.flaw.top;
-    const win = (a0, a1, b0, b1) => clamp((ta - a0) / (a1 - a0)) * (1 - clamp((ta - b0) / (b1 - b0)));
-    ride('incident pulse', 36.5, c * ta, false, C.ink, st.fade * win(0.5, 0.8, 3.2, 3.5));
-    ride('flaw echo', xt, 2 * zt - c * ta, true, C.accent, st.fade * win(2.25, 2.55, 3.08, 3.25));
-    ride('back wall echo', 36.5, 2 * DATA.db - c * ta, true, C.ink, st.fade * win(4.6, 4.9, 7.45, 7.75));
+    const a = st.fade * clamp((t - st.c0) / 0.2), m = st.mix;
+    const aOld = a * clamp(1 - 2 * m), aNew = a * clamp(2 * m - 1);   // one gives way to the other, never both
+    math(`t = ${(st.ts - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 32, {size: 17, align: 'right', alpha: aOld});
+    math(`t = ${(TSNAP - DATA.t0).toFixed(2)}\\,\\rm{\u00b5s}`, A.x + BW, 32, {size: 17, align: 'right', alpha: aNew});
+    rides(st.ts, st.fade * (1 - m));
+    rides(TSNAP, st.fade * m);
   }
-  const pa = seg(0.5, 0.3);
-  math('\\rm{time slowed }' + DATA.slowtex, A.x + BW, 54, {size: 14, color: C.muted, align: 'right', alpha: pa});
-  param('\\rm{steel }50 \\times\\ 25\\ \\rm{mm},\\ c_{\\rm{L}} = 5900\\ \\rm{m/s},\\ c_{\\rm{T}} = 3230\\ \\rm{m/s}', A.x, by + 10, pa);
-  param('\\rm{probe 10 mm, 5 MHz, 3 cycle Hann burst}', A.x, by + 29, pa);
+  const pa = seg(0.5, 0.3), py = A.y + BD + 26;
+  text(DATA.slowtxt, A.x + BW, 54, {size: 15, color: C.muted, align: 'right', alpha: pa});
+  param('\\rm{steel }50 \\times\\ 25\\,\\rm{mm},\\ \\ c_{\\rm{L}} = 5900\\,\\rm{m/s},\\ \\ c_{\\rm{T}} = 3230\\,\\rm{m/s}', A.x, py, pa);
+  param('\\rm{probe 10 mm, 5 MHz, 3 cycle Hann burst}', A.x, py + 19, pa);
 }
 
 /* ---------------------------------------------------------------- (b) */
@@ -804,14 +924,14 @@ function drawB(st) {
   const pr = seg(0.05, 0.4), la = seg(0.3, 0.3);
   const ax = axes({x: PB.x, y: PB.y, w: PB.w, h: PB.h, xlim: [-0.5, 10], ylim: [-1.15, 1.15],
                    xticks: [0, 2, 4, 6, 8, 10], yticks: [-1, 0, 1], xlabel: 't\\ \\rm{(\u00b5s)}',
-                   ylabel: 'v/v_{0}', progress: pr, ylabelGap: 38});
+                   ylabel: 'v/v_{0}', progress: pr, ylabelGap: 40, tickSize: 16});
   line([[PB.x, ax.Y(0)], [PB.x + PB.w, ax.Y(0)]], {color: C.rule, width: 1, alpha: pr});
   for (const z of [0, 5, 10, 15, 20, 25]) {                 // depth of the reflector, z = c t / 2
     const x = ax.X(2 * z / DATA.cl);
     line([[x, PB.y], [x, PB.y + 5]], {width: 1.1, alpha: la});
-    math(String(z), x, PB.y - 7, {size: 15, align: 'center', alpha: la});
+    math(String(z), x, PB.y - 7, {size: 16, align: 'center', alpha: la});
   }
-  math('z = c_{\\rm{L}}t/2\\ \\rm{(mm)}', PB.x + PB.w / 2, PB.y - 29, {size: 16, align: 'center', alpha: la});
+  math('z = c_{\\rm{L}}t/2\\ \\rm{(mm)}', PB.x + PB.w / 2, PB.y - 30, {size: 17, align: 'center', alpha: la});
   if (st.rec < 0 || st.fade <= 0) return;
   const a = st.fade, tr = st.rec - DATA.t0, {t0: q0, dt: dq, n} = DATA.ascan;
   const m = Math.min(n - 1, Math.floor((tr - q0) / dq));
@@ -828,7 +948,7 @@ function drawB(st) {
   const lab = (s, tt, x, v, col, align) => {                 // each echo named once it is recorded
     if (tr < tt) return;
     const g = arrive(when(tt));
-    s.split('\n').forEach((r, i) => keepText(r, ax.X(x), ax.Y(v) + g.dy + 16 * i, {size: 15, color: col, align, alpha: g.a * a}));
+    s.split('\n').forEach((r, i) => keepText(r, ax.X(x), ax.Y(v) + g.dy + 18 * i, {size: LBL, color: col, align, alpha: g.a * a}));
   };
   /* the arrivals 2d/c predicts: a guide, and the time as Figure 12 marks it */
   const pred = [[E.tf, E.tf_th, -0.45, '2z_{\\rm{f}}/c_{\\rm{L}}'],
@@ -837,15 +957,22 @@ function drawB(st) {
     if (tr < te + 0.3) continue;
     const g = arrive(when(te + 0.3));
     line([[ax.X(tt), PB.y], [ax.X(tt), PB.y + PB.h]], {color: C.guide, width: 1, dash: [5, 4], alpha: g.a * a});
-    dimk(ax.X(0), ax.X(tt), ax.Y(v), s, {size: 14, color: C.body, alpha: g.a * a});
+    dimk(ax.X(0), ax.X(tt), ax.Y(v), s, {size: 16, color: C.body, alpha: g.a * a});
   }
   lab('initial\npulse', 0.35, 0.45, 0.86, C.body, 'left');
   lab('flaw echo', E.tf + 0.3, E.tf_th + 0.15, E.af + 0.14, C.accent, 'left');
   lab('back wall echo', E.tb + 0.3, E.tb_th - 0.15, E.ab + 0.2, C.body, 'right');
-  // the playhead, last: it passes behind the labels, never through them
-  const tc = st.ts - DATA.t0, xc = ax.X(tc), ca = a * clamp((t - st.c0) / 0.2);
-  gapLine(xc, PB.y, PB.y + PB.h, {color: C.ink, width: 1, alpha: 0.45 * ca});
-  dot(xc, ax.Y(AS[clamp(Math.round((tc - q0) / dq), 0, n - 1)]), 3, {color: C.navy, alpha: ca});
+  // the playhead, last: it passes behind the labels, never through them; at the
+  // cross-fade the one at 10 us gives way to the snapshot's
+  const ca = a * clamp((t - st.c0) / 0.2);
+  const head = (ts, al) => {
+    if (al <= 0) return;
+    const tc = ts - DATA.t0, xc = ax.X(tc);
+    gapLine(xc, PB.y, PB.y + PB.h, {color: C.ink, width: 1, alpha: 0.45 * al});
+    dot(xc, ax.Y(AS[clamp(Math.round((tc - q0) / dq), 0, n - 1)]), 3, {color: C.navy, alpha: al});
+  };
+  head(st.ts, ca * (1 - st.mix));
+  head(TSNAP, ca * st.mix);
 }
 
 /* ---------------------------------------------------------------- (c) */
@@ -854,7 +981,7 @@ function drawC(st) {
   const ga = seg(0.4, 0.3);                                  // the region imaged in (d)
   for (const x of [DATA.wb / 2 + DATA.tfm.x[0], DATA.wb / 2 + DATA.tfm.x[1]])
     line([[XB(CC, x), CC.y], [XB(CC, x), CC.y + BD]], {color: C.guide, width: 1, dash: [5, 4], alpha: ga});
-  text('region imaged in (d)', XB(CC, DATA.wb / 2), YB(CC, 23.6), {size: 15, align: 'center', color: C.muted, alpha: ga});
+  text('region imaged in (d)', XB(CC, DATA.wb / 2), YB(CC, 23.4), {size: LBL, align: 'center', color: C.body, alpha: ga});
   const c = DATA.el.c, hw = DATA.el.w / 2, F = [XB(CC, DATA.wb / 2 + DATA.tfm.peak[0]), YB(CC, DATA.tfm.peak[1])];
   const rays = (k, a, pa, pb) => {                           // transmitter k: out to the flaw, back to all
     if (a <= 0) return;
@@ -871,7 +998,8 @@ function drawC(st) {
   const x0 = XB(CC, c[0] - hw), x1 = XB(CC, c[31] + hw);
   ctx.save(); ctx.globalAlpha *= clamp(s);
   ctx.fillStyle = C.navy; ctx.fillRect(x0, ya, x1 - x0, 16);
-  const lit = (j, a) => { if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.amber; ctx.fillRect(XB(CC, c[j] - hw), ya, DATA.el.w * S, 16); ctx.restore(); } };
+  // the element that fires, lit in the array's light blue (the crimson is the flaw's alone)
+  const lit = (j, a) => { if (a > 0) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.sky; ctx.fillRect(XB(CC, c[j] - hw), ya, DATA.el.w * S, 16); ctx.restore(); } };
   if (k > 0) lit(k - 1, st.fade * (1 - seg(t0k, 0.12)));
   if (k >= 0) lit(k, st.fade * seg(t0k, 0.06));
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.8;
@@ -879,8 +1007,8 @@ function drawC(st) {
   ctx.restore();
   if (k >= 0) {                                              // the marker steps along the array
     const g = settle(t0k, 0.16), xm = k > 0 ? lerp(XB(CC, c[k - 1]), XB(CC, c[k]), g) : XB(CC, c[0]);
-    tri(xm, CC.y - 20, 7, C.amber, st.fade * (k > 0 ? 1 : clamp(g)));
-    text(`transmitter ${k + 1} of 32`, CC.x + BW, CC.y - 30, {size: 15, align: 'right', color: C.body, alpha: st.fade});
+    tri(xm, CC.y - 20, 7, C.blue, st.fade * (k > 0 ? 1 : clamp(g)));
+    text(`transmitter ${k + 1} of 32`, CC.x + BW, CC.y - 32, {size: 17, align: 'right', color: C.body, alpha: st.fade});
   }
   param('32\\ \\rm{elements, pitch 0.6 mm; each transmits in turn, all receive}', CC.x, CC.y + BD + 26, seg(0.5, 0.3));
 }
@@ -893,10 +1021,11 @@ function drawD(st) {
     tfmImage(st.k, seg(st.c0 + FIRE[st.k], 0.15));
     ctx.save(); ctx.beginPath(); ctx.rect(PD.x, PD.y, PD.w, PD.h); ctx.clip();
     ctx.globalAlpha *= st.fade; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(TC.c, X(T.x[0] - px / 2), Y(T.z[0] - px / 2), T.w * px * SD, T.h * px * SD); ctx.restore();
+    ctx.drawImage(TC.c, X(T.x[0] - px / 2), Y(T.z[0] - px / 2), T.w * px * S, T.h * px * S); ctx.restore();
   }
   axes({x: PD.x, y: PD.y, w: PD.w, h: PD.h, xlim: T.x, ylim: [27, 0], xticks: [-10, -5, 0, 5, 10],
-        yticks: [0, 5, 10, 15, 20, 25], xlabel: 'x\\ \\rm{(mm)}', ylabel: 'z\\ \\rm{(mm)}', progress: seg(0.15, 0.4), ylabelGap: 38});
+        yticks: [0, 5, 10, 15, 20, 25], xlabel: 'x\\ \\rm{(mm)}', ylabel: 'z\\ \\rm{(mm)}', progress: seg(0.15, 0.4),
+        ylabelGap: 40, tickSize: 16});
   line(DATA.flaw.x.map((x, i) => [X(x - DATA.wb / 2), Y(DATA.flaw.z[i])]),
        {color: C.accent, width: 1.3, dash: [3.5, 2.5], close: true, alpha: seg(0.45, 0.3)});
   const g = arrive(0.4), bx = PD.x + PD.w + 16;
@@ -904,23 +1033,23 @@ function drawD(st) {
   for (const v of [0, -10, -20, -30]) {
     const y = PD.y - v / DRD * PD.h + g.dy;
     line([[bx + 11, y], [bx + 15, y]], {width: 1, alpha: g.a});
-    math(fmt(v), bx + 19, y + 5, {size: 15, alpha: g.a});
+    math(fmt(v), bx + 19, y + 5, {size: LBL, alpha: g.a});
   }
-  text('dB', bx + 5.5, PD.y - 9 + g.dy, {size: 15, align: 'center', alpha: g.a});
+  text('dB', bx + 5.5, PD.y - 10 + g.dy, {size: LBL, align: 'center', alpha: g.a});
   if (st.k >= 5) {
     const h = arrive(st.c0 + FIRE[5]), a = h.a * st.fade;
-    text('flaw', X(T.peak[0] - 2.4), Y(T.peak[1] - 1.4) + h.dy, {size: 16, align: 'right', color: C.ink, alpha: a});
-    text('back wall', X(-13.2), Y(T.bw - 1.8) + h.dy, {size: 16, color: C.ink, alpha: a});
+    text('flaw', X(T.peak[0] - 2.6), Y(T.peak[1] - 1.6) + h.dy, {size: 17, align: 'right', color: C.ink, alpha: a});
+    text('back wall', X(-13.2), Y(T.bw - 2.0) + h.dy, {size: 17, color: C.ink, alpha: a});
   }
-  param('\\rm{total focusing method, }32 \\times\\ 32\\ \\rm{paths}', PD.x - 38, PD.y + PD.h + 74, seg(0.5, 0.3));
+  param('\\rm{total focusing method, }32 \\times\\ 32\\ \\rm{paths}', 584, 406, seg(0.5, 0.3));
 }
 
 function titles() {
   const g = arrive(0);
-  for (const [l, s, x, y] of [['a', 'single probe, pulse echo', 18, 34], ['b', 'A scan', 572, 34],
-                              ['c', 'array probe, many paths', 18, 424], ['d', 'B scan image', 572, 424]]) {
+  for (const [l, s, x, y] of [['a', 'single probe, pulse echo', 18, 32], ['b', 'A scan', 548, 32],
+                              ['c', 'array probe, many paths', 18, 384], ['d', 'B scan image', 548, 384]]) {
     const w = panel(l, x, y + g.dy, {alpha: g.a});
-    text(s, x + w + 8, y + g.dy, {size: 17, color: C.body, alpha: g.a});
+    text(s, x + w + 8, y + g.dy, {size: 18, color: C.body, alpha: g.a});
   }
 }
 

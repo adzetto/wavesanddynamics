@@ -8,13 +8,13 @@ BRIDGE MODEL
   at the pylon crossbeams. 2D Euler-Bernoulli frame elements, consistent mass.
 
 CHECK 1: the element, alone, against closed forms
-  simply supported 100 m deck beam: f1 0.95977 Hz (+2.5e-08), f2 3.83909 Hz (+4.2e-07), f3 8.63797 Hz (+2.1e-06)
-  free standing pylon (127 m cantilever): f1 0.22119 Hz, closed form 0.22119 Hz (+2.7e-08)
+  simply supported 100 m deck beam: f1 0.95977 Hz (+2.4e-08), f2 3.83909 Hz (+4.2e-07), f3 8.63797 Hz (+2.1e-06)
+  free standing pylon (127 m cantilever): f1 0.22119 Hz, closed form 0.22119 Hz (+2.9e-08)
 
 CHECK 2: the bridge, mesh convergence of its first frequencies
   elements of 4 m: 0.3926, 0.5706, 0.9549, 1.1281, 1.2926, 1.3350 Hz
   elements of 2 m: 0.3922, 0.5701, 0.9548, 1.1279, 1.2947, 1.3331 Hz
-  elements of 1 m: 0.3923, 0.5701, 0.9548, 1.1279, 1.2947, 1.3331 Hz
+  elements of 1 m: 0.3922, 0.5701, 0.9548, 1.1279, 1.2947, 1.3331 Hz
   the 2 m mesh is drawn. Mode 1, the first vertical bending of the deck, symmetric:
   f1 = 0.3922 Hz; deck vertical share of its motion 0.999; symmetry of the main span +1.0000
   (then f2 = 0.5701 Hz, antisymmetric)
@@ -38,4 +38,4 @@ CHECK 3: the A0 branch against its limits
 DRAWING
   bridge 1.2 units per metre; the mode's largest deck deflection drawn 9 units; real time (0.392 Hz).
   detail A: 2.5 units per mm; the plate's u_z drawn 6 units at most and through the diverging palette;
-  time slowed 4e+04 x (one burst every 3.2 s on screen).
+  shown 40,000 x slower, said in the detail (one burst every 3.2 s on screen); the bridge in real time.

@@ -1,16 +1,19 @@
 """Figure 5: two ways to the equation of motion of a wave in a beam.
 
 (a) The analytical approach: an infinitely long Euler-Bernoulli beam (the
-    20 x 40 mm steel bar of Figure 4, bending in its stiff plane) carries the
-    exact flexural wave w = A cos(kx - wt), w = k^2 sqrt(EI / rho A). An element
+    20 x 20 mm square steel bar of Figure 4) carries the exact flexural wave
+    w = A cos(kx - wt), w = k^2 sqrt(EI / rho A). An element
     dx is picked out and enlarged: its shape is the beam's own drawn shape with
     the rigid motion taken out, and the shear forces V = -EI w''' and bending
     moments M = EI w'' on its two faces are drawn to scale, at that place and
     time. Then EI w'''' + rho A w_tt = 0.
 (b) The SAFE method: the same bar's cross-section, meshed as in Figure 4
-    (safe_model.py), extruded along x in an oblique projection. Every point
-    moves as Re{U(y, z) exp(i(kx - wt))}, U the computed eigenvector of the
-    fundamental vertical bending mode at the chosen k.
+    (16 x 16 Q9 elements of 1.25 mm, safe_model.py), extruded along x in an
+    oblique projection. Every point moves as Re{U(y, z) exp(i(kx - wt))}, U the
+    computed eigenvector of the fundamental vertical bending mode at the chosen k.
+
+Each panel runs on one fixed clock: a round slow-motion factor, written under
+the panel, and the displayed period is the wave's own period times it.
 
 Run: python tools/numfig/safe.py   (writes content/anim/nf-safe.html and .webp,
 and tools/numfig/safe.check.txt)
@@ -25,20 +28,32 @@ import safe_model as sm
 
 NAME = "safe"
 HERE = os.path.dirname(os.path.abspath(__file__))
-MESH = (10, 20)
+MESH = (16, 16)      # Figure 4's bar: dispersion.NE_BAR elements along each side, 1.25 mm
 
 # (a) the analytical wave
 LAM_A = 1.0          # m
 A_PHYS = 1e-3        # m, amplitude (drawn exaggerated)
 L_A = 2.0            # m of beam drawn
 X0_A, DX_A = 1.55, 0.10  # the element picked out, m
-TD_A = 3.0           # s, displayed period
+TD_A = 3.0           # s, the displayed period aimed at; the slow-motion factor is rounded
 
 # (b) the SAFE wave
 LAM_B = 0.050        # m
 L_B = 3 * LAM_B      # m of bar drawn
-TD_B = 2.5           # s, displayed period
+TD_B = 2.5           # s, the displayed period aimed at (as TD_A)
 POSTER = 3.0         # s, the printed moment (the intro is over by 1.4 s)
+
+
+def sig2(v):
+    """v rounded to two significant figures."""
+    e = int(np.floor(np.log10(v)))
+    return round(v / 10 ** e, 1) * 10 ** e
+
+
+def slow_tex(r):
+    """The slow-motion label, as Figure 4 writes it."""
+    e = int(np.floor(np.log10(r)))
+    return f"\\rm{{shown}}\\ {r / 10 ** e:.1f}\\ \\times\\ 10^{{{e}}}\\ \\rm{{times slower than real time}}"
 
 
 def compute():
@@ -61,20 +76,38 @@ def compute():
     Kk = model.K1 + kb * model.K2 + kb * kb * model.K3
     res = np.linalg.norm(Kk @ v - wb[0] ** 2 * (model.M @ v)) / np.linalg.norm(Kk @ v)
     bs_b = sm.beam_speeds(kb)
+    # the mesh: the same waves on meshes of twice and of half the element size
+    conv = {}
+    for n in (8, 32):
+        m = sm.Safe(n, n)
+        conv[n] = (m.omegas("vertical", kb, 3), m.omegas("vertical", ka, 1)[0], m.ndof)
+    # the square's bending pair: the lateral class at the same k
+    w_lat = model.omegas("lateral", kb, 1)[0]
     return dict(EI=EI, rhoA=rhoA, ka=ka, wa=wa, w_safe_a=w_safe_a, bs_a=bs_a,
                 kb=kb, wb=wb, v=v, res=res, bs_b=bs_b, ndof=model.ndof,
-                loop=model.boundary())
+                loop=model.boundary(), conv=conv, w_lat=w_lat, sec=sec)
 
 
-def check(R):
+def same_mesh_as_figure_4():
+    """Figure 4's bar (dispersion.py) node for node: nodes and elements equal."""
+    import dispersion
+    nodes, elems = dispersion.bar_mesh()
+    model = sm.Safe(*MESH)
+    return bool(dispersion.NE_BAR == MESH[0] == MESH[1]
+                and np.allclose(np.asarray(nodes) / 1e3, model.nodes, atol=1e-12)
+                and np.array_equal(np.asarray(elems), model.elems))
+
+
+def check(R, slow_a, slow_b):
     L = []
     p = L.append
     fa, fb = R["wa"] / 2 / np.pi, R["wb"][0] / 2 / np.pi
+    hb = sm.B / MESH[0] * 1e3
     p("Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same bar")
     p("")
     p("(a) ANALYTICAL: Euler-Bernoulli beam, infinitely long (no boundary conditions)")
-    p(f"  steel bar {sm.B*1e3:.0f} x {sm.H*1e3:.0f} mm bending in its stiff plane: EI = {R['EI']:.2f} N m^2, "
-      f"rho A = {R['rhoA']:.3f} kg/m")
+    p(f"  Figure 4's square steel bar, {sm.B*1e3:.0f} x {sm.H*1e3:.0f} mm (E = {sm.E/1e9:.0f} GPa, nu = {sm.NU},"
+      f" rho = {sm.RHO:.0f} kg/m^3): EI = {R['EI']:.2f} N m^2, rho A = {R['rhoA']:.3f} kg/m")
     p(f"  exact wave w = A cos(kx - wt): lambda = {LAM_A} m, k = {R['ka']:.4f} rad/m,")
     p(f"  w = k^2 sqrt(EI/(rho A)) = {R['wa']:.2f} rad/s, f = {fa:.2f} Hz, c_p = w/k = {R['wa']/R['ka']:.2f} m/s")
     p(f"  element: x = {X0_A:g} to {X0_A+DX_A:g} m (k dx = {R['ka']*DX_A:.4f} rad); faces carry")
@@ -95,27 +128,41 @@ def check(R):
     p("  check of the drawn element over a period: max |V(x+dx) - V(x) - int rho A w_tt dx| /")
     p(f"  (EI k^3 A) = {worst:.1e} (dynamic equilibrium holds exactly)")
     p("  N = EA u' = 0: a flexural wave carries no axial force, so N and N + dN are not drawn.")
-    p(f"  SAFE at the same k: f = {R['w_safe_a']/2/np.pi:.2f} Hz, {R['w_safe_a']/R['wa']-1:+.2%} from")
-    p(f"  Euler-Bernoulli; Timoshenko gives {R['bs_a']['vertical_Timo']*R['ka']/2/np.pi:.2f} Hz "
-      f"({R['w_safe_a']/(R['bs_a']['vertical_Timo']*R['ka'])-1:+.1e} from SAFE): at kh = {R['ka']*sm.H:.3f}")
-    p("  the shear and rotary inertia neglected by Euler-Bernoulli cost about one percent.")
-    p(f"  displayed period {TD_A} s: time slowed {fa*TD_A:.3g}")
+    tim = R["bs_a"]["vertical_Timo"] * R["ka"]
+    p(f"  SAFE at the same k: f = {R['w_safe_a']/2/np.pi:.3f} Hz, {R['w_safe_a']/R['wa']-1:+.2%} from Euler-Bernoulli;")
+    p(f"  Timoshenko (Cowper's shear coefficient) gives {tim/2/np.pi:.3f} Hz ({R['w_safe_a']/tim-1:+.1e} from SAFE):")
+    p(f"  at kh = {R['ka']*sm.H:.3f} the shear and rotary inertia that Euler-Bernoulli neglects cost"
+      f" {1 - R['w_safe_a']/R['wa']:.2%}.")
+    p(f"  clock: slowed {slow_a:,.0f} times (a round factor), so the displayed period is {slow_a / fa:.3f} s")
     p("")
-    p("(b) SAFE: the mesh of Figure 4 (see dispersion.check.txt for its convergence)")
-    p(f"  {MESH[0]} x {MESH[1]} Q9 elements, {R['ndof']} dof; fundamental vertical bending mode at")
+    p("(b) SAFE: Figure 4's bar and its mesh (dispersion.check.txt: the bar's curves and their convergence)")
+    p(f"  the same mesh as Figure 4's bar, node for node (dispersion.bar_mesh): {same_mesh_as_figure_4()}")
+    p(f"  {MESH[0]} x {MESH[1]} Q9 elements of {hb:.2f} mm, {R['ndof']} dof; fundamental vertical bending mode at")
     p(f"  lambda = {LAM_B*1e3:.0f} mm, k = {R['kb']:.3f} rad/m: f = {fb/1e3:.3f} kHz, "
       f"c_p = {R['wb'][0]/R['kb']:.1f} m/s")
-    p(f"  (next branches of the class at this k: {', '.join(f'{w/2/np.pi/1e3:.2f}' for w in R['wb'][1:])} kHz)")
+    p(f"  (next branches of the class at this k: {', '.join(f'{w/2/np.pi/1e3:.2f}' for w in R['wb'][1:])} kHz;"
+      f" the lateral partner of the square's bending pair: {R['w_lat']/2/np.pi/1e3:.3f} kHz)")
     p(f"  eigenpair residual |(K(k) - w^2 M) V| / |K(k) V| = {R['res']:.1e} (full matrices)")
+    p(f"  elements a wavelength: lambda / h = {LAM_B*1e3/hb:.0f} (the field is exact along x; across the section")
+    p(f"  the shortest scale of this mode is the section itself, {sm.B*1e3:.0f} mm = {MESH[0]} elements)")
+    c8, c32 = R["conv"][8], R["conv"][32]
+    p("  MESH CONVERGENCE (the same waves on 8 x 8 and 32 x 32 meshes, elements of 2.5 and 0.625 mm):")
+    for i in range(3):
+        p(f"    branch {i + 1} at k = {R['kb']:.3f}: 8 x 8 {c8[0][i]/2/np.pi/1e3:.4f} kHz, 16 x 16 {R['wb'][i]/2/np.pi/1e3:.4f},"
+          f" 32 x 32 {c32[0][i]/2/np.pi/1e3:.4f} ({R['wb'][i]/c32[0][i]-1:+.2e} against 32 x 32)")
+    p(f"    (a)'s wave at k = {R['ka']:.4f}: 16 x 16 {R['w_safe_a']/2/np.pi:.4f} Hz, 32 x 32 {c32[1]/2/np.pi:.4f} Hz"
+      f" ({R['w_safe_a']/c32[1]-1:+.1e})")
     tb = R["bs_b"]["vertical_Timo"]
     eb = R["bs_b"]["vertical_EB"]
     c = R["wb"][0] / R["kb"]
-    p(f"  beam theories at this k: Euler-Bernoulli c_p = {eb:.1f} m/s ({c/eb-1:+.1%}), "
+    p(f"  beam theories at this k (kh = {R['kb']*sm.H:.2f}): Euler-Bernoulli c_p = {eb:.1f} m/s ({c/eb-1:+.1%}), "
       f"Timoshenko {tb:.1f} m/s ({c/tb-1:+.2%})")
+    p("  the published square rod: Figure 4's check compares this bar's bending branch with Hayashi,")
+    p("  Kawashima and Rose (2004), Fig. 2 (dispersion.check.txt, THE BAR)")
     p("  u(x, y, z, t) = Re{U(y, z) exp(i(kx - wt))}, U_x = i V_x: the axial part is a quarter")
     p("  period out of phase with the transverse part, which tilts the sections as the wave passes.")
-    p(f"  bar drawn over {L_B*1e3:.0f} mm = {L_B/LAM_B:.0f} wavelengths; displayed period {TD_B} s: "
-      f"time slowed {fb*TD_B:.3g}")
+    p(f"  bar drawn over {L_B*1e3:.0f} mm = {L_B/LAM_B:.0f} wavelengths; clock: slowed {slow_b:,.0f} times (a round factor),")
+    p(f"  so the displayed period is {slow_b / fb:.3f} s")
     return "\n".join(L) + "\n"
 
 
@@ -250,7 +297,7 @@ function drawA() {
   const qa = lab(1.0);
   if (qa > 0) eqn(292, 284 + rise(qa), qa);
   const pa = lab(1.05), pw = text(D.pa, 18, 348, {size: 14, color: C.muted, alpha: pa});
-  math(D.slowa, 18 + pw + 4, 348, {size: 14, color: C.muted, alpha: pa});
+  math(D.slowa, 18 + pw + 6, 348, {size: 14, color: C.muted, alpha: pa});
 }
 
 /* EI d4w/dx4 + rho A d2w/dt2 = 0, set as TeX sets it */
@@ -278,7 +325,7 @@ const B = D.b;
 const NYN = 2 * B.ny + 1, NZN = 2 * B.nz + 1, NN = NYN * NZN;
 const U = (() => { const q = b64i8(B.U), v = new Float32Array(q.length); for (let i = 0; i < q.length; i++) v[i] = q[i] / 127; return v; })();
 const S = B.s, FX = B.fx, CA = Math.cos(B.al), SA = Math.sin(B.al);
-const O = {x: 140, y: 670};                // the section's centre at x = 0
+const O = {x: 150, y: 680};                // the section's centre at x = 0
 const proj = (x, y, z) => [O.x + y * S + x * S * FX * CA, O.y - z * S - x * S * FX * SA];
 const T_B0 = .45, T_PB = D.tpb, NX = 150;  // the wave arrives; its phase origin
 const YS = Array.from({length: NYN}, (_, i) => -B.bw / 2 + B.bw * i / (NYN - 1));
@@ -325,7 +372,7 @@ function drawB() {
   for (let j = 0; j < NZN; j += 2) line(Array.from({length: NYN}, (_, i) => fr[j * NYN + i]), {color: C.ink, width: .6, alpha: .75, progress: md});
   line(B.loop.map(n => fr[n]), {color: C.ink, width: 1.5, close: true, progress: md});
   // axes
-  const aa = lab(.70), g = [262, 798], L = 34;
+  const aa = lab(.70), g = [330, 776], L = 34;
   arrow(g[0], g[1], g[0] + L, g[1], {width: 1.1, head: 7, alpha: aa});
   arrow(g[0], g[1], g[0], g[1] - L, {width: 1.1, head: 7, alpha: aa});
   arrow(g[0], g[1], g[0] + L * CA, g[1] - L * SA, {width: 1.1, head: 7, alpha: aa});
@@ -345,9 +392,12 @@ function drawB() {
   ctx.restore();
   // the harmonic term
   const ha = lab(.90);
-  math('u(x,y,z,t) = U(y,z)e^{i(kx - ωt)}', 800, 484 + rise(ha), {size: 24, align: 'center', alpha: ha});
-  const pb = lab(1.0), pw = text(D.pb, 18, H - 14, {size: 14, color: C.muted, alpha: pb});
-  math(B.slow, 18 + pw + 4, H - 14, {size: 14, color: C.muted, alpha: pb});
+  math('u(x,y,z,t) = U(y,z)e^{i(kx - ωt)}', 820, 428 + rise(ha), {size: 24, align: 'center', alpha: ha});
+  // the mesh, then the wave and the panel's one clock: its slow-motion factor
+  const pb = lab(1.0);
+  text(D.pb, 18, H - 34, {size: 14, color: C.muted, alpha: pb});
+  const pw = text(D.pb2, 18, H - 14, {size: 14, color: C.muted, alpha: pb});
+  math(B.slow, 18 + pw + 6, H - 14, {size: 14, color: C.muted, alpha: pb});
 }
 
 function draw() { drawA(); drawB(); }
@@ -358,41 +408,63 @@ boot();
 def main():
     R = compute()
     fa, fb = R["wa"] / 2 / np.pi, R["wb"][0] / 2 / np.pi
-    s_px, fx, al = 4.6, 0.65, np.radians(18)
-    slow = lambda r: f"\\rm{{time slowed}}\\ {r/10**np.floor(np.log10(r)):.1f}\\ \\times\\ 10^{{{int(np.floor(np.log10(r)))}}}"
+    s_px, fx, al = 6.2, 0.66, np.radians(15)
+    slow_a, slow_b = sig2(fa * TD_A), sig2(fb * TD_B)
+    td_a, td_b = slow_a / fa, slow_b / fb          # s: the displayed periods, one clock a panel
     v = R["v"]
     # the poster: the element's middle at phase 3 pi / 4, where both faces carry
     # a clear shear force and bending moment
     th = (R["ka"] * (X0_A + DX_A / 2) - 0.75 * np.pi) % (2 * np.pi)
-    tpa = POSTER - th / (2 * np.pi) * TD_A
+    tpa = POSTER - th / (2 * np.pi) * td_a
+    hb = sm.B / MESH[0] * 1e3
     data = {
         "poster": POSTER, "tpa": tpa, "tpb": 0.0,
-        "a": {"L": L_A, "A": A_PHYS, "k": R["ka"], "x0": X0_A, "dx": DX_A, "Td": TD_A,
+        "a": {"L": L_A, "A": A_PHYS, "k": R["ka"], "x0": X0_A, "dx": DX_A, "Td": td_a,
               "h": sm.H, "EI": R["EI"], "rhoA": R["rhoA"], "w": R["wa"]},
         "b": {"ny": MESH[0], "nz": MESH[1], "bw": sm.B * 1e3, "bh": sm.H * 1e3,
               "U": common.i8(v * 127), "loop": R["loop"].tolist(), "lam": LAM_B * 1e3,
               "L": L_B * 1e3, "s": s_px, "fx": fx, "al": al,
-              "amp": 2.2, "Td": TD_B, "slow": slow(fb * TD_B)},
-        "pb": (f"SAFE: {MESH[0]} × {MESH[1]} quadratic elements, {R['ndof']} dof; fundamental "
-               f"bending mode, λ = {LAM_B*1e3:.0f} mm, f = {fb/1e3:.1f} kHz, "
-               f"phase velocity {R['wb'][0]/R['kb']:.0f} m/s,"),
+              "amp": 2.2, "Td": td_b, "slow": slow_tex(slow_b)},
+        "pb": (f"SAFE: {MESH[0]} × {MESH[1]} quadratic elements of {hb:.3g} mm ({LAM_B*1e3/hb:.0f} per wavelength), "
+               f"{R['ndof']} dof, the mesh of Figure 4"),
+        "pb2": (f"fundamental bending mode, λ = {LAM_B*1e3:.0f} mm, f = {fb/1e3:.1f} kHz, "
+                f"phase velocity {R['wb'][0]/R['kb']:.0f} m/s;"),
     }
     data["pa"] = (f"Euler-Bernoulli: steel {sm.B*1e3:.0f} × {sm.H*1e3:.0f} mm, λ = {LAM_A:g} m, "
-                  f"f = {fa:.0f} Hz, phase velocity {R['wa']/R['ka']:.0f} m/s,")
-    data["slowa"] = slow(fa * TD_A)
+                  f"f = {fa:.0f} Hz, phase velocity {R['wa']/R['ka']:.0f} m/s;")
+    data["slowa"] = slow_tex(slow_a)
     title = "Figure 5: Two ways of obtaining the governing equation of motion for a wave propagating in a beam"
     aria = ("A bending wave travels along a long steel beam; a small element of it is enlarged with the shear "
             "forces and bending moments on its faces, which change as the wave passes, above the beam's equation "
-            "of motion. Below, the same bar in three dimensions, its cross section meshed with finite elements, "
-            "carries a computed bending wave along its axis.")
-    common.build_html(NAME, title, aria, 1000, 840, data, JS)
-    txt = check(R)
+            "of motion. Below, the same square bar in three dimensions, its cross section meshed with finite "
+            "elements as in Figure 4, carries a computed bending wave along its axis.")
+    common.build_html(NAME, title, aria, 1000, HEIGHT, data, JS)
+    txt = check(R, slow_a, slow_b)
+    look = common.still(NAME)                        # also writes content/anim/nf-{NAME}.webp
+    txt += overlap_lines()
     with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)
     print(txt)
-    print("still:", common.still(NAME))              # also writes content/anim/nf-{NAME}.webp
+    print("still:", look)
     if "--look" in sys.argv:
         print(common.frames(NAME, [0.4, 1.0, 1.6, 2.2, 3.0, 4.2, 5.0]))
+
+
+HEIGHT = 860
+OVERLAP_T = [0.4, 1.0, 1.6, 2.2, POSTER, 4.2, 5.0, 7.5]
+
+
+def overlap_lines():
+    """common.overlaps through the intro, at the poster and over a period of each wave."""
+    out = common.overlaps(NAME, OVERLAP_T)
+    bad = {k: v for k, v in out.items() if v["labels"] or v["crossings"]}
+    if bad:
+        raise RuntimeError(f"collisions: {bad}")
+    size = os.path.getsize(os.path.join(common.ANIM, f"nf-{NAME}.html"))
+    webp = os.path.getsize(os.path.join(common.ANIM, f"nf-{NAME}.webp"))
+    return ("\nLAYOUT\n"
+            f"  common.overlaps at t = {', '.join(f'{t:g}' for t in OVERLAP_T)} s: no label collisions, no crossings\n"
+            f"  page {size / 1024:.0f} KB, still {webp / 1024:.0f} KB\n")
 
 
 if __name__ == "__main__":

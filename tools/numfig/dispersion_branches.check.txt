@@ -1,13 +1,63 @@
-Displayed branch count audit, 2 October 2026
-Window: f <= 200 kHz and phase velocity <= 7 km/s.
-All low eigenvalues are inspected independently at k = 2, 20, 50, 150, 400, 650, 900 rad/m.
-Pipe sin/cos partners have identical dispersion and are drawn once.
-bar: 512 Q9 elements, 2145 nodes, 27 displayed branches; independent counts at sampled k: [4, 4, 5, 22, 6, 0, 0]; none missing
-ibeam: 250 Q9 elements, 1147 nodes, 32 displayed branches; independent counts at sampled k: [4, 8, 12, 26, 16, 0, 0]; none missing
-rail: 369 Q9 elements, 1625 nodes, 27 displayed branches; independent counts at sampled k: [4, 6, 10, 25, 11, 0, 0]; none missing
-pipe: 432 Q9 elements, 1944 nodes, 22 displayed branches; independent counts at sampled k: [3, 5, 9, 19, 9, 0, 0]; none missing
-plate: 15 Q9 elements, 93 nodes, 4 displayed branches; independent counts at sampled k: [3, 3, 3, 3, 1, 0, 0]; none missing
-Reference: https://doi.org/10.1038/s41598-024-59328-5
-The reference uses a 192 mm high, 150 mm wide rail, 550 triangles / 340 nodes.
-The educational rail here is 35 x 40 mm, with Q9 elements and the guide steel properties.
-Geometry, material and frequency window determine branch count; mesh density controls numerical convergence.
+Displayed branch count audit (dispersion.py; the full report is dispersion.check.txt)
+Each section over its own frequency window and c_p up to 10 km/s; the window's end lies in a gap
+between the frequencies where branches enter it, so every branch drawn enters well before the end and
+none is about to (in the bar three branches cut on below its end but enter only above it: not drawn).
+
+SUMMARY
+  section  window        reference                                      branches   mesh                    per shortest
+                                                                        ours/ref.                          wavelength
+  bar      0-190 kHz  Hayashi, Kawashima and Rose 2004 (SAFE), Fig. 2  11/11      256 Q9, 1.25 mm max   12.1
+  I-beam   0-52 kHz  independent: the mesh refined twice             20/ -      564 Q9, 2.50 mm max   10.2
+  rail     0-22.5 kHz  Ramatlo, Wilke and Loveday 2018 (SAFE), Fig. 1  16/16      588 Q9, 7.15 mm max   10.1
+  pipe     0-175 kHz  exact, Gazis 1959                               22/22      216 Q9, 1.84 mm max    6.4
+  plate    0-250 kHz  exact, Rayleigh-Lamb and SH                      5/ 5       10 Q9, 1.00 mm max   11.2
+
+bar:
+  THE COUNT: at each of the paper's 101 frequencies (its dots lie on a grid of about 51 kHz mm, one on each
+  curve under c/c_T = 3), its dots against our curves at the same f h/c_T: the same at 60; ours one or more
+  ahead at 40, behind at 1. Up to our window, each new branch appears in the paper's dots 2 to
+  13 % higher in f h than in ours (median 5.0 %), as from a stiffer mesh (12 x 12 elements;
+  the rail's published four-node elements do the same), so the counts part for a few of its frequency steps
+  after each branch enters and agree between. The paper's frequencies nearest our window's end:
+    f h  3556 kHz mm (f h/c_T = 1.142): the paper 10 curves, ours 11
+    f h  3607 kHz mm (f h/c_T = 1.158): the paper 11 curves, ours 11
+    f h  3658 kHz mm (f h/c_T = 1.174): the paper 11 curves, ours 11
+    f h  3709 kHz mm (f h/c_T = 1.191): the paper 11 curves, ours 11
+    f h  3754 kHz mm (f h/c_T = 1.205): the paper 11 curves, ours 11
+  OUR WINDOW ends at 190 kHz (f h/c_T = 1.180; the paper's f h 3,676 kHz mm by its c_T), in the widest
+  stretch where the paper's figure and ours hold the same number of branches: 11 (the paper's dots at its two
+  nearest frequencies: 11 and 11). Our figure (steel, nu = 0.29, c_p up to 10 km/s): 11 branches,
+  3 from zero frequency (bending, axial, torsional), the rest cutting on at
+    80.50, 100.81, 110.42, 113.85, 113.85, 134.32, 161.01, 162.57 kHz
+  (3 more cut on below 190 kHz, at 161.01, 165.35, 180.01 kHz, but their phase
+  velocity stays above the window until past its end: they are not drawn and carry no cut-on mark, as the
+  paper's figure has them only above its c/c_T = 3 there)
+
+I-beam:
+  branches below 52 kHz: 20, 4 from zero frequency, the rest cutting on at 1.24, 2.79, 6.29, 9.40, 9.75, 12.54, 13.24, 22.60, 23.44, 26.42, 30.75, 35.69, 36.72, 36.72, 42.94, 45.58 kHz
+
+rail:
+  branches below 22.5 kHz: 16 drawn (4 from zero frequency, 12 cutting on); Ramatlo et al.: 16 (12 cutting on)
+  paired in order (ours, theirs, difference): 1.30, 1.34 (-3.3%); 3.86, 4.04 (-4.5%); 5.06, 5.08 (-0.4%); 5.12, 5.15 (-0.6%); 9.40, 9.80 (-4.1%); 9.70, 9.88 (-1.8%); 13.35, 13.37 (-0.1%); 13.36, 14.14 (-5.5%); 15.78, 15.94 (-1.0%); 18.60, 19.23 (-3.3%); 20.71, 21.77 (-4.9%); 21.84, 22.24 (-1.8%)
+  ours lie 0.1% to 5.5% under theirs (mean 2.6%): linear four-node elements are stiffer than
+  quadratic ones and raise every frequency; the count and the order are the same. Their next cut-on, 23.67 kHz
+  (ours 23.19), lies above the window.
+
+pipe:
+  branches below 175 kHz: 22 drawn (3 from zero frequency, 19 cutting on); exact (Gazis): 22 (19 cutting on)
+    L(0,m)  exact 44.734 kHz; SAFE 44.734 (same count)
+    F(1,m)  exact 26.591, 62.721 kHz; SAFE 26.591, 62.721 (same count)
+    F(2,m)  exact 6.264, 53.179, 98.723 kHz; SAFE 6.265, 53.179, 98.723 (same count)
+    F(3,m)  exact 17.253, 79.761, 139.268 kHz; SAFE 17.257, 79.761, 139.270 (same count)
+    F(4,m)  exact 31.943, 106.334 kHz; SAFE 31.953, 106.335 (same count)
+    F(5,m)  exact 49.584, 132.894 kHz; SAFE 49.606, 132.897 (same count)
+    F(6,m)  exact 69.541, 159.439 kHz; SAFE 69.583, 159.447 (same count)
+    F(7,m)  exact 91.284 kHz; SAFE 91.358 (same count)
+    F(8,m)  exact 114.389 kHz; SAFE 114.513 (same count)
+    F(9,m)  exact 138.522 kHz; SAFE 138.717 (same count)
+    F(10,m) exact 163.426 kHz; SAFE 163.721 (same count)
+  every cut-on: max |f_SAFE/f_exact - 1| = 1.8e-03
+
+plate:
+  exact cut-ons below 250 kHz: antisymmetric Lamb 161.003 kHz (f d = c_T/2), symmetric Lamb none (S1 at c_L/2d = 296.0 kHz), SH 161.003 kHz
+  branches below 250 kHz: 5 drawn (3 from zero frequency, 2 cutting on); exact Lamb and SH: 5 (2 cutting on); the drawn: A0 Lamb, A1 Lamb, S0 Lamb, SH0, SH1

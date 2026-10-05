@@ -1,313 +1,213 @@
-Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in four steel sections
-and an infinite plate, every wave solved in the page by the same SAFE model
+Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in five steel waveguides, each over
+the frequency window of its reference: published curves for four (the bar, the rail, the pipe, the
+plate), and for the I-beam, of which none were found, the same model on a mesh refined twice; every
+wave the page shows solved in the page by the same SAFE model
 
-THE BAR (safe_model.py; the section the page opens with)
+MATERIAL AND METHOD
+  steel: E = 210 GPa, nu = 0.29, rho = 7850 kg/m^3: c_L = 5920.9 m/s, c_T = 3220.1 m/s,
+  c_0 = sqrt(E/rho) = 5172.2 m/s, c_R = 2981.3 m/s (the Rayleigh equation's root, c_R/c_T = 0.92584)
+  SAFE: u = U(y, z) exp(i(kx - wt)); 9-node isoparametric quadrilaterals, 3 x 3 Gauss, 3 dof a node;
+  [K1 + ik K2 + k^2 K3 - w^2 M] U = 0, made real symmetric by U_x = i V_x; each symmetry class on its
+  own orthonormal basis; the lowest eigenpairs at each real k (dense eigh, or sparse shift-invert).
+  The square bar, the pipe and the plate are meshed on structured grids; the I-beam and the rail by a
+  constrained quality Delaunay triangulation of the outline (Shewchuk's Triangle, minimum angle 30
+  degrees), each triangle split into three quadrilaterals, then 9-node elements, the boundary nodes moved
+  onto the true outline; a half or quarter meshed and mirrored, so the mirror planes hold exactly.
+  The window of every section: f up to its own fmax and c_p up to 10 km/s. fmax is chosen in a gap
+  between the frequencies where branches enter the window (their c_p falling through its top), so that every
+  branch drawn enters well before fmax and none is about to (each is drawn once); in all but the bar this is
+  also a gap between cut-on frequencies. The cut-on marks on the top frame are the k = 0 frequencies of
+  exactly the drawn higher order branches.
 
-MODEL
-  steel bar, b x h = 20 x 40 mm (y x z), E = 210 GPa, nu = 0.29, rho = 7850 kg/m^3
-  c_L = 5920.9 m/s, c_T = 3220.1 m/s, c_0 = sqrt(E/rho) = 5172.2 m/s
-  c_R = 2981.3 m/s (root of the Rayleigh equation, c_R/c_T = 0.92584; Viktorov's (0.87 + 1.12 nu)/(1 + nu) gives 0.92620)
-  SAFE: u = U(y, z) exp(i(kx - wt)); Q9 quadratic quadrilaterals, 3 dof per node,
-  3 x 3 Gauss (exact for rectangles); [K1 + ik K2 + k^2 K3 - w^2 M] U = 0 made real
-  symmetric by U_x = i V_x; sparse shift-invert eigenpairs at each real k, checked against dense eigh. The two mirror planes
-  split the problem into four symmetry classes (orthonormal symmetry-adapted bases):
-  (++) axial, (+-) vertical bending, (-+) lateral bending, (--) torsional.
-  K2 antisymmetry check: max|K2 + K2^T|/max|K2| = 6.5e-17
+SUMMARY
+  section  window        reference                                      branches   mesh                    per shortest
+                                                                        ours/ref.                          wavelength
+  bar      0-190 kHz  Hayashi, Kawashima and Rose 2004 (SAFE), Fig. 2  11/11      256 Q9, 1.25 mm max   12.1
+  I-beam   0-52 kHz  independent: the mesh refined twice             20/ -      564 Q9, 2.50 mm max   10.2
+  rail     0-22.5 kHz  Ramatlo, Wilke and Loveday 2018 (SAFE), Fig. 1  16/16      588 Q9, 7.15 mm max   10.1
+  pipe     0-175 kHz  exact, Gazis 1959                               22/22      216 Q9, 1.84 mm max    6.4
+  plate    0-250 kHz  exact, Rayleigh-Lamb and SH                      5/ 5       10 Q9, 1.00 mm max   11.2
 
-MESH AND CONVERGENCE
-  production mesh 16 x 32 Q9 elements (1.25 mm), 6435 dof.
-  every branch below 220 kHz (of the 8 lowest per class), against the 32 x 64 mesh:
-   6 x 12 (3.3 mm elements): max |w/w_ref - 1| k = 150 rad/m 3.9e-03, k = 440 rad/m 1.9e-03
-   8 x 16 (2.5 mm elements): max |w/w_ref - 1| k = 150 rad/m 1.3e-03, k = 440 rad/m 7.1e-04
-  10 x 20 (2.0 mm elements): max |w/w_ref - 1| k = 150 rad/m 5.5e-04, k = 440 rad/m 3.1e-04
-  16 x 32 (1.2 mm elements): max |w/w_ref - 1| k = 150 rad/m 8.3e-05, k = 440 rad/m 4.9e-05
-  The error falls as h^4 (quadratic elements). The production 16 x 32 mesh is within 0.01 %: well below
-  one drawing unit anywhere on the plot.
+THE BAR: square steel bar 20 x 20 mm; f h to 3,800 kHz mm
+  The square's symmetry, C4v, splits it into five classes: A1 (axial), B1, E (each bending pair once: the
+  class symmetric about y = 0 and antisymmetric about z = 0), A2 (torsional) and B2, each solved on its own
+  orthonormal basis (the projector of the class on each orbit's displacements). Modes of different classes
+  cross freely; within a class they repel, so the frequency-ordered eigenvalues are the curves.
+  exact cut-ons (k = 0) against SAFE:
+    anti-plane shear (1, 0), c_T/(2h) sqrt(m^2 + n^2): exact 80.5017 kHz, SAFE 80.5018 kHz (+1.0e-06)
+    anti-plane shear (1, 1), c_T/(2h) sqrt(m^2 + n^2): exact 113.8466 kHz, SAFE 113.8467 kHz (+1.0e-06)
+    anti-plane shear (2, 0), c_T/(2h) sqrt(m^2 + n^2): exact 161.0034 kHz, SAFE 161.0060 kHz (+1.6e-05)
+    anti-plane shear (2, 1), c_T/(2h) sqrt(m^2 + n^2): exact 180.0072 kHz, SAFE 180.0096 kHz (+1.3e-05)
+    Lame mode 1, m c_T/(sqrt(2) h): exact 113.8466 kHz, SAFE 113.8467 kHz (+1.0e-06)
+  PUBLISHED: Hayashi, Kawashima and Rose (2004), Key Eng. Mater. 270-273, 410-415, Fig. 2: the phase
+  velocity of a square rod h x h by SAFE (12 x 12 elements, Poisson's ratio 0.3), c/c_T to 3 against f h to
+  5,000 kHz mm; its 765 dots read from the paper's vector drawing. Here the same square at nu = 0.3, in the
+  same normalized axes. The paper does not give c_T: fitted on the bending branch's dots below c/c_T = 0.85
+  and f h = 1,500 kHz mm alone (29 dots): c_T = 3115 m/s, rms 0.0027 in c/c_T.
+  Every one of the 765 dots against our nearest curve (in the plot's units: f h over the 5,100 kHz mm axis,
+  c/c_T over 3): median 0.0063, 95 % 0.0309, largest 0.0521; the dots themselves are 0.008 across.
+  THE COUNT: at each of the paper's 101 frequencies (its dots lie on a grid of about 51 kHz mm, one on each
+  curve under c/c_T = 3), its dots against our curves at the same f h/c_T: the same at 60; ours one or more
+  ahead at 40, behind at 1. Up to our window, each new branch appears in the paper's dots 2 to
+  13 % higher in f h than in ours (median 5.0 %), as from a stiffer mesh (12 x 12 elements;
+  the rail's published four-node elements do the same), so the counts part for a few of its frequency steps
+  after each branch enters and agree between. The paper's frequencies nearest our window's end:
+    f h  3556 kHz mm (f h/c_T = 1.142): the paper 10 curves, ours 11
+    f h  3607 kHz mm (f h/c_T = 1.158): the paper 11 curves, ours 11
+    f h  3658 kHz mm (f h/c_T = 1.174): the paper 11 curves, ours 11
+    f h  3709 kHz mm (f h/c_T = 1.191): the paper 11 curves, ours 11
+    f h  3754 kHz mm (f h/c_T = 1.205): the paper 11 curves, ours 11
+  OUR WINDOW ends at 190 kHz (f h/c_T = 1.180; the paper's f h 3,676 kHz mm by its c_T), in the widest
+  stretch where the paper's figure and ours hold the same number of branches: 11 (the paper's dots at its two
+  nearest frequencies: 11 and 11). Our figure (steel, nu = 0.29, c_p up to 10 km/s): 11 branches,
+  3 from zero frequency (bending, axial, torsional), the rest cutting on at
+    80.50, 100.81, 110.42, 113.85, 113.85, 134.32, 161.01, 162.57 kHz
+  (3 more cut on below 190 kHz, at 161.01, 165.35, 180.01 kHz, but their phase
+  velocity stays above the window until past its end: they are not drawn and carry no cut-on mark, as the
+  paper's figure has them only above its c/c_T = 3 there)
 
-CUT-ON FREQUENCIES (k = 0) against closed forms
-  anti-plane shear (m, n) = (0, 1), c_T/(2h): exact 40.2508 kHz, SAFE (vertical) 40.2508 kHz, error +6.4e-08
-  anti-plane shear (1, 0), c_T/(2b): exact 80.5017 kHz, SAFE (lateral) 80.5018 kHz, error +1.0e-06
-  anti-plane shear (0, 2), c_T/h: exact 80.5017 kHz, SAFE (axial) 80.5018 kHz, error +1.0e-06
-  anti-plane shear (1, 1): exact 90.0036 kHz, SAFE (torsional) 90.0037 kHz, error +8.4e-07
-  anti-plane shear (1, 2): exact 113.8466 kHz, SAFE (lateral) 113.8467 kHz, error +1.0e-06
-  anti-plane shear (0, 3): exact 120.7525 kHz, SAFE (vertical) 120.7532 kHz, error +5.2e-06
-  anti-plane shear (1, 3): exact 145.1265 kHz, SAFE (torsional) 145.1270 kHz, error +3.9e-06
-  Lame mode (in-plane, equivoluminal), c_T/(sqrt(2) b): exact 113.8466 kHz, SAFE (vertical) 113.8468 kHz, error +2.3e-06
-  all cut-on frequencies below the plot limit (kHz):
-    axial     66.10, 80.50, 116.59, 137.36, 151.69, 161.01, 161.01, 180.01, 190.75
-    vertical  40.25, 113.85, 119.91, 120.75, 158.89, 162.67, 165.96, 189.79
-    lateral   43.72, 80.50, 104.90, 113.85, 141.37, 180.01, 194.47, 199.72
-    torsional 71.67, 90.00, 103.51, 145.13, 150.50, 174.42
+  MESH (bar)
+  mesh: 256 Q9 elements (3267 dof), element sides 1.25 to 1.25 mm; refined: 1024 (12675 dof), 0.62 to 0.62 mm
+  shortest wavelength at 190 kHz: 15.1 mm (k = 416.2 rad/m), 12.1 elements (24 nodes) of the largest size across it
+  against the refined mesh: every cut-on below 190 kHz within 0.002 %, every branch's frequency at its wavenumber at 190 kHz within 0.005 %
+  the highest cut-ons: 162.569 kHz (refined 162.565, +0.002 %); 165.352 kHz (refined 165.352, +0.001 %); 180.010 kHz (refined 180.007, +0.001 %)
+  the largest end difference: torsional at k = 406.1 rad/m: 190.000 kHz, refined 189.991 kHz (+0.005 %)
 
-FUNDAMENTAL MODES AGAINST BEAM THEORY (low wavenumber)
-  section: A = 800 mm^2, I_y = 106667 mm^4, I_z = 26667 mm^4, J (Saint-Venant series) = 73178 mm^4
-  k (rad/m)  mode       f (Hz)     c_p SAFE   closed form            error
-     1.0   vertical          9.5      59.71   Euler-Bernoulli       59.72   -2.65e-04
-     1.0   vertical          9.5      59.71   Timoshenko            59.71   +4.17e-06
-     1.0   lateral           4.8      29.86   Euler-Bernoulli       29.86   -7.20e-05
-     1.0   lateral           4.8      29.86   Timoshenko            29.86   -4.68e-06
-     1.0   axial           823.2    5172.16   rod sqrt(E/rho)     5172.19   -7.01e-06
-     1.0   axial           823.2    5172.16   Love rod            5172.16   -7.02e-10
-     1.0   torsional       379.7    2385.57   sqrt(GJ/(rho Ip))   2385.54   +1.32e-05
-     2.0   vertical         38.0     119.32   Euler-Bernoulli      119.45   -1.06e-03
-     2.0   vertical         38.0     119.32   Timoshenko           119.32   +1.55e-05
-     2.0   lateral          19.0      59.71   Euler-Bernoulli       59.72   -2.55e-04
-     2.0   lateral          19.0      59.71   Timoshenko            59.71   +1.39e-05
-     2.0   axial          1646.3    5172.05   rod sqrt(E/rho)     5172.19   -2.80e-05
-     2.0   axial          1646.3    5172.05   Love rod            5172.05   -1.31e-08
-     2.0   torsional       759.4    2385.66   sqrt(GJ/(rho Ip))   2385.54   +4.97e-05
-     5.0   vertical        236.1     296.66   Euler-Bernoulli      298.62   -6.55e-03
-     5.0   vertical        236.1     296.66   Timoshenko           296.63   +9.79e-05
-     5.0   lateral         118.6     149.07   Euler-Bernoulli      149.31   -1.58e-03
-     5.0   lateral         118.6     149.07   Timoshenko           149.06   +9.98e-05
-     5.0   axial          4115.2    5171.29   rod sqrt(E/rho)     5172.19   -1.76e-04
-     5.0   axial          4115.2    5171.29   Love rod            5171.29   -5.17e-07
-     5.0   torsional      1898.9    2386.26   sqrt(GJ/(rho Ip))   2385.54   +3.04e-04
-    10.0   vertical        926.5     582.14   Euler-Bernoulli      597.23   -2.53e-02
-    10.0   vertical        926.5     582.14   Timoshenko           581.92   +3.79e-04
-    10.0   lateral         472.3     296.75   Euler-Bernoulli      298.62   -6.26e-03
-    10.0   lateral         472.3     296.75   Timoshenko           296.63   +3.92e-04
-    10.0   axial          8226.0    5168.53   rod sqrt(E/rho)     5172.19   -7.08e-04
-    10.0   axial          8226.0    5168.53   Love rod            5168.57   -8.36e-06
-    10.0   torsional      3801.3    2388.42   sqrt(GJ/(rho Ip))   2385.54   +1.21e-03
-    20.0   vertical       3463.7    1088.15   Euler-Bernoulli     1194.47   -8.90e-02
-    20.0   vertical       3463.7    1088.15   Timoshenko          1086.68   +1.35e-03
-    20.0   lateral        1855.0     582.77   Euler-Bernoulli      597.23   -2.42e-02
-    20.0   lateral        1855.0     582.77   Timoshenko           581.92   +1.46e-03
-    20.0   axial         16415.4    5157.04   rod sqrt(E/rho)     5172.19   -2.93e-03
-    20.0   axial         16415.4    5157.04   Love rod            5157.76   -1.39e-04
-    20.0   torsional      7629.6    2396.90   sqrt(GJ/(rho Ip))   2385.54   +4.76e-03
-    40.0   vertical      11431.1    1795.59   Euler-Bernoulli     2388.93   -2.48e-01
-    40.0   vertical      11431.1    1795.59   Timoshenko          1788.61   +3.90e-03
-    40.0   lateral        6949.6    1091.65   Euler-Bernoulli     1194.47   -8.61e-02
-    40.0   lateral        6949.6    1091.65   Timoshenko          1086.68   +4.57e-03
-    40.0   axial         32477.4    5101.54   rod sqrt(E/rho)     5172.19   -1.37e-02
-    40.0   axial         32477.4    5101.54   Love rod            5115.15   -2.66e-03
-    40.0   torsional     15459.4    2428.35   sqrt(GJ/(rho Ip))   2385.54   +1.79e-02
+THE I-BEAM: IPE 80 (EN 10365): h 80 mm, b 46 mm, web 3.8 mm, flanges 5.2 mm, root radius 5 mm
+  section (Gauss on the mesh): A = 764.4 mm^2 (tables 764), I_y = 80.14 cm^4 (80.14), I_z = 8.489 cm^4 (8.49); Saint-Venant J = 0.673 cm^4 (the tables' I_t 0.70, from a thin-walled
+  formula with fillet terms), warping constant 115.1 cm^6 (the tables' I_w 120, the flanges' I_z (h - t_f)^2/4)
+  PUBLISHED: no dispersion curves of an IPE 80 (or another standard I-section) were found. The reference is
+  independent and computed here: the same section meshed with elements of half the size (MESH below), and
+  beam theory at low wavenumber (Euler-Bernoulli bending in both planes, the rod, Vlasov torsion).
+  branches below 52 kHz: 20, 4 from zero frequency, the rest cutting on at 1.24, 2.79, 6.29, 9.40, 9.75, 12.54, 13.24, 22.60, 23.44, 26.42, 30.75, 35.69, 36.72, 36.72, 42.94, 45.58 kHz
 
-TRACKING
-  Within a class the branches are ordered by frequency at each k: modes of one symmetry
-  do not cross (they repel), so the ordered branches are the continuous curves; modes of
-  different classes cross freely and are never mixed, being solved on separate bases.
-  axial     615 wavenumbers, 11 branches; smallest gap between neighbouring branches below 200 kHz, k > 5 rad/m: 221 Hz
-  vertical  629 wavenumbers, 11 branches; smallest gap between neighbouring branches below 200 kHz, k > 5 rad/m: 1157 Hz
-  lateral   641 wavenumbers, 9 branches; smallest gap between neighbouring branches below 200 kHz, k > 5 rad/m: 3394 Hz
-  torsional 580 wavenumbers, 9 branches; smallest gap between neighbouring branches below 200 kHz, k > 5 rad/m: 5620 Hz
-  (at k = 0 the axial class has one true degeneracy, 161.02 kHz twice: the anti-plane modes
-  (2, 0) and (0, 4), c_T/b = 2 c_T/h because h = 2b; the two branches part as k grows.)
-  inside the window: 27 branches, each one run, each rising in f with k (checked).
+  MESH (I-beam)
+  mesh: 564 Q9 elements (7347 dof), element sides 0.96 to 2.50 mm; refined: 2208 (27507 dof), 0.58 to 1.25 mm
+  shortest wavelength at 52 kHz: 25.6 mm (k = 245.8 rad/m), 10.2 elements (20 nodes) of the largest size across it
+  against the refined mesh: every cut-on below 52 kHz within 0.053 %, every branch's frequency at its wavenumber at 52 kHz within 0.037 %
+  the highest cut-ons: 42.939 kHz (refined 42.916, +0.053 %); 45.584 kHz (refined 45.582, +0.004 %); 45.767 kHz (refined 45.763, +0.010 %)
+  the largest end difference: higher order mode, cut-on 36.7 kHz (second) at k = 97.1 rad/m: 52.000 kHz, refined 51.981 kHz (+0.037 %)
 
-CLASSIFICATION of the lowest branch of each class at k = 2 rad/m, by its eigenvector:
-  mass-weighted participation of each rigid cross-section motion
-  axial     axial 0.9999  vertical 0.0000  lateral 0.0000  torsional 0.0000
-  vertical  axial 0.0000  vertical 0.9995  lateral 0.0000  torsional 0.0000
-  lateral   axial 0.0000  vertical 0.0000  lateral 0.9999  torsional 0.0000
-  torsional axial 0.0000  vertical 0.0000  lateral 0.0000  torsional 1.0000
+THE RAIL: 60E1 (UIC60), EN 13674-1, 60.21 kg/m: height 172 mm, foot 150 mm, head 72 mm, web 16.5 mm
+  Its outline: the profile's standard drawing (the WirthRail 60E1 data sheet's vector outline, scaled to
+  172 mm and 150 mm): R2 and R4 at the foot's tip, the foot's top at 1:14 and 1:2.75 joined by R40, R35 and R7
+  into the web's R120 flanks, R7 and the 1:2.75 underside of the head, R3, the head's 1:20 side, R13, R80, R300.
+  section (Gauss on the mesh): A = 7676.8 mm^2 (EN 13674-1: 7670, +0.09%), centroid 80.91 mm over the foot (80.92), I_y = 3039.7 cm^4 (3038.3, +0.05%), I_z = 512.8 cm^4 (512.3, +0.09%); mass 60.26 kg/m
+  PUBLISHED: Ramatlo, Wilke and Loveday (2018), NDT&E International, Fig. 1(a): the UIC60 rail's wavenumber
+  against frequency to 60 kHz, SAFE with four-node elements. The frequencies where its curves meet k = 0,
+  read from the figure (to about 0.02 kHz), below 22.5 kHz:
+  branches below 22.5 kHz: 16 drawn (4 from zero frequency, 12 cutting on); Ramatlo et al.: 16 (12 cutting on)
+  paired in order (ours, theirs, difference): 1.30, 1.34 (-3.3%); 3.86, 4.04 (-4.5%); 5.06, 5.08 (-0.4%); 5.12, 5.15 (-0.6%); 9.40, 9.80 (-4.1%); 9.70, 9.88 (-1.8%); 13.35, 13.37 (-0.1%); 13.36, 14.14 (-5.5%); 15.78, 15.94 (-1.0%); 18.60, 19.23 (-3.3%); 20.71, 21.77 (-4.9%); 21.84, 22.24 (-1.8%)
+  ours lie 0.1% to 5.5% under theirs (mean 2.6%): linear four-node elements are stiffer than
+  quadratic ones and raise every frequency; the count and the order are the same. Their next cut-on, 23.67 kHz
+  (ours 23.19), lies above the window.
 
-HIGH FREQUENCY
-  axial     k = 440 rad/m: f = 203.9 kHz, c_p = 2912.4 m/s (0.9769 c_R)  k = 540 rad/m: f = 249.9 kHz, c_p = 2907.8 m/s (0.9754 c_R)
-  vertical  k = 440 rad/m: f = 203.9 kHz, c_p = 2911.3 m/s (0.9765 c_R)  k = 540 rad/m: f = 250.0 kHz, c_p = 2908.3 m/s (0.9755 c_R)
-  lateral   k = 440 rad/m: f = 202.3 kHz, c_p = 2888.8 m/s (0.9690 c_R)  k = 540 rad/m: f = 249.9 kHz, c_p = 2908.0 m/s (0.9754 c_R)
-  torsional k = 440 rad/m: f = 203.5 kHz, c_p = 2905.6 m/s (0.9746 c_R)  k = 540 rad/m: f = 250.4 kHz, c_p = 2913.9 m/s (0.9774 c_R)
-  vertical  k = 1000 rad/m on a 30 x 60 mesh (1 mm): lowest three c_p/c_R = 0.9759, 1.0083, 1.0202
-  axial     k = 1000 rad/m on a 30 x 60 mesh (1 mm): lowest three c_p/c_R = 0.9759, 1.0033, 1.0125
-  At short wavelengths the lowest branch of every class gathers at the bar's four 90 degree
-  edges: an edge (wedge) wave at about 0.976 c_R, slightly slower than a Rayleigh wave. The
-  next branches are Rayleigh waves on the faces, tending to c_R from above; the rest of the
-  higher order branches crowd down toward c_T.
+  MESH (rail)
+  mesh: 588 Q9 elements (7479 dof), element sides 3.16 to 7.15 mm; refined: 2286 (28263 dof), 1.74 to 4.00 mm
+  shortest wavelength at 22.5 kHz: 72.0 mm (k = 87.3 rad/m), 10.1 elements (20 nodes) of the largest size across it
+  against the refined mesh: every cut-on below 22.5 kHz within 0.112 %, every branch's frequency at its wavenumber at 22.5 kHz within 0.076 %
+  the highest cut-ons: 18.596 kHz (refined 18.582, +0.076 %); 20.711 kHz (refined 20.695, +0.076 %); 21.837 kHz (refined 21.830, +0.033 %)
+  the largest end difference: higher order mode, cut-on 9.7 kHz at k = 32.1 rad/m: 22.500 kHz, refined 22.483 kHz (+0.076 %)
 
-THE I-BEAM (I-beam 30 × 40 mm, flanges 5 mm, web 4 mm)
-  mesh: 250 Q9 elements, 1147 nodes, 3441 dof, smallest Jacobian 4.06e-07 m^2 (all positive); classes and their sizes: axial 877, vertical 874, lateral 847, torsional 843
-  section: A = 420.0 mm^2 (exact 420.0), I_y = 101500 mm^4 (exact 101500), I_z = 22660 mm^4 (exact 22660)
-  torsion (the warping function by a scalar FE on the same mesh, independent of SAFE): J = 3105 mm^4 (thin-walled sum b t^3/3 = 3140, which ignores the corners and ends),
-  warping constant Gamma = 6.797e+06 mm^6 (flanges' I_f h^2/2 = 6.891e+06)
-  low wavenumber, SAFE against beam theory:
-  k (rad/m)  mode       f (Hz)      c_p SAFE   closed form                c_p          error
-     1.0   vertical         12.8       80.32   Euler-Bernoulli, I_y           80.41   -1.05e-03
-     1.0   lateral           6.0       37.99   Euler-Bernoulli, I_z           37.99   -1.31e-04
-     1.0   axial           823.2     5172.13   rod sqrt(E/rho)              5172.19   -1.24e-05
-     1.0   torsional        81.3      510.64   Saint-Venant sqrt(GJ/(rho I_p))    509.26   +2.72e-03
-     1.0   torsional        81.3      510.64   Vlasov, + E Gamma k^2         510.69   -1.03e-04
-     2.0   vertical         51.0      160.14   Euler-Bernoulli, I_y          160.81   -4.17e-03
-     2.0   lateral          24.2       75.94   Euler-Bernoulli, I_z           75.98   -5.14e-04
-     2.0   axial          1646.3     5171.94   rod sqrt(E/rho)              5172.19   -5.00e-05
-     2.0   torsional       163.9      514.76   Saint-Venant sqrt(GJ/(rho I_p))    509.26   +1.08e-02
-     2.0   torsional       163.9      514.76   Vlasov, + E Gamma k^2         514.97   -4.10e-04
-     5.0   vertical        311.9      391.89   Euler-Bernoulli, I_y          402.03   -2.52e-02
-     5.0   lateral         150.7      189.34   Euler-Bernoulli, I_z          189.95   -3.23e-03
-     5.0   axial          4114.6     5170.53   rod sqrt(E/rho)              5172.19   -3.21e-04
-     5.0   torsional       431.8      542.65   Saint-Venant sqrt(GJ/(rho I_p))    509.26   +6.56e-02
-     5.0   torsional       431.8      542.65   Vlasov, + E Gamma k^2         544.01   -2.51e-03
-    10.0   vertical       1164.2      731.49   Euler-Bernoulli, I_y          804.05   -9.02e-02
-    10.0   lateral         596.7      374.92   Euler-Bernoulli, I_z          379.91   -1.31e-02
-    10.0   axial          8219.9     5164.74   rod sqrt(E/rho)              5172.19   -1.44e-03
-    10.0   torsional      1004.1      630.87   Saint-Venant sqrt(GJ/(rho I_p))    509.26   +2.39e-01
-    10.0   torsional      1004.1      630.87   Vlasov, + E Gamma k^2         637.01   -9.64e-03
-  what each fundamental branch carries (mass-weighted share of each rigid motion; twist about
-  the centroid), at k = 2 and 60 rad/m:
-    vertical  k =    2: axial 0.000  vertical 0.999  lateral 0.000  torsional 0.000
-    vertical  k =   60: axial 0.000  vertical 0.910  lateral 0.000  torsional 0.000
-    lateral   k =    2: axial 0.000  vertical 0.000  lateral 1.000  torsional 0.000
-    lateral   k =   60: axial 0.000  vertical 0.000  lateral 0.149  torsional 0.000
-    axial     k =    2: axial 1.000  vertical 0.000  lateral 0.000  torsional 0.000
-    axial     k =   60: axial 0.002  vertical 0.000  lateral 0.000  torsional 0.000
-    torsional k =    2: axial 0.000  vertical 0.000  lateral 0.000  torsional 1.000
-    torsional k =   60: axial 0.000  vertical 0.000  lateral 0.000  torsional 0.279
-  At small k each fundamental branch is its rigid motion. Higher up, the thin walls take over:
-  the branches veer into the flexural (A0-like) waves of the flanges, web or foot, and all
-  gather between 1.2 and 2.5 km/s. A branch keeps the name of its low-frequency limit.
-  cut-on frequencies below the plot limit (kHz):
-    axial     0.00, 17.88, 48.20, 52.16, 90.56, 107.37, 113.44, 155.00, 181.01
-    vertical  18.99, 25.06, 86.19, 87.08, 93.59, 123.81, 134.96, 192.49
-    lateral   4.08, 21.98, 54.59, 67.96, 92.82, 158.14, 163.44, 174.78, 197.67
-    torsional 8.28, 46.81, 54.59, 76.01, 126.43, 163.44, 174.39, 178.67
-  mesh convergence: against a mesh with elements half the size, every branch below 220 kHz
-  (the 8 lowest of each class) at k = 150 and 440 rad/m: max |w/w_ref - 1| = 3.3e-03
-  inside the window: 32 branches, each one run, each rising in f with k (checked); sweep 39 s
+THE PIPE: NPS 1 1/4 schedule 40 (ASME B36.10M): OD 42.16 mm, wall 3.56 mm
+  REFERENCE: the exact solution of Gazis (1959) for the free hollow cylinder, solved here independently of
+  SAFE: at k = 0 the harmonic n splits into axial shear (J_n'(be a) Y_n'(be b) = J_n'(be b) Y_n'(be a)) and
+  plane strain (a 4 x 4 Bessel determinant; for n = 0 the radial and the torsional 2 x 2); at k > 0 the full
+  6 x 6 determinant of the three potentials, made real, its roots by sign changes and Brent.
+  branches below 175 kHz: 22 drawn (3 from zero frequency, 19 cutting on); exact (Gazis): 22 (19 cutting on)
+    L(0,m)  exact 44.734 kHz; SAFE 44.734 (same count)
+    F(1,m)  exact 26.591, 62.721 kHz; SAFE 26.591, 62.721 (same count)
+    F(2,m)  exact 6.264, 53.179, 98.723 kHz; SAFE 6.265, 53.179, 98.723 (same count)
+    F(3,m)  exact 17.253, 79.761, 139.268 kHz; SAFE 17.257, 79.761, 139.270 (same count)
+    F(4,m)  exact 31.943, 106.334 kHz; SAFE 31.953, 106.335 (same count)
+    F(5,m)  exact 49.584, 132.894 kHz; SAFE 49.606, 132.897 (same count)
+    F(6,m)  exact 69.541, 159.439 kHz; SAFE 69.583, 159.447 (same count)
+    F(7,m)  exact 91.284 kHz; SAFE 91.358 (same count)
+    F(8,m)  exact 114.389 kHz; SAFE 114.513 (same count)
+    F(9,m)  exact 138.522 kHz; SAFE 138.717 (same count)
+    F(10,m) exact 163.426 kHz; SAFE 163.721 (same count)
+  every cut-on: max |f_SAFE/f_exact - 1| = 1.8e-03
+  SAFE against Gazis's roots at 42 points (two on each drawn branch but T(0,1)): max |w_SAFE/w_exact - 1| = 1.6e-03
+    axial L(0,1)                               k =  135.32 rad/m: SAFE   44.5750 kHz, exact   44.5748 kHz
+    higher order mode F(1,2), cut-on 26.6 kHz  k =  107.80 rad/m: SAFE   65.6877 kHz, exact   65.6877 kHz
+    higher order mode F(2,2), cut-on 53.2 kHz  k =  125.60 rad/m: SAFE   87.6229 kHz, exact   87.6227 kHz
+    higher order mode F(3,2), cut-on 79.8 kHz  k =  137.18 rad/m: SAFE  109.5531 kHz, exact  109.5522 kHz
+    higher order mode F(4,2), cut-on 106.3 kHz k =  142.80 rad/m: SAFE  131.4761 kHz, exact  131.4736 kHz
+    higher order mode F(6,1), cut-on 69.6 kHz  k =  227.87 rad/m: SAFE  101.1556 kHz, exact  101.1073 kHz
+    higher order mode F(8,1), cut-on 114.5 kHz k =  215.00 rad/m: SAFE  138.2228 kHz, exact  138.0985 kHz
+  T(0,1): c_p = 3220.0674 m/s at k = 100 rad/m, c_T = 3220.0674 m/s exactly (+7.5e-13)
 
-THE RAIL (rail-like section 35 × 40 mm)
-  mesh: 369 Q9 elements, 1625 nodes, 4875 dof, smallest Jacobian 1.42e-07 m^2 (all positive); classes and their sizes: sym 2469, anti 2406
-  section: A = 445.0 mm^2, centroid -1.672 mm above mid-height, I_y = 97551 mm^4, I_z = 18821 mm^4 (the Gauss rule is exact on these straight-edged elements)
-  torsion (warping function FE): J = 6778 mm^4; one mirror plane only, so the shear centre is off
-  the centroid and lateral bending couples with torsion (both in the antisymmetric class)
-  low wavenumber, SAFE against beam theory:
-  k (rad/m)  mode       f (Hz)      c_p SAFE   closed form                c_p          error
-     1.0   vertical         12.2       76.51   Euler-Bernoulli, I_y           76.58   -9.14e-04
-     1.0   lateral           5.4       33.63   Euler-Bernoulli, I_z           33.64   -3.35e-04
-     1.0   axial           823.2     5172.14   rod sqrt(E/rho)              5172.19   -1.10e-05
-     1.0   torsional       123.7      777.44   Saint-Venant sqrt(GJ/(rho I_p))    777.10   +4.40e-04
-     2.0   vertical         48.6      152.60   Euler-Bernoulli, I_y          153.16   -3.64e-03
-     2.0   lateral          21.4       67.18   Euler-Bernoulli, I_z           67.27   -1.34e-03
-     2.0   axial          1646.3     5171.97   rod sqrt(E/rho)              5172.19   -4.41e-05
-     2.0   torsional       247.8      778.47   Saint-Venant sqrt(GJ/(rho I_p))    777.10   +1.77e-03
-     5.0   vertical        298.0      374.46   Euler-Bernoulli, I_y          382.90   -2.20e-02
-     5.0   lateral         132.7      166.76   Euler-Bernoulli, I_z          168.18   -8.48e-03
-     5.0   axial          4114.7     5170.75   rod sqrt(E/rho)              5172.19   -2.80e-04
-     5.0   torsional       625.5      786.00   Saint-Venant sqrt(GJ/(rho I_p))    777.10   +1.14e-02
-    10.0   vertical       1121.8      704.85   Euler-Bernoulli, I_y          765.79   -7.96e-02
-    10.0   lateral         516.7      324.67   Euler-Bernoulli, I_z          336.37   -3.48e-02
-    10.0   axial          8222.0     5166.04   rod sqrt(E/rho)              5172.19   -1.19e-03
-    10.0   torsional      1299.3      816.39   Saint-Venant sqrt(GJ/(rho I_p))    777.10   +5.06e-02
-  what each fundamental branch carries (mass-weighted share of each rigid motion; twist about
-  the centroid), at k = 2 and 60 rad/m:
-    vertical  k =    2: axial 0.000  vertical 0.999  lateral 0.000  torsional 0.000
-    vertical  k =   60: axial 0.000  vertical 0.889  lateral 0.000  torsional 0.000
-    axial     k =    2: axial 1.000  vertical 0.000  lateral 0.000  torsional 0.000
-    axial     k =   60: axial 0.004  vertical 0.075  lateral 0.000  torsional 0.000
-    lateral   k =    2: axial 0.000  vertical 0.000  lateral 1.000  torsional 0.000
-    lateral   k =   60: axial 0.000  vertical 0.000  lateral 0.356  torsional 0.446
-    torsional k =    2: axial 0.000  vertical 0.000  lateral 0.000  torsional 1.000
-    torsional k =   60: axial 0.000  vertical 0.000  lateral 0.296  torsional 0.003
-  At small k each fundamental branch is its rigid motion. Higher up, the thin walls take over:
-  the branches veer into the flexural (A0-like) waves of the flanges, web or foot, and all
-  gather between 1.2 and 2.5 km/s. A branch keeps the name of its low-frequency limit.
-  cut-on frequencies below the plot limit (kHz):
-    sym       0.00, 20.26, 22.79, 41.51, 63.78, 87.40, 94.22, 95.51, 113.79, 124.57, 129.28, 158.56, 160.07, 181.86, 182.08, 191.78
-    anti      4.83, 13.22, 37.41, 54.40, 60.80, 82.74, 99.34, 126.84, 141.22, 144.11, 154.35, 160.33, 189.97, 195.56
-  mesh convergence: against a mesh with elements half the size, every branch below 220 kHz
-  (the 8 lowest of each class) at k = 150 and 440 rad/m: max |w/w_ref - 1| = 2.8e-03
-  inside the window: 27 branches, each one run, each rising in f with k (checked); sweep 88 s
+  MESH (pipe)
+  mesh: 216 Q9 elements (3024 dof), element sides 1.63 to 1.84 mm; refined: 864 (11232 dof), 0.79 to 0.92 mm
+  shortest wavelength at 175 kHz: 11.9 mm (k = 529.9 rad/m), 6.4 elements (13 nodes) of the largest size across it
+  against the refined mesh: every cut-on below 175 kHz within 0.168 %, every branch's frequency at its wavenumber at 175 kHz within 0.154 %
+  the highest cut-ons: 139.270 kHz (refined 139.268, +0.001 %); 159.447 kHz (refined 159.439, +0.005 %); 163.721 kHz (refined 163.446, +0.169 %)
+  the largest end difference: higher order mode F(10,1), cut-on 163.7 kHz at k = 159.6 rad/m: 175.000 kHz, refined 174.731 kHz (+0.154 %)
 
-THE PIPE (pipe Ø 40 × 3 mm)
-  mesh: 432 Q9 elements, 1944 nodes, 5832 dof, smallest Jacobian 1.86e-07 m^2 (all positive); classes and their sizes: L0 36, V0 18, V1 54, V2 54, V3 54, V4 54, V5 54, V6 54, V7 54, V8 54, V9 54, V10 54, V11 54
-  mesh: 72 elements around, 3 through the 3 mm wall; each circumferential harmonic n is
-  solved on its own (the exact block of the mesh's dihedral symmetry): L(0,m) and T(0,m) at n = 0,
-  F(n,m) at n >= 1 (whose sin and cos partners are equal, so each is drawn once)
-  section: A = 348.717 mm^2 (exact 348.717), I = 60066.5 mm^4 (exact 60066.5), J = 120132.9 mm^4 (exact 2 I = 120132.9)
-  low wavenumber, SAFE against beam theory:
-  k (rad/m)  mode       f (Hz)      c_p SAFE   closed form                c_p          error
-     1.0   vertical         10.8       67.84   Euler-Bernoulli, I_y           67.88   -5.51e-04
-     1.0   axial           823.2     5172.12   rod sqrt(E/rho)              5172.19   -1.45e-05
-     1.0   torsional       512.5     3220.07   Saint-Venant sqrt(GJ/(rho I_p))   3220.07   -7.33e-09
-     1.0   torsional       512.5     3220.07   T(0,1): c_T                  3220.07   -7.33e-09
-     2.0   vertical         43.1      135.51   Euler-Bernoulli, I_y          135.76   -1.90e-03
-     2.0   axial          1646.3     5171.89   rod sqrt(E/rho)              5172.19   -5.80e-05
-     2.0   torsional      1025.0     3220.07   Saint-Venant sqrt(GJ/(rho I_p))   3220.07   +5.75e-09
-     2.0   torsional      1025.0     3220.07   T(0,1): c_T                  3220.07   +5.75e-09
-     5.0   vertical        266.9      335.45   Euler-Bernoulli, I_y          339.41   -1.17e-02
-     5.0   axial          4114.4     5170.31   rod sqrt(E/rho)              5172.19   -3.65e-04
-     5.0   torsional      2562.4     3220.07   Saint-Venant sqrt(GJ/(rho I_p))   3220.07   -3.94e-10
-     5.0   torsional      2562.4     3220.07   T(0,1): c_T                  3220.07   -3.95e-10
-    10.0   vertical       1032.8      648.93   Euler-Bernoulli, I_y          678.82   -4.40e-02
-    10.0   axial          8219.5     5164.48   rod sqrt(E/rho)              5172.19   -1.49e-03
-    10.0   torsional      5124.9     3220.07   Saint-Venant sqrt(GJ/(rho I_p))   3220.07   +2.57e-10
-    10.0   torsional      5124.9     3220.07   T(0,1): c_T                  3220.07   +2.56e-10
-  what each fundamental branch carries (mass-weighted share of each rigid motion; twist about
-  the centroid), at k = 2 and 60 rad/m:
-    vertical  k =    2: axial 0.000  vertical 0.999  lateral 0.000  torsional 0.000
-    vertical  k =   60: axial 0.000  vertical 0.967  lateral 0.000  torsional 0.000
-    axial     k =    2: axial 1.000  vertical 0.000  lateral 0.000  torsional 0.000
-    axial     k =   60: axial 0.333  vertical 0.000  lateral 0.000  torsional 0.000
-    torsional k =    2: axial 0.000  vertical 0.000  lateral 0.000  torsional 1.000
-    torsional k =   60: axial 0.000  vertical 0.000  lateral 0.000  torsional 1.000
-  cut-on frequencies below the plot limit (kHz):
-    L0        0.00, 46.63
-    V1        27.73, 65.51
-    V2        5.77, 55.46, 103.22
-    V3        15.97, 83.19, 145.70
-    V4        29.78, 110.91, 189.61
-    V5        46.58, 138.62
-    V6        65.83, 166.33
-    V7        87.05, 194.02
-    V8        109.85
-    V9        133.89
-    V10       158.91
-    V11       184.69
-  mesh convergence: against a mesh with elements half the size, every branch below 220 kHz
-  (the 8 lowest of each class) at k = 150 and 440 rad/m: max |w/w_ref - 1| = 4.9e-04
-  inside the window: 22 branches, each one run, each rising in f with k (checked); sweep 5 s
+THE PLATE: steel, 10 mm thick, infinite width; f d to 2.50 MHz mm
+  The SAFE slice (40 mm, its basis tying every node of one depth) has free faces at z = +-5 mm and no edges:
+  Lamb waves (u_x, u_z) and shear horizontal waves (u_y) of the infinite plate, each family on its own basis.
+  REFERENCE: the exact Rayleigh-Lamb equations (symmetric and antisymmetric, solved here by sign changes
+  and Brent) and the SH dispersion w^2 = c_T^2 (k^2 + (n pi/d)^2), independent of SAFE.
+  exact cut-ons below 250 kHz: antisymmetric Lamb 161.003 kHz (f d = c_T/2), symmetric Lamb none (S1 at c_L/2d = 296.0 kHz), SH 161.003 kHz
+  branches below 250 kHz: 5 drawn (3 from zero frequency, 2 cutting on); exact Lamb and SH: 5 (2 cutting on); the drawn: A0 Lamb, A1 Lamb, S0 Lamb, SH0, SH1
+  SAFE against the exact roots at 20 points along the five branches: max |w_SAFE/w_exact - 1| = 4.6e-05
+    A0 Lamb   k =   20.64 rad/m: SAFE    1.0500 kHz, exact    1.0500 kHz, c_p   319.6 m/s
+    A1 Lamb   k =   55.01 rad/m: SAFE  169.0547 kHz, exact  169.0535 kHz, c_p 19309.3 m/s
+    S0 Lamb   k =    1.22 rad/m: SAFE    1.0500 kHz, exact    1.0500 kHz, c_p  5404.4 m/s
+    SH0       k =    2.05 rad/m: SAFE    1.0500 kHz, exact    1.0500 kHz, c_p  3220.1 m/s
+    SH1       k =  100.58 rad/m: SAFE  169.0547 kHz, exact  169.0536 kHz, c_p 10560.7 m/s
+    A0 at 50 kHz: c_p  1892.0 m/s (exact  1892.0), c_g SAFE  2954.6, exact  2954.6 m/s
+    A0 at 150 kHz: c_p  2589.0 m/s (exact  2589.0), c_g SAFE  3239.5, exact  3239.3 m/s
+    S0 at 200 kHz: c_p  4955.0 m/s (exact  4955.0), c_g SAFE  3554.5, exact  3554.4 m/s
+    A1 at 230 kHz: c_p  7760.1 m/s (exact  7760.0), c_g SAFE  3604.4, exact  3604.3 m/s
+  S0 at k -> 0 tends to the plate speed sqrt(E/(rho (1 - nu^2))) = 5404.4 m/s, A0 to sqrt(w) (D/rho d)^(1/4) (checked below).
 
-THE PLATE, infinite width, thickness 10 mm
-  Uniform across y: Lamb u_y=0, SH has u_x=u_z=0; free faces at z=+/-5 mm.
-  The displayed 40 mm width is a slice, not a free-edged finite beam.
-  S at k=2: c_p=5404.426096 m/s, limit 5404.441118, relative error 2.78e-06.
-  A at k=2: c_p=31.200053 m/s, limit 31.202555, relative error 8.02e-05.
-  SHs at k=200: c_p=3220.067429 m/s, limit 3220.067429, relative error 2.80e-13.
-  S0 k=40: SAFE 5398.346016, Rayleigh-Lamb 5398.346015 m/s, error 1.15e-10.
-  S0 k=150: SAFE 5300.326018, Rayleigh-Lamb 5300.325821 m/s, error 3.71e-08.
-  S0 k=400: SAFE 3985.407170, Rayleigh-Lamb 3985.389025 m/s, error 4.55e-06.
-  A0 k=40: SAFE 607.376745, Rayleigh-Lamb 607.376729 m/s, error 2.69e-08.
-  A0 k=150: SAFE 1783.192031, Rayleigh-Lamb 1783.191374 m/s, error 3.68e-07.
-  A0 k=400: SAFE 2647.273376, Rayleigh-Lamb 2647.264401 m/s, error 3.39e-06.
-  Reference: https://pmc.ncbi.nlm.nih.gov/articles/PMC6356890/ (Lamb and SH plate families).
+  MESH (plate)
+  mesh: 10 Q9 elements through the 10 mm thickness (189 dof), 1.00 mm each; refined: 20 (369 dof), 0.50 mm (the 40 mm slice's width is immaterial)
+  shortest wavelength at 250 kHz: 11.2 mm (k = 559.4 rad/m), 11.2 elements (22 nodes) of the largest size across it
+  against the refined mesh: every cut-on below 250 kHz within 0.001 %, every branch's frequency at its wavenumber at 250 kHz within 0.005 %
+  the highest cut-ons: 161.004 kHz (refined 161.003, +0.001 %); 161.004 kHz (refined 161.003, +0.001 %)
+  the largest end difference: A0 Lamb at k = 559.4 rad/m: 250.000 kHz, refined 249.989 kHz (+0.005 %)
 
 THE PAGE SOLVES EVERY WAVE IT SHOWS
   Each section travels as its mesh (nodes in float32, the Python model reading the same rounded
   values) and its symmetry. The page builds the same isoparametric Q9 elements (3 x 3 Gauss),
-  assembles each class on its own basis (mirror orbits, or the pipe's harmonics) as a skyline in
-  an RCM order, and solves a wave (class, branch, k) exactly: the shift s sits 1e-4 of w under
-  the drawn curve's w at k; a skyline LDL^T of K(k) - s M counts its negative pivots (Sylvester:
-  the eigenvalues below s), s moves until exactly `branch` lie below, and inverse iteration
-  converges on the branch's own eigenpair at that k. Should it head for a nearer eigenvalue
-  below s, the count brackets the branch's alone, bisection narrows the bracket, and the
-  iteration runs again from its middle.
-  The bar's general assembly gives safe_model's matrices: max relative difference 3.8e-15.
+  assembles each class on its own basis (the projections of each orbit's displacements, orthonormalised:
+  mirror planes, the square's C4v, or the pipe's harmonics) as a skyline in an RCM order, and solves a
+  wave (class, branch, k) exactly: a skyline LDL^T of K(k) - s M counts its negative pivots (Sylvester:
+  the eigenvalues below s), s moves until exactly `branch` lie below, and inverse iteration converges on
+  the branch's own eigenpair; should it head for a nearer one below s, the count brackets the branch's
+  alone, bisection narrows the bracket, and the iteration runs again from its middle.
+  The bar's general assembly gives safe_model's rectangle matrices: max relative difference 2.1e-15.
   The page's script itself, under node, against scipy on the same mesh, at three random
   wavenumbers on every branch inside the window:
-    bar      81 states: max |w_page/w_scipy - 1| = 8.1e-13, max (1 - MAC) = 3.1e-15, Sturm count wrong or rejected: 0,
-            shift moved at most 0 time(s), 6.88 ms a solve (node, this machine); classes (size, skyline): 1633 103073, 1617 102283, 1601 99821, 1584 99032
-    I-beam   96 states: max |w_page/w_scipy - 1| = 1.2e-07, max (1 - MAC) = 3.5e-12, Sturm count wrong or rejected: 0,
-            shift moved at most 0 time(s), 2.10 ms a solve (node, this machine); classes (size, skyline): 877 38227, 874 38153, 847 36304, 843 36216
-    rail     81 states: max |w_page/w_scipy - 1| = 8.5e-09, max (1 - MAC) = 2.3e-15, Sturm count wrong or rejected: 0,
-            shift moved at most 0 time(s), 9.15 ms a solve (node, this machine); classes (size, skyline): 2469 146201, 2406 140411
-    pipe     66 states: max |w_page/w_scipy - 1| = 1.3e-09, max (1 - MAC) = 2.0e-15, Sturm count wrong or rejected: 0,
-            shift moved at most 0 time(s), 0.18 ms a solve (node, this machine); classes (size, skyline): 36 282, 18 75, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621, 54 621
-    plate    12 states: max |w_page/w_scipy - 1| = 2.1e-07, max (1 - MAC) = 2.6e-14, Sturm count wrong or rejected: 0,
-            shift moved at most 0 time(s), 0.02 ms a solve (node, this machine); classes (size, skyline): 31 132, 31 132, 16 38, 15 36
-  So every state the reader picks, and every frame of the tour, is an exact SAFE eigenpair of
-  its section: the marker sits at its own (f, c_p), the section and the beam draw its own
-  eigenvector.
-  The curves travel thinned. Of the sweep's eigenfrequencies (points at most 2 drawing units
-  apart) only those go that a cubic Hermite in k needs (its slopes the group velocity, from a
-  spline through the branch) to give every dropped one back within 1e-05; the page lays each
-  segment out again, halving it until straight lines between its points stay within
-  1e-05 of the Hermite in f and in c_p. The page's curve at every point of the sweep:
-    bar     383 of 7833 points travel (5%), laid out as 7143: max |f_page/f - 1| = 1.5e-05
-    I-beam  730 of 14357 points travel (5%), laid out as 12017: max |f_page/f - 1| = 1.8e-05
-    rail    719 of 12612 points travel (6%), laid out as 10024: max |f_page/f - 1| = 1.7e-05
-    pipe    297 of 8933 points travel (3%), laid out as 7457: max |f_page/f - 1| = 1.7e-05
-    plate   56 of 1386 points travel (4%), laid out as 1618: max |f_page/f - 1| = 1.2e-05
-  (the shift sits 1e-4 under the page's curve, so it stays below the branch's eigenvalue).
+    bar      33 states: max |w_page/w_scipy - 1| = 2.2e-13, max (1 - MAC) = 1.1e-15, Sturm count wrong or rejected: 0,
+            shift moved at most 0 time(s), 3.03 ms a solve (node, this machine); classes (size, skyline): 425 15284, 408 14409, 817 52557, 392 13531, 408 14364
+    I-beam   60 states: max |w_page/w_scipy - 1| = 3.4e-12, max (1 - MAC) = 2.2e-15, Sturm count wrong or rejected: 0,
+            shift moved at most 0 time(s), 7.87 ms a solve (node, this machine); classes (size, skyline): 1863 74060, 1859 73948, 1815 71370, 1810 71217
+    rail     48 states: max |w_page/w_scipy - 1| = 6.0e-13, max (1 - MAC) = 1.8e-15, Sturm count wrong or rejected: 0,
+            shift moved at most 0 time(s), 25.05 ms a solve (node, this machine); classes (size, skyline): 3774 233389, 3705 226669
+    pipe     66 states: max |w_page/w_scipy - 1| = 1.3e-12, max (1 - MAC) = 1.3e-15, Sturm count wrong or rejected: 0,
+            shift moved at most 0 time(s), 0.25 ms a solve (node, this machine); classes (size, skyline): 28 214, 14 57, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471, 42 471
+    plate    15 states: max |w_page/w_scipy - 1| = 6.4e-13, max (1 - MAC) = 4.4e-16, Sturm count wrong or rejected: 0,
+            shift moved at most 0 time(s), 0.04 ms a solve (node, this machine); classes (size, skyline): 21 87, 21 87, 11 26, 10 23
+  In headless Chromium (the page at 672 px, this shared machine): from choosing a section to its first
+  frame (its data read, its classes' matrices assembled, its two waves solved and drawn), and a frame
+  of its first glide (wave 2 at a wavenumber not met before: one state solved, both beams drawn):
+    bar     switch to the first frame 46 ms; a glide frame 14 ms
+    I-beam  switch to the first frame 562 ms; a glide frame 40 ms
+    rail    switch to the first frame 659 ms; a glide frame 59 ms
+    pipe    switch to the first frame 215 ms; a glide frame 17 ms
+    plate   switch to the first frame 12 ms; a glide frame 5 ms
+  The curves travel thinned: only the eigenfrequencies a cubic Hermite in k needs (its slopes the group
+  velocity, from a spline through the branch) to give every dropped one back within 1e-05; the page lays
+  each segment out again within 1e-05. The page's curve at every point of the sweep:
+    bar     156 of 3496 points travel (4%), laid out as 3626: max |f_page/f - 1| = 1.6e-05
+    I-beam  503 of 12493 points travel (4%), laid out as 11150: max |f_page/f - 1| = 1.7e-05
+    rail    413 of 9048 points travel (5%), laid out as 7025: max |f_page/f - 1| = 1.6e-05
+    pipe    304 of 8688 points travel (3%), laid out as 8377: max |f_page/f - 1| = 1.5e-05
+    plate   65 of 1460 points travel (4%), laid out as 1917: max |f_page/f - 1| = 1.1e-05
 
 GROUP VELOCITY
   Every wave's c_g is the page's own, from the eigenpair it solves: differentiating
@@ -315,141 +215,122 @@ GROUP VELOCITY
   symmetric), leaving c_g = dw/dk = V^T (K2 + 2k K3) V / (2 w V^T M V) (Hellmann-Feynman): the exact
   slope of the model's own dispersion curve at that point, two skyline products per state.
   The page's script under node, at the solver check's random states, against scipy on the same mesh:
-    bar     max |c_g,page / c_g,FD - 1| = 2.2e-05 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 8.6e-09
-    I-beam  max |c_g,page / c_g,FD - 1| = 1.7e-06 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.7e-06
-    rail    max |c_g,page / c_g,FD - 1| = 9.1e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.9e-08
-    pipe    max |c_g,page / c_g,FD - 1| = 1.5e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.3e-09
-    plate   max |c_g,page / c_g,FD - 1| = 1.9e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.9e-07
+    bar     max |c_g,page / c_g,FD - 1| = 1.3e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.1e-09
+    I-beam  max |c_g,page / c_g,FD - 1| = 2.7e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.9e-10
+    rail    max |c_g,page / c_g,FD - 1| = 1.8e-07 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 2.1e-09
+    pipe    max |c_g,page / c_g,FD - 1| = 1.0e-08 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.9e-11
+    plate   max |c_g,page / c_g,FD - 1| = 2.0e-08 (central difference of w(k), step 1e-4 k), against scipy's eigenvector in the same formula 1.1e-11
   Against closed forms at low wavenumber (SAFE: the formula on the eigenpair by shift-invert; FD a central
   difference of w(k), step 0.01 rad/m):
   k (rad/m)  mode       c_g SAFE (m/s)  FD - SAFE     closed form                     c_g (m/s)   error
   bar:
-     1.0   vertical         119.384   -1.1e-02      Euler-Bernoulli (2 c_p)           119.447   -5.29e-04
-     1.0   vertical         119.384   -1.1e-02      Timoshenko                        119.382   +9.14e-06
-     1.0   lateral           59.716   -1.7e-02      Euler-Bernoulli (2 c_p)            59.723   -1.21e-04
-     1.0   lateral           59.716   -1.7e-02      Timoshenko                         59.715   +1.38e-05
-     1.0   axial           5172.085   -3.3e-06      rod c_0                          5172.194   -2.10e-05
-     1.0   axial           5172.085   -3.3e-06      Love rod                         5172.085   -4.23e-09
-     1.0   torsional       2385.627   -9.5e-05      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +3.64e-05
-     2.0   vertical         238.388   -5.0e-03      Euler-Bernoulli (2 c_p)           238.893   -2.12e-03
-     2.0   vertical         238.388   -5.0e-03      Timoshenko                        238.380   +3.17e-05
-     2.0   lateral          119.386   -1.0e-02      Euler-Bernoulli (2 c_p)           119.447   -5.06e-04
-     2.0   lateral          119.386   -1.0e-02      Timoshenko                        119.382   +3.22e-05
-     2.0   axial           5171.759   -4.9e-05      rod c_0                          5172.194   -8.42e-05
-     2.0   axial           5171.759   -4.9e-05      Love rod                         5171.759   -6.60e-08
-     2.0   torsional       2385.888   -2.2e-04      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +1.46e-04
-     5.0   vertical         589.459   -1.3e-04      Euler-Bernoulli (2 c_p)           597.234   -1.30e-02
-     5.0   vertical         589.459   -1.3e-04      Timoshenko                        589.344   +1.95e-04
-     5.0   lateral          297.676   +1.9e-04      Euler-Bernoulli (2 c_p)           298.617   -3.15e-03
-     5.0   lateral          297.676   +1.9e-04      Timoshenko                        297.617   +1.99e-04
-     5.0   axial           5169.463   +1.6e-05      rod c_0                          5172.194   -5.28e-04
-     5.0   axial           5169.463   +1.6e-05      Love rod                         5169.477   -2.59e-06
-     5.0   torsional       2387.709   -2.6e-06      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +9.09e-04
-    10.0   vertical        1135.498   +4.8e-05      Euler-Bernoulli (2 c_p)          1194.467   -4.94e-02
-    10.0   vertical        1135.498   +4.8e-05      Timoshenko                       1134.646   +7.51e-04
-    10.0   lateral          589.801   +4.2e-04      Euler-Bernoulli (2 c_p)           597.234   -1.24e-02
-    10.0   lateral          589.801   +4.2e-04      Timoshenko                        589.344   +7.76e-04
-    10.0   axial           5161.122   -3.1e-06      rod c_0                          5172.194   -2.14e-03
-    10.0   axial           5161.122   -3.1e-06      Love rod                         5161.339   -4.21e-05
-    10.0   torsional       2394.160   +2.0e-05      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +3.61e-03
-    20.0   vertical        1996.674   -6.5e-05      Euler-Bernoulli (2 c_p)          2388.934   -1.64e-01
-    20.0   vertical        1996.674   -6.5e-05      Timoshenko                       1991.459   +2.62e-03
-    20.0   lateral         1137.840   -3.2e-05      Euler-Bernoulli (2 c_p)          1194.467   -4.74e-02
-    20.0   lateral         1137.840   -3.2e-05      Timoshenko                       1134.646   +2.81e-03
-    20.0   axial           5125.335   -2.4e-06      rod c_0                          5172.194   -9.06e-03
-    20.0   axial           5125.335   -2.4e-06      Love rod                         5128.999   -7.14e-04
-    20.0   torsional       2419.146   +7.4e-06      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +1.41e-02
-    40.0   vertical        2856.949   -2.9e-05      Euler-Bernoulli (2 c_p)          4777.868   -4.02e-01
-    40.0   vertical        2856.949   -2.9e-05      Timoshenko                       2836.761   +7.12e-03
-    40.0   lateral         2007.616   -2.4e-05      Euler-Bernoulli (2 c_p)          2388.934   -1.60e-01
-    40.0   lateral         2007.616   -2.4e-05      Timoshenko                       1991.459   +8.11e-03
-    40.0   axial           4928.182   -1.7e-05      rod c_0                          5172.194   -4.72e-02
-    40.0   axial           4928.182   -1.7e-05      Love rod                         5002.955   -1.49e-02
-    40.0   torsional       2507.424   +3.2e-06      Saint-Venant sqrt(GJ/(rho I_p))  2385.540   +5.11e-02
+     1.0   vertical          59.716   -2.5e-02      Euler-Bernoulli (2 c_p)                 59.723   -1.26e-04
+     1.0   vertical          59.716   -2.5e-02      Timoshenko                              59.715   +8.51e-06
+     1.0   axial           5172.151   +5.5e-05      rod c_0                               5172.194   -8.41e-06
+     1.0   axial           5172.151   +5.5e-05      Love rod                              5172.151   -5.31e-10
+     1.0   torsional       2957.326   -7.2e-05      Saint-Venant sqrt(GJ/(rho I_p))       2957.326   -1.24e-07
+     2.0   vertical         119.384   -1.8e-03      Euler-Bernoulli (2 c_p)                119.447   -5.27e-04
+     2.0   vertical         119.384   -1.8e-03      Timoshenko                             119.382   +1.08e-05
+     2.0   axial           5172.020   -1.4e-05      rod c_0                               5172.194   -3.36e-05
+     2.0   axial           5172.020   -1.4e-05      Love rod                              5172.020   -6.26e-09
+     2.0   torsional       2957.324   -1.2e-04      Saint-Venant sqrt(GJ/(rho I_p))       2957.326   -4.96e-07
+     5.0   vertical         297.635   +3.6e-04      Euler-Bernoulli (2 c_p)                298.617   -3.29e-03
+     5.0   vertical         297.635   +3.6e-04      Timoshenko                             297.617   +6.32e-05
+     5.0   axial           5171.106   +3.5e-06      rod c_0                               5172.194   -2.10e-04
+     5.0   axial           5171.106   +3.5e-06      Love rod                              5171.107   -2.46e-07
+     5.0   torsional       2957.317   -1.5e-05      Saint-Venant sqrt(GJ/(rho I_p))       2957.326   -3.10e-06
+    10.0   vertical         589.491   +3.7e-04      Euler-Bernoulli (2 c_p)                597.234   -1.30e-02
+    10.0   vertical         589.491   +3.7e-04      Timoshenko                             589.344   +2.49e-04
+    10.0   axial           5167.827   -3.1e-06      rod c_0                               5172.194   -8.44e-04
+    10.0   axial           5167.827   -3.1e-06      Love rod                              5167.847   -3.94e-06
+    10.0   torsional       2957.289   +1.1e-05      Saint-Venant sqrt(GJ/(rho I_p))       2957.326   -1.24e-05
+    20.0   vertical        1135.721   +7.4e-06      Euler-Bernoulli (2 c_p)               1194.467   -4.92e-02
+    20.0   vertical        1135.721   +7.4e-06      Timoshenko                            1134.646   +9.48e-04
+    20.0   axial           5154.516   +4.9e-07      rod c_0                               5172.194   -3.42e-03
+    20.0   axial           5154.516   +4.9e-07      Love rod                              5154.844   -6.36e-05
+    20.0   torsional       2957.179   +2.4e-06      Saint-Venant sqrt(GJ/(rho I_p))       2957.326   -4.97e-05
   I-beam:
-     1.0   vertical         160.473   -1.6e-03      Euler-Bernoulli (2 c_p)           160.810   -2.10e-03
-     1.0   lateral           75.963   -3.7e-03      Euler-Bernoulli (2 c_p)            75.982   -2.54e-04
-     1.0   axial           5172.001   -2.9e-05      rod c_0                          5172.194   -3.74e-05
-     1.0   axial           5172.001   -2.9e-05      Love rod                         5172.001   -8.09e-08
-     1.0   torsional        513.401   +2.4e-04      Vlasov, + E Gamma k^2             513.559   -3.07e-04
-     2.0   vertical         318.945   +2.5e-04      Euler-Bernoulli (2 c_p)           321.620   -8.32e-03
-     2.0   lateral          151.808   +1.7e-03      Euler-Bernoulli (2 c_p)           151.964   -1.03e-03
-     2.0   axial           5171.416   -2.3e-05      rod c_0                          5172.194   -1.50e-04
-     2.0   axial           5171.416   -2.3e-05      Love rod                         5171.423   -1.30e-06
-     2.0   torsional        525.713   +2.8e-04      Vlasov, + E Gamma k^2             526.349   -1.21e-03
-     5.0   vertical         764.335   -9.0e-05      Euler-Bernoulli (2 c_p)           804.050   -4.94e-02
-     5.0   lateral          377.447   -2.2e-05      Euler-Bernoulli (2 c_p)           379.909   -6.48e-03
-     5.0   axial           5167.097   -1.3e-05      rod c_0                          5172.194   -9.86e-04
-     5.0   axial           5167.097   -1.3e-05      Love rod                         5167.376   -5.40e-05
-     5.0   torsional        607.106   +2.5e-04      Vlasov, + E Gamma k^2             611.311   -6.88e-03
-    10.0   vertical        1337.680   -1.5e-04      Euler-Bernoulli (2 c_p)          1608.101   -1.68e-01
-    10.0   lateral          739.677   -2.1e-05      Euler-Bernoulli (2 c_p)           759.819   -2.65e-02
-    10.0   axial           5147.300   -2.1e-05      rod c_0                          5172.194   -4.81e-03
-    10.0   axial           5147.300   -2.1e-05      Love rod                         5152.966   -1.10e-03
-    10.0   torsional        846.657   +5.7e-05      Vlasov, + E Gamma k^2             866.901   -2.34e-02
+     1.0   vertical         332.279   -1.7e-04      Euler-Bernoulli (2 c_p)                334.950   -7.98e-03
+     1.0   lateral          108.955   +7.6e-04      Euler-Bernoulli (2 c_p), I_z           109.012   -5.24e-04
+     1.0   axial           5171.431   -2.6e-05      rod c_0                               5172.194   -1.47e-04
+     1.0   axial           5171.431   -2.6e-05      Love rod                              5171.438   -1.23e-06
+     1.0   torsional        298.377   +8.6e-04      Vlasov, + E Gamma k^2                  298.856   -1.61e-03
+     2.0   vertical         649.135   -4.6e-04      Euler-Bernoulli (2 c_p)                669.901   -3.10e-02
+     2.0   lateral          217.540   -9.8e-05      Euler-Bernoulli (2 c_p), I_z           218.024   -2.22e-03
+     2.0   axial           5169.065   -3.1e-05      rod c_0                               5172.194   -6.05e-04
+     2.0   axial           5169.065   -3.1e-05      Love rod                              5169.169   -2.03e-05
+     2.0   torsional        348.176   +3.7e-04      Vlasov, + E Gamma k^2                  350.042   -5.33e-03
+     5.0   vertical        1403.226   -6.5e-04      Euler-Bernoulli (2 c_p)               1674.752   -1.62e-01
+     5.0   lateral          535.161   -3.1e-05      Euler-Bernoulli (2 c_p), I_z           545.059   -1.82e-02
+     5.0   axial           5148.177   -8.7e-05      rod c_0                               5172.194   -4.64e-03
+     5.0   axial           5148.177   -8.7e-05      Love rod                              5153.338   -1.00e-03
+     5.0   torsional        608.828   +6.7e-05      Vlasov, + E Gamma k^2                  620.440   -1.87e-02
   rail:
-     1.0   vertical         152.879   +9.9e-04      Euler-Bernoulli (2 c_p)           153.158   -1.82e-03
-     1.0   lateral           67.229   -3.9e-03      Euler-Bernoulli (2 c_p)            67.274   -6.72e-04
-     1.0   axial           5172.023   -4.2e-06      rod c_0                          5172.194   -3.30e-05
-     1.0   axial           5172.023   -4.2e-06      Love rod                         5172.024   -4.08e-08
-     1.0   torsional        778.127   +2.3e-05      Saint-Venant sqrt(GJ/(rho I_p))   777.101   +1.32e-03
-     2.0   vertical         304.096   +1.6e-04      Euler-Bernoulli (2 c_p)           306.317   -7.25e-03
-     2.0   lateral          134.185   -5.3e-04      Euler-Bernoulli (2 c_p)           134.548   -2.69e-03
-     2.0   axial           5171.508   -1.3e-06      rod c_0                          5172.194   -1.33e-04
-     2.0   axial           5171.508   -1.3e-06      Love rod                         5171.512   -6.55e-07
-     2.0   torsional        781.242   +8.2e-05      Saint-Venant sqrt(GJ/(rho I_p))   777.101   +5.33e-03
-     5.0   vertical         732.672   -1.5e-04      Euler-Bernoulli (2 c_p)           765.792   -4.32e-02
-     5.0   lateral          330.630   +2.3e-05      Euler-Bernoulli (2 c_p)           336.369   -1.71e-02
-     5.0   axial           5167.795   -5.4e-06      rod c_0                          5172.194   -8.51e-04
-     5.0   axial           5167.795   -5.4e-06      Love rod                         5167.931   -2.64e-05
-     5.0   torsional        804.490   +3.7e-05      Saint-Venant sqrt(GJ/(rho I_p))   777.101   +3.52e-02
-    10.0   vertical        1303.217   -1.4e-04      Euler-Bernoulli (2 c_p)          1531.584   -1.49e-01
-    10.0   lateral          625.398   -4.1e-05      Euler-Bernoulli (2 c_p)           672.738   -7.04e-02
-    10.0   axial           5152.708   -1.3e-05      rod c_0                          5172.194   -3.77e-03
-    10.0   axial           5152.708   -1.3e-05      Love rod                         5155.178   -4.79e-04
-    10.0   torsional        903.591   +6.1e-05      Saint-Venant sqrt(GJ/(rho I_p))   777.101   +1.63e-01
+     1.0   vertical         632.317   -1.7e-03      Euler-Bernoulli (2 c_p)                650.927   -2.86e-02
+     1.0   lateral          264.570   -2.7e-04      Euler-Bernoulli (2 c_p), I_z           267.343   -1.04e-02
+     1.0   axial           5169.113   -1.1e-04      rod c_0                               5172.194   -5.96e-04
+     1.0   axial           5169.113   -1.1e-04      Love rod                              5169.176   -1.22e-05
+     1.0   torsional        820.720   +7.0e-04      Saint-Venant sqrt(GJ/(rho I_p))        803.954   +2.09e-02
+     2.0   vertical        1167.449   -2.4e-03      Euler-Bernoulli (2 c_p)               1301.853   -1.03e-01
+     2.0   lateral          512.010   -6.0e-04      Euler-Bernoulli (2 c_p), I_z           534.686   -4.24e-02
+     2.0   axial           5159.041   -1.6e-04      rod c_0                               5172.194   -2.54e-03
+     2.0   axial           5159.041   -1.6e-04      Love rod                              5160.140   -2.13e-04
+     2.0   torsional        879.041   +9.5e-04      Saint-Venant sqrt(GJ/(rho I_p))        803.954   +9.34e-02
+     5.0   vertical        1978.913   -1.2e-03      Euler-Bernoulli (2 c_p)               3254.633   -3.92e-01
+     5.0   lateral         1021.785   -3.0e-04      Euler-Bernoulli (2 c_p), I_z          1336.715   -2.36e-01
+     5.0   axial           4973.114   -7.3e-03      rod c_0                               5172.194   -3.85e-02
+     5.0   axial           4973.114   -7.3e-03      Love rod                              5097.618   -2.44e-02
+     5.0   torsional       1376.210   +1.6e-05      Saint-Venant sqrt(GJ/(rho I_p))        803.954   +7.12e-01
   pipe:
-     1.0   vertical         135.634   -2.9e-04      Euler-Bernoulli (2 c_p)           135.764   -9.55e-04
-     1.0   axial           5171.969   -8.4e-06      rod c_0                          5172.194   -4.35e-05
-     1.0   axial           5171.969   -8.4e-06      Love rod                         5171.969   -2.29e-08
-     1.0   torsional       3220.067   -4.2e-04      T(0,1): c_T                      3220.067   -1.49e-08
-     2.0   vertical         270.498   +1.5e-03      Euler-Bernoulli (2 c_p)           271.528   -3.79e-03
-     2.0   axial           5171.293   +1.3e-05      rod c_0                          5172.194   -1.74e-04
-     2.0   axial           5171.293   +1.3e-05      Love rod                         5171.295   -3.61e-07
-     2.0   torsional       3220.067   -1.2e-05      T(0,1): c_T                      3220.067   -3.84e-09
-     5.0   vertical         663.137   +2.5e-04      Euler-Bernoulli (2 c_p)           678.820   -2.31e-02
-     5.0   axial           5166.506   -1.1e-05      rod c_0                          5172.194   -1.10e-03
-     5.0   axial           5166.506   -1.1e-05      Love rod                         5166.580   -1.42e-05
-     5.0   torsional       3220.067   +1.1e-05      T(0,1): c_T                      3220.067   -6.20e-10
-    10.0   vertical        1242.572   -6.1e-05      Euler-Bernoulli (2 c_p)          1357.639   -8.48e-02
-    10.0   axial           5148.593   -9.2e-06      rod c_0                          5172.194   -4.56e-03
-    10.0   axial           5148.593   -9.2e-06      Love rod                         5149.798   -2.34e-04
-    10.0   torsional       3220.067   -1.1e-05      T(0,1): c_T                      3220.067   -1.52e-10
-  plate: the A0, S0 and SH0 phase-speed checks are listed above; c_g checked against FD by the page solver check.
+     1.0   vertical         141.624   -1.3e-03      Euler-Bernoulli (2 c_p)                141.771   -1.03e-03
+     1.0   axial           5171.949   -2.5e-05      rod c_0                               5172.194   -4.74e-05
+     1.0   axial           5171.949   -2.5e-05      Love rod                              5171.949   -2.66e-08
+     1.0   torsional       3220.067   -2.2e-05      T(0,1): c_T                           3220.067   -4.89e-09
+     2.0   vertical         282.372   -7.9e-04      Euler-Bernoulli (2 c_p)                283.541   -4.12e-03
+     2.0   axial           5171.212   -8.2e-06      rod c_0                               5172.194   -1.90e-04
+     2.0   axial           5171.212   -8.2e-06      Love rod                              5171.214   -4.27e-07
+     2.0   torsional       3220.067   +8.4e-06      T(0,1): c_T                           3220.067   -1.31e-09
+     5.0   vertical         691.087   -5.6e-05      Euler-Bernoulli (2 c_p)                708.853   -2.51e-02
+     5.0   axial           5165.986   -6.4e-06      rod c_0                               5172.194   -1.20e-03
+     5.0   axial           5165.986   -6.4e-06      Love rod                              5166.073   -1.68e-05
+     5.0   torsional       3220.067   -2.3e-06      T(0,1): c_T                           3220.067   -2.05e-10
+  plate:
+     5.0   vertical         155.876   -3.5e-04      plate bending 2 sqrt(D/(rho d)) k      156.013   -8.78e-04
+     5.0   axial           5404.159   +9.6e-07      plate speed sqrt(E/(rho (1 - nu^2)))  5404.441   -5.22e-05
+     5.0   lateral         3220.067   +1.3e-05      SH0: c_T                              3220.067   +2.70e-11
+    10.0   vertical         310.934   -9.9e-05      plate bending 2 sqrt(D/(rho d)) k      312.026   -3.50e-03
+    10.0   axial           5403.312   -1.0e-05      plate speed sqrt(E/(rho (1 - nu^2)))  5404.441   -2.09e-04
+    10.0   lateral         3220.067   -2.7e-07      SH0: c_T                              3220.067   +4.42e-12
+    20.0   vertical         615.449   +1.3e-05      plate bending 2 sqrt(D/(rho d)) k      624.051   -1.38e-02
+    20.0   axial           5399.907   -3.0e-06      plate speed sqrt(E/(rho (1 - nu^2)))  5404.441   -8.39e-04
+    20.0   lateral         3220.067   +2.1e-06      SH0: c_T                              3220.067   +6.85e-13
   (Euler-Bernoulli's c_g = 2 c_p holds as k -> 0 and parts from SAFE as shear and rotary inertia
   enter, where Timoshenko follows; the rod speed likewise, where Love's lateral inertia follows.)
   The travelling curves carry slopes too (the spline's, for the cubic Hermite that draws them), but
-  not to this accuracy: along every branch inside the window, 40 states each, their slope against
-  the exact c_g: bar 3.2e-03 (higher order mode, cut-on 161.0 kHz, 199 kHz); I-beam 5.3e-03 (higher order mode, cut-on 68.0 kHz, 98 kHz); rail 3.9e-03 (higher order mode, cut-on 154.4 kHz, 171 kHz); pipe 8.3e-04 (axial L(0,1), 43 kHz); plate 1.3e-04 (S0 Lamb, 196 kHz).
+  not to this accuracy: along every branch inside the window, 10 states each, their slope against
+  the exact c_g: bar 1.1e-02 (higher order mode, cut-on 113.8 kHz, 110.9 kHz); I-beam 1.3e-03 (higher order mode, cut-on 45.6 kHz, 43.8 kHz); rail 2.1e-03 (higher order mode, cut-on 13.4 kHz (second), 21.7 kHz); pipe 3.0e-04 (higher order mode F(2,2), cut-on 53.2 kHz, 65.9 kHz); plate 1.9e-04 (A1 Lamb, 224.1 kHz).
   The worst lie at veerings, where two branches of a class nearly touch and c_g turns within a
   fraction of a kHz. So the waves never use them: c_g always comes from a solved state.
-  The tour's glides: wave 2's rates solved at 129 moments evenly spread over the 8 s glide, each
-  interval integrated as the cubic through its four nearest (the page's rule), against Simpson
-  on 513 moments. Largest difference in the envelope's travel over a glide (mm of the page) and
-  in the phase at its centre (rad):
-    bar     2.3e-04 mm (of up to 1009 mm travelled in a glide), 1.3e-05 rad
-    I-beam  2.1e-03 mm (of up to 836 mm travelled in a glide), 3.6e-05 rad
-    rail    1.8e-02 mm (of up to 964 mm travelled in a glide), 4.0e-03 rad
-    pipe    9.9e-04 mm (of up to 1026 mm travelled in a glide), 9.5e-05 rad
-    plate   1.7e-05 mm (of up to 1635 mm travelled in a glide), 2.4e-06 rad
+  The tour's glides: wave 2's rates (envelope speed and centre phase rate, from c_g and k) at 129
+  moments evenly spread over the 8 s glide, each interval integrated as the cubic through its four nearest
+  (the page's rule), against Simpson on 513 moments; the rates here from the travelling curve (the
+  rule is what is checked). The page's own rates are exact: each moment's c_g computed here by shift-invert on
+  the same model at the wavenumber the page takes (glide_rates) and carried with the section, so that a stop
+  begins without solving 129 states; the wave drawn at each moment is still solved in the page.
+  Largest difference in the envelope's travel over a glide (mm of the page) and in the phase at its centre (rad):
+    bar     3.8e-04 mm (of up to 1408 mm travelled in a glide), 4.1e-05 rad
+    I-beam  4.1e-02 mm (of up to 4393 mm travelled in a glide), 5.6e-04 rad
+    rail    7.2e-02 mm (of up to 9751 mm travelled in a glide), 3.5e-04 rad
+    pipe    3.1e-04 mm (of up to 1610 mm travelled in a glide), 1.1e-05 rad
+    plate   2.3e-04 mm (of up to 1340 mm travelled in a glide), 6.3e-05 rad
   The spreading left out: the envelope rides at c_g unchanged (the first order in the burst's
-  bandwidth). A Gaussian burst of the packet's rms width (22.6 mm) would widen over one passage
-  (D = 412 + 160 mm) by sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk: at the tours' states
-    bar     median 1.05, largest 13.73 (at 50 kHz)
-    I-beam  median 1.85, largest 49.38 (at 16 kHz)
-    rail    median 2.21, largest 21.24 (at 12 kHz)
-    pipe    median 1.13, largest 8.81 (at 30 kHz)
-    plate   median 1.20, largest 3.58 (at 20 kHz)
+  bandwidth). A Gaussian burst of the packet's rms width (14.1 % of its envelope's) would widen over one
+  passage (D = L + pw of its section) by sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk: at the tours' states
+    bar     median 1.04, largest 4.56 (at 5 kHz)
+    I-beam  median 1.56, largest 11.57 (at 2 kHz)
+    rail    median 1.23, largest 9.54 (at 3 kHz)
+    pipe    median 1.06, largest 4.50 (at 10 kHz)
+    plate   median 1.07, largest 5.16 (at 10 kHz)
   A burst of one or two cycles on a dispersive branch would smear as it goes. The figure shows the
   group velocity's own picture: the envelope carried whole at c_g, which a burst narrow enough in
   band keeps; the widening above is what this short one would add, left out.
@@ -458,153 +339,137 @@ GROUP VELOCITY
   fitted with the outline the page draws (the top-back node's path, packet centre X0 + v t, phase
   at the centre psi0 + r t, all moments at once); the envelope's speed v and the crests'
   v - r / k, times SLOW, against the state's c_g and c_p:
-    tour                 wave 1: vertical bending, 20.0 kHz, 21 moments over 2.0 s; fit rms 0.030 units
-      c_g 3.1141 km/s, on screen 3.1074 (-2.2e-03); c_p 2.1705, on screen 2.1720 (+6.9e-04)
-    tour                 wave 2: vertical bending, 150.0 kHz, 21 moments over 2.0 s; fit rms 0.033 units
-      c_g 2.9311 km/s, on screen 2.9328 (+5.8e-04); c_p 2.9131, on screen 2.9130 (-1.5e-05)
-    click, axial 30 kHz  wave 1: axial, 30.0 kHz, 15 moments over 1.4 s; fit rms 0.027 units
-      c_g 4.9768 km/s, on screen 4.9899 (+2.6e-03); c_p 5.1142, on screen 5.1094 (-9.3e-04)
-    drag, axial 62 kHz   wave 1: axial, 62.0 kHz, 21 moments over 2.0 s; fit rms 0.035 units
-      c_g 1.5843 km/s, on screen 1.5845 (+1.4e-04); c_p 4.0460, on screen 4.0459 (-1.6e-05)
-    the two beams: envelope speeds on screen in the ratio 0.9438, c_g in the ratio 0.9412; crest over envelope 0.6990 and 0.9933, c_p / c_g 0.6970 and 0.9938
-    the drag slowed wave 1's packet 3.149 times on screen (c_g: 3.141), its crests
-    running 2.55 times the envelope's speed through it at 62 kHz.
+    tour                 wave 1: bending, 5.0 kHz, 21 moments over 2.0 s; fit rms 0.033 units
+      c_g 1.7568 km/s, on screen 1.7550 (-1.0e-03); c_p 0.9363, on screen 0.9374 (+1.1e-03)
+    tour                 wave 2: bending, 150.0 kHz, 21 moments over 2.0 s; fit rms 0.038 units
+      c_g 3.0978 km/s, on screen 3.0902 (-2.5e-03); c_p 2.8200, on screen 2.8199 (-2.8e-05)
+    click, axial 30 kHz  wave 1: axial, 30.0 kHz, 15 moments over 1.4 s; fit rms 0.034 units
+      c_g 5.1108 km/s, on screen 5.1242 (+2.6e-03); c_p 5.1522, on screen 5.1487 (-6.6e-04)
+    drag, axial 139 kHz  wave 1: axial, 139.1 kHz, 21 moments over 2.0 s; fit rms 0.034 units
+      c_g 2.0223 km/s, on screen 2.0194 (-1.4e-03); c_p 3.8603, on screen 3.8603 (+1.1e-07)
+    the two beams: envelope speeds on screen in the ratio 1.7608, c_g in the ratio 1.7634; crest over envelope 0.5341 and 0.9125, c_p / c_g 0.5330 and 0.9103
+    the drag slowed wave 1's packet 2.537 times on screen (c_g: 2.527), its crests
+    running 1.91 times the envelope's speed through it at 62 kHz.
   The residual differences are the picture's: a packet only 1.5 wavelengths long pins its centre
   to about 0.2 mm a moment, the crests (whose phase every pixel column sees) far better.
 
-THE TOURS (wave 1, then wave 2 gliding; each state's f, c_p, c_g and wavelength, and the seconds its
-packet takes to cross the drawn beam)
-  bar:
-    1: vertical bending, 20 kHz (c_p 2.17, c_g 3.11 km/s, 108.5 mm; 3.3 s)
-    2: vertical bending, 50 kHz (c_p 2.68, c_g 3.18 km/s, 53.7 mm; 3.2 s)
-       to 150 kHz (c_p 2.91, c_g 2.93 km/s, 19.4 mm; 3.5 s)
-    1: axial, 20 kHz (c_p 5.15, c_g 5.10 km/s, 257.5 mm; 2.0 s)
-    2: axial, 50 kHz (c_p 4.89, c_g 3.83 km/s, 97.7 mm; 2.7 s)
-       to 150 kHz (c_p 2.93, c_g 2.83 km/s, 19.5 mm; 3.7 s)
-    1: torsional, 45 kHz (c_p 2.60, c_g 2.87 km/s, 57.8 mm; 3.6 s)
-    2: torsional, 80 kHz (c_p 2.75, c_g 3.03 km/s, 34.3 mm; 3.4 s)
-       to 150 kHz (c_p 2.88, c_g 3.02 km/s, 19.2 mm; 3.4 s)
-    1: lateral bending, 20 kHz (c_p 1.71, c_g 2.79 km/s, 85.6 mm; 3.7 s)
-    2: lateral bending, 50 kHz (c_p 2.32, c_g 3.19 km/s, 46.5 mm; 3.2 s)
-       to 150 kHz (c_p 2.83, c_g 3.11 km/s, 18.9 mm; 3.3 s)
-    1: higher order mode, cut-on 40.3 kHz, 70 kHz (c_p 6.32, c_g 3.71 km/s, 90.3 mm; 2.8 s)
-    2: higher order mode, cut-on 40.3 kHz, 110 kHz (c_p 4.70, c_g 2.48 km/s, 42.8 mm; 4.2 s)
-       to 190 kHz (c_p 3.19, c_g 2.62 km/s, 16.8 mm; 3.9 s)
-  I-beam:
-    1: vertical bending, 6 kHz (c_p 1.37, c_g 1.87 km/s, 228.8 mm; 5.5 s)
-    2: vertical bending, 20 kHz (c_p 1.44, c_g 1.25 km/s, 72.0 mm; 8.3 s)
-       to 150 kHz (c_p 2.20, c_g 3.05 km/s, 14.6 mm; 3.4 s)
-    1: axial, 4 kHz (c_p 5.17, c_g 5.17 km/s, 1292.7 mm; 2.0 s)
-    2: axial, 16 kHz (c_p 5.09, c_g 4.52 km/s, 318.4 mm; 2.3 s)
-       to 150 kHz (c_p 2.20, c_g 3.05 km/s, 14.6 mm; 3.4 s)
-    1: torsional, 6 kHz (c_p 1.19, c_g 1.93 km/s, 198.0 mm; 5.4 s)
-    2: torsional, 20 kHz (c_p 1.31, c_g 1.40 km/s, 65.7 mm; 7.4 s)
-       to 150 kHz (c_p 2.20, c_g 3.02 km/s, 14.7 mm; 3.4 s)
-    1: lateral bending, 6 kHz (c_p 1.08, c_g 1.52 km/s, 180.2 mm; 6.8 s)
-    2: lateral bending, 20 kHz (c_p 1.18, c_g 1.44 km/s, 59.2 mm; 7.2 s)
-       to 150 kHz (c_p 2.07, c_g 2.97 km/s, 13.8 mm; 3.5 s)
-    1: higher order mode, cut-on 4.1 kHz, 12 kHz (c_p 1.51, c_g 2.19 km/s, 126.1 mm; 4.7 s)
-    2: higher order mode, cut-on 4.1 kHz, 40 kHz (c_p 1.54, c_g 1.82 km/s, 38.4 mm; 5.7 s)
-       to 150 kHz (c_p 2.21, c_g 3.03 km/s, 14.7 mm; 3.4 s)
-  rail:
-    1: vertical bending, 6 kHz (c_p 1.38, c_g 1.98 km/s, 229.7 mm; 5.2 s)
-    2: vertical bending, 20 kHz (c_p 1.56, c_g 1.15 km/s, 78.2 mm; 9.0 s)
-       to 150 kHz (c_p 2.05, c_g 2.85 km/s, 13.7 mm; 3.6 s)
-    1: axial, 4 kHz (c_p 5.17, c_g 5.17 km/s, 1292.7 mm; 2.0 s)
-    2: axial, 16 kHz (c_p 5.14, c_g 5.04 km/s, 321.2 mm; 2.1 s)
-       to 150 kHz (c_p 2.52, c_g 2.81 km/s, 16.8 mm; 3.7 s)
-    1: lateral bending, 6 kHz (c_p 0.93, c_g 1.55 km/s, 155.4 mm; 6.7 s)
-    2: lateral bending, 20 kHz (c_p 1.28, c_g 1.38 km/s, 63.9 mm; 7.5 s)
-       to 150 kHz (c_p 2.06, c_g 2.84 km/s, 13.7 mm; 3.6 s)
-    1: torsional, 8 kHz (c_p 1.33, c_g 1.87 km/s, 166.3 mm; 5.5 s)
-    2: torsional, 20 kHz (c_p 1.54, c_g 2.24 km/s, 76.9 mm; 4.6 s)
-       to 150 kHz (c_p 2.11, c_g 2.89 km/s, 14.1 mm; 3.6 s)
-    1: higher order mode, cut-on 4.8 kHz, 12 kHz (c_p 1.67, c_g 2.09 km/s, 139.3 mm; 4.9 s)
-    2: higher order mode, cut-on 4.8 kHz, 40 kHz (c_p 2.13, c_g 2.47 km/s, 53.2 mm; 4.2 s)
-       to 150 kHz (c_p 2.45, c_g 2.50 km/s, 16.3 mm; 4.1 s)
-  pipe:
-    1: bending F(1,1), 20 kHz (c_p 1.99, c_g 2.27 km/s, 99.3 mm; 4.6 s)
-    2: bending F(1,1), 50 kHz (c_p 1.55, c_g 1.16 km/s, 31.0 mm; 8.9 s)
-       to 150 kHz (c_p 1.87, c_g 2.75 km/s, 12.5 mm; 3.8 s)
-    1: axial L(0,1), 10 kHz (c_p 5.16, c_g 5.14 km/s, 516.1 mm; 2.0 s)
-    2: axial L(0,1), 30 kHz (c_p 5.00, c_g 4.46 km/s, 166.7 mm; 2.3 s)
-       to 150 kHz (c_p 1.86, c_g 2.75 km/s, 12.4 mm; 3.8 s)
-    1: torsional T(0,1), 20 kHz (c_p 3.22, c_g 3.22 km/s, 161.0 mm; 3.2 s)
-    2: torsional T(0,1), 50 kHz (c_p 3.22, c_g 3.22 km/s, 64.4 mm; 3.2 s)
-       to 150 kHz (c_p 3.22, c_g 3.22 km/s, 21.5 mm; 3.2 s)
-    1: higher order mode F(2,1), cut-on 5.8 kHz, 12 kHz (c_p 1.26, c_g 1.46 km/s, 105.3 mm; 7.1 s)
-    2: higher order mode F(2,1), cut-on 5.8 kHz, 40 kHz (c_p 1.46, c_g 1.52 km/s, 36.6 mm; 6.8 s)
-       to 150 kHz (c_p 1.90, c_g 2.73 km/s, 12.7 mm; 3.8 s)
-  plate:
-    1: A0 Lamb, 20 kHz (c_p 1.31, c_g 2.32 km/s, 65.5 mm; 4.5 s)
-    2: A0 Lamb, 50 kHz (c_p 1.89, c_g 2.95 km/s, 37.8 mm; 3.5 s)
-       to 150 kHz (c_p 2.59, c_g 3.24 km/s, 17.3 mm; 3.2 s)
-    1: S0 Lamb, 20 kHz (c_p 5.40, c_g 5.40 km/s, 270.1 mm; 1.9 s)
-    2: S0 Lamb, 50 kHz (c_p 5.39, c_g 5.36 km/s, 107.8 mm; 1.9 s)
-       to 150 kHz (c_p 5.24, c_g 4.80 km/s, 34.9 mm; 2.2 s)
-    1: SH0, 20 kHz (c_p 3.22, c_g 3.22 km/s, 161.0 mm; 3.2 s)
-    2: SH0, 50 kHz (c_p 3.22, c_g 3.22 km/s, 64.4 mm; 3.2 s)
-       to 150 kHz (c_p 3.22, c_g 3.22 km/s, 21.5 mm; 3.2 s)
-    1: SH1, 185 kHz (c_p 6.54, c_g 1.59 km/s, 35.3 mm; 6.5 s)
-    2: SH1, 188 kHz (c_p 6.24, c_g 1.66 km/s, 33.2 mm; 6.2 s)
-       to 195 kHz (c_p 5.71, c_g 1.82 km/s, 29.3 mm; 5.7 s)
-  The first stop of each section shows wave 2 at its high frequency from the start: the
-  caption's comparison, the whole section moving at low frequency, the surfaces at high.
+TIME: ONE CLOCK A SECTION
+  Each section's packets, both waves and every operating point, run on one clock: the steel's time
+  slowed T.slow times (written under the waveguides), and one length scale, T.s drawing units a mm. A
+  packet's envelope moves at c_g / slow and its crests at c_p / slow, as they are; nothing is scaled per
+  wave. So a slow packet lags a fast one, and dragging a wave along its curve changes both speeds at once.
+  The clock keeps the crests of the tour's highest frequency cycling at about 7.5 a second (f / slow), so
+  they are seen to move rather than flicker; the length shown holds two or more wavelengths of wave 1 in
+  its packet. Per section: length shown L, envelope pw, slow, and the tour's states with the seconds each
+  packet takes to cross L, the crests' frequency on the page, and c_p / c_g (above 1 the crests run
+  forward through the envelope, below 1 backward):
+  bar: L = 900 mm, pw = 410 mm, slow = 2e+04 (1 s of the page = 50.0 us)
+    stop 1, wave 1: bending, 5 kHz: c_p 0.94, c_g 1.76 km/s, lambda 187 mm; crosses in 10.2 s, crests 0.25 Hz, c_p/c_g 0.53
+            wave 2: bending, 20 kHz: c_p 1.71, c_g 2.78 km/s, lambda 85 mm; crosses in 6.5 s, crests 1.00 Hz, c_p/c_g 0.61
+                    gliding to 150 kHz: c_p 2.82, c_g 3.10 km/s, lambda 19 mm; crosses in 5.8 s, crests 7.50 Hz, c_p/c_g 0.91
+    stop 2, wave 1: axial, 20 kHz: c_p 5.16, c_g 5.15 km/s, lambda 258 mm; crosses in 3.5 s, crests 1.00 Hz, c_p/c_g 1.00
+            wave 2: axial, 50 kHz: c_p 5.11, c_g 4.98 km/s, lambda 102 mm; crosses in 3.6 s, crests 2.50 Hz, c_p/c_g 1.03
+                    gliding to 150 kHz: c_p 3.63, c_g 2.10 km/s, lambda 24 mm; crosses in 8.6 s, crests 7.50 Hz, c_p/c_g 1.73
+    stop 3, wave 1: torsional, 20 kHz: c_p 2.96, c_g 2.96 km/s, lambda 148 mm; crosses in 6.1 s, crests 1.00 Hz, c_p/c_g 1.00
+            wave 2: torsional, 50 kHz: c_p 2.96, c_g 2.95 km/s, lambda 59 mm; crosses in 6.1 s, crests 2.50 Hz, c_p/c_g 1.00
+                    gliding to 150 kHz: c_p 2.95, c_g 2.93 km/s, lambda 20 mm; crosses in 6.2 s, crests 7.50 Hz, c_p/c_g 1.01
+    stop 4, wave 1: higher order mode, cut-on 80.5 kHz, 100 kHz: c_p 8.86, c_g 2.62 km/s, lambda 89 mm; crosses in 6.9 s, crests 5.00 Hz, c_p/c_g 3.38
+            wave 2: higher order mode, cut-on 80.5 kHz, 105 kHz: c_p 7.93, c_g 2.43 km/s, lambda 75 mm; crosses in 7.4 s, crests 5.25 Hz, c_p/c_g 3.26
+                    gliding to 185 kHz: c_p 3.34, c_g 2.44 km/s, lambda 18 mm; crosses in 7.4 s, crests 9.25 Hz, c_p/c_g 1.37
+    the first stop's wave 1 takes 1.76 times as long as wave 2 to cross (c_g 1.76 and 3.10 km/s)
+  I-beam: L = 1800 mm, pw = 950 mm, slow = 5300 (1 s of the page = 188.7 us)
+    stop 1, wave 1: vertical bending, 3 kHz: c_p 1.43, c_g 2.00 km/s, lambda 476 mm; crosses in 4.8 s, crests 0.57 Hz, c_p/c_g 0.71
+            wave 2: vertical bending, 5 kHz: c_p 1.59, c_g 1.80 km/s, lambda 319 mm; crosses in 5.3 s, crests 0.94 Hz, c_p/c_g 0.88
+                    gliding to 10 kHz: c_p 1.36, c_g 0.82 km/s, lambda 136 mm; crosses in 11.6 s, crests 1.89 Hz, c_p/c_g 1.66
+    stop 2, wave 1: axial, 3 kHz: c_p 5.17, c_g 5.16 km/s, lambda 1723 mm; crosses in 1.8 s, crests 0.57 Hz, c_p/c_g 1.00
+            wave 2: axial, 5 kHz: c_p 5.16, c_g 5.13 km/s, lambda 1032 mm; crosses in 1.9 s, crests 0.94 Hz, c_p/c_g 1.01
+                    gliding to 12 kHz: c_p 1.28, c_g 0.69 km/s, lambda 106 mm; crosses in 13.7 s, crests 2.26 Hz, c_p/c_g 1.84
+    stop 3, wave 1: torsional, 3 kHz: c_p 1.02, c_g 1.77 km/s, lambda 341 mm; crosses in 5.4 s, crests 0.57 Hz, c_p/c_g 0.58
+            wave 2: torsional, 4 kHz: c_p 1.09, c_g 0.70 km/s, lambda 271 mm; crosses in 13.7 s, crests 0.75 Hz, c_p/c_g 1.55
+                    gliding to 20 kHz: c_p 1.10, c_g 1.50 km/s, lambda 55 mm; crosses in 6.4 s, crests 3.77 Hz, c_p/c_g 0.74
+    stop 4, wave 1: lateral bending, 1 kHz: c_p 0.57, c_g 1.01 km/s, lambda 566 mm; crosses in 9.4 s, crests 0.19 Hz, c_p/c_g 0.56
+            wave 2: lateral bending, 2 kHz: c_p 0.70, c_g 0.73 km/s, lambda 351 mm; crosses in 13.1 s, crests 0.38 Hz, c_p/c_g 0.96
+                    gliding to 20 kHz: c_p 0.90, c_g 1.47 km/s, lambda 45 mm; crosses in 6.5 s, crests 3.77 Hz, c_p/c_g 0.61
+    stop 5, wave 1: higher order mode, cut-on 1.2 kHz, 2 kHz: c_p 0.97, c_g 0.82 km/s, lambda 486 mm; crosses in 11.7 s, crests 0.38 Hz, c_p/c_g 1.19
+            wave 2: higher order mode, cut-on 1.2 kHz, 3 kHz: c_p 1.04, c_g 1.55 km/s, lambda 345 mm; crosses in 6.2 s, crests 0.57 Hz, c_p/c_g 0.67
+                    gliding to 20 kHz: c_p 1.14, c_g 1.56 km/s, lambda 57 mm; crosses in 6.1 s, crests 3.77 Hz, c_p/c_g 0.73
+    the first stop's wave 1 takes 0.41 times as long as wave 2 to cross (c_g 2.00 and 0.82 km/s)
+  rail: L = 3500 mm, pw = 1600 mm, slow = 2700 (1 s of the page = 370.4 us)
+    stop 1, wave 1: vertical bending, 2 kHz: c_p 1.56, c_g 2.09 km/s, lambda 779 mm; crosses in 4.5 s, crests 0.74 Hz, c_p/c_g 0.74
+            wave 2: vertical bending, 3 kHz: c_p 1.69, c_g 1.92 km/s, lambda 563 mm; crosses in 4.9 s, crests 1.11 Hz, c_p/c_g 0.88
+                    gliding to 5 kHz: c_p 1.51, c_g 0.82 km/s, lambda 301 mm; crosses in 11.5 s, crests 1.85 Hz, c_p/c_g 1.84
+    stop 2, wave 1: axial, 2 kHz: c_p 5.17, c_g 5.15 km/s, lambda 2583 mm; crosses in 1.8 s, crests 0.74 Hz, c_p/c_g 1.00
+            wave 2: axial, 3 kHz: c_p 5.16, c_g 5.11 km/s, lambda 1719 mm; crosses in 1.8 s, crests 1.11 Hz, c_p/c_g 1.01
+                    gliding to 10 kHz: c_p 2.25, c_g 2.40 km/s, lambda 225 mm; crosses in 3.9 s, crests 3.70 Hz, c_p/c_g 0.94
+    stop 3, wave 1: lateral bending, 1 kHz: c_p 0.80, c_g 1.33 km/s, lambda 800 mm; crosses in 7.1 s, crests 0.37 Hz, c_p/c_g 0.60
+            wave 2: lateral bending, 2 kHz: c_p 1.05, c_g 1.69 km/s, lambda 525 mm; crosses in 5.6 s, crests 0.74 Hz, c_p/c_g 0.62
+                    gliding to 15 kHz: c_p 1.43, c_g 2.01 km/s, lambda 95 mm; crosses in 4.7 s, crests 5.56 Hz, c_p/c_g 0.71
+    stop 4, wave 1: torsional, 2 kHz: c_p 1.34, c_g 1.93 km/s, lambda 671 mm; crosses in 4.9 s, crests 0.74 Hz, c_p/c_g 0.70
+            wave 2: torsional, 3 kHz: c_p 1.42, c_g 1.37 km/s, lambda 474 mm; crosses in 6.9 s, crests 1.11 Hz, c_p/c_g 1.04
+                    gliding to 15 kHz: c_p 1.78, c_g 1.97 km/s, lambda 119 mm; crosses in 4.8 s, crests 5.56 Hz, c_p/c_g 0.90
+    stop 5, wave 1: higher order mode, cut-on 1.3 kHz, 2 kHz: c_p 2.02, c_g 1.09 km/s, lambda 1012 mm; crosses in 8.7 s, crests 0.74 Hz, c_p/c_g 1.87
+            wave 2: higher order mode, cut-on 1.3 kHz, 3 kHz: c_p 1.72, c_g 1.83 km/s, lambda 572 mm; crosses in 5.2 s, crests 1.11 Hz, c_p/c_g 0.94
+                    gliding to 15 kHz: c_p 2.34, c_g 2.89 km/s, lambda 156 mm; crosses in 3.3 s, crests 5.56 Hz, c_p/c_g 0.81
+    the first stop's wave 1 takes 0.39 times as long as wave 2 to cross (c_g 2.09 and 0.82 km/s)
+  pipe: L = 800 mm, pw = 380 mm, slow = 1.6e+04 (1 s of the page = 62.5 us)
+    stop 1, wave 1: bending F(1,1), 10 kHz: c_p 1.71, c_g 2.47 km/s, lambda 171 mm; crosses in 5.2 s, crests 0.62 Hz, c_p/c_g 0.69
+            wave 2: bending F(1,1), 20 kHz: c_p 2.00, c_g 2.25 km/s, lambda 100 mm; crosses in 5.7 s, crests 1.25 Hz, c_p/c_g 0.89
+                    gliding to 40 kHz: c_p 1.76, c_g 1.15 km/s, lambda 44 mm; crosses in 11.2 s, crests 2.50 Hz, c_p/c_g 1.54
+    stop 2, wave 1: axial L(0,1), 10 kHz: c_p 5.16, c_g 5.13 km/s, lambda 516 mm; crosses in 2.5 s, crests 0.63 Hz, c_p/c_g 1.01
+            wave 2: axial L(0,1), 20 kHz: c_p 5.11, c_g 4.96 km/s, lambda 256 mm; crosses in 2.6 s, crests 1.25 Hz, c_p/c_g 1.03
+                    gliding to 45 kHz: c_p 2.01, c_g 0.51 km/s, lambda 45 mm; crosses in 25.3 s, crests 2.81 Hz, c_p/c_g 3.96
+    stop 3, wave 1: torsional T(0,1), 20 kHz: c_p 3.22, c_g 3.22 km/s, lambda 161 mm; crosses in 4.0 s, crests 1.25 Hz, c_p/c_g 1.00
+            wave 2: torsional T(0,1), 40 kHz: c_p 3.22, c_g 3.22 km/s, lambda 81 mm; crosses in 4.0 s, crests 2.50 Hz, c_p/c_g 1.00
+                    gliding to 120 kHz: c_p 3.22, c_g 3.22 km/s, lambda 27 mm; crosses in 4.0 s, crests 7.50 Hz, c_p/c_g 1.00
+    stop 4, wave 1: higher order mode F(2,1), cut-on 6.3 kHz, 10 kHz: c_p 1.33, c_g 1.24 km/s, lambda 133 mm; crosses in 10.3 s, crests 0.62 Hz, c_p/c_g 1.07
+            wave 2: higher order mode F(2,1), cut-on 6.3 kHz, 15 kHz: c_p 1.37, c_g 1.60 km/s, lambda 91 mm; crosses in 8.0 s, crests 0.94 Hz, c_p/c_g 0.86
+                    gliding to 120 kHz: c_p 1.89, c_g 2.64 km/s, lambda 16 mm; crosses in 4.8 s, crests 7.50 Hz, c_p/c_g 0.72
+    the first stop's wave 1 takes 0.46 times as long as wave 2 to cross (c_g 2.47 and 1.15 km/s)
+  plate: L = 560 mm, pw = 210 mm, slow = 2.4e+04 (1 s of the page = 41.7 us)
+    stop 1, wave 1: A0 Lamb, 10 kHz: c_p 0.96, c_g 1.79 km/s, lambda 96 mm; crosses in 7.5 s, crests 0.42 Hz, c_p/c_g 0.53
+            wave 2: A0 Lamb, 50 kHz: c_p 1.89, c_g 2.95 km/s, lambda 38 mm; crosses in 4.5 s, crests 2.08 Hz, c_p/c_g 0.64
+                    gliding to 150 kHz: c_p 2.59, c_g 3.24 km/s, lambda 17 mm; crosses in 4.1 s, crests 6.25 Hz, c_p/c_g 0.80
+    stop 2, wave 1: S0 Lamb, 20 kHz: c_p 5.40, c_g 5.40 km/s, lambda 270 mm; crosses in 2.5 s, crests 0.83 Hz, c_p/c_g 1.00
+            wave 2: S0 Lamb, 50 kHz: c_p 5.39, c_g 5.36 km/s, lambda 108 mm; crosses in 2.5 s, crests 2.08 Hz, c_p/c_g 1.01
+                    gliding to 240 kHz: c_p 4.29, c_g 1.88 km/s, lambda 18 mm; crosses in 7.2 s, crests 10.00 Hz, c_p/c_g 2.28
+    stop 3, wave 1: SH0, 20 kHz: c_p 3.22, c_g 3.22 km/s, lambda 161 mm; crosses in 4.2 s, crests 0.83 Hz, c_p/c_g 1.00
+            wave 2: SH0, 50 kHz: c_p 3.22, c_g 3.22 km/s, lambda 64 mm; crosses in 4.2 s, crests 2.08 Hz, c_p/c_g 1.00
+                    gliding to 240 kHz: c_p 3.22, c_g 3.22 km/s, lambda 13 mm; crosses in 4.2 s, crests 10.00 Hz, c_p/c_g 1.00
+    stop 4, wave 1: SH1, 175 kHz: c_p 8.22, c_g 1.26 km/s, lambda 47 mm; crosses in 10.7 s, crests 7.29 Hz, c_p/c_g 6.51
+            wave 2: SH1, 180 kHz: c_p 7.20, c_g 1.44 km/s, lambda 40 mm; crosses in 9.3 s, crests 7.50 Hz, c_p/c_g 5.00
+                    gliding to 245 kHz: c_p 4.27, c_g 2.43 km/s, lambda 17 mm; crosses in 5.5 s, crests 10.21 Hz, c_p/c_g 1.76
+    the first stop's wave 1 takes 1.81 times as long as wave 2 to cross (c_g 1.79 and 3.24 km/s)
+  The first stop of each section is the caption's comparison: one mode low in frequency, where the
+  whole section moves, and high, where the motion gathers at the surfaces (or in the thin walls).
+  Tour: 16 s on the first stop, then 18 s a stop: markers arrive, wave 2 glides up its curve over 8 s, a
+  hold, 1 s of rest between modes; each stop launches both packets anew from the left end.
 
-TIME AND DRAWING
-  The waves run as packets (b): each beam carries bursts of its own mode under a Hann envelope
-  E(x) = cos^2(pi x / 160 mm) (160 mm across, 22.6 mm rms), one after another 572 mm apart,
-  so one crosses the drawn 412 mm at a time, launched from the left end:
-  u = E(x - X) Re{U exp(i(k(x - X) + psi))}. X, the envelope's centre, moves at c_g; psi, the phase
-  at the centre, turns at k c_g - w, so a crest (k (x - X) + psi a whole turn) moves at
-  X' - psi'/k = w/k = c_p. Both waves are on one clock, not written on the figure:
-  2.511e+04 times slower than the beam's, so that a packet at the rod speed c_0 crosses the 412 mm
-  in 2 s (1 s of the page is 39.8 us of the beam). The fastest c_g in any window is
-  5.404 km/s (the plate's S0 Lamb at 0 kHz: 1.91 s); at the tours' states
-  the packets cross in 1.9 to 9.0 s.
-  A wave cycles on the page at f / 2.511e+04: 6.0 Hz at 150 kHz, 0.8 Hz at 20 kHz.
-  In the tour X and psi are the exact c_g and k c_g - w integrated in time (the glides by the rule
-  above), a pure function of the clock; under the reader's hand each frame moves them on by its
-  time at the rates of the state then shown, so a new frequency changes the speed at once and the
-  crests close in or open out about the centre, neither the envelope nor the phase at it jumping.
-  Each section view shows its wave's cross-section at the packet's centre, u = Re{U exp(i psi)}:
-  still for a wave that does not disperse (c_g = c_p), turning over for one that does.
-  Tour: 16 s on the caption's comparison, then 18 s a stop: markers arrive, wave 2 glides up its
-  curve over 8 s, a hold, 1 s of rest between modes; each stop launches both packets anew.
-  Colour: |u| / U_rms at each point at that instant, E sqrt(U_x^2 sin^2 + (U_y^2 + U_z^2) cos^2) of
-  the phase, U_rms the section's rms displacement at the packet's centre (U^T M U = rho A U_rms^2);
-  0 to 3, so the beam is white where no packet is. Shape: the largest displacement drawn 18 units
-  in the sections (each section at its own scale, the bar 7.5 units per mm) and at most 11 units
-  along the beam, never steeper than 0.5 (2.2 units per mm, 412 mm ending at x = 0). Along the beam
-  the boundary is cut into faces (runs of one direction); those turned to the reader are drawn far
-  to near, each an image of |u| made each frame (a column a millimetre) laid on its deformed outline
-  in pieces, fine over the packet and one piece over the still beam either side of it; the face at
-  x = 0 last; creases and silhouettes are inked.
+THE PLATE AS A PLATE
+  The plate's waves run along a wide, thin slab in an oblique view seen from above (its depth drawn at
+  0.5 of the width, at 30 degrees): 10 mm thick and 140 mm wide, the slice's width drawn 3.5 times over (the plate
+  is uniform across its width, so the slice's mode shape is the plate's). Its top face is lit by |u| at the
+  surface, the same across the width: the crests are straight lines across the plate, for Lamb waves
+  (u_x, u_z: the top face and the near edge heave) and SH waves (u_y: the top face's lines along x sway
+  across). The section view above it shows the computed shape through the thickness.
 
 INTERACTION
-  The section switcher over (b) (a radio group: arrows move and choose) morphs the fundamental
-  curves into the new section's in 0.8 s of wall time (so also while the waves are paused), cross
-  fades the higher order curves, glides the markers and fades the waves over. A wave keeps its
-  kind (bending, axial, torsional) and frequency where the new section has that mode there, and
-  otherwise takes the curve nearest in c_p. The tour starts again on the new section.
-  The play control by the colour scale, and Space, pause and resume the waves: the phases stop
-  with the clock and run on from there; dragging while paused redraws the frozen frame.
-  The first touch of a curve, marker, thumb or key stops the tour; "resume tour" hands back
-  after a 0.35 s fade, at the tour's next stop. Hover shows a curve's name and its f, wavelength,
-  c_p and c_g (solved there) under the pointer. Each wave's label over its beam gives c_p, c_g and
-  the wavelength; its slider reads them out. Hits: 18 units (marker), 12 (curve) with a mouse; 30 and 24 by
-  touch. A drag follows its own curve, and moves to another only when the pointer is drawn
-  well away (28 units) onto it (8 units).
+  The section switcher over (b) (a radio group: arrows move and choose) changes the window: the old
+  frequency ticks fade before the new arrive, the fundamental curves morph at the same share of either
+  window, the higher order curves cross fade, the markers glide and the waves fade over (0.8 s of wall
+  time). A wave keeps its kind (bending, axial, torsional) at the same share of the new window, or takes
+  the curve nearest in c_p; its packet keeps its share of the drawn length. The tour starts again on
+  the new section. Hover names a curve and gives f, wavelength, c_p and c_g there; a marker or its thumb
+  drags along its curve (on a backward-wave branch, to the crossing nearest the wave), the arrows step
+  it (1 kHz on a 200 kHz window, in proportion on the others), up and down move it to the next curve.
 
 PAYLOAD
-  nf-dispersion.html 359 KB (the engine, this script and the bar, inline); fetched
-  when a section is first chosen or its switch is pointed at: nf-dispersion-ibeam.json 41 KB, nf-dispersion-rail.json 50 KB, nf-dispersion-pipe.json 46 KB, nf-dispersion-plate.json 4 KB; 501 KB in all.
+  nf-dispersion.html 325 KB: the engine, this script and all five sections inside (no request is
+  made when a section is chosen); the nf-dispersion-<section>.json files are neither written nor read.
 
 OVERLAP (engine ?overlap, 672 px)
   printed (still): the bar's poster and every 0.25 s to 6.66667 s (common.still), then every section at
   59 moments across its tour, and every switch held at 30, 60 and 85 %: no collisions
   live (the controls drawn, waves paused): every section at 5 moments: no collisions
   and each section's parameter line ends left of x = 830 units, clear of the page controls
-  at every width from 300 px (they cover the last 51 px of the bottom right from 480 px down, 68 above)
 
-compute: the bar 53 s, I-beam 39 s, rail 88 s, pipe 5 s, plate 0 s
+compute: bar 19 s, I-beam 103 s, rail 120 s, pipe 14 s, plate 0 s (this shared machine)

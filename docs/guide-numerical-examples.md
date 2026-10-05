@@ -3,7 +3,8 @@
 The waves guide's Figure 4 offers bar, I-beam, rail, pipe and plate. The
 plate is infinite across its width and 10 mm thick. Its basis ties nodes at
 equal thickness coordinates, separating Lamb and shear-horizontal modes.
-The displayed 40 mm width is a slice, not a pair of free edges.
+It is drawn as a thin slab 140 mm wide, a slice of the infinite plate, not a
+pair of free edges.
 
 Figure 4a plots wavenumber on a logarithmic vertical axis, in radians per
 metre, against frequency. It uses Figure 4's same meshes, branches and SAFE
@@ -30,13 +31,15 @@ ranking of the methods.
 ## Regenerate
 
 Python dependencies: numpy, scipy, scikit-learn, statsmodels, Pillow and
-Playwright with Chromium. The existing figure runtime supplies the canvas
+Playwright with Chromium; `triangle` only to mesh the I-beam and the rail
+again. The existing figure runtime supplies the canvas
 layout, Computer Modern fonts, pause/restart, reduced motion and print stills.
 
 ```powershell
 $env:OPENBLAS_NUM_THREADS = '1'
 python tools/numfig/dispersion.py --page
 python tools/numfig/dispersion_wavelength.py
+python tools/numfig/safe.py
 python tools/numfig/ml_feature_selection.py
 python tools/numfig/ml_forecasting.py
 python site/build.py --strict --no-word --out build/r14-guides/dist
@@ -70,24 +73,12 @@ and refits: all three forecasts must remain unchanged.
 
 Both dispersion figures embed all five section payloads in their HTML. Section
 selection therefore works without separate JSON requests, which the production
-host can challenge with HTTP 429. The sibling JSON files remain reproducible
-numerical artifacts; interactive figures use the embedded copies.
+host can challenge with HTTP 429. No separate JSON files are written or read.
 
 ## Additional requests checked on 2 October 2026
 
-Figure 4's bar uses 16 × 32 Q9 elements in both the Python sweep and the browser
-solver. The I-beam, rail, pipe and plate use 1.5 times their previous mesh
-density. Production meshes are compared with finer reference meshes. Large
-Python eigenproblems use sparse shift-invert, with independent dense checks.
-The browser retains its eigenvalue-counting solver.
-
-The reference paper [Xu et al. (2024)](https://doi.org/10.1038/s41598-024-59328-5)
-uses a 192 mm high, 150 mm wide, 75 kg/m rail with 550 triangular elements and
-340 nodes. This guide's simplified rail is 40 mm high and 35 mm wide, uses
-quadratic quadrilaterals, and retains the guide's steel properties. Matching
-the paper's number of branches would require its geometry and material too.
-Here each displayed branch is checked against the eigenvalue count of this
-guide's own cross-section, rather than adding curves to match a picture.
+Large Python eigenproblems use sparse shift-invert, with independent dense
+checks. The browser retains its eigenvalue-counting solver.
 
 Figure 4a now shows **wavenumber**, as requested in the latest feedback. Its
 existing filename is retained so earlier links keep working. Wavelength
@@ -104,3 +95,27 @@ Figure 18b's neuron-count selection also draws its fitted 1–N–1 network, wit
 N hidden tanh units and every input/output connection. Its displayed output
 bias is `base + sum(v)` because the existing fit uses `v * (1 + tanh(...))`.
 There are `3*N + 1` fitted weights and biases.
+
+## Figures 4, 4a and 5 rebuilt on 5 October 2026
+
+The professor's notes asked for as many dispersion curves as the papers show,
+checked mesh sizes, wave speeds that make the change along a curve visible,
+and the plate drawn as a thin slab. Each section now has real dimensions and
+its own frequency window, ending where it holds as many branches as its
+reference:
+
+| Section | Window | Branches | Reference |
+|---|---|---|---|
+| Square bar 20 × 20 mm | 0 to 190 kHz | 11 | Hayashi, Kawashima and Rose (2004), Fig. 2 |
+| IPE 80 I-beam | 0 to 52 kHz | 20 | none published; the same model on a mesh of half the element size |
+| 60E1 rail (EN 13674-1) | 0 to 22.5 kHz | 16 | Ramatlo, Wilke and Loveday (2018), Fig. 1(a) |
+| NPS 1¼ schedule 40 pipe | 0 to 175 kHz | 22 | exact (Gazis 1959) |
+| Plate, 10 mm | 0 to 250 kHz | 5 | exact Rayleigh-Lamb and SH |
+
+Every mesh is compared with one of half its element size: cut-on frequencies
+agree within 0.17% and curve ends within 0.16%, with 6 to 12 elements across
+the shortest wavelength shown. The bar has 16 × 16 Q9 elements of 1.25 mm, and
+Figure 5's SAFE panel uses the same mesh. Each section runs on one clock,
+labelled in its parameter line; on screen, packets move at the group velocity
+and crests at the phase velocity. `dispersion_branches.check.txt` holds the
+branch audit, and `dispersion.check.txt` the full report.

@@ -51,10 +51,14 @@ def test_browser_stiffness_solver_and_spectrum_against_scipy():
 
 
 def test_refined_bar_mesh_matches_reference_dimensions():
+    # the 20 x 20 mm square bar of the published curves (Hayashi, Kawashima
+    # and Rose 2004), 16 x 16 nine-node elements, the same in Figure 5
     nodes, elems = dispersion.bar_mesh()
-    assert len(elems) == 16 * 32
-    assert len(nodes) == 33 * 65
-    assert np.max(np.diff(np.unique(nodes[:, 0]))) == pytest.approx(.625)
+    assert len(elems) == 16 * 16
+    assert len(nodes) == 33 * 33
+    assert np.ptp(nodes, axis=0) == pytest.approx([20., 20.])
+    for axis in (0, 1):
+        assert np.max(np.diff(np.unique(nodes[:, axis]))) == pytest.approx(.625)
 
 
 def test_sparse_eigenpairs_match_independent_dense_solution():

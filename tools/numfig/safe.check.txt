@@ -1,9 +1,9 @@
 Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same bar
 
 (a) ANALYTICAL: Euler-Bernoulli beam, infinitely long (no boundary conditions)
-  steel bar 20 x 40 mm bending in its stiff plane: EI = 22400.00 N m^2, rho A = 6.280 kg/m
+  Figure 4's square steel bar, 20 x 20 mm (E = 210 GPa, nu = 0.29, rho = 7850 kg/m^3): EI = 2800.00 N m^2, rho A = 3.140 kg/m
   exact wave w = A cos(kx - wt): lambda = 1.0 m, k = 6.2832 rad/m,
-  w = k^2 sqrt(EI/(rho A)) = 2357.78 rad/s, f = 375.25 Hz, c_p = w/k = 375.25 m/s
+  w = k^2 sqrt(EI/(rho A)) = 1178.89 rad/s, f = 187.63 Hz, c_p = w/k = 187.63 m/s
   element: x = 1.55 to 1.65 m (k dx = 0.6283 rad); faces carry
   M = EI w'' = -EI k^2 A cos(kx - wt) and V = -EI w''' = -EI k^3 A sin(kx - wt),
   drawn to scale (M / EI k^2 A, V / EI k^3 A). Sign convention: positive M clockwise on
@@ -12,17 +12,32 @@ Figure 5 (nf-safe): the analytical beam element and the SAFE model of the same b
   check of the drawn element over a period: max |V(x+dx) - V(x) - int rho A w_tt dx| /
   (EI k^3 A) = 1.6e-16 (dynamic equilibrium holds exactly)
   N = EA u' = 0: a flexural wave carries no axial force, so N and N + dN are not drawn.
-  SAFE at the same k: f = 371.40 Hz, -1.03% from
-  Euler-Bernoulli; Timoshenko gives 371.34 Hz (+1.5e-04 from SAFE): at kh = 0.251
-  the shear and rotary inertia neglected by Euler-Bernoulli cost about one percent.
-  displayed period 3.0 s: time slowed 1.13e+03
+  SAFE at the same k: f = 187.140 Hz, -0.26% from Euler-Bernoulli;
+  Timoshenko (Cowper's shear coefficient) gives 187.130 Hz (+5.0e-05 from SAFE):
+  at kh = 0.126 the shear and rotary inertia that Euler-Bernoulli neglects cost 0.26%.
+  clock: slowed 560 times (a round factor), so the displayed period is 2.985 s
 
-(b) SAFE: the mesh of Figure 4 (see dispersion.check.txt for its convergence)
-  10 x 20 Q9 elements, 2583 dof; fundamental vertical bending mode at
-  lambda = 50 mm, k = 125.664 rad/m: f = 54.370 kHz, c_p = 2718.5 m/s
-  (next branches of the class at this k: 100.83, 114.14 kHz)
-  eigenpair residual |(K(k) - w^2 M) V| / |K(k) V| = 1.3e-12 (full matrices)
-  beam theories at this k: Euler-Bernoulli c_p = 7505.1 m/s (-63.8%), Timoshenko 2692.7 m/s (+0.96%)
+(b) SAFE: Figure 4's bar and its mesh (dispersion.check.txt: the bar's curves and their convergence)
+  the same mesh as Figure 4's bar, node for node (dispersion.bar_mesh): True
+  16 x 16 Q9 elements of 1.25 mm, 3267 dof; fundamental vertical bending mode at
+  lambda = 50 mm, k = 125.664 rad/m: f = 44.943 kHz, c_p = 2247.1 m/s
+  (next branches of the class at this k: 117.37, 136.48 kHz; the lateral partner of the square's bending pair: 44.943 kHz)
+  eigenpair residual |(K(k) - w^2 M) V| / |K(k) V| = 5.6e-12 (full matrices)
+  elements a wavelength: lambda / h = 40 (the field is exact along x; across the section
+  the shortest scale of this mode is the section itself, 20 mm = 16 elements)
+  MESH CONVERGENCE (the same waves on 8 x 8 and 32 x 32 meshes, elements of 2.5 and 0.625 mm):
+    branch 1 at k = 125.664: 8 x 8 44.9439 kHz, 16 x 16 44.9430, 32 x 32 44.9429 (+1.29e-06 against 32 x 32)
+    branch 2 at k = 125.664: 8 x 8 117.3768 kHz, 16 x 16 117.3659, 32 x 32 117.3652 (+6.43e-06 against 32 x 32)
+    branch 3 at k = 125.664: 8 x 8 136.4856 kHz, 16 x 16 136.4751, 32 x 32 136.4744 (+5.13e-06 against 32 x 32)
+    (a)'s wave at k = 6.2832: 16 x 16 187.1397 Hz, 32 x 32 187.1397 Hz (+7.8e-08)
+  beam theories at this k (kh = 2.51): Euler-Bernoulli c_p = 3752.5 m/s (-40.1%), Timoshenko 2231.5 m/s (+0.70%)
+  the published square rod: Figure 4's check compares this bar's bending branch with Hayashi,
+  Kawashima and Rose (2004), Fig. 2 (dispersion.check.txt, THE BAR)
   u(x, y, z, t) = Re{U(y, z) exp(i(kx - wt))}, U_x = i V_x: the axial part is a quarter
   period out of phase with the transverse part, which tilts the sections as the wave passes.
-  bar drawn over 150 mm = 3 wavelengths; displayed period 2.5 s: time slowed 1.36e+05
+  bar drawn over 150 mm = 3 wavelengths; clock: slowed 110,000 times (a round factor),
+  so the displayed period is 2.448 s
+
+LAYOUT
+  common.overlaps at t = 0.4, 1, 1.6, 2.2, 3, 4.2, 5, 7.5 s: no label collisions, no crossings
+  page 58 KB, still 80 KB

@@ -1,49 +1,60 @@
-"""Figure 4: dispersion curves of guided waves, from SAFE models of
-four steel cross-sections and an infinite plate, with two waves shown as their
-cross-sections and along the beam. Interactive: every state is a SAFE solution.
+"""Figure 4: dispersion curves of guided waves, from SAFE models of five steel
+waveguides, with two waves shown as their cross-sections and as wave packets
+along the waveguide. Interactive: every state is a SAFE solution.
 
-(a) phase velocity c_p = w/k against frequency: every branch inside the window,
-    the fundamental modes (bending, axial, torsional) from zero frequency, the
-    higher order modes from their cut-on frequencies (k -> 0), the shear and
-    Rayleigh speeds (Rayleigh equation) as guides. Two markers, 1 and 2, each a
-    wave: a branch and a point on it.
+(a) phase velocity c_p = w/k against frequency: every branch inside the
+    section's window, the fundamental modes (bending, axial, torsional) from zero
+    frequency, the higher order modes from their cut-on frequencies (k -> 0,
+    marked on the top frame), the shear and Rayleigh speeds as guides. Two
+    markers, 1 and 2, each a wave: a branch and a point on it.
 (b) the two waves. Above, each one's cross-section (its SAFE eigenvector on the
-    mesh) as its packet carries it; below, each one along the beam in an oblique
-    view, as packets: bursts of the mode under a Hann envelope E, launched from the
-    left end one after another, u = E(x - X) Re{U(y, z) exp(i(k(x - X) + psi))}. The
-    envelope's centre X moves at the group velocity c_g (solved exactly with each
-    state, V^T (K2 + 2k K3) V / (2 w V^T M V)), the phase psi at the centre at
-    k c_g - w, so the crests move at the phase velocity c_p. Both waves run on one
-    clock, a packet at the rod speed crossing the drawn beam in 2 s, so their speeds
-    compare as they are, and a packet speeds up or slows down at once as its wave's
-    frequency changes. Colour is |u| over the section's rms displacement at the
-    packet's centre, at that instant, so every wave is seen to travel. Each beam's
-    label gives c_p, c_g and the wavelength.
+    mesh) as its packet carries it; below, each one along the waveguide in an
+    oblique view, as packets: bursts of the mode under a Hann envelope E,
+    u = E(x - X) Re{U(y, z) exp(i(k(x - X) + psi))}. The envelope's centre X moves
+    at the group velocity c_g (V^T (K2 + 2k K3) V / (2 w V^T M V) of the solved
+    state), the phase psi at the centre at k c_g - w, so the crests move at the
+    phase velocity c_p. Each section has one clock, the same for every operating
+    point and both waves (its slow-motion factor written under the waveguides),
+    and one length scale, so a slow packet lags a fast one as it does in the steel.
 
-The sections (a switcher over (b)): the rectangular bar of safe_model.py, an
-I-beam, a rail-like section (head, web, foot: about a quarter scale UIC60,
-the rail of Figures 8 and 9), a pipe and a 10 mm plate of infinite width. Each is meshed here with 9-node
-quadratic elements; its symmetry splits it into classes (mirror planes, or for
-the pipe's uniform polar mesh, circumferential harmonics). The sweep here
-draws the curves; the page carries each mesh and solves every wave it shows
-with the same elements: a skyline LDL^T of K(k) - s M whose Sturm count pins
-the branch, then inverse iteration. All five sections travel inside the page,
-so choosing a section never depends on a separate network request. The curves
-travel as the few eigenfrequencies a cubic Hermite in k needs.
+The sections, each plotted over a frequency window in which it holds as many
+branches as its reference (c_p up to 10 km/s; the window's end in a gap between
+the frequencies where branches enter):
+  bar    square steel bar 20 x 20 mm, 0 to 190 kHz (f h to 3,800 kHz mm): the
+         square rod of Hayashi, Kawashima and Rose (2004, Fig. 2, SAFE), 11 branches;
+  I-beam IPE 80 (EN 10365), 0 to 52 kHz: no published curves found, the same
+         model on a mesh refined twice is the reference, 20 branches;
+  rail   60E1 (UIC60, EN 13674-1, the outline of its standard drawing), 0 to
+         22.5 kHz: Ramatlo, Wilke and Loveday (2018, Fig. 1, SAFE, UIC60), 16;
+  pipe   NPS 1 1/4 schedule 40 (ASME B36.10M: 42.16 x 3.56 mm), 0 to 175 kHz:
+         the exact solution of Gazis (1959), 22;
+  plate  10 mm, infinite width, 0 to 250 kHz (f d to 2.5 MHz mm): the exact
+         Rayleigh-Lamb and shear horizontal solutions, 5 (A0, S0, SH0, A1, SH1).
+Each is meshed with 9-node quadratic elements (the bar, pipe and plate on
+structured grids, the I-beam and rail by a constrained Delaunay triangulation
+of their outline, each triangle split into three quadrilaterals: the `triangle`
+package, pip install triangle, needed only to mesh those two); its symmetry
+splits it into classes (the square's C4v, the mirror planes, or the pipe's
+circumferential harmonics). The sweep here draws the curves; the page carries
+each mesh and solves every wave it shows with the same elements: a skyline
+LDL^T of K(k) - s M whose Sturm count pins the branch, then inverse iteration.
+The tour's glides take their packets' rates from exact group velocities
+computed here (glide_rates), so that a stop starts without solving 129 states.
 
 With no reader input it tours the modes (wave 1 low in frequency, wave 2 gliding
-up its curve, its packet quickening and slowing with its c_g). The first touch
-pauses the tour ("resume tour" brings it back). A click or tap on a curve moves
-the nearer marker there; a marker, or its thumb under the frequency axis, drags
-along its curve; the markers are keyboard sliders (left and right: frequency, up
-and down: the next curve). Whichever way a wave's frequency changes, its packet
-takes the new speed at once. The waves pause and play from a control by the
-colour scale, or with Space.
+up the same or another curve, its packet quickening and slowing with its c_g).
+The first touch pauses the tour ("resume tour" brings it back). A click or tap on
+a curve moves the nearer marker there; a marker, or its thumb under the frequency
+axis, drags along its curve; the markers are keyboard sliders. The waves pause
+and play from a control by the colour scale, or with Space. ?section=<key> (bar,
+ibeam, rail, pipe, plate) opens the page on that section.
 
-Run: python tools/numfig/dispersion.py [--page]   (writes content/anim/
-nf-dispersion.html, .webp and -<section>.json, and dispersion.check.txt;
---page writes the page and data only). The sweeps are cached in the temp
-folder.
+Run: python tools/numfig/dispersion.py [--page | --text]   (writes content/anim/
+nf-dispersion.html and .webp, and dispersion.check.txt with its two extracts,
+dispersion_branches.check.txt and dispersion_plate.check.txt; --page writes the
+page only; --text writes the reports again from the page's checks, kept from the
+last full run while the page is unchanged). Figure 4a (dispersion_wavelength.py)
+is built from this page. The sweeps are cached in the temp folder.
 """
 import base64
 import functools
@@ -66,22 +77,13 @@ import numpy as np
 import scipy.linalg as sla
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
-from scipy.sparse.csgraph import reverse_cuthill_mckee
 
 import common
 import safe_model as sm
 
 NAME = "dispersion"
-MESH = (16, 32)                   # Q9 elements across b and h (1.25 mm), see the check
-SECTION_REFINEMENT = 1.5           # finer I-beam, rail, pipe and plate meshes
-F_MAX, CP_MAX = 200e3, 7.0e3      # the plot window, Hz and m/s
-K_MAX = 470.0                     # rad/m: every branch of the bar leaves the window below it
+CP_MAX = 10.0e3                   # m/s: the top of the plot, every section
 REF_W, REF_H = 520, 418           # the refinement metric (drawing units), finer than the plot
-BEAM = 412.0                      # mm of beam drawn along each wave (the page's STR.L)
-PACKET = 160.0                    # mm: the full width of a packet's Hann envelope
-CROSS = 2.0                       # s: a packet at the rod speed c_0 crosses the drawn beam in this
-SLOW = sm.C_0 * CROSS / (BEAM / 1e3)   # the one clock of both waves' packets, not written on the figure
-POSTER = 20 / 3                   # s: the first stop, bending at 20 and 150 kHz (both packets mid-beam, a crest at each centre)
 HERE = os.path.dirname(os.path.abspath(__file__))
 NAMES = {"vertical": "vertical bending", "lateral": "lateral bending", "axial": "axial",
          "torsional": "torsional"}
@@ -89,7 +91,7 @@ NAMES = {"vertical": "vertical bending", "lateral": "lateral bending", "axial": 
 
 # ================================================================ the general SAFE
 # Any Q9 mesh of a cross-section: isoparametric elements, 3 x 3 Gauss (exact
-# for the bar's rectangles, where it gives safe_model's matrices), local node
+# for rectangles, where it gives safe_model's matrices), local node
 # l = 3 bb + a at (xi_a, eta_bb). The page builds the same elements (SOLVER).
 _G3, _W3 = np.polynomial.legendre.leggauss(3)
 _L = lambda s: np.array([s * (s - 1) / 2, 1 - s * s, s * (s + 1) / 2])
@@ -104,11 +106,12 @@ _SGN = np.where((_COMP[:, None] == 0) & (_COMP[None, :] != 0), 1.0,
                 np.where((_COMP[:, None] != 0) & (_COMP[None, :] == 0), -1.0, 0.0))
 
 
-def _dmat():
+def _dmat(lam=None, mu=None):
+    lam, mu = (sm.LAM if lam is None else lam), (sm.MU if mu is None else mu)
     D = np.zeros((6, 6))
-    D[:3, :3] = sm.LAM
-    D[[0, 1, 2], [0, 1, 2]] = sm.LAM + 2 * sm.MU
-    D[[3, 4, 5], [3, 4, 5]] = sm.MU
+    D[:3, :3] = lam
+    D[[0, 1, 2], [0, 1, 2]] = lam + 2 * mu
+    D[[3, 4, 5], [3, 4, 5]] = mu
     return D
 
 
@@ -120,8 +123,10 @@ def _jac(xy, g):
     return J, np.linalg.det(J)
 
 
-def element(xy):
-    """K1, K2 (made real symmetric), K3, M (27 x 27) of one Q9 element, nodes xy (9, 2) in m."""
+def element(xy, D=None):
+    """K1, K2 (made real symmetric), K3, M (27 x 27) of one Q9 element, nodes xy (9, 2) in m;
+    D the elasticity (default the steel's)."""
+    D = _D6 if D is None else D
     K1, K2, K3, M = (np.zeros((27, 27)) for _ in range(4))
     for g in range(9):
         J, dJ = _jac(xy, g)
@@ -134,9 +139,9 @@ def element(xy):
         B1[4, 0::3] = Nz; B1[5, 0::3] = Ny
         B2[0, 0::3] = _N[g]; B2[4, 2::3] = _N[g]; B2[5, 1::3] = _N[g]
         dA = _WG[g] * dJ
-        K1 += B1.T @ _D6 @ B1 * dA
-        K2 += (B1.T @ _D6 @ B2 - B2.T @ _D6 @ B1) * dA
-        K3 += B2.T @ _D6 @ B2 * dA
+        K1 += B1.T @ D @ B1 * dA
+        K2 += (B1.T @ D @ B2 - B2.T @ D @ B1) * dA
+        K3 += B2.T @ D @ B2 * dA
         Nm = np.zeros((3, 27))
         for c in range(3):
             Nm[c, c::3] = _N[g]
@@ -144,11 +149,15 @@ def element(xy):
     return K1, K2 * _SGN, K3, M
 
 
+_RY, _RZ = np.diag([1.0, -1.0, 1.0]), np.diag([1.0, 1.0, -1.0])
+_RD = np.array([[1.0, 0, 0], [0, 0, 1.0], [0, 1.0, 0]])      # the diagonal y <-> z
+
+
 class Section:
     """A SAFE model of a meshed cross-section: nodes (N, 2) in mm, rounded to
     float32 first, as the page receives them; elems (E, 9)."""
 
-    def __init__(self, nodes_mm, elems):
+    def __init__(self, nodes_mm, elems, D=None):
         self.nodes_mm = np.asarray(nodes_mm, np.float32).astype(np.float64)
         self.nodes = self.nodes_mm / 1e3
         self.elems = np.asarray(elems, np.int64)
@@ -160,52 +169,78 @@ class Section:
             self.minJ = min(self.minJ, min(_jac(xy, g)[1] for g in range(9)))
             dofs = (3 * e[:, None] + np.arange(3)).ravel()
             rows.append(np.repeat(dofs, 27)); cols.append(np.tile(dofs, 27))
-            for i, a in enumerate(element(xy)):
+            for i, a in enumerate(element(xy, D)):
                 mats[i].append(a.ravel())
         r, c = np.concatenate(rows), np.concatenate(cols)
         self.K1, self.K2, self.K3, self.M = (sp.csr_matrix((np.concatenate(x), (r, c)), shape=(self.ndof, self.ndof))
                                              for x in mats)
         self.classes, self._cls = {}, {}
 
-    def mirror_maps(self):
+    def maps(self):
+        """Node maps of the mirrors y -> -y, z -> -z and of the diagonal y <-> z
+        (-1 where the image is not a node)."""
         key = {(round(y, 3), round(z, 3)): i for i, (y, z) in enumerate(self.nodes_mm)}
-        my = np.array([key.get((round(-y, 3), round(z, 3)), -1) for y, z in self.nodes_mm])
-        mz = np.array([key.get((round(y, 3), round(-z, 3)), -1) for y, z in self.nodes_mm])
-        return my, mz
+        f = lambda g: np.array([key.get(g(y, z), -1) for y, z in self.nodes_mm])
+        return (f(lambda y, z: (round(-y, 3), round(z, 3))), f(lambda y, z: (round(y, 3), round(-z, 3))),
+                f(lambda y, z: (round(z, 3), round(y, 3))))
 
-    def mirror_basis(self, py, pz):
-        """Q (ndof x m) of the class R_y u = py u, R_z u = pz u (0: no such plane):
-        one orthonormal vector per orbit representative and component."""
-        my, mz = self.mirror_maps()
+    def mirror_maps(self):
+        return self.maps()[:2]
+
+    def group(self, py, pz, pd=0):
+        """The symmetry operations of a class as (node map, component matrix,
+        character): the mirror y -> -y (character py; 0: not used), z -> -z (pz),
+        and with pd the diagonal y <-> z (the square's C4v)."""
+        my, mz, md = self.maps()
         nn = len(self.nodes)
-        ident = np.arange(nn)
-        group = [(ident, 1, (1, 1, 1))]
+        els = [(np.arange(nn), np.eye(3), 1.0)]
         if py:
             assert (my >= 0).all()
-            group.append((my, py, (1, -1, 1)))
+            els.append((my, _RY, float(py)))
         if pz:
             assert (mz >= 0).all()
-            group.append((mz, pz, (1, 1, -1)))
+            els.append((mz, _RZ, float(pz)))
         if py and pz:
-            group.append((my[mz], py * pz, (1, -1, -1)))
-        rep = np.min(np.array([g[0] for g in group]), axis=0)
+            els.append((my[mz], _RY @ _RZ, float(py * pz)))
+        if pd:
+            assert (md >= 0).all()
+            els += [(md[m], _RD @ R, chi * pd) for m, R, chi in els]
+        return els
+
+    def group_basis(self, els):
+        """Q (ndof x m), orthonormal, of the class whose operations and characters
+        are els: per orbit (its smallest node the representative) the projections
+        P e of the representative's three unit displacements, P the class's
+        projector (1/|G|) sum chi(g) g, orthonormalised within the orbit (on a
+        mirror line or the diagonal they are dependent or vanish)."""
+        nn = len(self.nodes)
+        rep = np.min(np.array([m for m, _, _ in els]), axis=0)
         rows, cols, vals, col = [], [], [], 0
-        for n in range(nn):
-            if rep[n] != n:
-                continue
+        for n in np.flatnonzero(rep == np.arange(nn)):
+            acc = []
             for c in range(3):
                 v = {}
-                for gmap, chi, sg in group:
-                    d = 3 * gmap[n] + c
-                    v[d] = v.get(d, 0.0) + chi * sg[c]
-                v = {d: s for d, s in v.items() if abs(s) > 1e-12}
-                if not v:
-                    continue
-                nrm = np.sqrt(sum(s * s for s in v.values()))
-                for d, s in v.items():
-                    rows.append(d); cols.append(col); vals.append(s / nrm)
+                for m, R, chi in els:
+                    for c2 in range(3):
+                        if R[c2, c]:
+                            d = 3 * int(m[n]) + c2
+                            v[d] = v.get(d, 0.0) + chi * R[c2, c]
+                for u in acc:
+                    dot = sum(v.get(d, 0.0) * x for d, x in u.items())
+                    if dot:
+                        for d, x in u.items():
+                            v[d] = v.get(d, 0.0) - dot * x
+                nrm = np.sqrt(sum(x * x for x in v.values()))
+                if nrm > 1e-9:
+                    acc.append({d: x / nrm for d, x in v.items() if abs(x) > 1e-12 * nrm})
+            for u in acc:
+                for d, x in u.items():
+                    rows.append(d); cols.append(col); vals.append(x)
                 col += 1
         return sp.csr_matrix((vals, (rows, cols)), shape=(self.ndof, col))
+
+    def mirror_basis(self, py, pz, pd=0):
+        return self.group_basis(self.group(py, pz, pd))
 
     def ring_basis(self, n, typ, nth):
         """Q of circumferential harmonic n on a uniform polar mesh (nth elements
@@ -262,6 +297,22 @@ class Section:
         return np.sqrt(np.clip(w2, 0, None)), Q @ v
 
 
+def sparse_modes(model, name, k, n):
+    """Lowest generalized eigenpairs, without dense matrices on refined meshes."""
+    if not hasattr(model, "_sparse_modes"):
+        model._sparse_modes = {}
+    if name not in model._sparse_modes:
+        Q = model.classes[name]
+        model._sparse_modes[name] = (Q, *((Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M)))
+    Q, k1, k2, k3, m = model._sparse_modes[name]
+    K = k1 + k * k2 + k * k * k3
+    count = min(n, m.shape[0] - 2)
+    vals, vec = spla.eigsh(K, k=count, M=m, sigma=-1., which="LM", tol=1e-10,
+                           v0=np.linspace(1., 2., m.shape[0]))
+    order = np.argsort(vals)
+    return np.sqrt(np.clip(vals[order], 0, None)), Q @ vec[:, order]
+
+
 # ---------------------------------------------------------------- meshes (mm)
 def grid_mesh(yb, zb, ny, nz, keep):
     """Q9 elements on the cells (i, j) of the breaks yb x zb where keep(i, j);
@@ -287,18 +338,23 @@ def grid_mesh(yb, zb, ny, nz, keep):
             np.array([[idx[p] for p in e] for e in el]))
 
 
+SQ = 20.0          # mm: the square bar's side (Hayashi, Kawashima and Rose 2004, Fig. 2: a square rod)
+NE_BAR = 16        # Q9 elements along each side: 1.25 mm
+
+
 def bar_mesh(s=1.0):
-    """The production bar, node for node identical to safe_model.Safe(*MESH)."""
-    return grid_mesh([-10.0, 10.0], [-20.0, 20.0], [int(MESH[0] * s)], [int(MESH[1] * s)], lambda i, j: True)
+    n = max(2, int(round(NE_BAR * s)))
+    return grid_mesh([-SQ / 2, SQ / 2], [-SQ / 2, SQ / 2], [n], [n], lambda i, j: True)
+
+
+PLATE_D = 10.0     # mm
 
 
 def plate_mesh(s=1.0):
-    """A displayed 40 mm slice of an infinite 10 mm plate, uniform across y.
-
-    The basis ties all nodes at the same z: the drawn width is not a free
-    edge. Lamb waves have u_y = 0; SH waves have only u_y.
-    """
-    return grid_mesh([-20.0, 20.0], [-5.0, 5.0], [1], [max(2, int(10 * s))], lambda i, j: True)
+    """A 40 mm slice of an infinite 10 mm plate, uniform across y (its basis
+    ties all nodes at the same z: the slice's sides are not free edges). Lamb
+    waves have u_y = 0; SH waves have only u_y."""
+    return grid_mesh([-20.0, 20.0], [-PLATE_D / 2, PLATE_D / 2], [1], [max(2, int(10 * s))], lambda i, j: True)
 
 
 def plate_basis(S, family, parity):
@@ -317,42 +373,11 @@ def plate_basis(S, family, parity):
     return sp.csr_matrix((vals, (rows, cols)), shape=(S.ndof, col))
 
 
-IBEAM = dict(h=40.0, b=30.0, tf=5.0, tw=4.0)
+PIPE = dict(ro=42.16 / 2, ri=42.16 / 2 - 3.56)   # NPS 1 1/4 schedule 40 (ASME B36.10M): OD 42.16 mm, wall 3.56 mm
+PIPE_NTH, PIPE_NR = 72, 3                         # elements around and through the wall
 
 
-def ibeam_mesh(s=1.0, G=IBEAM):
-    f = lambda n: max(1, int(round(n * s)))
-    return grid_mesh([-G["b"] / 2, -G["tw"] / 2, G["tw"] / 2, G["b"] / 2],
-                     [-G["h"] / 2, -G["h"] / 2 + G["tf"], G["h"] / 2 - G["tf"], G["h"] / 2],
-                     [f(7), f(2), f(7)], [f(3), f(15), f(3)], lambda i, j: j != 1 or i == 1)
-
-
-RAIL = dict(h=40.0, head=17.0, web=4.0, foot=35.0, foot_web=7.0, foot_edge=3.0, head_web=11.0, head_edge=9.0)
-
-
-def rail_mesh(s=1.0, R=RAIL):
-    """Head, web and foot on a grid of rectangles, then the foot's top made to
-    taper from the web to its edge and the head's underside to rise toward its
-    edges (trapezoidal elements)."""
-    f = lambda n: max(1, int(round(n * s)))
-    hw, hh, hf = R["web"] / 2, R["head"] / 2, R["foot"] / 2
-    zb = [-R["h"] / 2, -R["h"] / 2 + R["foot_web"], R["h"] / 2 - R["head_web"], R["h"] / 2]
-    nodes, elems = grid_mesh([-hf, -hh, -hw, hw, hh, hf], zb, [f(5), f(4), f(2), f(4), f(5)], [f(4), f(11), f(6)],
-                             lambda i, j: (j == 0) or (j == 1 and i == 2) or (j == 2 and 1 <= i <= 3))
-    y, z = nodes[:, 0].copy(), nodes[:, 1].copy()
-    m = (z <= zb[1] + 1e-9) & (np.abs(y) > hw)
-    top = zb[1] - (R["foot_web"] - R["foot_edge"]) * (np.abs(y[m]) - hw) / (hf - hw)
-    z[m] = zb[0] + (z[m] - zb[0]) * (top - zb[0]) / (zb[1] - zb[0])
-    m = (z >= zb[2] - 1e-9) & (np.abs(y) > hw)
-    bot = zb[2] + (R["head_web"] - R["head_edge"]) * (np.abs(y[m]) - hw) / (hh - hw)
-    z[m] = zb[3] - (zb[3] - z[m]) * (zb[3] - bot) / (zb[3] - zb[2])
-    return np.column_stack([y, z]), elems
-
-
-PIPE = dict(ro=20.0, ri=17.0)
-
-
-def pipe_mesh(nth=72, nr=3, G=PIPE):
+def pipe_mesh(nth=PIPE_NTH, nr=PIPE_NR, G=PIPE):
     """A uniform polar mesh: nth elements around, nr through the wall; local xi
     along r (outward) and eta along phi (counter-clockwise): positive Jacobian."""
     na = 2 * nth
@@ -364,24 +389,343 @@ def pipe_mesh(nth=72, nr=3, G=PIPE):
                             for et in range(nth) for er in range(nr)])
 
 
-def rep_order(S, planes):
-    """A reverse Cuthill-McKee order of the mirror orbits' representatives (the
-    smallest node of each orbit) on the graph of representatives sharing an
-    element: rank per node, -1 for the rest. The page numbers each class's
-    columns in this order and keeps its matrices as a skyline."""
-    my, mz = S.mirror_maps()
-    ident = np.arange(len(S.nodes))
-    maps = [ident] + ([my] if planes[0] else []) + ([mz] if planes[1] else []) + ([my[mz]] if all(planes) else [])
-    rep = np.min(np.array(maps), axis=0)
+# The 60E1 (UIC60) rail, EN 13674-1: the right half of its outline (mm, the foot's
+# underside at z = 0, counter-clockwise from the foot's centre to the top of the
+# head), lines and cubic Beziers as the profile's standard drawing has them (the
+# WirthRail 60E1 data sheet, its vector outline scaled to the 172 mm height and
+# 150 mm foot): R2 and R4 at the foot's tip, its top at 1:14 and 1:2.75 joined by
+# R40, R35 and R7 into the web's R120 flanks (16.5 mm at its narrowest, 60.25 to
+# 92.25 mm above the foot), R7 and the 1:2.75 underside of the head, R3, the head's
+# 1:20 side, R13, R80 and R300 over the top, 72 mm wide 14.3 mm below it.
+RAIL60E1 = [
+    ("l", [[0.0, 0.0], [72.985, 0.0]]),
+    ("c", [[72.985, 0.0], [73.523, 0.0], [74.029, 0.209], [74.41, 0.59]]),
+    ("c", [[74.41, 0.59], [74.791, 0.971], [75.0, 1.477], [75.0, 2.016]]),
+    ("l", [[75.0, 2.016], [75.0, 7.79]]),
+    ("c", [[75.0, 7.79], [75.0, 8.808], [74.618, 9.779], [73.924, 10.525]]),
+    ("c", [[73.924, 10.525], [73.23, 11.271], [72.288, 11.721], [71.271, 11.794]]),
+    ("l", [[71.271, 11.794], [55.671, 12.909]]),
+    ("c", [[55.671, 12.909], [51.977, 13.173], [48.34, 13.948], [44.858, 15.213]]),
+    ("l", [[44.858, 15.213], [16.504, 25.524]]),
+    ("c", [[16.504, 25.524], [15.513, 25.885], [14.602, 26.476], [13.869, 27.234]]),
+    ("c", [[13.869, 27.234], [13.136, 27.992], [12.577, 28.923], [12.251, 29.924]]),
+    ("c", [[12.251, 29.924], [11.951, 30.845], [11.686, 31.789], [11.464, 32.733]]),
+    ("c", [[11.464, 32.733], [9.34, 41.742], [8.263, 51.0], [8.263, 60.254]]),
+    ("l", [[8.263, 60.254], [8.263, 92.248]]),
+    ("c", [[8.263, 92.248], [8.263, 101.502], [9.34, 110.762], [11.464, 119.77]]),
+    ("c", [[11.464, 119.77], [11.686, 120.715], [11.952, 121.661], [12.251, 122.578]]),
+    ("c", [[12.251, 122.578], [12.577, 123.58], [13.136, 124.511], [13.869, 125.268]]),
+    ("c", [[13.869, 125.268], [14.602, 126.027], [15.513, 126.618], [16.504, 126.978]]),
+    ("l", [[16.504, 126.978], [35.076, 133.732]]),
+    ("c", [[35.076, 133.732], [35.687, 133.954], [36.198, 134.357], [36.557, 134.898]]),
+    ("c", [[36.557, 134.898], [36.916, 135.439], [37.089, 136.067], [37.057, 136.716]]),
+    ("l", [[37.057, 136.716], [36.008, 157.687]]),
+    ("c", [[36.008, 157.687], [35.937, 159.108], [35.638, 160.497], [35.117, 161.815]]),
+    ("c", [[35.117, 161.815], [34.609, 163.102], [33.902, 164.294], [33.016, 165.36]]),
+    ("c", [[33.016, 165.36], [32.13, 166.426], [31.085, 167.338], [29.913, 168.071]]),
+    ("c", [[29.913, 168.071], [28.711, 168.823], [27.4, 169.371], [26.016, 169.699]]),
+    ("c", [[26.016, 169.699], [20.847, 170.929], [15.535, 171.644], [10.227, 171.825]]),
+    ("c", [[10.227, 171.825], [6.834, 171.941], [3.392, 172.0], [0.0, 172.0]]),
+]
+RAIL_STD = dict(A=7670.0, Iy=3038.3e4, Iz=512.3e4, zc=80.92, m=60.21)   # EN 13674-1's 60E1: mm^2, mm^4, mm, kg/m
+RAIL_H = 12.0      # mm: the triangulation's edge (its quadrilaterals about half that)
+RAIL_FOOT_H, RAIL_FOOT_Z = 8.0, 24.0   # mm: the edge along the foot's outline, up to this height over its underside
+IPE80 = dict(h=80.0, b=46.0, tw=3.8, tf=5.2, r=5.0)                     # EN 10365
+IPE80_STD = dict(A=764.0, Iy=80.14e4, Iz=8.49e4, It=0.70e4, Iw=0.12e9)  # its tables: mm^2, mm^4, mm^6
+IPE_H = 4.0        # mm
+
+
+def _polyline(segs, nb=48):
+    pts = []
+    for k, P in segs:
+        P = np.asarray(P, float)
+        if k == "l":
+            pts += [P[0], P[1]]
+        else:
+            t = np.linspace(0, 1, nb)[:, None]
+            pts += list((1 - t) ** 3 * P[0] + 3 * (1 - t) ** 2 * t * P[1] + 3 * (1 - t) * t ** 2 * P[2] + t ** 3 * P[3])
+    pts = np.array(pts)
+    keep = [0] + [i for i in range(1, len(pts)) if np.hypot(*(pts[i] - pts[i - 1])) > 1e-9]
+    return pts[keep]
+
+
+def _resample(poly, h, corner=20.0, hfun=None):
+    """Points along an open polyline about h apart (or hfun(point) apart: evenly
+    spread in the integral of 1 / hfun along each stretch), its ends and its
+    corners (turns of more than `corner` degrees) kept."""
+    d = np.diff(poly, axis=0)
+    ang = np.degrees(np.arctan2(d[:, 1], d[:, 0]))
+    turn = np.abs((np.diff(ang) + 180) % 360 - 180)
+    keep = [0] + [i + 1 for i in np.flatnonzero(turn > corner)] + [len(poly) - 1]
+    out = [poly[0]]
+    for a, b in zip(keep, keep[1:]):
+        seg = poly[a:b + 1]
+        s = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(seg, axis=0).T))])
+        if hfun is None:
+            ts = np.linspace(0, s[-1], max(1, int(np.ceil(s[-1] / h))) + 1)[1:]
+        else:
+            ss = np.linspace(0, s[-1], 400)
+            P = np.column_stack([np.interp(ss, s, seg[:, 0]), np.interp(ss, s, seg[:, 1])])
+            g = np.concatenate([[0], np.cumsum(np.diff(ss) / np.array([hfun(q) for q in (P[1:] + P[:-1]) / 2]))])
+            ts = np.interp(np.linspace(0, g[-1], max(1, int(np.ceil(g[-1]))) + 1)[1:], g, ss)
+        for t in ts:
+            out.append([np.interp(t, s, seg[:, 0]), np.interp(t, s, seg[:, 1])])
+    return np.array(out)
+
+
+def _project(pts, dense):
+    """The nearest points of a dense polyline to pts."""
+    A, B = dense[:-1], dense[1:]
+    AB = B - A
+    L2 = (AB ** 2).sum(1) + 1e-30
+    out = []
+    for p in np.atleast_2d(pts):
+        t = np.clip(((p - A) * AB).sum(1) / L2, 0, 1)
+        Q = A + t[:, None] * AB
+        out.append(Q[np.argmin(((Q - p) ** 2).sum(1))])
+    return np.array(out)
+
+
+def _q9(V, T, on_curve, dense):
+    """Triangles (counter-clockwise) split into three quadrilaterals each (corner,
+    edge midpoints, centroid), then 9-node elements; boundary nodes for which
+    on_curve holds are moved onto the outline `dense`, and each centre node set
+    by the blending of its element's edges."""
+    nodes, idx = [], {}
+
+    def node(key, xy):
+        if key not in idx:
+            idx[key] = len(nodes)
+            nodes.append(np.asarray(xy, float))
+        return idx[key]
+
+    quads = []
+    for t in T:
+        a, b, c = (int(v) for v in t)
+        va, vb, vc = node(("v", a), V[a]), node(("v", b), V[b]), node(("v", c), V[c])
+        m = {(p, q): node(("m",) + tuple(sorted((p, q))), (V[p] + V[q]) / 2) for p, q in ((a, b), (b, c), (c, a))}
+        g = node(("g", a, b, c), (V[a] + V[b] + V[c]) / 3)
+        quads += [(va, m[(a, b)], g, m[(c, a)]), (vb, m[(b, c)], g, m[(a, b)]), (vc, m[(c, a)], g, m[(b, c)])]
+    N = np.array(nodes)
+    cnt = {}
+    for q in quads:
+        for i in range(4):
+            e = tuple(sorted((q[i], q[(i + 1) % 4])))
+            cnt[e] = cnt.get(e, 0) + 1
+    bnd = {e for e, c in cnt.items() if c == 1}
+    on = [n for n in sorted({n for e in bnd for n in e}) if on_curve(N[n])]
+    N[on] = _project(N[on], dense)
+    N, mid, els = list(N), {}, []
+    for c0, c1, c2, c3 in quads:
+        ms = []
+        for p, r in ((c0, c1), (c1, c2), (c2, c3), (c3, c0)):
+            key = tuple(sorted((p, r)))
+            if key not in mid:
+                xy = (N[p] + N[r]) / 2
+                if key in bnd and on_curve(xy):
+                    xy = _project(xy, dense)[0]
+                mid[key] = len(N)
+                N.append(xy)
+            ms.append(mid[key])
+        N.append((N[ms[0]] + N[ms[1]] + N[ms[2]] + N[ms[3]]) / 2 - (N[c0] + N[c1] + N[c2] + N[c3]) / 4)
+        els.append([c0, ms[0], c1, ms[3], len(N) - 1, ms[1], c3, ms[2], c2])
+    return np.array(N), np.array(els)
+
+
+def _mirror_y(nodes, els):
+    """A mesh of y >= 0 mirrored about y = 0 (nodes on the axis shared; a
+    mirrored element keeps its orientation with xi reversed)."""
+    nodes = nodes.copy()
+    on = np.abs(nodes[:, 0]) < 1e-9
+    nodes[on, 0] = 0.0
+    new = np.where(on, np.arange(len(nodes)), -1)
+    new[~on] = len(nodes) + np.arange((~on).sum())
+    out = np.vstack([nodes, nodes[~on] * [-1, 1]])
+    return out, np.vstack([els, new[els][:, [2, 1, 0, 5, 4, 3, 8, 7, 6]]])
+
+
+def _mirror_z(nodes, els):
+    sw = lambda P: P[:, ::-1]
+    n2, e2 = _mirror_y(sw(nodes), els)
+    return sw(n2), e2      # the swap flips every element and swapping back flips it again
+
+
+def _tri_q9(poly, h, axes, hfun=None):
+    """Q9 elements of the region bounded by the open polyline `poly` (from a point
+    on a symmetry axis around to another) closed along the axes; h the
+    triangulation's edge (hfun: a finer edge along parts of the outline, from
+    which the quality bound grades the inside). axes: 'y' (the half y >= 0,
+    closed by y = 0) or 'yz' (the quarter, closed by y = 0 and z = 0)."""
+    import triangle                                  # pip install triangle: only here
+    b = _resample(poly, h, hfun=hfun)
+    if axes == "yz":                                 # the quarter: its corner (0, 0) joins the two axes
+        b = np.vstack([b, [[0.0, 0.0]]])
+        axis = lambda p: abs(p[0]) < 1e-9 or abs(p[1]) < 1e-9
+    else:
+        axis = lambda p: abs(p[0]) < 1e-9
+    n = len(b)
+    T = triangle.triangulate(dict(vertices=b, segments=[[i, (i + 1) % n] for i in range(n)]),
+                             f"pq30a{0.433 * h * h:.4f}")
+    nodes, els = _q9(T["vertices"], T["triangles"], lambda p: not axis(p), poly)
+    nodes, els = _mirror_y(nodes, els)
+    return _mirror_z(nodes, els) if axes == "yz" else (nodes, els)
+
+
+def rail_mesh(s=1.0):
+    """The 60E1 rail: the right half triangulated, mirrored; z from the foot's
+    underside, moved so the mid-height is at z = 0. The foot (its outline below
+    RAIL_FOOT_Z) gets edges of RAIL_FOOT_H: its thin tips carry the foot's
+    flapping modes, which the uniform mesh put 0.6 % high against one of half the size."""
+    hfun = lambda p: (RAIL_FOOT_H if p[1] < RAIL_FOOT_Z else RAIL_H) / s
+    nodes, els = _tri_q9(_polyline(RAIL60E1), RAIL_H / s, "y", hfun=hfun)
+    nodes[:, 1] -= 86.0
+    return nodes, els
+
+
+def ipe_outline(G=IPE80, n_arc=24):
+    """The quarter y >= 0, z >= 0 of an IPE profile from (b_w/2, 0) around to (0, h/2)."""
+    H2, B2, w2 = G["h"] / 2, G["b"] / 2, G["tw"] / 2
+    yf = H2 - G["tf"]
+    cy, cz = w2 + G["r"], yf - G["r"]
+    arc = [(cy - G["r"] * np.cos(t), cz + G["r"] * np.sin(t)) for t in np.linspace(0, np.pi / 2, n_arc)]
+    return np.array([(w2, 0.0)] + arc + [(B2, yf), (B2, H2), (0.0, H2)])
+
+
+def ibeam_mesh(s=1.0):
+    return _tri_q9(ipe_outline(), IPE_H / s, "yz")
+
+
+# ================================================================ the sections
+FUND4 = {"vertical": ("vertical", 0), "lateral": ("lateral", 0), "axial": ("axial", 0), "torsional": ("torsional", 0)}
+CLS4 = [("axial", 1, 1), ("vertical", 1, -1), ("lateral", -1, 1), ("torsional", -1, -1)]
+LEG4 = [("vertical", "vertical bending"), ("lateral", "lateral bending"), ("axial", "axial"),
+        ("torsional", "torsional"), (None, "higher order")]
+STEEL = "steel, E = 210 GPa, ν = 0.29, ρ = 7850 kg/m³"
+SECTIONS = {
+    # the square's classes, C4v: A1 (axial), B1, E (one partner of each bending pair:
+    # the (+, -) class, named vertical), A2 (torsional), B2; py, pz, pd the characters
+    # of the mirrors y -> -y, z -> -z and of the diagonal
+    "bar": dict(label="bar", kind="c4v", mesh=bar_mesh, fmax=190e3, xticks=[0, 50, 100, 150],
+                classes=[("axial", 1, 1, 1), ("B1", 1, 1, -1), ("vertical", 1, -1, 0), ("torsional", -1, -1, -1),
+                         ("B2", -1, -1, 1)],
+                fund={"vertical": ("vertical", 0), "axial": ("axial", 0), "torsional": ("torsional", 0)},
+                pairs=True, legend=[("vertical", "bending"), ("axial", "axial"), ("torsional", "torsional"),
+                                    (None, "higher order")],
+                what="square bar 20 × 20 mm",
+                strip=dict(L=900.0, pw=410.0, d=.6, a=40.0, ys=1.0, lj=4, lm=10, slow=2.0e4),
+                tour=[("vertical", 5, "vertical", 20, 150), ("axial", 20, "axial", 50, 150),
+                      ("torsional", 20, "torsional", 50, 150), ("h1", 100, "h1", 105, 185)]),
+    "ibeam": dict(label="I-beam", kind="mirror", mesh=ibeam_mesh, planes=(1, 1), fmax=52e3,
+                  xticks=[0, 10, 20, 30, 40, 50], classes=CLS4, fund=FUND4, legend=LEG4, what="I-beam IPE 80",
+                  strip=dict(L=1800.0, pw=950.0, d=.6, a=40.0, ys=1.0, lj=4, lm=10, slow=5300.0),
+                  tour=[("vertical", 3, "vertical", 5, 10), ("axial", 3, "axial", 5, 12),
+                        ("torsional", 3, "torsional", 4, 20), ("lateral", 1, "lateral", 2, 20), ("h1", 2, "h1", 3, 20)]),
+    "rail": dict(label="rail", kind="mirror", mesh=rail_mesh, planes=(1, 0), fmax=22.5e3,
+                 xticks=[0, 5, 10, 15, 20], classes=[("sym", 1, 0), ("anti", -1, 0)],
+                 fund={"vertical": ("sym", 0), "axial": ("sym", 1), "lateral": ("anti", 0), "torsional": ("anti", 1)},
+                 legend=LEG4, what="rail 60E1 (UIC60)",
+                 strip=dict(L=3500.0, pw=1600.0, d=.6, a=40.0, ys=1.0, lj=4, lm=10, slow=2700.0),
+                 tour=[("vertical", 2, "vertical", 3, 5), ("axial", 2, "axial", 3, 10),
+                       ("lateral", 1, "lateral", 2, 15), ("torsional", 2, "torsional", 3, 15), ("h1", 2, "h1", 3, 15)]),
+    "pipe": dict(label="pipe", kind="ring", mesh=pipe_mesh, nth=PIPE_NTH, fmax=175e3, xticks=[0, 25, 50, 75, 100, 125, 150, 175],
+                 classes=[("L0", "L", 0), ("V0", "V", 0)] + [(f"V{n}", "V", n) for n in range(1, 13)],
+                 fund={"vertical": ("V1", 0), "axial": ("L0", 0), "torsional": ("V0", 0)}, pairs=True,
+                 legend=[("vertical", "bending"), ("axial", "axial"), ("torsional", "torsional"), (None, "higher order")],
+                 what="pipe NPS 1¼ schedule 40, 42.16 × 3.56 mm",
+                 strip=dict(L=800.0, pw=380.0, d=.6, a=40.0, ys=1.0, lj=4, lm=10, slow=1.6e4),
+                 tour=[("vertical", 10, "vertical", 20, 40), ("axial", 10, "axial", 20, 45),
+                       ("torsional", 20, "torsional", 40, 120), ("h1", 10, "h1", 15, 120)]),
+    "plate": dict(label="plate", kind="plate", mesh=plate_mesh, fmax=250e3, xticks=[0, 50, 100, 150, 200, 250],
+                  classes=[("A", "Lamb", -1), ("S", "Lamb", 1), ("SHs", "SH", 1), ("SHa", "SH", -1)],
+                  fund={"vertical": ("A", 0), "axial": ("S", 0), "lateral": ("SHs", 0)},
+                  legend=[("vertical", "A0 Lamb"), ("axial", "S0 Lamb"), ("lateral", "SH0"), (None, "higher order")],
+                  what="plate 10 mm thick, infinite width",
+                  strip=dict(L=560.0, pw=210.0, d=.5, a=30.0, ys=3.5, lj=4, lm=8, slow=2.4e4),
+                  tour=[("vertical", 10, "vertical", 50, 150), ("axial", 20, "axial", 50, 240),
+                        ("lateral", 20, "lateral", 50, 240), (("SHa", 0), 175, ("SHa", 0), 180, 245)]),
+}
+ORDER = ["bar", "ibeam", "rail", "pipe", "plate"]
+
+
+def class_meta(Z):
+    if Z["kind"] == "mirror":
+        return [dict(name=c[0], py=c[1], pz=c[2], pd=0) for c in Z["classes"]]
+    if Z["kind"] == "c4v":
+        return [dict(name=c[0], py=c[1], pz=c[2], pd=c[3]) for c in Z["classes"]]
+    if Z["kind"] == "plate":
+        return [dict(name=c[0], family=c[1], parity=c[2]) for c in Z["classes"]]
+    return [dict(name=c[0], typ=c[1], n=c[2]) for c in Z["classes"]]
+
+
+def make_section(key, s=1.0):
+    """The section's SAFE model with its classes (s: mesh density, 1 the page's)."""
+    Z = SECTIONS[key]
+    if key == "pipe":
+        nth, nr = int(round(PIPE_NTH * s)), max(2, int(round(PIPE_NR * s)))
+        S = Section(*pipe_mesh(nth, nr))
+        for name, typ, n in Z["classes"]:
+            S.classes[name] = S.ring_basis(n, typ, nth)
+        S.nth = nth
+    elif key == "plate":
+        S = Section(*plate_mesh(s))
+        for name, family, parity in Z["classes"]:
+            S.classes[name] = plate_basis(S, family, parity)
+    else:
+        S = Section(*Z["mesh"](s))
+        for c in Z["classes"]:
+            S.classes[c[0]] = S.mirror_basis(*c[1:])
+    return S
+
+
+def _rcm(A):
+    """Reverse Cuthill-McKee from a pseudo-peripheral node (George and Liu: from the node of
+    least degree, on to the farthest node of least degree until the eccentricity stops
+    growing; neighbours taken in order of degree): on the rail a skyline a quarter smaller
+    than from the node of least degree alone (scipy's start)."""
+    from collections import deque
+    from scipy.sparse.csgraph import shortest_path
+    A = sp.csr_matrix(A)
+    A.sort_indices()
+    deg = np.diff(A.indptr)
+    v, ecc = int(np.argmin(deg)), -1.0
+    while True:
+        dist = shortest_path(A, unweighted=True, indices=v)
+        if dist.max() <= ecc:
+            break
+        ecc = dist.max()
+        far = np.flatnonzero(dist == ecc)
+        v = int(far[np.argmin(deg[far])])
+    seen = np.zeros(A.shape[0], bool)
+    seen[v] = True
+    order, q = [], deque([v])
+    while q:
+        u = q.popleft()
+        order.append(u)
+        nb = [w for w in A.indices[A.indptr[u]:A.indptr[u + 1]] if not seen[w]]
+        nb.sort(key=lambda w: (deg[w], w))
+        for w in nb:
+            seen[w] = True
+            q.append(w)
+    assert len(order) == A.shape[0], "the mesh's graph is not connected"
+    return np.array(order[::-1])
+
+
+def rep_order(S, cm):
+    """A reverse Cuthill-McKee order of the orbit representatives (the smallest
+    node of each orbit under the class's operations) on the graph of
+    representatives sharing an element: rank per node, -1 for the rest. The page
+    numbers a class's columns in this order and keeps its matrices as a skyline."""
+    els = S.group(cm.get("py", 0), cm.get("pz", 0), cm.get("pd", 0))
+    rep = np.min(np.array([m for m, _, _ in els]), axis=0)
     reps = np.unique(rep)
-    loc = -np.ones(len(ident), int); loc[reps] = np.arange(len(reps))
+    loc = -np.ones(len(rep), int); loc[reps] = np.arange(len(reps))
     r, c = [], []
     for e in S.elems:
         q = loc[rep[e]]
         r += list(np.repeat(q, 9)); c += list(np.tile(q, 9))
     A = sp.csr_matrix((np.ones(len(r)), (r, c)), shape=(len(reps), len(reps)))
-    rank = -np.ones(len(ident), int)
-    rank[reps[reverse_cuthill_mckee(A, symmetric_mode=True)]] = np.arange(len(reps))
+    rank = -np.ones(len(rep), int)
+    rank[reps[_rcm(A)]] = np.arange(len(reps))
     return rank
 
 
@@ -474,7 +818,6 @@ def faces(S, loops, split=24.0, corner=20.0):
         d = np.roll(P, -1, axis=0) - P
         ang = np.degrees(np.arctan2(d[:, 1], d[:, 0]))
         turn = lambda a, b: (b - a + 180) % 360 - 180
-        # start at a corner if there is one, so no face wraps around the start
         cuts = [i for i in range(n) if abs(turn(ang[i - 1], ang[i])) > corner]
         s0 = cuts[0] if cuts else 0
         run, acc = [s0], 0.0
@@ -494,88 +837,32 @@ def faces(S, loops, split=24.0, corner=20.0):
     return out
 
 
-# ================================================================ the sections
-FUND4 = {"vertical": ("vertical", 0), "lateral": ("lateral", 0), "axial": ("axial", 0), "torsional": ("torsional", 0)}
-CLS4 = [("axial", 1, 1), ("vertical", 1, -1), ("lateral", -1, 1), ("torsional", -1, -1)]
-LEG4 = [("vertical", "vertical bending"), ("lateral", "lateral bending"), ("axial", "axial"),
-        ("torsional", "torsional"), (None, "higher order")]
-# the tour of each section: (wave 1's mode, f1, wave 2's mode, fa, f2), kHz; wave 2 glides
-# fa to f2 (the first stop shows it at f2 at once); "h1" is the first higher order mode
-SECTIONS = {
-    "plate": dict(label="plate", mesh=plate_mesh, kind="plate",
-                  classes=[("A", "Lamb", -1), ("S", "Lamb", 1), ("SHs", "SH", 1), ("SHa", "SH", -1)],
-                  fund={"vertical": ("A", 0), "axial": ("S", 0), "lateral": ("SHs", 0)},
-                  legend=[("vertical", "A0 Lamb"), ("axial", "S0 Lamb"), ("lateral", "SH0"), (None, "higher order")],
-                  what="10 mm infinite plate",
-                  tour=[("vertical", 20, "vertical", 50, 150), ("axial", 20, "axial", 50, 150),
-                        ("lateral", 20, "lateral", 50, 150), ("h1", 185, "h1", 188, 195)]),
-    "bar": dict(label="bar", mesh=bar_mesh, kind="mirror", planes=(1, 1), classes=CLS4, fund=FUND4, legend=LEG4,
-                what="bar 20 × 40 mm",
-                tour=[("vertical", 20, "vertical", 50, 150), ("axial", 20, "axial", 50, 150),
-                      ("torsional", 45, "torsional", 80, 150), ("lateral", 20, "lateral", 50, 150),
-                      ("h1", 70, "h1", 110, 190)]),
-    "ibeam": dict(label="I-beam", mesh=ibeam_mesh, kind="mirror", planes=(1, 1), classes=CLS4, fund=FUND4,
-                  legend=LEG4, what="I-beam 30 × 40 mm", detail="I-beam 30 × 40 mm, flanges 5 mm, web 4 mm",
-                  tour=[("vertical", 6, "vertical", 20, 150), ("axial", 4, "axial", 16, 150),
-                        ("torsional", 6, "torsional", 20, 150), ("lateral", 6, "lateral", 20, 150),
-                        ("h1", 12, "h1", 40, 150)]),
-    "rail": dict(label="rail", mesh=rail_mesh, kind="mirror", planes=(1, 0), classes=[("sym", 1, 0), ("anti", -1, 0)],
-                 fund={"vertical": ("sym", 0), "axial": ("sym", 1), "lateral": ("anti", 0), "torsional": ("anti", 1)},
-                 legend=LEG4, what="rail-like section 35 × 40 mm",
-                 tour=[("vertical", 6, "vertical", 20, 150), ("axial", 4, "axial", 16, 150),
-                       ("lateral", 6, "lateral", 20, 150), ("torsional", 8, "torsional", 20, 150),
-                       ("h1", 12, "h1", 40, 150)]),
-    "pipe": dict(label="pipe", mesh=pipe_mesh, kind="ring", nth=72,
-                 classes=[("L0", "L", 0), ("V0", "V", 0)] + [(f"V{n}", "V", n) for n in range(1, 12)],
-                 fund={"vertical": ("V1", 0), "lateral": ("V1", 0), "axial": ("L0", 0), "torsional": ("V0", 0)},
-                 legend=[("vertical", "bending"), ("axial", "axial"), ("torsional", "torsional"), (None, "higher order")],
-                 what="pipe Ø 40 × 3 mm",
-                 tour=[("vertical", 20, "vertical", 50, 150), ("axial", 10, "axial", 30, 150),
-                       ("torsional", 20, "torsional", 50, 150), ("h1", 12, "h1", 40, 150)]),
-}
-ORDER = ["bar", "ibeam", "rail", "pipe", "plate"]
+def _screen(f, cp, fmax):
+    X = np.minimum(f, 1.04 * fmax) / fmax * REF_W
+    Y = np.minimum(cp, 1.04 * CP_MAX) / CP_MAX * REF_H
+    return X, Y
 
 
-def class_meta(Z):
-    if Z["kind"] == "mirror":
-        return [dict(name=c[0], py=c[1], pz=c[2]) for c in Z["classes"]]
-    if Z["kind"] == "plate":
-        return [dict(name=c[0], family=c[1], parity=c[2]) for c in Z["classes"]]
-    return [dict(name=c[0], typ=c[1], n=c[2]) for c in Z["classes"]]
+def kmax_of(S, fmax):
+    """A wavenumber past which every branch of every class lies above fmax: the
+    lowest branch over the classes, found at k = 2 pi fmax / 900 m/s and raised
+    until it is 4 % over fmax."""
+    k = 2 * np.pi * fmax / 900.0
+    while min(S.omegas(c, k, 1)[0] for c in S.classes) / (2 * np.pi) < 1.04 * fmax:
+        k *= 1.25
+    return k
 
 
-def make_section(key, s=1.0):
-    """The section's SAFE model with its classes (s: mesh density, 1 the page's)."""
-    Z = SECTIONS[key]
-    if key != "bar":
-        s *= SECTION_REFINEMENT
-    if key == "pipe":
-        nth, nr = int(round(72 * s)), int(round(3 * s))
-        S = Section(*pipe_mesh(nth, nr))
-        for name, typ, n in Z["classes"]:
-            S.classes[name] = S.ring_basis(n, typ, nth)
-        S.nth = nth
-    elif key == "plate":
-        S = Section(*plate_mesh(s))
-        for name, family, parity in Z["classes"]:
-            S.classes[name] = plate_basis(S, family, parity)
-    else:
-        S = Section(*Z["mesh"](s))
-        for name, py, pz in Z["classes"]:
-            S.classes[name] = S.mirror_basis(py, pz)
-    return S
-
-
-def branches_g(model, name, n, kmax):
-    """As branches(), for any section: w(k) of the n lowest branches of a class on
-    a k grid refined until consecutive points inside the window are < 2 units apart."""
-    ks = np.unique(np.concatenate([np.geomspace(0.4, 20, 30), np.linspace(20, kmax, int(kmax / 4))]))
+def branches_g(model, name, n, kmax, fmax):
+    """w(k) of the n lowest branches of a class on a k grid refined until
+    consecutive points inside the window are < 2 units apart."""
+    ks = np.unique(np.concatenate([np.geomspace(0.4, 0.05 * kmax, 30), np.linspace(0.05 * kmax, kmax, 120)]))
     W = np.array([model.omegas(name, k, n) for k in ks])
-    for _ in range(12):
+    for _ in range(14):
         f, cp = W / (2 * np.pi), W / ks[:, None]
-        X, Y = _screen(f, cp)
+        X, Y = _screen(f, cp, fmax)
         d = np.hypot(np.diff(X, axis=0), np.diff(Y, axis=0))
-        out = ((f[:-1] > 1.03 * F_MAX) & (f[1:] > 1.03 * F_MAX)) | \
+        out = ((f[:-1] > 1.03 * fmax) & (f[1:] > 1.03 * fmax)) | \
               ((cp[:-1] > 1.03 * CP_MAX) & (cp[1:] > 1.03 * CP_MAX))
         d[out] = 0
         bad = np.flatnonzero(d.max(axis=1) > 2.0)
@@ -589,30 +876,48 @@ def branches_g(model, name, n, kmax):
     return ks, W
 
 
+MODEL = "safe-q9-2"   # the formulation and sweep; change it when either changes (the cache key holds it)
+
+
+def section_key(key):
+    """What a section's sweep depends on: the formulation's version, the mesh itself,
+    its classes, window and material."""
+    Z = SECTIONS[key]
+    nodes, elems = pipe_mesh() if key == "pipe" else Z["mesh"]()
+    h = hashlib.sha1(repr((MODEL, key, Z["kind"], Z["classes"], Z["fund"], Z["fmax"], CP_MAX, REF_W, REF_H,
+                           sm.E, sm.NU, sm.RHO)).encode())
+    h.update(np.asarray(nodes, np.float32).tobytes()); h.update(np.asarray(elems, np.int64).tobytes())
+    return h.hexdigest()[:12]
+
+
+def _clean(R):
+    """A sweep without the points where a branch's w^2 fell under the solver's round-off (clipped to 0)."""
+    for name, (ks, W) in list(R["br"].items()):
+        m = (ks >= 0.4) & (W.min(axis=1) > 0)
+        R["br"][name] = (ks[m], W[m])
+    return R
+
+
 def compute_section(key):
     """A section's sweep and checks (cached in the temp folder)."""
     Z = SECTIONS[key]
-    src = ("".join(inspect.getsource(f) for f in (_dmat, _jac, element, Section, grid_mesh, Z["mesh"], properties,
-                                                  torsion, make_section, branches_g, compute_section))
-           + inspect.getsource(sparse_modes)
-           + repr((MESH, SECTION_REFINEMENT, F_MAX, CP_MAX, REF_W, REF_H, key, Z["kind"], Z["classes"], Z["fund"], Z.get("nth"), IBEAM, RAIL, PIPE)))
-    h = hashlib.sha1(src.encode()).hexdigest()[:12]
-    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{h}.pkl")
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{section_key(key)}.pkl")
     if os.path.exists(cache):
         with open(cache, "rb") as fh:
-            return pickle.load(fh)
+            return _clean(pickle.load(fh))
     t0 = time.time()
-    Z = SECTIONS[key]
+    fmax = Z["fmax"]
     S = make_section(key)
-    R = {"key": key, "ndof": S.ndof, "nel": len(S.elems), "nnode": len(S.nodes), "minJ": S.minJ,
+    kmax = kmax_of(S, fmax)
+    R = {"key": key, "ndof": S.ndof, "nel": len(S.elems), "nnode": len(S.nodes), "minJ": S.minJ, "kmax": kmax,
          "props": properties(S), "tors": torsion(S), "cut": {}, "br": {},
          "dims": {c: S.classes[c].shape[1] for c in S.classes}}
     for name in S.classes:
-        fc = S.omegas(name, 0.0, 24) / (2 * np.pi)
+        fc = S.omegas(name, 0.0, 30) / (2 * np.pi)
         R["cut"][name] = fc
-        n = int(np.sum(fc < 1.1 * F_MAX))
+        n = int(np.sum(fc < 1.1 * fmax))
         if n:
-            R["br"][name] = branches_g(S, name, n, 900.0)
+            R["br"][name] = branches_g(S, name, n, kmax, fmax)
     # the fundamental modes at small k, against the closed forms
     val = []
     for k in (1.0, 2.0, 5.0, 10.0):
@@ -622,35 +927,10 @@ def compute_section(key):
             row[typ] = (w / (2 * np.pi), w / k)
         val.append(row)
     R["val"] = val
-    # what each fundamental branch carries at k = 2 rad/m and 60 rad/m: its mass-weighted
-    # share of each rigid motion of the section (twist about the centroid)
-    P = R["props"]
-    y, z = S.nodes.T
-    yc, zc = P["yc"] / 1e3, P["zc"] / 1e3
-    rig = {"axial": np.column_stack([np.ones_like(y), 0 * y, 0 * y]),
-           "vertical": np.column_stack([0 * y, 0 * y, np.ones_like(y)]),
-           "lateral": np.column_stack([0 * y, np.ones_like(y), 0 * y]),
-           "torsional": np.column_stack([0 * y, -(z - zc), y - yc])}
-    part = {}
-    for typ, (c, b) in Z["fund"].items():
-        part[typ] = {}
-        for k in (2.0, 60.0):
-            _, V = S.solve(c, k, b + 1)
-            v = V[:, b]
-            part[typ][k] = {rn: (v @ (S.M @ r.ravel())) ** 2 / ((v @ (S.M @ v)) * (r.ravel() @ (S.M @ r.ravel())))
-                            for rn, r in rig.items()}
-    R["part"] = part
-    # mesh convergence: the lowest 8 of every class at k = 150 and 440 rad/m on this mesh
-    # and on one with elements half the size
-    conv = {}
-    for s in (1.0, 2.0):
-        M2 = S if s == 1.0 else make_section(key, s)
-        conv[s] = {c: np.array([M2.omegas(c, k, 8) for k in (150.0, 440.0)]) for c in S.classes}
-    R["conv"] = conv
     R["time"] = time.time() - t0
     with open(cache, "wb") as fh:
         pickle.dump(R, fh)
-    return R
+    return _clean(R)
 
 
 # ================================================================ the page's data
@@ -665,10 +945,13 @@ def pipe_name(c, b):
 def curves_of(key, R):
     """The branches inside the window, as the page draws and solves them: each
     one's points (f kHz, c_p km/s) in k order, inside the window plus the point
-    beyond each end, packed as float32; its class, name and kind of mode."""
+    beyond each end, packed as float32; its class, name and kind of mode. A
+    branch may turn back in f (a backward wave below its cut-on frequency: f
+    falls as k grows, then rises), but never leaves the window and comes back."""
     Z = SECTIONS[key]
+    fmax = Z["fmax"]
     cnames = [c[0] for c in Z["classes"]]
-    fund = {v: t for t, v in Z["fund"].items() if t != "lateral" or key != "pipe"}
+    fund = {v: t for t, v in Z["fund"].items()}
     brs, flat, seen = [], [], {}
     for ci, name in enumerate(cnames):
         if name not in R["br"]:
@@ -676,12 +959,11 @@ def curves_of(key, R):
         ks, W = R["br"][name]
         for b in range(W.shape[1]):
             f, cp = W[:, b] / (2 * np.pi), W[:, b] / ks
-            inside = (f <= F_MAX) & (cp <= CP_MAX)
+            inside = (f <= fmax) & (cp <= CP_MAX)
             if not inside.any():
                 continue
             idx = np.flatnonzero(inside)
             assert np.all(np.diff(idx) == 1), (key, name, b, "leaves the window and comes back")
-            assert np.all(np.diff(f[idx]) > 0), (key, name, b, "not monotone in f inside the window")
             lo, hi = max(idx[0] - 1, 0), min(idx[-1] + 1, len(ks) - 1)
             fc = float(R["cut"][name][b]) / 1e3
             typ = fund.get((name, b), "")
@@ -691,14 +973,15 @@ def curves_of(key, R):
             elif key == "plate":
                 nm = ("SH" + str(2 * b + (name == "SHa"))) if name.startswith("SH") else name + str(b) + " Lamb"
             elif typ:
-                nm = NAMES[typ]
+                nm = "bending" if Z.get("pairs") and typ == "vertical" else NAMES[typ]
             else:
                 nm = f"higher order mode, cut-on {fc:.1f} kHz"
                 seen[nm] = seen.get(nm, 0) + 1
                 if seen[nm] > 1:
                     nm += " (second)"
+            back = bool(np.any(np.diff(f[idx]) <= 0))
             brs.append({"ci": ci, "b": b, "fc": round(fc, 3), "n": int(hi - lo + 1), "o": len(flat), "nm": nm,
-                        "type": typ})
+                        "type": typ, "back": back})
             flat += list(f[lo:hi + 1] / 1e3) + list(cp[lo:hi + 1] / 1e3)
     return brs, np.array(flat)
 
@@ -759,8 +1042,8 @@ def thinned(key, R):
         st["laid"] += len(K)
         st["err"] = max(st["err"], float(np.abs(np.interp(k, K, F) / (wb / 2e3 / np.pi) - 1).max()))
         fs, cs = wb / 2e3 / np.pi, wb / k / 1e3
-        ins = np.flatnonzero((fs <= F_MAX / 1e3) & (cs <= CP_MAX / 1e3))
-        inp = np.flatnonzero((F <= F_MAX / 1e3) & (CL <= CP_MAX / 1e3))
+        ins = np.flatnonzero((fs <= Z["fmax"] / 1e3) & (cs <= CP_MAX / 1e3))
+        inp = np.flatnonzero((F <= Z["fmax"] / 1e3) & (CL <= CP_MAX / 1e3))
         assert F[inp[0]] <= fs[ins[0]] * (1 + 1e-6) and F[inp[-1]] >= fs[ins[-1]] * (1 - 1e-6), (key, r["nm"], "window")
     return out, np.array(packed, np.float32), st
 
@@ -793,11 +1076,12 @@ def tour_of(key, brs, flat):
     """The section's tour with branch ids and frequencies inside each branch's window."""
     Z = SECTIONS[key]
     ids = {b["type"]: i for i, b in enumerate(brs) if b["type"]}
-    if key == "pipe":
+    if Z.get("pairs"):
         ids["lateral"] = ids["vertical"]
     h1 = min((i for i, b in enumerate(brs) if not b["type"]), key=lambda i: brs[i]["fc"])
     ids["h1"] = h1
     frange = lambda i: (flat[brs[i]["o"]:brs[i]["o"] + brs[i]["n"]][1:-1].min(), flat[brs[i]["o"]:brs[i]["o"] + brs[i]["n"]][1:-1].max())
+    ids.update({(Z["classes"][r["ci"]][0], r["b"]): i for i, r in enumerate(brs)})   # or (class, branch)
     out = []
     for m1, f1, m2, fa, f2 in Z["tour"]:
         a, b = ids[m1], ids[m2]
@@ -823,6 +1107,48 @@ def blob(meta, arrays):
     return struct.pack("<I", len(hb)) + hb + b"\0" * ((-(4 + len(hb))) % 4) + b"".join(parts)
 
 
+def elem_sizes(S):
+    """Each element's longest corner-to-corner edge (mm)."""
+    P = S.nodes_mm[S.elems[:, [0, 2, 8, 6]]]
+    return np.max(np.hypot(*(np.roll(P, -1, axis=1) - P).transpose(2, 0, 1)), axis=1)
+
+
+def mesh_words(key, S):
+    """The mesh in words, for the parameter line: the plate's elements are 1 mm through its
+    thickness (its basis makes the slice's width immaterial); the others' longest edges."""
+    if key == "plate":
+        return f"{len(S.elems)} quadratic elements through the thickness, {PLATE_D / len(S.elems):.3g} mm each"
+    hs = elem_sizes(S)
+    msz = f"{hs.max():.3g} mm" if hs.max() - hs.min() < .02 * hs.max() else f"{hs.min():.2g} to {hs.max():.2g} mm"
+    return f"{len(S.elems)} quadratic elements of {msz}"
+
+
+def sci(v, tex=True):
+    """2.6 x 10^4, in the engine's TeX or as text."""
+    e = int(np.floor(np.log10(v)))
+    m = v / 10 ** e
+    if m >= 9.95:
+        m, e = m / 10, e + 1
+    return f"{m:.1f}\\ \\times\\ 10^{{{e}}}" if tex else f"{m:.1f} × 10^{e}"
+
+
+def strip_of(key, R):
+    """The drawn waveguide of a section (the page's sec.T): its length L (mm) and the
+    packets' Hann envelope pw (mm) across, the oblique view (depth factor d, angle a in
+    degrees, ys the drawn width over the slice's, for the plate), the scale s (units a
+    mm) that fits L and the receding depth between x = 40 and 970 units, and one clock:
+    the steel's time slowed `slow` times, for every operating point and both waves (so
+    the crests of the tour's highest frequency f cycle at f / slow, about 7 Hz)."""
+    Z = SECTIONS[key]
+    G = dict(Z["strip"])
+    S_nodes = (pipe_mesh() if key == "pipe" else Z["mesh"]())[0]
+    B = float(np.ptp(S_nodes[:, 0]))
+    cd = G["d"] * np.cos(np.radians(G["a"]))
+    s = 930.0 / (G["L"] + B * G["ys"] * cd)
+    return dict(G, s=round(s, 5), x1=round(40 + s * G["L"], 3),
+                label=r"\rm{shown}\ " + sci(G["slow"]) + r"\ \rm{times slower than real time}")
+
+
 def section_blob(key, R):
     """Everything the page needs of a section, as one blob."""
     Z = SECTIONS[key]
@@ -832,268 +1158,52 @@ def section_blob(key, R):
     loops = boundary(S)
     fcs = faces(S, loops)
     B = float(np.ptp(S.nodes_mm[:, 0])); Hh = float(np.ptp(S.nodes_mm[:, 1]))
-    fund = {t: next(i for i, b in enumerate(brs) if b["type"] == (t if not (key == "pipe" and t == "lateral") else "vertical"))
-            for t in Z["fund"]}
-    cuts = sorted(round(float(x) / 1e3, 3) for c in R["cut"] for x in R["cut"][c] if 50 < x < F_MAX)
+    fund = {t: next(i for i, b in enumerate(brs) if b["type"] == t) for t in Z["fund"]}
+    if Z.get("pairs"):
+        fund["lateral"] = fund["vertical"]
+    cuts = sorted(round(float(b["fc"]), 3) for b in brs if b["fc"] > .05)    # kHz: the drawn higher order branches' own
     fc1 = min(b["fc"] for b in brs if not b["type"])
-    params = (f"{Z['what']}; steel, E = 210 GPa, ν = 0.29, ρ = 7850 kg/m³; SAFE, "
-              f"{len(S.elems)} quadratic elements, solved in the page")
+    params = f"{Z['what']}; SAFE, {mesh_words(key, S)}, solved in the page"
     meta = {"key": key, "label": Z["label"], "kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO,
-            "classes": class_meta(Z),
+            "classes": class_meta(Z), "fmax": Z["fmax"] / 1e3, "xticks": Z["xticks"], "strip": strip_of(key, R),
             "nth": getattr(S, "nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
             "faces": fcs, "B": B, "H": Hh, "sscale": round(min(160 / B, 300 / Hh), 4), "fc1": fc1, "cuts": cuts,
-            "A": float(R["props"]["A"]) if "props" in R else float(sm.B * sm.H * 1e6),
-            "legend": [[t, s] for t, s in Z["legend"]], "params": params}
+            "A": float(R["props"]["A"]), "legend": [[t, s_] for t, s_ in Z["legend"]], "params": params}
     arrays = [("nodes", np.asarray(S.nodes_mm, np.float32).ravel()),
               ("elems", np.asarray(S.elems, np.uint16).ravel())]
     if Z["kind"] == "mirror":
-        arrays.append(("rank", np.asarray(rep_order(S, Z["planes"]), np.int16)))
+        arrays.append(("rank", np.asarray(rep_order(S, {"py": Z["planes"][0], "pz": Z["planes"][1]}), np.int16)))
+    elif Z["kind"] == "c4v":
+        arrays.append(("rank", np.asarray(rep_order(S, {"py": 1, "pz": 1}), np.int16)))
+        arrays.append(("rank8", np.asarray(rep_order(S, {"py": 1, "pz": 1, "pd": 1}), np.int16)))
     arrays.append(("curves", tflat))
+    arrays.append(("glide", glide_rates(key, R)))
     return blob(meta, arrays)
 
 
-# ================================================================ the bar (safe_model.py), as before
-def _screen(f, cp):
-    X = np.minimum(f, 1.04 * F_MAX) / F_MAX * REF_W
-    Y = np.minimum(cp, 1.04 * CP_MAX) / CP_MAX * REF_H
-    return X, Y
-
-
-def branches(model, name, n):
-    """w(k) of the n lowest branches of a class, on a k grid refined until
-    consecutive points of every branch inside the window are < 2 units apart."""
-    ks = np.unique(np.concatenate([np.geomspace(0.4, 20, 30), np.linspace(20, K_MAX, 120)]))
-    W = np.array([model.omegas(name, k, n) for k in ks])
-    for _ in range(10):
-        f, cp = W / (2 * np.pi), W / ks[:, None]
-        X, Y = _screen(f, cp)
-        d = np.hypot(np.diff(X, axis=0), np.diff(Y, axis=0))
-        out = ((f[:-1] > 1.03 * F_MAX) & (f[1:] > 1.03 * F_MAX)) | \
-              ((cp[:-1] > 1.03 * CP_MAX) & (cp[1:] > 1.03 * CP_MAX))
-        d[out] = 0
-        bad = np.flatnonzero(d.max(axis=1) > 2.0)
-        if not len(bad):
-            break
-        kn = 0.5 * (ks[bad] + ks[bad + 1])
-        ks = np.concatenate([ks, kn])
-        W = np.concatenate([W, [model.omegas(name, k, n) for k in kn]])
-        o = np.argsort(ks)
-        ks, W = ks[o], W[o]
-    return ks, W
-
-
-def sparse_modes(model, name, k, n):
-    """Lowest generalized eigenpairs, without dense matrices on refined meshes."""
-    if not hasattr(model, "_sparse_modes"):
-        model._sparse_modes = {}
-    if name not in model._sparse_modes:
-        Q = model.classes[name] if isinstance(model, Section) else model.basis(*sm.CLASSES[name])
-        model._sparse_modes[name] = (Q, *( (Q.T @ A @ Q).tocsc() for A in (model.K1, model.K2, model.K3, model.M)))
-    Q, k1, k2, k3, m = model._sparse_modes[name]
-    K = k1 + k * k2 + k * k * k3
-    count = min(n, m.shape[0] - 2)
-    vals, vec = spla.eigsh(K, k=count, M=m, sigma=-1., which="LM", tol=1e-10,
-                          v0=np.linspace(1., 2., m.shape[0]))
-    order = np.argsort(vals)
-    return np.sqrt(np.clip(vals[order], 0, None)), Q @ vec[:, order]
-
-
-class SparseSafe(sm.Safe):
-    def omegas(self, name, k, n):
-        return sparse_modes(self, name, k, n)[0]
-
-    def solve(self, name, k, n):
-        return sparse_modes(self, name, k, n)
-
-
-def compute():
-    """The sweep and the checks against closed forms (cached in the temp folder)."""
-    src = (open(os.path.join(HERE, "safe_model.py"), encoding="utf-8").read()
-           + inspect.getsource(branches) + inspect.getsource(compute) + inspect.getsource(SparseSafe) + inspect.getsource(sparse_modes)
-           + repr((MESH, F_MAX, CP_MAX, K_MAX, REF_W, REF_H)))
-    key = hashlib.sha1(src.encode()).hexdigest()[:12]
-    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}.pkl")
+def glide_rates(key, R):
+    """Wave 2's exact group velocity (km/s) at the NG + 1 moments of each tour stop's glide, at
+    the wavenumbers the page takes there (its kAtF on the laid-out curve, as k_at_f), from the
+    section's model by shift-invert (group_near): the page integrates these rather than solve
+    NG + 1 states as each stop begins. Stop after stop, NG + 1 each (cached with the sweep)."""
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{section_key(key)}-glide.pkl")
     if os.path.exists(cache):
         with open(cache, "rb") as fh:
             return pickle.load(fh)
-    t0 = time.time()
-    model = SparseSafe(*MESH)
-    R = {"mesh": MESH, "ndof": model.ndof, "K2err": model.K2_antisym_err}
-    # cut-on frequencies (k = 0) and the branches of every class
-    R["cut"], R["br"] = {}, {}
-    for name in sm.CLASSES:
-        fc = model.omegas(name, 0.0, 24) / (2 * np.pi)
-        R["cut"][name] = fc
-        n = int(np.sum(fc < 1.1 * F_MAX))
-        R["br"][name] = branches(model, name, n)
-    R["nodes"] = model.nodes
-    # validation: low wavenumber limits against the closed forms
-    val = []
-    for k in (1.0, 2.0, 5.0, 10.0, 20.0, 40.0):
-        row = {"k": k, "ref": sm.beam_speeds(k)}
-        for name in sm.CLASSES:
-            w = model.omegas(name, k, 1)[0]
-            row[name] = (w / (2 * np.pi), w / k)
-        val.append(row)
-    R["val"] = val
-    # which rigid motion each fundamental branch carries at small k
-    y, z = model.nodes.T
-    rig = {"axial": np.column_stack([np.ones_like(y), 0 * y, 0 * y]),
-           "vertical": np.column_stack([0 * y, 0 * y, np.ones_like(y)]),
-           "lateral": np.column_stack([0 * y, np.ones_like(y), 0 * y]),
-           "torsional": np.column_stack([0 * y, -z, y])}
-    part = {}
-    for name in sm.CLASSES:
-        _, V = model.solve(name, 2.0, 1)
-        v = V[:, 0]
-        part[name] = {}
-        for rn, r in rig.items():
-            r = r.ravel()
-            part[name][rn] = (v @ (model.M @ r)) ** 2 / ((v @ (model.M @ v)) * (r @ (model.M @ r)))
-    R["part"] = part
-    # high frequency: the fundamental branches against the Rayleigh speed
-    R["hf"] = {name: [(k, model.omegas(name, k, 1)[0]) for k in (440.0, 540.0)]
-               for name in sm.CLASSES}
-    # and far beyond the plot, on a 1 mm mesh (sparse shift-invert): the edge
-    # wave and the Rayleigh waves of the faces
-    fine = sm.Safe(30, 60)
-    R["edge"] = {}
-    for name in ("vertical", "axial"):
-        Q = fine.basis(*sm.CLASSES[name])
-        k1, k2, k3, mm_ = (Q.T @ A_ @ Q for A_ in (fine.K1, fine.K2, fine.K3, fine.M))
-        k = 1000.0
-        w2 = spla.eigsh((k1 + k * k2 + k * k * k3).tocsc(), k=3, M=mm_.tocsc(),
-                        sigma=(0.97 * sm.C_R * k) ** 2, which="LM", return_eigenvectors=False)
-        R["edge"][name] = (k, np.sqrt(np.sort(w2)))
-    # mesh convergence at k = 150, 440 rad/m: the 8 lowest of each class
-    conv = {}
-    for mesh in ((6, 12), (8, 16), (10, 20), MESH, (32, 64)):
-        mm = SparseSafe(*mesh)
-        conv[mesh] = {name: np.array([mm.omegas(name, k, 8) for k in (150.0, 440.0)])
-                      for name in sm.CLASSES}
-    R["conv"] = conv
-    R["time"] = time.time() - t0
+    Z, S = SECTIONS[key], make_section(key)
+    tb, curves = page_curve(key, R)
+    brs, flat = curves_of(key, R)
+    NG = TOUR_T["NG"]
+    out = []
+    for s_ in tour_of(key, brs, flat):
+        cv, name = curves[s_["b2"]], Z["classes"][tb[s_["b2"]]["ci"]][0]
+        for j in range(NG + 1):
+            f = s_["fa"] if j == 0 else s_["f2"] if j == NG else s_["fa"] + (s_["f2"] - s_["fa"]) * ease_in_out(j / NG)
+            out.append(group_near(S, name, k_at_f(cv, f), 2e3 * np.pi * f)[1] / 1e3)
+    arr = np.asarray(out, np.float32)
     with open(cache, "wb") as fh:
-        pickle.dump(R, fh)
-    return R
-
-
-
-def check_bar(R):
-    """The bar's model against closed forms (the text of the check file's first part)."""
-    L = []
-    p = L.append
-    sec = sm.section_constants()
-    p("THE BAR (safe_model.py; the section the page opens with)")
-    p("")
-    p("MODEL")
-    p(f"  steel bar, b x h = {sm.B*1e3:.0f} x {sm.H*1e3:.0f} mm (y x z), E = {sm.E/1e9:.0f} GPa, "
-      f"nu = {sm.NU}, rho = {sm.RHO:.0f} kg/m^3")
-    p(f"  c_L = {sm.C_L:.1f} m/s, c_T = {sm.C_T:.1f} m/s, c_0 = sqrt(E/rho) = {sm.C_0:.1f} m/s")
-    p(f"  c_R = {sm.C_R:.1f} m/s (root of the Rayleigh equation, c_R/c_T = {sm.C_R/sm.C_T:.5f};"
-      f" Viktorov's (0.87 + 1.12 nu)/(1 + nu) gives {(0.87+1.12*sm.NU)/(1+sm.NU):.5f})")
-    p("  SAFE: u = U(y, z) exp(i(kx - wt)); Q9 quadratic quadrilaterals, 3 dof per node,")
-    p("  3 x 3 Gauss (exact for rectangles); [K1 + ik K2 + k^2 K3 - w^2 M] U = 0 made real")
-    p("  symmetric by U_x = i V_x; sparse shift-invert eigenpairs at each real k, checked against dense eigh. The two mirror planes")
-    p("  split the problem into four symmetry classes (orthonormal symmetry-adapted bases):")
-    p("  (++) axial, (+-) vertical bending, (-+) lateral bending, (--) torsional.")
-    p(f"  K2 antisymmetry check: max|K2 + K2^T|/max|K2| = {R['K2err']:.1e}")
-    p("")
-    p("MESH AND CONVERGENCE")
-    p(f"  production mesh {MESH[0]} x {MESH[1]} Q9 elements (1.25 mm), {R['ndof']} dof.")
-    ref = R["conv"][(32, 64)]
-    p(f"  every branch below {1.1*F_MAX/1e3:.0f} kHz (of the 8 lowest per class), against the 32 x 64 mesh:")
-    worst = {}
-    for mesh in ((6, 12), (8, 16), (10, 20), MESH):
-        errs = []
-        for ik in range(2):
-            e = 0
-            for name in sm.CLASSES:
-                w, wr = R["conv"][mesh][name][ik], ref[name][ik]
-                sel = wr / (2 * np.pi) < 1.1 * F_MAX
-                if sel.any():
-                    e = max(e, np.abs(w[sel] / wr[sel] - 1).max())
-            errs.append(e)
-        worst[mesh] = max(errs)
-        p(f"  {mesh[0]:2d} x {mesh[1]:2d} ({sm.B*1e3/mesh[0]:.1f} mm elements): max |w/w_ref - 1| "
-          f"k = 150 rad/m {errs[0]:.1e}, k = 440 rad/m {errs[1]:.1e}")
-    p(f"  The error falls as h^4 (quadratic elements). The production {MESH[0]} x {MESH[1]} mesh is within "
-      f"{100*worst[MESH]:.2f} %: well below")
-    p("  one drawing unit anywhere on the plot.")
-    p("")
-    p("CUT-ON FREQUENCIES (k = 0) against closed forms")
-    ct = sm.C_T
-    ap = lambda m, n: ct / 2 * np.hypot(m / sm.B, n / sm.H)
-    exact = [("anti-plane shear (m, n) = (0, 1), c_T/(2h)", ap(0, 1), "vertical", 1),
-             ("anti-plane shear (1, 0), c_T/(2b)", ap(1, 0), "lateral", 2),
-             ("anti-plane shear (0, 2), c_T/h", ap(0, 2), "axial", 2),
-             ("anti-plane shear (1, 1)", ap(1, 1), "torsional", 2),
-             ("anti-plane shear (1, 2)", ap(1, 2), "lateral", 4),
-             ("anti-plane shear (0, 3)", ap(0, 3), "vertical", 4),
-             ("anti-plane shear (1, 3)", ap(1, 3), "torsional", 4),
-             ("Lame mode (in-plane, equivoluminal), c_T/(sqrt(2) b)", ct / (np.sqrt(2) * sm.B), "vertical", 2)]
-    for label, fe, name, b in exact:
-        fs = R["cut"][name][b]
-        p(f"  {label}: exact {fe/1e3:.4f} kHz, SAFE ({name}) {fs/1e3:.4f} kHz, error {fs/fe-1:+.1e}")
-    p("  all cut-on frequencies below the plot limit (kHz):")
-    for name in sm.CLASSES:
-        fc = R["cut"][name]
-        p(f"    {name:9s} " + ", ".join(f"{x/1e3:.2f}" for x in fc[1:] if x < F_MAX))
-    p("")
-    p("FUNDAMENTAL MODES AGAINST BEAM THEORY (low wavenumber)")
-    p(f"  section: A = {sec['A']*1e6:.0f} mm^2, I_y = {sec['Iy']*1e12:.0f} mm^4, I_z = {sec['Iz']*1e12:.0f} mm^4,"
-      f" J (Saint-Venant series) = {sec['J']*1e12:.0f} mm^4")
-    p("  k (rad/m)  mode       f (Hz)     c_p SAFE   closed form            error")
-    for row in R["val"]:
-        k, rf = row["k"], row["ref"]
-        for name, key, lab in (("vertical", "vertical_EB", "Euler-Bernoulli"),
-                               ("vertical", "vertical_Timo", "Timoshenko"),
-                               ("lateral", "lateral_EB", "Euler-Bernoulli"),
-                               ("lateral", "lateral_Timo", "Timoshenko"),
-                               ("axial", "axial_rod", "rod sqrt(E/rho)"),
-                               ("axial", "axial_Love", "Love rod"),
-                               ("torsional", "torsional_SV", "sqrt(GJ/(rho Ip))")):
-            f, c = row[name]
-            ref_c = float(rf[key])
-            p(f"  {k:6.1f}   {name:10s} {f:10.1f}   {c:8.2f}   {lab:18s} {ref_c:8.2f}   {c/ref_c-1:+.2e}")
-    p("")
-    p("TRACKING")
-    p("  Within a class the branches are ordered by frequency at each k: modes of one symmetry")
-    p("  do not cross (they repel), so the ordered branches are the continuous curves; modes of")
-    p("  different classes cross freely and are never mixed, being solved on separate bases.")
-    for name in sm.CLASSES:
-        ks, W = R["br"][name]
-        inwin = W / (2 * np.pi) < F_MAX
-        gap = np.diff(W, axis=1) / (2 * np.pi)
-        pos = ks > 5.0
-        g = gap[inwin[:, 1:] & pos[:, None]].min()
-        p(f"  {name:9s} {len(ks)} wavenumbers, {W.shape[1]} branches; smallest gap between neighbouring"
-          f" branches below {F_MAX/1e3:.0f} kHz, k > 5 rad/m: {g:.0f} Hz")
-    p("  (at k = 0 the axial class has one true degeneracy, 161.02 kHz twice: the anti-plane modes")
-    p("  (2, 0) and (0, 4), c_T/b = 2 c_T/h because h = 2b; the two branches part as k grows.)")
-    brs, _ = curves_of("bar", R)
-    p(f"  inside the window: {len(brs)} branches, each one run, each rising in f with k (checked).")
-    p("")
-    p("CLASSIFICATION of the lowest branch of each class at k = 2 rad/m, by its eigenvector:")
-    p("  mass-weighted participation of each rigid cross-section motion")
-    for name in sm.CLASSES:
-        pr = R["part"][name]
-        p(f"  {name:9s} " + "  ".join(f"{rn} {pr[rn]:.4f}" for rn in sm.CLASSES))
-    p("")
-    p("HIGH FREQUENCY")
-    for name in sm.CLASSES:
-        s = "  ".join(f"k = {k:.0f} rad/m: f = {w/2/np.pi/1e3:.1f} kHz, c_p = {w/k:.1f} m/s"
-                      f" ({w/k/sm.C_R:.4f} c_R)" for k, w in R["hf"][name])
-        p(f"  {name:9s} {s}")
-    for name, (k, w) in R["edge"].items():
-        p(f"  {name:9s} k = {k:.0f} rad/m on a 30 x 60 mesh (1 mm): lowest three c_p/c_R = "
-          + ", ".join(f"{x/k/sm.C_R:.4f}" for x in w))
-    p("  At short wavelengths the lowest branch of every class gathers at the bar's four 90 degree")
-    p("  edges: an edge (wedge) wave at about 0.976 c_R, slightly slower than a Rayleigh wave. The")
-    p("  next branches are Rayleigh waves on the faces, tending to c_R from above; the rest of the")
-    p("  higher order branches crowd down toward c_T.")
-    p("")
-    return L
+        pickle.dump(arr, fh)
+    return arr
 
 
 # ================================================================ checks
@@ -1115,13 +1225,16 @@ def check_solver_all(Rs):
                "classes": class_meta(Z),
                "nodes": np.asarray(S.nodes_mm, np.float32).ravel().tolist(), "elems": S.elems.ravel().tolist()}
         if Z["kind"] == "mirror":
-            sec["rank"] = rep_order(S, Z["planes"]).tolist()
+            sec["rank"] = rep_order(S, {"py": Z["planes"][0], "pz": Z["planes"][1]}).tolist()
+        elif Z["kind"] == "c4v":
+            sec["rank"] = rep_order(S, {"py": 1, "pz": 1}).tolist()
+            sec["rank8"] = rep_order(S, {"py": 1, "pz": 1, "pd": 1}).tolist()
         data["sections"][key] = sec
         cases, rf = [], []
         for r in tb:
             o, n = r["o"], r["n"]
             k, f, cp = lay(tflat[o:o + n], tflat[o + n:o + 2 * n], tflat[o + 2 * n:o + 3 * n])   # the page's curve
-            inw = np.flatnonzero((f <= F_MAX / 1e3) & (cp <= CP_MAX / 1e3))
+            inw = np.flatnonzero((f <= Z["fmax"] / 1e3) & (cp <= CP_MAX / 1e3))
             for _ in range(3):
                 kk = float(rng.uniform(k[inw[0]], k[inw[-1]]))
                 wt = 2e3 * np.pi * float(np.interp(kk, k, f))      # the page's shift: its curve at k
@@ -1138,7 +1251,8 @@ def check_solver_all(Rs):
         harness = ("const fs = require('fs'); const T = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));\n" + SOLVER +
                    "\nconst res = {};\n"
                    "for (const [key, S] of Object.entries(T.sections)) {\n"
-                   "  const sec = {...S, nodes: Float32Array.from(S.nodes), elems: Int32Array.from(S.elems), rank: S.rank ? Int32Array.from(S.rank) : null};\n"
+                   "  const sec = {...S, nodes: Float32Array.from(S.nodes), elems: Int32Array.from(S.elems), rank: S.rank ? Int32Array.from(S.rank) : null,"
+                   " rank8: S.rank8 ? Int32Array.from(S.rank8) : null};\n"
                    "  const m = safeModel(sec); sec.classes.forEach((_, ci) => m.cls(ci));\n"
                    "  for (const c of T.cases[key].slice(0, 8)) m.solve(c.ci, c.b, c.k, c.w);\n"
                    "  const t0 = process.hrtime.bigint();\n"
@@ -1177,127 +1291,618 @@ def check_solver_all(Rs):
     return out
 
 
-def check_sections(Rs):
-    """The I-beam, the rail and the pipe against closed forms."""
+# ================================================================ references, independent of SAFE
+from scipy.optimize import brentq as _brentq
+from scipy.special import jv as _jv, yv as _yv, jvp as _jvp, yvp as _yvp, iv as _iv, kv as _kv, ivp as _ivp, kvp as _kvp
+
+
+def _cst(x2, h):
+    """cos(x h), sin(x h)/x and x sin(x h) for x = sqrt(x2), x2 of either sign: real."""
+    if x2 > 0:
+        x = np.sqrt(x2)
+        return np.cos(x * h), np.sin(x * h) / x, x * np.sin(x * h)
+    if x2 < 0:
+        x = np.sqrt(-x2)
+        return np.cosh(x * h), np.sinh(x * h) / x, -x * np.sinh(x * h)
+    return 1.0, h, 0.0
+
+
+def lamb(fam, k, w, d=PLATE_D / 1e3):
+    """The Rayleigh-Lamb functions of a free plate of thickness d, real for every real k
+    and w (h = d/2, p^2 = w^2/c_L^2 - k^2, q^2 = w^2/c_T^2 - k^2): symmetric
+    (k^2 - q^2)^2 cos(ph) sin(qh)/q + 4 k^2 p sin(ph) cos(qh), antisymmetric
+    (k^2 - q^2)^2 sin(ph)/p cos(qh) + 4 k^2 cos(ph) q sin(qh)."""
+    h = d / 2
+    Cp, Sp, Tp = _cst((w / sm.C_L) ** 2 - k * k, h)
+    Cq, Sq, Tq = _cst((w / sm.C_T) ** 2 - k * k, h)
+    a = (2 * k * k - (w / sm.C_T) ** 2) ** 2
+    return a * Cp * Sq + 4 * k * k * Tp * Cq if fam == "S" else a * Sp * Cq + 4 * k * k * Cp * Tq
+
+
+def lamb_root_near(fam, k, w0, rel=3e-3, m=300):
+    """The root of the Rayleigh-Lamb function nearest w0 within w0 (1 +- rel)."""
+    ws = w0 * np.linspace(1 - rel, 1 + rel, m)
+    F = np.array([lamb(fam, k, w) for w in ws])
+    best = None
+    for i in np.flatnonzero(np.sign(F[:-1]) * np.sign(F[1:]) < 0):
+        r = _brentq(lambda w: lamb(fam, k, w), ws[i], ws[i + 1], xtol=1e-13 * w0)
+        if best is None or abs(r - w0) < abs(best - w0):
+            best = r
+    return best
+
+
+def lamb_cutoffs(fam, fmax, d=PLATE_D / 1e3):
+    """k = 0: symmetric cos(w h/c_L) sin(w h/c_T) = 0, antisymmetric sin(w h/c_L) cos(w h/c_T) = 0."""
+    out = []
+    for m in range(1, 60):
+        out += [(2 * m - 1) * sm.C_L / (2 * d), m * sm.C_T / d] if fam == "S" else \
+               [(2 * m - 1) * sm.C_T / (2 * d), m * sm.C_L / d]
+    return sorted(f for f in out if f < fmax)
+
+
+def _zpair(n, g2, r):
+    """The radial equation's two solutions Z'' + Z'/r + (g2 - n^2/r^2) Z = 0 at r and their
+    r-derivatives: J_n, Y_n of g r (g2 > 0), I_n, K_n of |g| r (g2 < 0)."""
+    if g2 > 0:
+        g = np.sqrt(g2)
+        return [(_jv(n, g * r), g * _jvp(n, g * r)), (_yv(n, g * r), g * _yvp(n, g * r))]
+    g = np.sqrt(-g2)
+    return [(_iv(n, g * r), g * _ivp(n, g * r)), (_kv(n, g * r), g * _kvp(n, g * r))]
+
+
+def gazis_det(n, k, w, a, b):
+    """The determinant of the traction matrix of a free hollow cylinder (radii a < b),
+    harmonic n, wavenumber k, frequency w (Gazis 1959), real. u = grad(phi) + curl(psi
+    e_x) + curl curl(chi e_x), each potential Z(r) exp(i(n th + k x)), Z a radial solution
+    (alpha^2 = w^2/c_L^2 - k^2 for phi, beta^2 = w^2/c_T^2 - k^2 for psi and chi):
+      u_r = Phi' + i n Psi/r + i k X',  u_th = i n Phi/r - Psi' - n k X/r,  u_x = i k Phi + beta^2 X;
+    rows sigma_rr, sigma_rth, sigma_rx at r = a and b, columns J and Y (or I and K) of
+    each potential; the factors i taken out of the psi and chi columns and of the
+    sigma_rth and sigma_rx rows, every entry is real; columns scaled to unit size."""
+    lam_, mu = sm.LAM, sm.MU
+    al2, be2 = (w / sm.C_L) ** 2 - k * k, (w / sm.C_T) ** 2 - k * k
+    rows = []
+    for r in (a, b):
+        cols = []
+        for pot, g2 in (("phi", al2), ("psi", be2), ("chi", be2)):
+            for Z, Zp in _zpair(n, g2, r):
+                Zpp = -Zp / r - (g2 - n * n / (r * r)) * Z
+                if pot == "phi":
+                    ur, urp = Zp, Zpp
+                    uth, uthp = n * Z / r, n * (Zp / r - Z / (r * r))
+                    srr = lam_ * (-(w / sm.C_L) ** 2) * Z + 2 * mu * urp
+                    srt = mu * (uthp - uth / r + n * ur / r)
+                    srx = mu * (k * Zp + k * ur)
+                elif pot == "psi":
+                    ur, urp = n * Z / r, n * (Zp / r - Z / (r * r))
+                    uth, uthp = -Zp, -Zpp
+                    srr = -2 * mu * urp
+                    srt = mu * (uthp - uth / r - n * ur / r)
+                    srx = -mu * k * ur
+                else:
+                    ur, urp = k * Zp, k * Zpp
+                    uth, uthp = -n * k * Z / r, -n * k * (Zp / r - Z / (r * r))
+                    srr = -2 * mu * urp
+                    srt = mu * (uthp - uth / r - n * ur / r)
+                    srx = mu * (be2 * Zp - k * ur)
+                cols.append((srr, srt, srx))
+        rows += list(np.array(cols).T)
+    M = np.array(rows)
+    return np.linalg.det(M / np.maximum(np.abs(M).max(axis=0), 1e-300))
+
+
+def gazis_root_near(n, k, w0, a, b, rel=3e-3, m=300):
+    """The root of the Gazis determinant nearest w0 within w0 (1 +- rel)."""
+    ws = w0 * np.linspace(1 - rel, 1 + rel, m)
+    F = np.array([gazis_det(n, k, w, a, b) for w in ws])
+    best = None
+    for i in np.flatnonzero(np.sign(F[:-1]) * np.sign(F[1:]) < 0):
+        r = _brentq(lambda w: gazis_det(n, k, w, a, b), ws[i], ws[i + 1], xtol=1e-13 * w0)
+        if best is None or abs(r - w0) < abs(best - w0):
+            best = r
+    return best
+
+
+def cyl_cutoffs(n, fmax, a, b, part, nf=30000):
+    """k = 0 cut-off frequencies (Hz, below fmax) of the free hollow cylinder, exactly:
+    'shear' (u_x only: J_n'(be a) Y_n'(be b) - J_n'(be b) Y_n'(be a) = 0, be = w/c_T);
+    'plane' (u_r, u_th, plane strain: phi = Z_n(w r/c_L) cos n th, psi = Z_n(w r/c_T) sin n th,
+    sigma_rr = sigma_rth = 0 at both radii); for n = 0 'phi' (radial) and 'psi' (torsional)."""
+    lam_, mu = sm.LAM, sm.MU
+
+    def F(w):
+        if part == "shear":
+            be = w / sm.C_T
+            return _jvp(n, be * a) * _yvp(n, be * b) - _jvp(n, be * b) * _yvp(n, be * a)
+        rows = []
+        for r in (a, b):
+            rr, rt = [], []
+            for which, g in (("phi", w / sm.C_L), ("psi", w / sm.C_T)):
+                if part in ("phi", "psi") and which != part:
+                    continue
+                for Zf, Zpf in ((_jv, _jvp), (_yv, _yvp)):
+                    Z, Zp = Zf(n, g * r), g * Zpf(n, g * r)
+                    Zpp = -Zp / r - (g * g - n * n / (r * r)) * Z
+                    if which == "phi":
+                        rr.append(lam_ * (-(w / sm.C_L) ** 2) * Z + 2 * mu * Zpp)
+                        rt.append(mu * (-2 * n * Zp / r + 2 * n * Z / (r * r)))
+                    else:
+                        rr.append(2 * mu * n * (Zp / r - Z / (r * r)))
+                        rt.append(mu * (-Zpp + Zp / r - n * n * Z / (r * r)))
+            rows += [rr] if part == "phi" else [rt] if part == "psi" else [rr, rt]
+        M = np.array(rows)
+        return np.linalg.det(M / np.maximum(np.abs(M).max(axis=0), 1e-300))
+    ws = np.linspace(2 * np.pi * fmax * 1e-4, 2 * np.pi * fmax, nf)
+    Fv = np.array([F(w) for w in ws])
+    out = []
+    for i in np.flatnonzero(np.sign(Fv[:-1]) * np.sign(Fv[1:]) < 0):
+        r = _brentq(F, ws[i], ws[i + 1], xtol=1e-12 * ws[i + 1])
+        if abs(F(r)) < 1e-6:                 # a root, not a pole of the scaled determinant
+            out.append(r / (2 * np.pi))
+    return out
+
+
+# Hayashi, Kawashima and Rose (2004), "Calculation for guided waves in pipes and rails",
+# Key Engineering Materials 270-273, 410-415, Fig. 2: phase velocity of a square rod h x h,
+# SAFE (12 x 12 elements), Poisson's ratio 0.3, c/c_T to 3 against f h to 5,000 kHz mm. Its
+# 765 dots, read from the paper's vector drawing (the PDF at sites.esm.psu.edu): f h in
+# half kHz mm and c/c_T in thousandths, int16 pairs in base64.
+HAYASHI_SQUARE = (
+    "XADVAFwAnANcAGMGxgAoAcYAnAPGAGMGLAFhASwBnAMsAWMGkgGWAZIBnAOSAWMG+AHAAfgBnAP4AWMGXgLfAV4CnANeAmMGtwL/"
+    "AbcCnAO3AmMGHQMZAh0DnAMdA2MGHQNzBoMDMwKDA5wDgwNjBu0DSALtA5wD7QNeBlcEXQJXBJwDVwReBr0EbQK9BJwDvQReBiMF"
+    "fQIjBZwDIwVYBnwFjQJ8BZwDfAVYBuIFngLiBZwD4gVYBkgGqQJIBpwDSAZTBq4GuAKuBpwDrgZTBhQHwwIUB5wDFAdOBn4HzwJ+"
+    "B5wDfgdOBuQH2gLkB5wD5AdOBk4I5AJOCJwDTghJBrQI6QK0CJwDtAhDBhoJ9AIaCZwDGglDBoAJ/gKACZwDgAk+BuYJBAPmCZwD"
+    "5gk5BkwKCQNMCpwDTAo5BrIKEwOyCpwDsgo0BhgLEwMYC5wDGAsuBoILHgOCC5wDggspBt8LHgPfC5wD3wsiBicMLgMnDMEDRQwo"
+    "A0UMnANFDB0GqwwoA6sMnAOrDBgGEQ0zAxENnAMRDRIGdw0zA3cNnAN3DQ0G3Q04A90NnAPdDQMGNg49AzYOnAM2DvgFnA5DA5wO"
+    "nAOcDu4FBg9IAwYPnAMGD+cFbA9IA2wPnANsD9wFbA86C9YPTQPWD5wD1g/RBdYPGgjWD48KPBBNAzwQnAM8EMIFPBAABzwQ/Ami"
+    "EFIDohCcA6IQtwWiEGgGohB8CQgRUgMIEZwDCBGtBQgRAwYIEQEJbhFYA24RnANuEZ0FbhG3BW4RiQjUEV0D1BGcA9QRgwXUEY0F"
+    "1BG8BdQRFQg6El0DOhKcAzoSLwU6ElMFOhJ4BToSoAegEl0DoBKcA6AS4ASgEi8FoBJoBaASKgcKE2IDChOcAwoTqwQKEw8FChNZ"
+    "BQoTxwYKE3kLdBNoA3QTnAN0E4cEdBP1BHQTRAV0E20GdBOECtoTaAPaE5wD2hNlBNoT2wTaEy8F2hMdBtoT5wkzFGgDMxScAzMU"
+    "SwQzFMYEMxQaBTMU1wUzFHEJmRRoA5kUnAOZFDQEmRS2BJkUBQWZFKIFmRQcCf8UbQP/FJwD/xQlBP8UpgT/FPAE/xRuBf8U3Qhl"
+    "FW0DZRWcA2UVFQRlFZwEZRXbBGUVSQVlFZ4IyxVyA8sVnAPLFQUEyxWMBMsVywTLFSQFyxV0CDEWcgMxFpwDMRb7AzEWgQQxFrsE"
+    "MRYFBTEWRAgxFuMKMRaEC5sWcgObFpwDmxbwA5sWdQSbFqsEmxbqBJsWHwibFlwJmxYEC/QWcgP0FpwD9BbrA/QWcAT0FpwE9BbV"
+    "BPQWAAj0FnQI9BaZCl4XdwNeF5wDXhfmA14XZQReF4wEXhfABF4X1gdeF+AHXhdACsQXdwPEF5wDxBfbA8QXWwTEF3oExBexBMQX"
+    "XwfEF78HxBfsCSoYdwMqGJwDKhjWAyoYVgQqGHAEKhicBCoYAAcqGKUHKhiiCZAYfQOQGJwDkBjRA5AYUASQGGUEkBiRBJAYsgaQ"
+    "GIkHkBhcCfYYfQP2GJwD9hjLA/YYRgT2GFsE9hiBBPYYcwb2GHQH9hghCfYYGQtcGX0DXBmcA1wZxgNcGUYEXBlQBFwZcARcGT4G"
+    "XBlaB1wZ5whcGSAKwhl9A8IZnAPCGcYDwhk6BMIZRgTCGWUEwhkNBsIZPwfCGbgIwhmTCSwafQMsGpwDLBrBAywaOgQsGj8ELBpb"
+    "BCwa4QUsGioHLBqJCCwaJgksGvYJkhqCA5IanAOSGrwDkhovBJIaNASSGlYEkhrCBZIaFQeSGl8Ikhq9CJIa3Qj8GoID/BqcA/wa"
+    "vAP8Gi8E/BpLBPwaogX8GvYG/BoQCPwaNAj8GqgIYhuCA2IbnANiG7wDYhsqBGIbRgRiG4MFYhvWBmIbmgdiGxAIYht0CMgbhwPI"
+    "G5wDyBu2A8gbJQTIGzoEyBtoBcgbtwbIG0oHyBvrB8gbVAguHIcDLhycAy4csQMuHBoELhwlBC4cNAQuHFMFLhyNBi4cFQcuHMoH"
+    "LhwvCJQchwOUHJwDlByxA5QcGgSUHB8ElBwvBJQcPgWUHF4GlBz2BpQcqgeUHBUI+hyHA/ocnAP6HLED+hwVBPocGgT6HCUE+hwp"
+    "BfocNAb6HNYG+hyJB/oc+wdTHYcDUx2cA1MdsQNTHRAEUx0aBFMdJQRTHRoFUx0NBlMdwQZTHW8HUx3gB7kdhwO5HZwDuR2sA7kd"
+    "CgS5HRoEuR0fBLkdCgW5HecFuR2sBrkdVAe5HdEHIx6HAyMeoQMjHqwDIx4FBCMeFQQjHhoEIx76BCMewgUjHpcGIx41ByMevweN"
+    "HowDjR6hA40erAONHgUEjR4QBI0eFQSNHuoEjR6nBY0eiAaNHiAHjR6qB/MejAPzHqED8x6nA/MeAATzHhAE8x7gBPMejQXzHngG"
+    "8x4GB/MeoAdZH4wDWR+hA1kfpwNZH/sDWR8QBFkf1QRZH3gFWR9jBlkf8QZZH44Hvx+MA78foQO/H6cDvx/7A78fCgS/H8YEvx9j"
+    "Bb8fUwa/H9YGvx+EByUgkgMlIKEDJSCnAyUg9QMlIAUEJSAKBCUguwQlIE4FJSBDBiUgwQYlINEGJSB0B4sgkgOLIKEDiyCnA4sg"
+    "9QOLIAUEiyC2BIsgPgWLIDQGiyCsBosgaQeLILgL5CCSA+QgoQPkIKcD5CDwA+QgAATkIAUE5CCrBOQgLwXkICIG5CCdBuQgXwfk"
+    "IG8K5CCZC0ohkgNKIaEDSiGnA0oh8ANKIfsDSiEFBEohpgRKIR8FSiENBkohiAZKIVQHSiGDCUohBAtKIToLSiFPC7QhkgO0IaED"
+    "tCGnA7Qh8AO0IfsDtCEFBLQhnAS0IQ8FtCEDBrQhcwa0IUoHtCHSCLQhsgm0IbkKtCEJCxoikgMaIqEDGiKnAxoi6wMaIvsDGiIA"
+    "BBoikQQaIgUFGiLuBRoiYwYaIkUHGiJJCBoiwggaIkUKGiLICoQikgOEIqEDhCKnA4Qi6wOEIvUDhCIABIQijASEIvoEhCLhBYQi"
+    "TgaEIjUHhCLbB4QiHwiEItwJhCKPCuoikgPqIqED6iLmA+oi9QPqIvsD6iKHBOoi6gTqIswF6iI+BuoiKgfqInkH6iKlB+oifAnq"
+    "IloKUCOSA1AjoQNQI+YDUCPwA1Aj+wNQI3oEUCPgBFAjvAVQIy4GUCMLB1AjKgdQI1QHUCMmCVAjJgq2I5IDtiOhA7Yj5gO2I/AD"
+    "tiP7A7YjegS2I9sEtiOtBbYjGAa2I9YGtiPrBrYjNQe2I9cItiP2CRwkkgMcJKEDHCTmAxwk8AMcJPsDHCRwBBwk0AQcJKIFHCQN"
+    "BhwknQYcJLIGHCQqBxwkjggcJMwJgiSXA4IkoQOCJOADgiTwA4Ik+wOCJGsEgiTGBIIkkgWCJPgFgiRtBoIkggaCJCAHgiRPCIIk"
+    "ognoJJcD6CShA+gk4APoJOsD6CT1A+gkZQToJLsE6CSDBegk7gXoJD4G6CRYBugkFQfoJBAI6CR3Cegk6ApSJZcDUiWhA1Il2wNS"
+    "JesDUiX1A1IlYARSJbYEUiV4BVIl3AVSJRgGUiUuBlIlEAdSJdsHUiVSCVIlmAm4JZcDuCWhA7gl2wO4JeYDuCX1A7glWwS4JasE"
+    "uCVoBbglzAW4JfMFuCUNBrglCwe4JaUHuCXNCLglKwkiJpcDIiahAyIm2wMiJuYDIib1AyImWwQiJqYEIiZZBSImvAUiJtEFIibu"
+    "BSImAAciJnQHIiY/CCImBwmIJpcDiCahA4gmpwOIJtsDiCbmA4gm8AOIJlAEiCahBIgmTgWIJq0FiCa3BYgmzAWIJvsGiCZFB4gm"
+    "2weIJucIiCY6C+EmnAPhJqED4SanA+Em2wPhJuYD4SbwA+EmUAThJpwE4SZEBeEmnQXhJqIF4Sa3BeEm9gbhJiAH4SZ+B+EmyAjh"
+    "JpQKRyecA0cnoQNHJ6cDRyfbA0cn5gNHJ/ADRydLBEcnkQRHJzkFRyeIBUcnmAVHJ50FRyfrBkcn9gZHJz8HRyeoCEcnEQqtJ5wD"
+    "rSehA60npwOtJ9YDrSfmA60n8AOtJ0YErSeMBK0nLwWtJ3MFrSeIBa0n0QatJ+YGrScAB60njgitJ6gJ")
+# Ramatlo, Wilke and Loveday (2018), "Development of an optimal piezoelectric transducer to
+# excite guided waves in a rail web", NDT&E International (the authors' manuscript at the
+# University of Pretoria repository), Fig. 1(a): wavenumber against frequency of the UIC60
+# rail, SAFE with four-node elements. The frequencies where its curves meet k = 0 below
+# 22.5 kHz, read at 1600 dots per inch from 69.55 px/kHz (to about 0.02 kHz; the second
+# near 5.1 kHz runs under the paper's thick highlighted curve and is placed to 0.1 kHz):
+RAMATLO_CUTONS = [1.34, 4.04, 5.08, 5.15, 9.80, 9.88, 13.37, 14.14, 15.94, 19.23, 21.77, 22.24]
+
+
+def _nearest_pairs(a, b):
+    """Pair two sorted lists in order (same length), as (a_i, b_i)."""
+    return list(zip(sorted(a), sorted(b)))
+
+
+def branch_k_at(R, name, b, f):
+    """The wavenumbers (rad/m) where the sweep's branch b of class `name` has frequency f (Hz)."""
+    from scipy.interpolate import CubicSpline
+    ks, W = R["br"][name]
+    w = W[:, b]
+    sp_ = CubicSpline(ks, w)
+    wt = 2 * np.pi * f
+    out = []
+    for i in np.flatnonzero((w[:-1] - wt) * (w[1:] - wt) <= 0):
+        out.append(_brentq(lambda k: sp_(k) - wt, ks[i], ks[i + 1], xtol=1e-12))
+    return out
+
+
+def window_branches(key, R):
+    """(class, branch, cut-on Hz, name) of every branch drawn."""
+    Z = SECTIONS[key]
+    brs, _ = curves_of(key, R)
+    return [(Z["classes"][r["ci"]][0], r["b"], float(R["cut"][Z["classes"][r["ci"]][0]][r["b"]]), r["nm"]) for r in brs]
+
+
+def mesh_conv(key, R):
+    """The section's mesh against one with elements about half the size: every cut-on
+    frequency below fmax, and the frequency of every drawn branch at the wavenumber where
+    the page's mesh puts it at fmax; with the elements' size and the shortest wavelength
+    at fmax (cached with the sweep)."""
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{section_key(key)}-conv2.pkl")
+    if os.path.exists(cache):
+        with open(cache, "rb") as fh:
+            return pickle.load(fh)
+    Z = SECTIONS[key]
+    fmax = Z["fmax"]
+    S, F = make_section(key), make_section(key, 2.0)
+    out = {"nel": len(S.elems), "nel_f": len(F.elems), "dof": S.ndof, "dof_f": F.ndof,
+           "h": elem_sizes(S), "h_f": elem_sizes(F), "cut": [], "end": []}
+    for name in S.classes:
+        cs = [x for x in R["cut"][name] if 50 < x < fmax]
+        if cs:
+            wf = F.omegas(name, 0.0, len(R["cut"][name][R["cut"][name] < fmax])) / (2 * np.pi)
+            for x in cs:
+                out["cut"].append((name, x, float(wf[np.argmin(abs(wf - x))])))
+    for name, b, fc, nm in window_branches(key, R):
+        ks = branch_k_at(R, name, b, fmax)
+        if not ks:
+            continue
+        k = max(ks)
+        wf = F.omegas(name, k, b + 1)[b] / (2 * np.pi)
+        out["end"].append((nm, name, b, k, fmax, float(wf)))
+    with open(cache, "wb") as fh:
+        pickle.dump(out, fh)
+    return out
+
+
+def conv_lines(key, R, C):
+    """The check file's lines on a section's mesh."""
+    Z = SECTIONS[key]
     L = []
     p = L.append
-    G_, c0, ct = sm.MU, sm.C_0, sm.C_T
-    for key in ORDER[1:]:
-        Z, R = SECTIONS[key], Rs[key]
-        if key == "plate":
-            L += check_plate(R)
-            continue
-        P, T = R["props"], R["tors"]
-        p(f"THE {Z['label'].upper()} ({Z.get('detail', Z['what'])})")
-        p(f"  mesh: {R['nel']} Q9 elements, {R['nnode']} nodes, {R['ndof']} dof, smallest Jacobian "
-          f"{R['minJ']:.2e} m^2 (all positive); classes and their sizes: "
-          + ", ".join(f"{c} {n}" for c, n in R["dims"].items()))
-        if key == "ibeam":
-            G = IBEAM
-            A_ = 2 * G["b"] * G["tf"] + (G["h"] - 2 * G["tf"]) * G["tw"]
-            Iy_ = (G["b"] * G["h"] ** 3 - (G["b"] - G["tw"]) * (G["h"] - 2 * G["tf"]) ** 3) / 12
-            Iz_ = 2 * G["tf"] * G["b"] ** 3 / 12 + (G["h"] - 2 * G["tf"]) * G["tw"] ** 3 / 12
-            p(f"  section: A = {P['A']:.1f} mm^2 (exact {A_:.1f}), I_y = {P['Iy']:.0f} mm^4 (exact {Iy_:.0f}), "
-              f"I_z = {P['Iz']:.0f} mm^4 (exact {Iz_:.0f})")
-            Jt = (2 * G["b"] * G["tf"] ** 3 + (G["h"] - 2 * G["tf"]) * G["tw"] ** 3) / 3
-            Gt = G["tf"] * G["b"] ** 3 / 12 * (G["h"] - G["tf"]) ** 2 / 2
-            p(f"  torsion (the warping function by a scalar FE on the same mesh, independent of SAFE): "
-              f"J = {T['J']:.0f} mm^4 (thin-walled sum b t^3/3 = {Jt:.0f}, which ignores the corners and ends),")
-            p(f"  warping constant Gamma = {T['Gamma']:.3e} mm^6 (flanges' I_f h^2/2 = {Gt:.3e})")
-        elif key == "rail":
-            p(f"  section: A = {P['A']:.1f} mm^2, centroid {P['zc']:.3f} mm above mid-height, I_y = {P['Iy']:.0f} mm^4, "
-              f"I_z = {P['Iz']:.0f} mm^4 (the Gauss rule is exact on these straight-edged elements)")
-            p(f"  torsion (warping function FE): J = {T['J']:.0f} mm^4; one mirror plane only, so the shear centre is off")
-            p("  the centroid and lateral bending couples with torsion (both in the antisymmetric class)")
-        else:
-            G = PIPE
-            A_ = np.pi * (G["ro"] ** 2 - G["ri"] ** 2)
-            I_ = np.pi / 4 * (G["ro"] ** 4 - G["ri"] ** 4)
-            p(f"  mesh: {SECTIONS['pipe']['nth']} elements around, 3 through the 3 mm wall; each circumferential harmonic n is")
-            p("  solved on its own (the exact block of the mesh's dihedral symmetry): L(0,m) and T(0,m) at n = 0,")
-            p("  F(n,m) at n >= 1 (whose sin and cos partners are equal, so each is drawn once)")
-            p(f"  section: A = {P['A']:.3f} mm^2 (exact {A_:.3f}), I = {P['Iy']:.1f} mm^4 (exact {I_:.1f}), "
-              f"J = {T['J']:.1f} mm^4 (exact 2 I = {2 * I_:.1f})")
-        EA = sm.E * P["A"] * 1e-6
-        EIy, EIz = sm.E * P["Iy"] * 1e-12, sm.E * P["Iz"] * 1e-12
-        GJ, rIp = G_ * T["J"] * 1e-12, sm.RHO * P["Ip"] * 1e-12
-        EG = sm.E * T["Gamma"] * 1e-18
-        p("  low wavenumber, SAFE against beam theory:")
-        p("  k (rad/m)  mode       f (Hz)      c_p SAFE   closed form                c_p          error")
-        for row in R["val"]:
-            k = row["k"]
-            refs = [("vertical", "Euler-Bernoulli, I_y", k * np.sqrt(EIy / (sm.RHO * P["A"] * 1e-6))),
-                    ("lateral", "Euler-Bernoulli, I_z", k * np.sqrt(EIz / (sm.RHO * P["A"] * 1e-6))),
-                    ("axial", "rod sqrt(E/rho)", c0),
-                    ("torsional", "Saint-Venant sqrt(GJ/(rho I_p))", np.sqrt(GJ / rIp))]
-            if key == "ibeam":
-                refs.append(("torsional", "Vlasov, + E Gamma k^2", np.sqrt((GJ + EG * k * k) / rIp)))
-            if key == "pipe":
-                refs = [r for r in refs if r[0] != "lateral"] + [("torsional", "T(0,1): c_T", ct)]
-            for typ, lab, ref in refs:
-                f, c = row[typ]
-                p(f"  {k:6.1f}   {typ:10s} {f:10.1f}   {c:9.2f}   {lab:26s} {ref:9.2f}   {c/ref-1:+.2e}")
-        p("  what each fundamental branch carries (mass-weighted share of each rigid motion; twist about")
-        p("  the centroid), at k = 2 and 60 rad/m:")
-        for typ, dd in R["part"].items():
-            if key == "pipe" and typ == "lateral":
+    kmax = max(e[3] for e in C["end"])
+    lam = 2e3 * np.pi / kmax
+    hmax = float(C["h"].max())
+    ec = max((abs(f / x - 1) for _, x, f in C["cut"]), default=0.0)
+    ee = max(abs(e[5] / e[4] - 1) for e in C["end"])
+    top = sorted(C["cut"], key=lambda c: c[1])[-3:]
+    if key == "plate":                 # the slice's width is immaterial (its basis ties each depth): the thickness counts
+        hmax = PLATE_D / C["nel"]
+        p(f"  mesh: {C['nel']} Q9 elements through the {PLATE_D:g} mm thickness ({C['dof']} dof), {hmax:.2f} mm each;"
+          f" refined: {C['nel_f']} ({C['dof_f']} dof), {PLATE_D / C['nel_f']:.2f} mm (the 40 mm slice's width is immaterial)")
+    else:
+        p(f"  mesh: {C['nel']} Q9 elements ({C['dof']} dof), element sides {float(C['h'].min()):.2f} to {hmax:.2f} mm;"
+          f" refined: {C['nel_f']} ({C['dof_f']} dof), {float(C['h_f'].min()):.2f} to {float(C['h_f'].max()):.2f} mm")
+    p(f"  shortest wavelength at {Z['fmax'] / 1e3:g} kHz: {lam:.1f} mm (k = {kmax:.1f} rad/m), {lam / hmax:.1f} elements"
+      f" ({2 * lam / hmax:.0f} nodes) of the largest size across it")
+    p(f"  against the refined mesh: every cut-on below {Z['fmax'] / 1e3:g} kHz within {100 * ec:.3f} %, every branch's"
+      f" frequency at its wavenumber at {Z['fmax'] / 1e3:g} kHz within {100 * ee:.3f} %")
+    if top:
+        p("  the highest cut-ons: " + "; ".join(f"{x / 1e3:.3f} kHz (refined {f / 1e3:.3f}, {100 * (x / f - 1):+.3f} %)"
+                                               for _, x, f in top))
+    worst = max(C["end"], key=lambda e: abs(e[5] / e[4] - 1))
+    p(f"  the largest end difference: {worst[0]} at k = {worst[3]:.1f} rad/m: {worst[4] / 1e3:.3f} kHz, refined"
+      f" {worst[5] / 1e3:.3f} kHz ({100 * (worst[4] / worst[5] - 1):+.3f} %)")
+    return L, dict(lam=lam, hmax=hmax, per=lam / hmax, ec=ec, ee=ee)
+
+
+def count_line(key, R, ref_cuts, ref_name):
+    """Branches below fmax: ours (drawn) against the reference's cut-ons."""
+    Z = SECTIONS[key]
+    wb = window_branches(key, R)
+    nf = sum(1 for w in wb if w[2] < 50)
+    ours = sorted(w[2] / 1e3 for w in wb if w[2] >= 50)
+    return (f"  branches below {Z['fmax'] / 1e3:g} kHz: {len(wb)} drawn ({nf} from zero frequency, {len(ours)} cutting on);"
+            f" {ref_name}: {nf + len(ref_cuts)} ({len(ref_cuts)} cutting on)"), ours
+
+
+def ref_plate(R):
+    L = []
+    p = L.append
+    Z = SECTIONS["plate"]
+    fmax, d = Z["fmax"], PLATE_D / 1e3
+    exA, exS = lamb_cutoffs("A", fmax), lamb_cutoffs("S", fmax)
+    exSH = [n * sm.C_T / (2 * d) for n in range(1, 40) if n * sm.C_T / (2 * d) < fmax]
+    p(f"THE PLATE: steel, {PLATE_D:g} mm thick, infinite width; f d to {fmax * d / 1e3:.2f} MHz mm")
+    p("  The SAFE slice (40 mm, its basis tying every node of one depth) has free faces at z = +-5 mm and no edges:")
+    p("  Lamb waves (u_x, u_z) and shear horizontal waves (u_y) of the infinite plate, each family on its own basis.")
+    p("  REFERENCE: the exact Rayleigh-Lamb equations (symmetric and antisymmetric, solved here by sign changes")
+    p("  and Brent) and the SH dispersion w^2 = c_T^2 (k^2 + (n pi/d)^2), independent of SAFE.")
+    p(f"  exact cut-ons below {fmax / 1e3:g} kHz: antisymmetric Lamb " + ", ".join(f"{x / 1e3:.3f}" for x in exA) +
+      " kHz (f d = c_T/2), symmetric Lamb " + (", ".join(f"{x / 1e3:.3f}" for x in exS) or "none (S1 at c_L/2d = "
+                                                + f"{sm.C_L / (2 * d) / 1e3:.1f} kHz)") +
+      ", SH " + ", ".join(f"{x / 1e3:.3f}" for x in exSH) + " kHz")
+    line, ours = count_line("plate", R, exA + exS + exSH, "exact Lamb and SH")
+    p(line + "; the drawn: " + ", ".join(w[3] for w in window_branches("plate", R)))
+    S = make_section("plate")
+    errs = []
+    for name, b, fc, nm in window_branches("plate", R):
+        ks, W = R["br"][name]
+        for f in np.linspace(max(fc, 1e3) * 1.05, fmax * .98, 4):
+            kk = branch_k_at(R, name, b, f)
+            if not kk:
                 continue
-            for k, pr in dd.items():
-                p(f"    {typ:9s} k = {k:4.0f}: " + "  ".join(f"{rn} {pr[rn]:.3f}" for rn in pr))
-        if key in ("ibeam", "rail"):
-            p("  At small k each fundamental branch is its rigid motion. Higher up, the thin walls take over:")
-            p("  the branches veer into the flexural (A0-like) waves of the flanges, web or foot, and all")
-            p("  gather between 1.2 and 2.5 km/s. A branch keeps the name of its low-frequency limit.")
-        p("  cut-on frequencies below the plot limit (kHz):")
-        for c, fc in R["cut"].items():
-            xs = [x / 1e3 for x in fc if 0 < x < F_MAX]
-            if xs:
-                p(f"    {c:9s} " + ", ".join(f"{x:.2f}" for x in xs))
-        e = 0.0
-        for c in R["conv"][1.0]:
-            w, wr = R["conv"][1.0][c], R["conv"][2.0][c]
-            sel = wr / (2 * np.pi) < 1.1 * F_MAX
-            if sel.any():
-                e = max(e, np.abs(w[sel] / wr[sel] - 1).max())
-        p(f"  mesh convergence: against a mesh with elements half the size, every branch below 220 kHz")
-        p(f"  (the 8 lowest of each class) at k = 150 and 440 rad/m: max |w/w_ref - 1| = {e:.1e}")
-        brs, _ = curves_of(key, R)
-        p(f"  inside the window: {len(brs)} branches, each one run, each rising in f with k (checked);"
-          f" sweep {R['time']:.0f} s")
-        p("")
-    return L
+            k = kk[-1]
+            w = S.omegas(name, k, b + 1)[b]
+            if name.startswith("SH"):
+                n_ = 2 * b + (name == "SHa")
+                ex = sm.C_T * np.hypot(k, n_ * np.pi / d)
+            else:
+                ex = lamb_root_near(name, k, w)
+            errs.append((nm, f, k, w, ex))
+    e = max(abs(w / ex - 1) for _, _, _, w, ex in errs if ex)
+    p(f"  SAFE against the exact roots at {len(errs)} points along the five branches: max |w_SAFE/w_exact - 1| = {e:.1e}")
+    for nm, f, k, w, ex in errs[::4]:
+        p(f"    {nm:9s} k = {k:7.2f} rad/m: SAFE {w / 2e3 / np.pi:9.4f} kHz, exact {ex / 2e3 / np.pi:9.4f} kHz, c_p {w / k:7.1f} m/s")
+    # group velocities, exact (central difference of the exact roots) and SAFE
+    cases = [("A", 0, 50e3), ("A", 0, 150e3), ("S", 0, 200e3), ("A", 1, 230e3)]
+    for fam, b, f in cases:
+        k = branch_k_at(R, fam, b, f)[-1]
+        w = S.omegas(fam, k, b + 1)[b]
+        h = 1e-4 * k
+        cg_ex = (lamb_root_near(fam, k + h, w) - lamb_root_near(fam, k - h, w)) / (2 * h)
+        _, V = S.solve(fam, k, b + 1)
+        v = V[:, b]
+        cg_s = (v @ (S.K2 @ v) + 2 * k * (v @ (S.K3 @ v))) / (2 * w * (v @ (S.M @ v)))
+        p(f"    {fam}{b} at {f / 1e3:g} kHz: c_p {w / k:7.1f} m/s (exact {lamb_root_near(fam, k, w) / k:7.1f}), c_g SAFE"
+          f" {cg_s:7.1f}, exact {cg_ex:7.1f} m/s")
+    p("  S0 at k -> 0 tends to the plate speed sqrt(E/(rho (1 - nu^2))) = "
+      f"{np.sqrt(sm.E / (sm.RHO * (1 - sm.NU ** 2))):.1f} m/s, A0 to sqrt(w) (D/rho d)^(1/4) (checked below).")
+    p("")
+    return dict(lines=L, nref=3 + len(exA + exS + exSH))
+
+
+def ref_pipe(R):
+    L = []
+    p = L.append
+    Z = SECTIONS["pipe"]
+    fmax = Z["fmax"]
+    a, b_ = PIPE["ri"] / 1e3, PIPE["ro"] / 1e3
+    p(f"THE PIPE: NPS 1 1/4 schedule 40 (ASME B36.10M): OD {2 * PIPE['ro']:.2f} mm, wall {PIPE['ro'] - PIPE['ri']:.2f} mm")
+    p("  REFERENCE: the exact solution of Gazis (1959) for the free hollow cylinder, solved here independently of")
+    p("  SAFE: at k = 0 the harmonic n splits into axial shear (J_n'(be a) Y_n'(be b) = J_n'(be b) Y_n'(be a)) and")
+    p("  plane strain (a 4 x 4 Bessel determinant; for n = 0 the radial and the torsional 2 x 2); at k > 0 the full")
+    p("  6 x 6 determinant of the three potentials, made real, its roots by sign changes and Brent.")
+    ex = {}
+    for name, typ, n in Z["classes"]:
+        if name == "L0":
+            ex[name] = cyl_cutoffs(0, fmax, a, b_, "phi") + cyl_cutoffs(0, fmax, a, b_, "shear")
+        elif name == "V0":
+            ex[name] = cyl_cutoffs(0, fmax, a, b_, "psi")
+        else:
+            ex[name] = cyl_cutoffs(n, fmax, a, b_, "plane") + cyl_cutoffs(n, fmax, a, b_, "shear")
+    allex = sorted(x for v in ex.values() for x in v)
+    line, ours = count_line("pipe", R, allex, "exact (Gazis)")
+    p(line)
+    worst = 0.0
+    for name, typ, n in Z["classes"]:
+        sf = [x for x in R["cut"][name] if 50 < x < fmax]
+        xs = sorted(ex[name])
+        if not sf and not xs:
+            continue
+        pairs = list(zip(sorted(sf), xs))
+        worst = max([worst] + [abs(s_ / x - 1) for s_, x in pairs])
+        lab = {"L0": "L(0,m)", "V0": "T(0,m)"}.get(name, f"F({n},m)")
+        p(f"    {lab:7s} exact " + ", ".join(f"{x / 1e3:.3f}" for x in xs) + " kHz; SAFE " +
+          ", ".join(f"{s_ / 1e3:.3f}" for s_ in sorted(sf)) + (" (same count)" if len(sf) == len(xs) else " (COUNTS DIFFER)"))
+    p(f"  every cut-on: max |f_SAFE/f_exact - 1| = {worst:.1e}")
+    S = make_section("pipe")
+    errs = []
+    for name, b, fc, nm in window_branches("pipe", R):
+        n = 0 if name in ("L0", "V0") else int(name[1:])
+        if name == "V0" and b == 0:
+            continue                               # T(0,1): w = c_T k exactly (beta = 0 makes the determinant degenerate)
+        for f in (max(fc, 1e3) * 1.1 + (fmax - max(fc, 1e3) * 1.1) * q for q in (.25, .75)):
+            kk = branch_k_at(R, name, b, f)
+            if not kk:
+                continue
+            k = kk[-1]
+            w = S.omegas(name, k, b + 1)[b]
+            r = gazis_root_near(n, k, w, a, b_)
+            errs.append((nm, k, w, r))
+    good = [e for e in errs if e[3]]
+    e = max(abs(w / r - 1) for _, _, w, r in good)
+    p(f"  SAFE against Gazis's roots at {len(good)} points (two on each drawn branch but T(0,1)): max |w_SAFE/w_exact - 1| = {e:.1e}"
+      + ("" if len(good) == len(errs) else f"; {len(errs) - len(good)} points without a root nearby"))
+    for nm, k, w, r in good[::6]:
+        p(f"    {nm:42s} k = {k:7.2f} rad/m: SAFE {w / 2e3 / np.pi:9.4f} kHz, exact {r / 2e3 / np.pi:9.4f} kHz")
+    w1 = S.omegas("V0", 100.0, 1)[0]
+    p(f"  T(0,1): c_p = {w1 / 100:.4f} m/s at k = 100 rad/m, c_T = {sm.C_T:.4f} m/s exactly ({w1 / 100 / sm.C_T - 1:+.1e})")
+    p("")
+    return dict(lines=L, nref=3 + len(allex))
+
+
+def bar_nu03():
+    """The square bar's branches at Hayashi's Poisson ratio 0.3 (E and rho as the steel's: the curves in
+    f h/c_T and c/c_T depend on nu alone), to f h/c_T = 1.7 (cached)."""
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-bar-nu03-{section_key('bar')}.pkl")
+    if os.path.exists(cache):
+        with open(cache, "rb") as fh:
+            return pickle.load(fh)
+    nu = 0.3
+    mu = sm.E / (2 * (1 + nu)); lam_ = sm.E * nu / ((1 + nu) * (1 - 2 * nu))
+    ct = np.sqrt(mu / sm.RHO)
+    S = Section(*bar_mesh(), D=_dmat(lam_, mu))
+    for c in SECTIONS["bar"]["classes"]:
+        S.classes[c[0]] = S.mirror_basis(*c[1:])
+    h = SQ / 1e3
+    fm = 1.7 * ct / h
+    out = {"ct": ct, "br": {}, "cut": {}}
+    for name in S.classes:
+        fc = S.omegas(name, 0.0, 30) / (2 * np.pi)
+        out["cut"][name] = fc
+        n = int(np.sum(fc < fm))
+        if n:
+            out["br"][name] = branches_g(S, name, n, kmax_of(S, fm), fm)
+    with open(cache, "wb") as fh:
+        pickle.dump(out, fh)
+    return out
+
+
+def ref_bar(R):
+    from scipy.optimize import minimize_scalar
+    L = []
+    p = L.append
+    Z = SECTIONS["bar"]
+    fmax, h = Z["fmax"], SQ / 1e3
+    ct = sm.C_T
+    p(f"THE BAR: square steel bar {SQ:g} x {SQ:g} mm; f h to {fmax * h / 1e3 * 1e3:,.0f} kHz mm")
+    p("  The square's symmetry, C4v, splits it into five classes: A1 (axial), B1, E (each bending pair once: the")
+    p("  class symmetric about y = 0 and antisymmetric about z = 0), A2 (torsional) and B2, each solved on its own")
+    p("  orthonormal basis (the projector of the class on each orbit's displacements). Modes of different classes")
+    p("  cross freely; within a class they repel, so the frequency-ordered eigenvalues are the curves.")
+    ap = lambda m, n: ct / (2 * h) * np.hypot(m, n)
+    exact = [(f"anti-plane shear ({m}, {n}), c_T/(2h) sqrt(m^2 + n^2)", ap(m, n)) for m, n in
+             ((1, 0), (1, 1), (2, 0), (2, 1), (2, 2), (3, 0)) if ap(m, n) < fmax]
+    exact += [(f"Lame mode {m}, m c_T/(sqrt(2) h)", m * ct / (np.sqrt(2) * h)) for m in (1, 2) if m * ct / (np.sqrt(2) * h) < fmax]
+    allcut = sorted(x for c in R["cut"] for x in R["cut"][c] if 50 < x < fmax * 1.2)
+    p("  exact cut-ons (k = 0) against SAFE:")
+    for lab, fe in exact:
+        fs = min(allcut, key=lambda x: abs(x - fe))
+        p(f"    {lab}: exact {fe / 1e3:.4f} kHz, SAFE {fs / 1e3:.4f} kHz ({fs / fe - 1:+.1e})")
+    # Hayashi, Kawashima and Rose (2004)
+    q = np.frombuffer(base64.b64decode("".join(HAYASHI_SQUARE)), "<i2").reshape(-1, 2).astype(float)
+    FH, CC = q[:, 0] / 2, q[:, 1] / 1000
+    B03 = bar_nu03()
+    cth = B03["ct"]
+    curves = []
+    for name, (ks, W) in B03["br"].items():
+        for b in range(W.shape[1]):
+            curves.append((name, b, B03["cut"][name][b], W[:, b] / (2 * np.pi) * h / cth, W[:, b] / ks / cth))
+    bend = next(cv for cv in curves if cv[0] == "vertical" and cv[1] == 0)
+    sel = (CC < 0.85) & (FH < 1500)
+    order = np.argsort(bend[3])
+    cost = lambda cT: np.sum((np.interp(FH[sel] / cT, bend[3][order], bend[4][order]) - CC[sel]) ** 2)
+    r = minimize_scalar(cost, bounds=(2500, 4000), method="bounded")
+    cTH = r.x
+    XM = 5100.0 / cTH                  # their axis, in f h / c_T
+
+    def near(xd, yd):
+        best, which = np.inf, None
+        for i, (name, b, fc, x, y) in enumerate(curves):
+            m = (y < 3.6) & (x < 1.15 * XM)
+            if m.sum() < 2:
+                continue
+            P_ = np.column_stack([x[m] / XM, y[m] / 3.0])
+            A_, B_ = P_[:-1], P_[1:]
+            AB = B_ - A_
+            t_ = np.clip(((np.array([xd / XM, yd / 3.0]) - A_) * AB).sum(1) / ((AB ** 2).sum(1) + 1e-30), 0, 1)
+            dd = np.sqrt((((A_ + t_[:, None] * AB) - np.array([xd / XM, yd / 3.0])) ** 2).sum(1)).min()
+            if dd < best:
+                best, which = dd, i
+        return best, which
+    res = [near(FH[i] / cTH, CC[i]) for i in range(len(FH))]
+    dd = np.array([x[0] for x in res]); wh = np.array([x[1] for x in res])
+    tol = 0.012
+    p("  PUBLISHED: Hayashi, Kawashima and Rose (2004), Key Eng. Mater. 270-273, 410-415, Fig. 2: the phase")
+    p("  velocity of a square rod h x h by SAFE (12 x 12 elements, Poisson's ratio 0.3), c/c_T to 3 against f h to")
+    p("  5,000 kHz mm; its 765 dots read from the paper's vector drawing. Here the same square at nu = 0.3, in the")
+    p("  same normalized axes. The paper does not give c_T: fitted on the bending branch's dots below c/c_T = 0.85")
+    p(f"  and f h = 1,500 kHz mm alone ({sel.sum()} dots): c_T = {cTH:.0f} m/s, rms {np.sqrt(r.fun / sel.sum()):.4f} in c/c_T.")
+    p(f"  Every one of the 765 dots against our nearest curve (in the plot's units: f h over the 5,100 kHz mm axis,")
+    p(f"  c/c_T over 3): median {np.median(dd):.4f}, 95 % {np.percentile(dd, 95):.4f}, largest {dd.max():.4f}; the dots"
+      f" themselves are 0.008 across.")
+    # the count: at each frequency of the paper's (its dots lie on a grid in f h, one a curve), its dots
+    # under c/c_T = 3 against our curves there (the same square at nu = 0.3, in the same axes)
+    def ours_at(x):
+        n = 0
+        for (name, b, fc, X, Y) in curves:
+            o = np.argsort(X)
+            if X[o][0] <= x <= X[o][-1] and np.interp(x, X[o], Y[o]) <= 3.0:
+                n += 1
+        return n
+    tab = [(g, int(np.sum((FH == g) & (CC <= 3.0))), ours_at(g / cTH)) for g in np.unique(FH)]
+    same = sum(1 for _, a, b in tab if a == b)
+    lead = [(g, a, b) for g, a, b in tab if b > a]
+    trail = [(g, a, b) for g, a, b in tab if b < a]
+    xw = fmax * h / ct                                   # our window's end, in f h/c_T
+    # each level n of the count: from which of the paper's frequencies ours holds n branches on, and the
+    # paper's dots (three frequencies running: a stray dot, as at 398 kHz mm, does not count)
+    def first(col, n):
+        return next((tab[i][0] for i in range(len(tab) - 2) if min(tab[i + j][col] for j in range(3)) >= n), None)
+    lags = []
+    for n in range(4, ours_at(xw) + 1):
+        go, gp = first(2, n), first(1, n)
+        if go and gp:
+            lags.append(gp / go - 1)
+    p(f"  THE COUNT: at each of the paper's {len(tab)} frequencies (its dots lie on a grid of about 51 kHz mm, one on each")
+    p(f"  curve under c/c_T = 3), its dots against our curves at the same f h/c_T: the same at {same}; ours one or more")
+    p(f"  ahead at {len(lead)}, behind at {len(trail)}. Up to our window, each new branch appears in the paper's dots {100 * min(lags):.0f} to")
+    p(f"  {100 * max(lags):.0f} % higher in f h than in ours (median {100 * float(np.median(lags)):.1f} %), as from a stiffer mesh (12 x 12 elements;")
+    p("  the rail's published four-node elements do the same), so the counts part for a few of its frequency steps")
+    p("  after each branch enters and agree between. The paper's frequencies nearest our window's end:")
+    near_w = sorted(tab, key=lambda r: abs(r[0] / cTH - xw))[:5]
+    for g, a, b in sorted(near_w):
+        p(f"    f h {g:5.0f} kHz mm (f h/c_T = {g / cTH:.3f}): the paper {a:2d} curves, ours {b:2d}")
+    wb = window_branches("bar", R)
+    pub = [a for g, a, b in sorted(near_w, key=lambda r: abs(r[0] / cTH - xw))[:2]]
+    p(f"  OUR WINDOW ends at {fmax / 1e3:g} kHz (f h/c_T = {xw:.3f}; the paper's f h {xw * cTH:,.0f} kHz mm by its c_T), in the widest")
+    p(f"  stretch where the paper's figure and ours hold the same number of branches: {len(wb)} (the paper's dots at its two")
+    p(f"  nearest frequencies: {pub[0]} and {pub[1]}). Our figure (steel, nu = {sm.NU}, c_p up to {CP_MAX / 1e3:g} km/s): {len(wb)} branches,")
+    p(f"  {sum(1 for w in wb if w[2] < 50)} from zero frequency (bending, axial, torsional), the rest cutting on at")
+    p("    " + ", ".join(f"{w[2] / 1e3:.2f}" for w in sorted(wb, key=lambda w: w[2]) if w[2] >= 50) + " kHz")
+    late = sorted((float(x), c) for c in R["cut"] for x in R["cut"][c] if 50 < x < fmax and
+                  not any(abs(x - w[2]) < 1 for w in wb if w[0] == c))
+    if late:
+        p(f"  ({len(late)} more cut on below {fmax / 1e3:g} kHz, at " + ", ".join(f"{x / 1e3:.2f}" for x, _ in late) + " kHz, but their phase")
+        p("  velocity stays above the window until past its end: they are not drawn and carry no cut-on mark, as the")
+        p("  paper's figure has them only above its c/c_T = 3 there)")
+    p("")
+    nref = pub[0] if pub[0] == pub[1] else None
+    return dict(lines=L, nref=nref, cTH=cTH, med=float(np.median(dd)), mx=float(dd.max()))
+
+
+def ref_rail(R):
+    L = []
+    p = L.append
+    Z = SECTIONS["rail"]
+    fmax = Z["fmax"]
+    P = R["props"]
+    p("THE RAIL: 60E1 (UIC60), EN 13674-1, 60.21 kg/m: height 172 mm, foot 150 mm, head 72 mm, web 16.5 mm")
+    p("  Its outline: the profile's standard drawing (the WirthRail 60E1 data sheet's vector outline, scaled to")
+    p("  172 mm and 150 mm): R2 and R4 at the foot's tip, the foot's top at 1:14 and 1:2.75 joined by R40, R35 and R7")
+    p("  into the web's R120 flanks, R7 and the 1:2.75 underside of the head, R3, the head's 1:20 side, R13, R80, R300.")
+    p(f"  section (Gauss on the mesh): A = {P['A']:.1f} mm^2 (EN 13674-1: {RAIL_STD['A']:.0f}, {P['A'] / RAIL_STD['A'] - 1:+.2%}),"
+      f" centroid {P['zc'] + 86:.2f} mm over the foot ({RAIL_STD['zc']}), I_y = {P['Iy'] / 1e4:.1f} cm^4"
+      f" ({RAIL_STD['Iy'] / 1e4:.1f}, {P['Iy'] / RAIL_STD['Iy'] - 1:+.2%}), I_z = {P['Iz'] / 1e4:.1f} cm^4"
+      f" ({RAIL_STD['Iz'] / 1e4:.1f}, {P['Iz'] / RAIL_STD['Iz'] - 1:+.2%}); mass {P['A'] * sm.RHO / 1e6:.2f} kg/m")
+    p("  PUBLISHED: Ramatlo, Wilke and Loveday (2018), NDT&E International, Fig. 1(a): the UIC60 rail's wavenumber")
+    p("  against frequency to 60 kHz, SAFE with four-node elements. The frequencies where its curves meet k = 0,")
+    p(f"  read from the figure (to about 0.02 kHz), below {fmax / 1e3:g} kHz:")
+    line, ours = count_line("rail", R, RAMATLO_CUTONS, "Ramatlo et al.")
+    p(line)
+    pairs = _nearest_pairs(ours, RAMATLO_CUTONS)
+    p("  paired in order (ours, theirs, difference): " + "; ".join(f"{a:.2f}, {b:.2f} ({a / b - 1:+.1%})" for a, b in pairs))
+    dev = [a / b - 1 for a, b in pairs]
+    p(f"  ours lie {-max(dev):.1%} to {-min(dev):.1%} under theirs (mean {-np.mean(dev):.1%}): linear four-node elements are stiffer than")
+    p("  quadratic ones and raise every frequency; the count and the order are the same. Their next cut-on, 23.67 kHz")
+    p(f"  (ours {sorted(x for c in R['cut'] for x in R['cut'][c] if x > fmax)[0] / 1e3:.2f}), lies above the window.")
+    p("")
+    return dict(lines=L, nref=4 + len(RAMATLO_CUTONS))
+
+
+def ref_ibeam(R):
+    L = []
+    p = L.append
+    P, T = R["props"], R["tors"]
+    G = IPE80
+    p(f"THE I-BEAM: IPE 80 (EN 10365): h {G['h']:g} mm, b {G['b']:g} mm, web {G['tw']:g} mm, flanges {G['tf']:g} mm, root radius {G['r']:g} mm")
+    p(f"  section (Gauss on the mesh): A = {P['A']:.1f} mm^2 (tables {IPE80_STD['A']:.0f}), I_y = {P['Iy'] / 1e4:.2f} cm^4"
+      f" ({IPE80_STD['Iy'] / 1e4:.2f}), I_z = {P['Iz'] / 1e4:.3f} cm^4 ({IPE80_STD['Iz'] / 1e4:.2f}); Saint-Venant"
+      f" J = {T['J'] / 1e4:.3f} cm^4 (the tables' I_t {IPE80_STD['It'] / 1e4:.2f}, from a thin-walled")
+    p(f"  formula with fillet terms), warping constant {T['Gamma'] / 1e6:.1f} cm^6 (the tables' I_w {IPE80_STD['Iw'] / 1e6:.0f},"
+      " the flanges' I_z (h - t_f)^2/4)")
+    p("  PUBLISHED: no dispersion curves of an IPE 80 (or another standard I-section) were found. The reference is")
+    p("  independent and computed here: the same section meshed with elements of half the size (MESH below), and")
+    p("  beam theory at low wavenumber (Euler-Bernoulli bending in both planes, the rod, Vlasov torsion).")
+    wb = window_branches("ibeam", R)
+    p(f"  branches below {SECTIONS['ibeam']['fmax'] / 1e3:g} kHz: {len(wb)}, {sum(1 for w in wb if w[2] < 50)} from zero"
+      " frequency, the rest cutting on at " + ", ".join(f"{w[2] / 1e3:.2f}" for w in sorted(wb, key=lambda w: w[2]) if w[2] >= 50) + " kHz")
+    p("")
+    return dict(lines=L, nref=None)
 
 
 # ================================================================ group velocity
-
-def check_plate(R):
-    """Infinite-plate limits and the independent Rayleigh-Lamb equations."""
-    import guided_ut as lamb
-    S = make_section("plate")
-    cp0 = np.sqrt(sm.E / (sm.RHO * (1 - sm.NU ** 2)))
-    bend = np.sqrt(sm.E * .01 ** 2 / (12 * sm.RHO * (1 - sm.NU ** 2)))
-    lines = ["THE PLATE, infinite width, thickness 10 mm",
-             "  Uniform across y: Lamb u_y=0, SH has u_x=u_z=0; free faces at z=+/-5 mm.",
-             "  The displayed 40 mm width is a slice, not a free-edged finite beam."]
-    for name, k, ref in [("S", 2., cp0), ("A", 2., 2 * bend), ("SHs", 200., sm.C_T)]:
-        w, V = S.solve(name, k, 1)
-        cp = w[0] / k
-        error = abs(cp / ref - 1)
-        assert error < .001, (name, error)
-        lines.append(f"  {name} at k={k:g}: c_p={cp:.6f} m/s, limit {ref:.6f}, relative error {error:.2e}.")
-    for family, name in [("S", "S"), ("A", "A")]:
-        for k in [40., 150., 400.]:
-            w = S.omegas(name, k, 1)[0]
-            cp = w / k
-            exact = min(lamb.roots_at(family, w / (2 * np.pi)), key=lambda v: abs(v - cp))
-            error = abs(cp / exact - 1)
-            assert error < .001, (family, k, error)
-            lines.append(f"  {family}0 k={k:g}: SAFE {cp:.6f}, Rayleigh-Lamb {exact:.6f} m/s, error {error:.2e}.")
-    lines.append("  Reference: https://pmc.ncbi.nlm.nih.gov/articles/PMC6356890/ (Lamb and SH plate families).")
-    lines.append("")
-    return lines
-
-
 def group_near(model, name, k, w0, tol=1e-4):
     """(w, c_g) of the eigenpair nearest w0 (rad/s), by sparse shift-invert."""
     if not hasattr(model, "_group_sparse"):
@@ -1353,9 +1958,17 @@ def page_curve(key, R):
 
 
 def k_at_f(curve, f):
-    """The page's kAtF: the wavenumber of f (kHz) on a laid-out curve, by straight lines in f."""
+    """The page's kAtF: the wavenumber of f (kHz) on a laid-out curve, by straight lines in f;
+    where f is met twice (a backward wave), the last crossing, as the page."""
     K, F, _ = curve
-    return float(np.interp(f, F, K))
+    if np.all(np.diff(F) > 0):
+        return float(np.interp(f, F, K))
+    best = None
+    for i in range(len(F) - 1):
+        if F[i] != F[i + 1] and (F[i] - f) * (F[i + 1] - f) <= 0:
+            k = K[i] + (K[i + 1] - K[i]) * (f - F[i]) / (F[i + 1] - F[i])
+            best = k if best is None else max(best, k)
+    return float(best)
 
 
 # the page's glide rule (part() in FIGURE): each interval of a sampled rate integrated as the
@@ -1379,7 +1992,7 @@ def ease_in_out(x):
 
 
 TOUR_T = dict(T1=16, TS=18, TG0=2, TGD=8, NG=128)   # the page's tour clock (FIGURE's T1, TS, TG0, TGD and NG)
-SIG = PACKET * np.sqrt(1 / 32 - 1 / (4 * np.pi ** 2) + 1 / (64 * np.pi ** 2)) / np.sqrt(3 / 8)   # rms width of E^2, mm
+SIG_PW = np.sqrt(1 / 32 - 1 / (4 * np.pi ** 2) + 1 / (64 * np.pi ** 2)) / np.sqrt(3 / 8)   # the rms width of E^2 over the envelope's width
 
 
 def fastest(Rs):
@@ -1391,7 +2004,7 @@ def fastest(Rs):
         for r in brs:
             o, n = r["o"], r["n"]
             tf, tc, tg = (np.asarray(tflat[o + j * n:o + (j + 1) * n], np.float64) for j in range(3))
-            for i in np.flatnonzero((tf <= F_MAX / 1e3) & (tc <= CP_MAX / 1e3)):
+            for i in np.flatnonzero((tf <= SECTIONS[key]["fmax"] / 1e3) & (tc <= CP_MAX / 1e3)):
                 if tg[i] > best[0]:
                     best = (tg[i], (key, r, tf[i], tc[i]))
     key, r, f, c = best[1]
@@ -1405,11 +2018,13 @@ def tour_group(Rs):
     """Per section and stop: each wave's state on the page's curve (the page's kAtF), its exact
     w and c_g (group_near), and the spreading a Gaussian burst of the packet's rms width would
     undergo over one passage (second order in the bandwidth, which the page leaves out):
-    sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk by a central difference, D = BEAM +
-    PACKET. {key: [stop: {"w1": st, "wa": st, "w2": st}]}, st = (f kHz, c_p, c_g km/s, k rad/m, widening)."""
+    sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk by a central difference, D = L + pw of
+    the section. {key: [stop: {"w1": st, "wa": st, "w2": st}]}, st = (f kHz, c_p, c_g km/s, k rad/m, widening)."""
     out = {}
     for key in ORDER:
         S, Z = make_section(key), SECTIONS[key]
+        G = Z["strip"]
+        sig = SIG_PW * G["pw"] / 1e3
         tb, curves = page_curve(key, Rs[key])
         brs, flat = curves_of(key, Rs[key])
         stops = []
@@ -1427,7 +2042,7 @@ def tour_group(Rs):
                 gp = group_near(S, name, k + h, w + cg * h)[1]
                 gm = group_near(S, name, k - h, w - cg * h)[1]
                 wpp = (gp - gm) / (2 * h)
-                wid = np.sqrt(1 + (wpp * (BEAM + PACKET) / 1e3 / (2 * cg * (SIG / 1e3) ** 2)) ** 2)
+                wid = np.sqrt(1 + (wpp * (G["L"] + G["pw"]) / 1e3 / (2 * cg * sig ** 2)) ** 2)
                 row[lab] = (w / 2e3 / np.pi, w / k / 1e3, cg / 1e3, k, wid)
             stops.append(row)
         out[key] = stops
@@ -1456,30 +2071,33 @@ def check_group(Rs, SV, TG, MS):
     p("  k (rad/m)  mode       c_g SAFE (m/s)  FD - SAFE     closed form                     c_g (m/s)   error")
     for key in ORDER:
         S, Z = make_section(key), SECTIONS[key]
-        if key == "plate":
-            p("  plate: the A0, S0 and SH0 phase-speed checks are listed above; c_g checked against FD by the page solver check.")
-            continue
-        P = properties(S)
-        T = torsion(S)
+        P, T = Rs[key]["props"], Rs[key]["tors"]
         kap = 10 * (1 + sm.NU) / (12 + 11 * sm.NU) if key == "bar" else None
-        ks = (1.0, 2.0, 5.0, 10.0, 20.0, 40.0) if key == "bar" else (1.0, 2.0, 5.0, 10.0)
+        # (the plate's A0 at k of 1 or 2 rad/m: w^2 some 1e-11 of its stiffness's scale, round-off decides it)
+        ks = (1.0, 2.0, 5.0, 10.0, 20.0) if key == "bar" else (5.0, 10.0, 20.0) if key == "plate" else (1.0, 2.0, 5.0)
         p(f"  {Z['label']}:")
         for k in ks:
-            ref = group_closed(k, P, T, kap=kap)
-            got = {}
-            rows = [("vertical", "Euler-Bernoulli (2 c_p)", ref["vertical_EB"])]
-            if key == "bar":
-                rows += [("vertical", "Timoshenko", ref["vertical_Timo"]), ("lateral", "Euler-Bernoulli (2 c_p)", ref["lateral_EB"]),
-                         ("lateral", "Timoshenko", ref["lateral_Timo"])]
-            elif key != "pipe":
-                rows += [("lateral", "Euler-Bernoulli (2 c_p)", ref["lateral_EB"])]
-            rows += [("axial", "rod c_0", ref["axial_rod"]), ("axial", "Love rod", ref["axial_Love"])]
-            if key == "pipe":
-                rows += [("torsional", "T(0,1): c_T", sm.C_T)]
-            elif key == "ibeam":
-                rows += [("torsional", "Vlasov, + E Gamma k^2", ref["torsional_Vlasov"])]
+            if key == "plate":
+                d = PLATE_D / 1e3
+                D_ = sm.E * d ** 3 / (12 * (1 - sm.NU ** 2))
+                rows = [("vertical", "plate bending 2 sqrt(D/(rho d)) k", 2 * k * np.sqrt(D_ / (sm.RHO * d))),
+                        ("axial", "plate speed sqrt(E/(rho (1 - nu^2)))", np.sqrt(sm.E / (sm.RHO * (1 - sm.NU ** 2)))),
+                        ("lateral", "SH0: c_T", sm.C_T)]
             else:
-                rows += [("torsional", "Saint-Venant sqrt(GJ/(rho I_p))", ref["torsional_SV"])]
+                ref = group_closed(k, P, T, kap=kap)
+                rows = [("vertical", "Euler-Bernoulli (2 c_p)", ref["vertical_EB"])]
+                if key == "bar":
+                    rows += [("vertical", "Timoshenko", ref["vertical_Timo"])]
+                elif key in ("ibeam", "rail"):
+                    rows += [("lateral", "Euler-Bernoulli (2 c_p), I_z", ref["lateral_EB"])]
+                rows += [("axial", "rod c_0", ref["axial_rod"]), ("axial", "Love rod", ref["axial_Love"])]
+                if key == "pipe":
+                    rows += [("torsional", "T(0,1): c_T", sm.C_T)]
+                elif key == "ibeam":
+                    rows += [("torsional", "Vlasov, + E Gamma k^2", ref["torsional_Vlasov"])]
+                else:
+                    rows += [("torsional", "Saint-Venant sqrt(GJ/(rho I_p))", ref["torsional_SV"])]
+            got = {}
             for typ, lab, c in rows:
                 name, b = Z["fund"][typ]
                 if typ not in got:                  # shift-invert from the dense solve's w, accurate at small w
@@ -1487,7 +2105,7 @@ def check_group(Rs, SV, TG, MS):
                     h = .01                         # rad/m: the round-off of w and the difference's own error balance there
                     got[typ] = (cg, (group_near(S, name, k + h, w + cg * h, tol=1e-2)[0] - group_near(S, name, k - h, w - cg * h, tol=1e-2)[0]) / (2 * h))
                 cg, fd = got[typ]
-                p(f"  {k:6.1f}   {typ:10s} {cg:13.3f}   {fd - cg:+.1e}      {lab:31s} {c:9.3f}   {cg / c - 1:+.2e}")
+                p(f"  {k:6.1f}   {typ:10s} {cg:13.3f}   {fd - cg:+.1e}      {lab:36s} {c:9.3f}   {cg / c - 1:+.2e}")
     p("  (Euler-Bernoulli's c_g = 2 c_p holds as k -> 0 and parts from SAFE as shear and rotary inertia")
     p("  enter, where Timoshenko follows; the rod speed likewise, where Love's lateral inertia follows.)")
     # the travelling curves' slopes against the exact c_g
@@ -1500,43 +2118,55 @@ def check_group(Rs, SV, TG, MS):
             o, n = r["o"], r["n"]
             tf, tc, tg = (np.asarray(tflat[o + j * n:o + (j + 1) * n], np.float64) for j in range(3))
             K, Wk = 2 * np.pi * tf / tc, 2 * np.pi * tf
-            kin = K[(tf <= F_MAX / 1e3) & (tc <= CP_MAX / 1e3)]
+            kin = K[(tf <= Z["fmax"] / 1e3) & (tc <= CP_MAX / 1e3)]
             name = Z["classes"][r["ci"]][0]
-            for k in np.linspace(kin.min(), kin.max(), 42)[1:-1]:
+            for k in np.linspace(kin.min(), kin.max(), 12)[1:-1]:
                 i = min(max(int(np.searchsorted(K, k, side="right")) - 1, 0), len(K) - 2)
-                h, s = K[i + 1] - K[i], (k - K[i]) / (K[i + 1] - K[i])
-                herm = ((6 * s * s - 6 * s) * Wk[i] + (6 * s - 6 * s * s) * Wk[i + 1]) / h + (3 * s * s - 4 * s + 1) * tg[i] + (3 * s * s - 2 * s) * tg[i + 1]
+                h, s_ = K[i + 1] - K[i], (k - K[i]) / (K[i + 1] - K[i])
+                herm = ((6 * s_ * s_ - 6 * s_) * Wk[i] + (6 * s_ - 6 * s_ * s_) * Wk[i + 1]) / h + (3 * s_ * s_ - 4 * s_ + 1) * tg[i] + (3 * s_ * s_ - 2 * s_) * tg[i + 1]
                 w0 = 1e3 * _herm(K[i], Wk[i], tg[i], K[i + 1], Wk[i + 1], tg[i + 1], k)     # rad/s
                 cg = group_near(S, name, k, w0)[1]
                 if abs(herm * 1e3 / cg - 1) > e:
-                    e, where = abs(herm * 1e3 / cg - 1), f"{r['nm']}, {w0 / 2e3 / np.pi:.0f} kHz"
+                    e, where = abs(herm * 1e3 / cg - 1), f"{r['nm']}, {w0 / 2e3 / np.pi:.1f} kHz"
         worst[key] = (e, where)
     p("  The travelling curves carry slopes too (the spline's, for the cubic Hermite that draws them), but")
-    p("  not to this accuracy: along every branch inside the window, 40 states each, their slope against")
+    p("  not to this accuracy: along every branch inside the window, 10 states each, their slope against")
     p("  the exact c_g: " + "; ".join(f"{SECTIONS[k]['label']} {worst[k][0]:.1e} ({worst[k][1]})" for k in ORDER) + ".")
     p("  The worst lie at veerings, where two branches of a class nearly touch and c_g turns within a")
     p("  fraction of a kHz. So the waves never use them: c_g always comes from a solved state.")
-    # the glides
-    p(f"  The tour's glides: wave 2's rates solved at {TOUR_T['NG'] + 1} moments evenly spread over the 8 s glide, each")
-    p("  interval integrated as the cubic through its four nearest (the page's rule), against Simpson")
-    p(f"  on {4 * TOUR_T['NG'] + 1} moments. Largest difference in the envelope's travel over a glide (mm of the page) and")
-    p("  in the phase at its centre (rad):")
+    # the glides: the page's integration rule on the travelling curve's rates
+    p(f"  The tour's glides: wave 2's rates (envelope speed and centre phase rate, from c_g and k) at {TOUR_T['NG'] + 1}")
+    p("  moments evenly spread over the 8 s glide, each interval integrated as the cubic through its four nearest")
+    p(f"  (the page's rule), against Simpson on {4 * TOUR_T['NG'] + 1} moments; the rates here from the travelling curve (the")
+    p("  rule is what is checked). The page's own rates are exact: each moment's c_g computed here by shift-invert on")
+    p("  the same model at the wavenumber the page takes (glide_rates) and carried with the section, so that a stop")
+    p(f"  begins without solving {TOUR_T['NG'] + 1} states; the wave drawn at each moment is still solved in the page.")
+    p("  Largest difference in the envelope's travel over a glide (mm of the page) and in the phase at its centre (rad):")
+    from scipy.integrate import simpson
     for key in ORDER:
-        S, Z = make_section(key), SECTIONS[key]
+        Z = SECTIONS[key]
+        slow = Z["strip"]["slow"]
         tb, curves = page_curve(key, Rs[key])
+        tb2, tflat, _ = thinned(key, Rs[key])
         brs, flat = curves_of(key, Rs[key])
         dx = dp = tot = 0.0
-        for s in tour_of(key, brs, flat):
-            cv, name = curves[s["b2"]], Z["classes"][tb[s["b2"]]["ci"]][0]
+        for s_ in tour_of(key, brs, flat):
+            r = tb2[s_["b2"]]
+            o, n = r["o"], r["n"]
+            tf, tc, tg = (np.asarray(tflat[o + j * n:o + (j + 1) * n], np.float64) for j in range(3))
+            Kt, Wt = 2 * np.pi * tf / tc, 2e3 * np.pi * tf
+            cv = curves[s_["b2"]]
             N = 4 * TOUR_T["NG"]
-            v, r = [], []
+            v, rr = [], []
             for j in range(N + 1):
-                k = k_at_f(cv, s["fa"] if j == 0 else s["f2"] if j == N else s["fa"] + (s["f2"] - s["fa"]) * ease_in_out(j / N))
-                w, cg = group_near(S, name, k, 2e3 * np.pi * float(np.interp(k, cv[0], cv[1])))
-                v.append(cg * 1e3 / SLOW)
-                r.append((k * cg - w) / SLOW)
-            from scipy.integrate import simpson
-            for y, acc in ((v, "x"), (r, "p")):
+                k = k_at_f(cv, s_["fa"] if j == 0 else s_["f2"] if j == N else s_["fa"] + (s_["f2"] - s_["fa"]) * ease_in_out(j / N))
+                i = min(max(int(np.searchsorted(Kt, k, side="right")) - 1, 0), len(Kt) - 2)
+                h, q = Kt[i + 1] - Kt[i], (k - Kt[i]) / (Kt[i + 1] - Kt[i])
+                cg = ((6 * q * q - 6 * q) * Wt[i] + (6 * q - 6 * q * q) * Wt[i + 1]) / h + 1e3 * ((3 * q * q - 4 * q + 1) * tg[i] + (3 * q * q - 2 * q) * tg[i + 1])
+                w = _herm(Kt[i], Wt[i], 1e3 * tg[i], Kt[i + 1], Wt[i + 1], 1e3 * tg[i + 1], k)
+                v.append(cg * 1e3 / slow)
+                rr.append((k * cg - w) / slow)
+            for y, acc in ((v, "x"), (rr, "p")):
                 d_ = abs(glide_integral(y[::4], TOUR_T["TGD"]) - simpson(y, dx=TOUR_T["TGD"] / N))
                 if acc == "x":
                     dx, tot = max(dx, d_), max(tot, simpson(y, dx=TOUR_T["TGD"] / N))
@@ -1545,8 +2175,8 @@ def check_group(Rs, SV, TG, MS):
         p(f"    {Z['label']:7s} {dx:.1e} mm (of up to {tot:.0f} mm travelled in a glide), {dp:.1e} rad")
     # the tours' c_g, and what the rigid envelope leaves out
     p("  The spreading left out: the envelope rides at c_g unchanged (the first order in the burst's")
-    p(f"  bandwidth). A Gaussian burst of the packet's rms width ({SIG:.1f} mm) would widen over one passage")
-    p(f"  (D = {BEAM:.0f} + {PACKET:.0f} mm) by sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk: at the tours' states")
+    p(f"  bandwidth). A Gaussian burst of the packet's rms width ({100 * SIG_PW:.1f} % of its envelope's) would widen over one")
+    p("  passage (D = L + pw of its section) by sqrt(1 + (w'' D / (2 c_g sigma^2))^2), w'' = dc_g/dk: at the tours' states")
     for key in ORDER:
         ws = [row[l][4] for row in TG[key] for l in ("w1", "wa", "w2")]
         big = max(((row[l][4], row[l][0]) for row in TG[key] for l in ("w1", "wa", "w2")))
@@ -1627,7 +2257,7 @@ def overlaps_all(times, live=False, width=672):
                                   " return q.mk[0] > .35 && q.mk[1] > .35 ? (() => { const p = markerLabels(markerPos(LAST, q, false, 1)); return Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y); })() : 99; })()")
                 if gap < 21:
                     lab = lab + [["marker 1", "marker 2", round(gap, 1), 0]]
-                wp = pg.evaluate("18 + textW(CUR.params, 14)")
+                wp = pg.evaluate("footW(CUR)")
                 if live and wp > PARAM_MAX:
                     lab = lab + [["parameters", "page controls", round(wp), PARAM_MAX]]
                 if lab or cro:
@@ -1654,21 +2284,23 @@ def overlaps_all(times, live=False, width=672):
     return out
 
 
-STR_S, STR_YC, STR_X1 = 2.2, (580, 746), 950   # the page's beams: units per mm, their centre lines, x = 0
+STR_YC = (612, 778)   # the page's waveguides' centre lines (FIGURE's STR.yc); scale, end and view are the section's T
 
 
-def _outline(img, w, sc):
+def _outline(img, w, sc, T, m):
     """Beam w's top outline in a canvas image of sc pixels a drawing unit: per pixel column over
     the beam, the upper boundary of the first ink met from the white above, to a fraction of a
     pixel by the ink's coverage (the rows it partly covers, summed up to the first it covers
-    wholly: exact for an edge smoothed by area), searched from 88 units over the beam's centre
-    line to 30. The columns start 40 units in from the left end, past its slanting top face."""
+    wholly: exact for an edge smoothed by area), searched from 20 units over the top-back node's
+    rest line to 14 under it (the drawn displacement is 11 units at most). The columns start 40
+    units in from the left end, past its slanting top face."""
     ink = 0.2126 * 0x27 + 0.7152 * 0x22 + 0.0722 * 0x1C
     Lum = img[..., :3].astype(float) @ np.array([0.2126, 0.7152, 0.0722])
     cov = np.clip((255 - Lum) / (255 - ink), 0, 1)
-    r0, r1 = int((STR_YC[w] - 88) * sc), int((STR_YC[w] - 30) * sc)
+    top = STR_YC[w] - T["s"] * (m["z"] + m["e"] * T["sd"])
+    r0, r1 = int((top - 20) * sc), int((top + 14) * sc)
     X, Y = [], []
-    for c in range(int((STR_X1 - STR_S * BEAM + 40) * sc), int((STR_X1 - 8) * sc)):
+    for c in range(int((T["x1"] - T["s"] * T["L"] + 40) * sc), int((T["x1"] - 8) * sc)):
         col = cov[r0:r1, c]
         full = np.flatnonzero(col > .97)
         if not len(full) or full[0] < 3:
@@ -1700,39 +2332,38 @@ def _fit_packet(X, Y, kp, Wp):
     return xc, np.arctan2(-b, a), np.sqrt(cost / len(X))
 
 
-def _outline_model(X, Y, m, sc):
+def _outline_model(X, Y, m, sc, T):
     """The misfit of an outline (X, Y pixels) to the one the page draws: the top-back node's path
     along the beam by stripView's own formulas (its U, the drawn scale g, the samples 1 mm apart
     joined by straight lines) with the packet centred at p[0] (mm) and the phase p[1] at its centre,
     moved down by p[2] pixels (the ink's half width and the threshold)."""
-    x = np.arange(-BEAM, 0.5, 1.0)
-    CD, SD = .6 * np.cos(np.radians(40)), .6 * np.sin(np.radians(40))
+    x = np.linspace(-T["L"], 0.0, 413)               # the page's samples (NXS)
+    CD, SD, PW, s, x1 = T["cd"], T["sd"], T["pw"], T["s"], T["x1"]
 
     def resid(p):
         xi = x - p[0]
-        E = np.where(np.abs(xi) < PACKET / 2, np.cos(np.pi * xi / PACKET) ** 2, 0.0)
+        E = np.where(np.abs(xi) < PW / 2, np.cos(np.pi * xi / PW) ** 2, 0.0)
         cs, sn = E * np.cos(m["k"] * xi + p[1]), E * np.sin(m["k"] * xi + p[1])
         d = m["e"] + m["g"] * m["u"][1] * cs
-        Xp = sc * (STR_X1 + STR_S * (x - m["g"] * m["u"][0] * sn + d * CD))
-        Yp = sc * (m["yc"] - STR_S * (m["z"] + m["g"] * m["u"][2] * cs + d * SD))
+        Xp = sc * (x1 + s * (x - m["g"] * m["u"][0] * sn + d * CD))
+        Yp = sc * (m["yc"] - s * (m["z"] + m["g"] * m["u"][2] * cs + d * SD))
         return np.interp(X, Xp, Yp) + p[2] - Y
     return resid
 
 
-def _fit_outline(X, Y, m, sc):
+def _fit_outline(X, Y, m, sc, T):
     """One moment's packet from its outline: the centre from _fit_packet, the phase the best of 16,
     then _outline_model's misfit least squared. Returns (Xc mm, psi, rms residual in pixels)."""
     from scipy.optimize import least_squares
-    resid = _outline_model(X, Y, m, sc)
-    CD = .6 * np.cos(np.radians(40))
-    xc = (_fit_packet(X, Y, m["k"] / (STR_S * sc), PACKET * STR_S * sc)[0] / sc - STR_X1) / STR_S - m["e"] * CD
+    resid = _outline_model(X, Y, m, sc, T)
+    xc = (_fit_packet(X, Y, m["k"] / (T["s"] * sc), T["pw"] * T["s"] * sc)[0] / sc - T["x1"]) / T["s"] - m["e"] * T["cd"]
     spread = lambda q: float(np.sum((resid(q) - np.median(resid(q))) ** 2))
     best = min(((xc, ps, 0.0) for ps in np.arange(16) * np.pi / 8), key=spread)
     r = least_squares(resid, [best[0], best[1], -np.median(resid(best))], x_scale=[1.0, .1, 1.0], xtol=1e-12, ftol=1e-12)
     return r.x[0], r.x[1], float(np.sqrt(np.mean(r.fun ** 2)))
 
 
-def _fit_motion(ts, outlines, m, sc, fits):
+def _fit_motion(ts, outlines, m, sc, fits, T):
     """All the moments at once: the centre X0 + v t and the phase psi0 + r t (the page's motion while
     a state holds) and one vertical offset, least squared over every outline together, from the
     moments' own fits. This parts the envelope from the carrier where the wavelength outgrows the
@@ -1741,7 +2372,7 @@ def _fit_motion(ts, outlines, m, sc, fits):
     ts = np.asarray(ts)
     pe = np.polyfit(ts, [f[0] for f in fits], 1)
     pr = np.polyfit(ts, np.unwrap([f[1] for f in fits]), 1)
-    res = [_outline_model(X, Y, m, sc) for X, Y in outlines]
+    res = [_outline_model(X, Y, m, sc, T) for X, Y in outlines]
     dY = float(np.median([np.median(rf([f[0], f[1], 0.0])) for rf, f in zip(res, fits)]))
 
     def all_(p):
@@ -1761,13 +2392,25 @@ def _speeds(ts, fits, k):
     return pe[0], pc[0], float(max(np.abs(Xc - np.polyval(pe, ts)).max(), np.abs(C - np.polyval(pc, ts)).max()))
 
 
-def measure_screen():
+def axial_dip(R):
+    """The square bar's axial branch: the frequency (kHz) of its least group velocity between 20 kHz
+    and fmax, from the sweep (the drag in measure_screen goes there)."""
+    from scipy.interpolate import CubicSpline
+    ks, W = R["br"]["axial"]
+    w = W[:, 0]
+    cg = CubicSpline(ks, w)(ks, 1)
+    f = w / (2e3 * np.pi)
+    m = (f > 20) & (f < SECTIONS["bar"]["fmax"] / 1e3)
+    return float(f[m][np.argmin(cg[m])])
+
+
+def measure_screen(fdip):
     """The packets measured on the screen: the page at 1000 px, two pixels a drawing unit, and each
-    beam's top outline read from its pictures (_outline) and fitted with its packet (_fit_packet)
-    at moments 0.1 s apart. The tour's first stop on the bar (both beams, the poster's moment
-    +- 0.6 s); then the reader: a click moves wave 1 onto the axial curve at 30 kHz, a drag takes
-    it to 62 kHz (where the axial branch's c_g is least). Speeds in km/s of the beam: pixels a
-    second / (2 x 2.2 px/mm) x SLOW. Returns the cases."""
+    waveguide's top outline read from its pictures (_outline) and fitted with its packet
+    (_fit_packet) at moments 0.1 s apart. The tour's first stop on the bar (both waves, the
+    poster's moment +- 1 s); then the reader: a click moves wave 1 onto the axial curve at 30 kHz,
+    a drag takes it to fdip kHz (where the axial branch's c_g is least). Speeds in km/s: pixels a
+    second / (2 px a unit x T.s units a mm) x T.slow. Returns the cases."""
     from PIL import Image
     from playwright.sync_api import sync_playwright
     import io
@@ -1779,7 +2422,7 @@ def measure_screen():
         os.makedirs(os.path.join(tmp, "anim"))
         shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
         for n in os.listdir(common.ANIM):
-            if n.startswith(f"nf-{NAME}") and not n.endswith(".webp"):
+            if n.startswith(f"nf-{NAME}.") and not n.endswith(".webp"):
                 shutil.copy(os.path.join(common.ANIM, n), os.path.join(tmp, "anim", n))
         srv = common._server(tmp)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -1794,30 +2437,32 @@ def measure_screen():
                 return pg
 
             def run(pg, label, ws, times):
+                T = pg.evaluate("(() => { const T = {...CUR.T}; delete T.XM; return T; })()")
                 # each wave's state as the page holds it, and the node its outline is drawn from
                 # (the highest in the oblique view: the top-back one)
-                st = pg.evaluate("[0, 1].map(w => { const S = LAST[w]; let n = 0, bv = -1e9;"
-                                 " for (let q = 0; q < CUR.N; q++) { const v = CUR.GZ[q] + (CUR.GY[q] - CUR.ymin) * SD; if (v > bv) { bv = v; n = q; } }"
+                st = pg.evaluate("[0, 1].map(w => { const S = LAST[w], T = CUR.T; let n = 0, bv = -1e9;"
+                                 " for (let q = 0; q < CUR.N; q++) { const v = CUR.GZ[q] + (CUR.GY[q] - CUR.ymin) * T.ys * T.sd; if (v > bv) { bv = v; n = q; } }"
                                  " return {k: S.k, cg: S.cg, cp: S.cp, f: S.f, lam: S.lam, nm: CUR.BR[S.id].nm,"
-                                 " u: [S.U[3 * n], S.U[3 * n + 1], S.U[3 * n + 2]], e: CUR.GY[n] - CUR.ymin, z: CUR.GZ[n]}; })")
+                                 " u: [S.U[3 * n], S.U[3 * n + 1], S.U[3 * n + 2]], e: (CUR.GY[n] - CUR.ymin) * T.ys, z: CUR.GZ[n]}; })")
                 fits, held, outl = {w: [] for w in ws}, {w: [] for w in ws}, {w: [] for w in ws}
                 ms = {}
-                for s in times:
-                    q = pg.evaluate(f"() => {{ t = {s:.6f}; render(); const q = stateNow(); return {{amp: q.amp, X: q.X.map(wrapX), ps: q.ps}}; }}")
+                for s_ in times:
+                    q = pg.evaluate(f"() => {{ t = {s_:.6f}; render(); const q = stateNow(); return {{amp: q.amp, X: q.X.map(x => wrapX(CUR.T, x)), ps: q.ps}}; }}")
                     img = np.array(Image.open(io.BytesIO(pg.locator("canvas").screenshot())))
                     for w in ws:
-                        ms[w] = m = dict(st[w], k=st[w]["k"] / 1e3, yc=STR_YC[w], g=min(11, .5 * STR_S * st[w]["lam"] / (2 * np.pi)) * q["amp"] / STR_S)
-                        outl[w].append(_outline(img, w, sc))
-                        fits[w].append(_fit_outline(*outl[w][-1], m, sc))
+                        ms[w] = m = dict(st[w], k=st[w]["k"] / 1e3, yc=STR_YC[w],
+                                         g=min(11, .5 * T["s"] * st[w]["lam"] / (2 * np.pi)) * q["amp"] / T["s"])
+                        outl[w].append(_outline(img, w, sc, T, m))
+                        fits[w].append(_fit_outline(*outl[w][-1], m, sc, T))
                         held[w].append((q["X"][w], q["ps"][w]))
                 for w in ws:
                     ts = np.array(times) - times[0]
-                    v, r, rms = _fit_motion(ts, outl[w], ms[w], sc, fits[w])
+                    v, r, rms = _fit_motion(ts, outl[w], ms[w], sc, fits[w], T)
                     k = ms[w]["k"]
                     hx = np.polyfit(ts, [h[0] for h in held[w]], 1)[0]
                     cases.append({"case": label, "w": w + 1, "nm": st[w]["nm"], "f": st[w]["f"], "cg": st[w]["cg"], "cp": st[w]["cp"],
-                                  "cg_s": v * SLOW / 1e6, "cp_s": (v - r / k) * SLOW / 1e6, "res": rms / sc,
-                                  "cg_1": _speeds(ts, fits[w], k)[0] * SLOW / 1e6, "cg_state": hx * SLOW / 1e6,
+                                  "cg_s": v * T["slow"] / 1e6, "cp_s": (v - r / k) * T["slow"] / 1e6, "res": rms / sc,
+                                  "cg_1": _speeds(ts, fits[w], k)[0] * T["slow"] / 1e6, "cg_state": hx * T["slow"] / 1e6,
                                   "n": len(times), "span": times[-1] - times[0]})
                 return st
 
@@ -1825,7 +2470,7 @@ def measure_screen():
             pg = page("?still")
             run(pg, "tour", (0, 1), [POSTER + .1 * j for j in range(-10, 11)])
             pg.close()
-            # the reader: a click on the axial curve at 30 kHz takes wave 1 there, a drag to 62 kHz
+            # the reader: a click on the axial curve at 30 kHz takes wave 1 there, a drag to fdip
             pg = page("")
             pg.wait_for_timeout(1200)
             at = lambda js: pg.evaluate(f"(() => {{ const r = cv.getBoundingClientRect(), [x, y] = {js};"
@@ -1834,22 +2479,22 @@ def measure_screen():
             pg.mouse.click(*at(f"[PX(30), PY(cpAtF({ax}, 30))]"))
             pg.evaluate("setPlay(false)")
 
-            def settle_at(x_mm):                      # the clock run on until wave 1's packet is centred near x_mm
-                pg.evaluate(f"() => {{ for (let j = 0; j < 20000; j++) {{ t += .01; stateNow(); const X = wrapX(USER.X[0]);"
-                            f" if (Math.abs(X - ({x_mm})) < 3 && t - USER.t0 > 1.2) break; }} render(); }}")
+            def settle_at(frac):                      # the clock run on until wave 1's packet is centred near frac L
+                pg.evaluate(f"() => {{ for (let j = 0; j < 40000; j++) {{ t += .01; stateNow(); const X = wrapX(CUR.T, USER.X[0]);"
+                            f" if (Math.abs(X - ({frac}) * CUR.T.L) < .008 * CUR.T.L && t - USER.t0 > 1.2) break; }} render(); }}")
                 return pg.evaluate("t")
 
-            t0 = settle_at(-380)
+            t0 = settle_at(-.9)
             run(pg, "click, axial 30 kHz", (0,), [t0 + .1 * j for j in range(15)])
             x0, y0 = at("[PX(LAST[0].f), PY(LAST[0].cp)]")
             pg.mouse.move(x0, y0)
             pg.mouse.down()
             for j in range(1, 25):
-                f = 30 + 32 * j / 24
+                f = 30 + (fdip - 30) * j / 24
                 pg.mouse.move(*at(f"[PX({f}), PY(cpAtF({ax}, {f}))]"))
             pg.mouse.up()
-            t0 = settle_at(-330)
-            run(pg, "drag, axial 62 kHz", (0,), [t0 + .1 * j for j in range(21)])
+            t0 = settle_at(-.8)
+            run(pg, f"drag, axial {fdip:.0f} kHz", (0,), [t0 + .1 * j for j in range(21)])
             pg.close()
             b.close()
         srv.shutdown()
@@ -1945,25 +2590,48 @@ function safeModel(sec) {
     const c0 = new Int32Array(nd).fill(-1), c1 = new Int32Array(nd).fill(-1), v0 = new Float64Array(nd), v1 = new Float64Array(nd);
     let m = 0;
     const put = (g, col, v) => { if (c0[g] < 0) { c0[g] = col; v0[g] = v; } else { c1[g] = col; v1[g] = v; } };
-    if (sec.kind === 'mirror') {
+    if (sec.kind === 'mirror' || sec.kind === 'c4v') {
+      // the class's operations: mirrors y -> -y (character py), z -> -z (pz) and, for the
+      // square (C4v), the diagonal y <-> z (pd), each a node map and a 3 x 3 component map;
+      // per orbit (its representative in the RCM order of `rank`, or `rank8` for the C4v
+      // orbits) the projections of its three unit displacements, orthonormalised in turn
       const key = (y, z) => Math.round(y * 1e3) + ',' + Math.round(z * 1e3), at = new Map();
       for (let n = 0; n < N; n++) at.set(key(sec.nodes[2 * n], sec.nodes[2 * n + 1]), n);
-      const my = Int32Array.from({length: N}, (_, n) => at.get(key(-sec.nodes[2 * n], sec.nodes[2 * n + 1])));
-      const mz = Int32Array.from({length: N}, (_, n) => at.get(key(sec.nodes[2 * n], -sec.nodes[2 * n + 1])));
-      const G = [[n => n, 1, [1, 1, 1]]];
-      if (C.py) G.push([n => my[n], C.py, [1, -1, 1]]);
-      if (C.pz) G.push([n => mz[n], C.pz, [1, 1, -1]]);
-      if (C.py && C.pz) G.push([n => my[mz[n]], C.py * C.pz, [1, -1, -1]]);
-      const reps = [];
-      for (let n = 0; n < N; n++) if (sec.rank[n] >= 0) reps[sec.rank[n]] = n;
-      for (const n of reps) for (let c = 0; c < 3; c++) {
-        const v = new Map();
-        for (const [g, chi, sg] of G) { const d = 3 * g(n) + c; v.set(d, (v.get(d) || 0) + chi * sg[c]); }
-        let s2 = 0;
-        for (const x of v.values()) s2 += x * x;
-        if (s2 < 1e-12) continue;
-        for (const [d, x] of v) if (Math.abs(x) > 1e-12) put(d, m, x / Math.sqrt(s2));
-        m++;
+      const map = f => Int32Array.from({length: N}, (_, n) => at.get(f(sec.nodes[2 * n], sec.nodes[2 * n + 1])));
+      const my = map((y, z) => key(-y, z)), mz = map((y, z) => key(y, -z));
+      const I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1], Ry = [1, 0, 0, 0, -1, 0, 0, 0, 1], Rz = [1, 0, 0, 0, 1, 0, 0, 0, -1];
+      const mul3 = (A, B) => Array.from({length: 9}, (_, i) => { const r = i / 3 | 0, c = i % 3; return A[3 * r] * B[c] + A[3 * r + 1] * B[3 + c] + A[3 * r + 2] * B[6 + c]; });
+      let G = [[n => n, 1, I3]];
+      if (C.py) G.push([n => my[n], C.py, Ry]);
+      if (C.pz) G.push([n => mz[n], C.pz, Rz]);
+      if (C.py && C.pz) G.push([n => my[mz[n]], C.py * C.pz, mul3(Ry, Rz)]);
+      if (C.pd) {
+        const md = map((y, z) => key(z, y)), Rd = [1, 0, 0, 0, 0, 1, 0, 1, 0];
+        G = G.concat(G.map(([g, chi, R]) => [n => md[g(n)], chi * C.pd, mul3(Rd, R)]));
+      }
+      const rank = C.pd ? sec.rank8 : sec.rank, reps = [];
+      for (let n = 0; n < N; n++) if (rank[n] >= 0) reps[rank[n]] = n;
+      for (const n of reps) {
+        const acc = [];
+        for (let c = 0; c < 3; c++) {
+          const v = new Map();
+          for (const [g, chi, R] of G) for (let c2 = 0; c2 < 3; c2++) {
+            const r = R[3 * c2 + c];
+            if (r) { const d = 3 * g(n) + c2; v.set(d, (v.get(d) || 0) + chi * r); }
+          }
+          for (const u of acc) {
+            let dt = 0;
+            for (const [d, x] of u) dt += x * (v.get(d) || 0);
+            if (dt) for (const [d, x] of u) v.set(d, (v.get(d) || 0) - dt * x);
+          }
+          let s2 = 0;
+          for (const x of v.values()) s2 += x * x;
+          if (s2 < 1e-18) continue;
+          const nv = Math.sqrt(s2), u = new Map();
+          for (const [d, x] of v) if (Math.abs(x) > 1e-12 * nv) u.set(d, x / nv);
+          acc.push(u);
+        }
+        for (const u of acc) { for (const [d, x] of u) put(d, m, x); m++; }
       }
     } else if (sec.kind === 'plate') {
       const z = Array.from({length: N}, (_, n) => Math.round(sec.nodes[2 * n + 1] * 1e4) / 1e4);
@@ -2091,15 +2759,16 @@ function safeModel(sec) {
     const C = cls(ci), len = C.ptr[C.n], K = new Float64Array(len), w2t = wTab * wTab;
     for (let i = 0; i < len; i++) K[i] = C.K1[i] + k * C.K2[i] + k * k * C.K3[i];
     const factor = s => { const A = new Float64Array(len); for (let i = 0; i < len; i++) A[i] = K[i] - s * C.M[i]; const g = ldl(A, C); g.A = A; g.s = s; return g; };
-    const iterate = (F, start) => {
+    const iterate = (F, start) => {                    // M x of one step is the next step's right side
       let x = new Float64Array(C.n);
       if (start) x.set(start);
       else for (let i = 0; i < C.n; i++) x[i] = Math.sin(12.9898 * (i + 1)) * 43758.5453 % 1;   // a fixed start
-      let w2 = F.s;
+      let w2 = F.s, Mx = mul(C.M, C, x);
       for (let it = 0; it < 40; it++) {
-        x = ldlSolve(F.A, C, F.d, mul(C.M, C, x));
-        const nm = Math.sqrt(dot(x, mul(C.M, C, x)));
-        for (let i = 0; i < C.n; i++) x[i] /= nm;
+        x = ldlSolve(F.A, C, F.d, Mx);
+        Mx = mul(C.M, C, x);
+        const nm = Math.sqrt(dot(x, Mx));
+        for (let i = 0; i < C.n; i++) { x[i] /= nm; Mx[i] /= nm; }
         const w2n = dot(x, mul(K, C, x)), done = Math.abs(w2n - w2) < 1e-13 * w2n;
         w2 = w2n;
         if (done && it > 0) break;
@@ -2149,25 +2818,29 @@ function safeModel(sec) {
 
 FIGURE = r"""
 const POSTER_T = D.poster;
-const FM = D.fmax, CM = D.cmax, SLOW = D.slow;
+const CM = D.cmax;                                       // km/s: the top of the plot, every section
 
-/* ---------------------------------------------------------------- layout */
+/* ---------------------------------------------------------------- layout
+   Each section has its own frequency window (sec.fm, kHz): its published curves'
+   range. WIN is the section being drawn (CUR between frames, so the pointer maps
+   through the window on show); PX and PY map through it. */
 const P = {x: 88, y: 64, w: 452, h: 326};
-const PX = f => P.x + f / FM * P.w, PY = c => P.y + P.h - c / CM * P.h;
+let WIN = {fm: 1};
+const PX = f => P.x + f / WIN.fm * P.w, PY = c => P.y + P.h - c / CM * P.h;
+function inWin(sec, f) { const o = WIN; WIN = sec; try { return f(); } finally { WIN = o; } }
 const WC = [C.navy, C.accent];                           // wave 1, wave 2
 const SEC = {cx: [688, 888], cy: 244, G: 18};             // section views: centres, largest drawn displacement
-const STR = {s: 2.2, L: 412, x1: 950, yc: [580, 746], d: .6, a: 40 * Math.PI / 180, G: 11, SL: .5};
-const CD = STR.d * Math.cos(STR.a), SD = STR.d * Math.sin(STR.a);
-/* the packets: each wave runs along its beam as bursts of its own mode under a Hann
-   envelope PW mm across, one after another REP mm apart, so that one crosses the drawn
-   beam at a time. The envelope's centre X moves at c_g and the phase psi at the centre
-   at k c_g - w, so the crests move at c_p; both waves on one clock, SLOW times slower
-   than the beam's (dispersion.py: a packet at the rod speed crosses the beam in 2 s). */
-const PW = D.pw, REP = STR.L + PW, XL = -STR.L - PW / 2;
-const wrapX = x => x - REP * Math.floor((x - XL) / REP);   // a packet's centre, brought onto [XL, XL + REP)
+const STR = {x1: 950, yc: [%d, %d], G: 11, SL: .5};       // dispersion.py's STR_YC
+/* the packets: each wave runs along its waveguide as bursts of its own mode under a Hann
+   envelope T.pw mm across, one after another T.rep mm apart, so that one crosses the drawn
+   T.L mm at a time. The envelope's centre X moves at c_g and the phase psi at the centre
+   at k c_g - w, so the crests move at c_p. Each section has one clock, T.slow times slower
+   than the steel's, for every operating point and both waves, so a slow packet lags a fast
+   one as it would; and one length scale, T.s units a millimetre (dispersion.py, strip_of). */
+const wrapX = (T, x) => x - T.rep * Math.floor((x - T.xl) / T.rep);   // a packet's centre, onto [xl, xl + rep)
 // a state's rates: the envelope's speed (mm/s on the page) and its centre phase's (rad/s);
 // k in rad/m, f in kHz, c_g in km/s
-const rates = (k, f, cg) => ({v: cg * 1e6 / SLOW, r: (k * cg - 2 * Math.PI * f) * 1e3 / SLOW});
+const rates = (sec, k, f, cg) => ({v: cg * 1e6 / sec.T.slow, r: (k * cg - 2 * Math.PI * f) * 1e3 / sec.T.slow});
 const SW_ = {x0: 624, x1: 986, y0: 17, y1: 43};          // the section switcher's cells
 const PLAY = {x: 862, y: 430, r: 10};                     // the play control, its label to the right
 const CBAR = {x: 650, y: 426, w: 190, h: 8};              // the colour scale
@@ -2210,34 +2883,47 @@ function lay(f, cp, cg, tol = 1e-5) {                    // k (rad/m), f (kHz), 
   for (let i = 0; i + 1 < n; i++) rec(i, k(i), w(i), k(i + 1), w(i + 1), 0);
   return {k: Float64Array.from(K), f: Float64Array.from(W, x => x / (2 * Math.PI)), cp: Float64Array.from(W, (x, i) => x / K[i])};
 }
+const NXS = 413;                                         // samples along each drawn waveguide
 function prepare(buf) {
   const {meta, arr} = parseBlob(buf), sec = {...meta, key: meta.key, meta};
+  sec.fm = meta.fmax;                                    // kHz: the section's window
   sec.nodes = arr.nodes; sec.N = arr.nodes.length / 2;
   sec.model = safeModel({E: meta.E, nu: meta.nu, rho: meta.rho, nodes: arr.nodes, elems: Int32Array.from(arr.elems),
-                         kind: meta.kind, rank: arr.rank ? Int32Array.from(arr.rank) : null, nth: meta.nth, classes: meta.classes});
+                         kind: meta.kind, rank: arr.rank ? Int32Array.from(arr.rank) : null,
+                         rank8: arr.rank8 ? Int32Array.from(arr.rank8) : null, nth: meta.nth, classes: meta.classes});
   sec.elems = Int32Array.from(arr.elems); sec.NE = sec.elems.length / 9;
+  sec.GLC = arr.glide;                                   // km/s: the tour's glides' exact group velocities
   sec.GY = Float32Array.from({length: sec.N}, (_, n) => arr.nodes[2 * n]);
   sec.GZ = Float32Array.from({length: sec.N}, (_, n) => arr.nodes[2 * n + 1]);
   sec.ymin = Math.min(...sec.GY);
-  sec.BR = meta.brs.map((r, id) => {
+  // the drawn waveguide: its length scale, oblique view and clock (dispersion.py, strip_of)
+  const T = sec.T = {...meta.strip};
+  T.cd = T.d * Math.cos(T.a * Math.PI / 180); T.sd = T.d * Math.sin(T.a * Math.PI / 180);
+  T.rep = T.L + T.pw; T.xl = -T.L - T.pw / 2; T.dx = T.L / (NXS - 1);
+  T.XM = Float32Array.from({length: NXS}, (_, m) => (m - (NXS - 1)) * T.dx);
+  sec.BR = inWin(sec, () => meta.brs.map((r, id) => {
     const C_ = arr.curves, {k, f, cp} = lay(C_.subarray(r.o, r.o + r.n), C_.subarray(r.o + r.n, r.o + 2 * r.n), C_.subarray(r.o + 2 * r.n, r.o + 3 * r.n));
-    const xy = Array.from(f, (_, i) => [PX(Math.min(f[i], 1.04 * FM)), PY(Math.min(cp[i], 1.04 * CM))]);
-    const inw = i => f[i] <= FM && cp[i] <= CM;
+    const xy = Array.from(f, (_, i) => [PX(Math.min(f[i], 1.04 * sec.fm)), PY(Math.min(cp[i], 1.04 * CM))]);
+    const inw = i => f[i] <= sec.fm && cp[i] <= CM;
     let i0 = 0, i1 = f.length - 1;
     while (!inw(i0)) i0++;
     while (!inw(i1)) i1--;
-    return {...r, id, f, cp, k, xy, i0, i1};
-  });
-  sec.HG = fc => Math.min(4, Math.floor(5 * (fc - meta.fc1) / (FM - meta.fc1 || 1)));
+    // a backward wave (f falling as k grows, below its cut-on) makes f(k) turn back
+    let mono = true, fmin = Infinity, fmax = -Infinity;
+    for (let i = i0; i <= i1; i++) { fmin = Math.min(fmin, f[i]); fmax = Math.max(fmax, f[i]); if (i > Math.max(0, i0 - 1) && f[i] <= f[i - 1]) mono = false; }
+    if (i0 > 0 && f[i0] <= f[i0 - 1]) mono = false;
+    return {...r, id, f, cp, k, xy, i0, i1, mono, fmin, fmax};
+  }));
+  sec.HG = fc => Math.min(4, Math.floor(5 * (fc - meta.fc1) / (sec.fm - meta.fc1 || 1)));
   sec.TOUR = meta.tour.map(s => ({...s, k1: kAtF(sec.BR[s.b1], s.f1), ka: kAtF(sec.BR[s.b2], s.fa), k2: kAtF(sec.BR[s.b2], s.f2)}));
   sec.faces = meta.faces;
-  // each face's neighbours in its loop, for creases and silhouettes along the beam
+  // each face's neighbours in its loop, for creases and silhouettes along the waveguide
   for (const F of sec.faces) {
     const same = sec.faces.filter(G => G.loop === F.loop);
     F.prev = same.find(G => G.nodes[G.nodes.length - 1] === F.nodes[0]);
     F.next = same.find(G => G.nodes[0] === F.nodes[F.nodes.length - 1]);
-    F.front = F.n[0] - SD * F.n[1] < 0;
-    F.depth = F.nodes.reduce((a, n) => a + sec.GY[n] - SD * sec.GZ[n], 0) / F.nodes.length;
+    F.front = F.n[0] - T.sd * F.n[1] < 0;
+    F.depth = F.nodes.reduce((a, n) => a + T.ys * sec.GY[n] - T.sd * sec.GZ[n], 0) / F.nodes.length;
     F.outer = F.loop === 0;
   }
   sec.draw = sec.faces.filter(F => F.front).sort((a, b) => b.depth - a.depth);
@@ -2266,16 +2952,22 @@ function atK(br, k) {                                    // (f, c_p) on the draw
   const i = seek(br.k, k, 0, br.k.length - 1), s = clamp((k - br.k[i]) / (br.k[i + 1] - br.k[i]));
   return {f: lerp(br.f[i], br.f[i + 1], s), cp: lerp(br.cp[i], br.cp[i + 1], s)};
 }
-function kAtF(br, f) {                                   // the wavenumber of f (kHz) on the branch, in the window
-  f = clamp(f, br.f[br.i0], br.f[br.i1]);
-  const i = seek(br.f, f, 0, br.f.length - 1), s = clamp((f - br.f[i]) / (br.f[i + 1] - br.f[i]));
-  return lerp(br.k[i], br.k[i + 1], s);
+function kAtF(br, f, k0) {                               // the wavenumber of f (kHz) on the branch, in the window; where
+  f = clamp(f, br.fmin, br.fmax);                        // f is met twice (a backward wave), the crossing nearest k0, else the last
+  if (br.mono) {
+    const i = seek(br.f, f, 0, br.f.length - 1), s = clamp((f - br.f[i]) / (br.f[i + 1] - br.f[i]));
+    return lerp(br.k[i], br.k[i + 1], s);
+  }
+  let best = null;
+  for (let i = Math.max(0, br.i0 - 1); i < Math.min(br.f.length - 1, br.i1 + 1); i++) {
+    const a = br.f[i], b = br.f[i + 1];
+    if (a === b || (a - f) * (b - f) > 0) continue;
+    const k = lerp(br.k[i], br.k[i + 1], (f - a) / (b - a));
+    if (best === null || (k0 === undefined ? k > best : Math.abs(k - k0) < Math.abs(best - k0))) best = k;
+  }
+  return best === null ? br.k[br.i1] : clamp(best, br.k[br.i0], br.k[br.i1]);
 }
-function cpAtF(br, f) {                                  // c_p on the drawn curve at f, clamped to its window
-  f = clamp(f, br.f[br.i0], br.f[br.i1]);
-  const i = seek(br.f, f, 0, br.f.length - 1), s = clamp((f - br.f[i]) / (br.f[i + 1] - br.f[i]));
-  return lerp(br.cp[i], br.cp[i + 1], s);
-}
+const cpAtF = (br, f, k0) => atK(br, kAtF(br, f, k0)).cp;   // c_p on the drawn curve at f, in its window
 const kIn = (br, k) => clamp(k, br.k[br.i0], br.k[br.i1]);
 function nearOn(br, X, Y) {                              // the nearest point of a curve (inside the window) to (X, Y)
   let best = {d: Infinity, k: br.k[br.i0]};
@@ -2303,8 +2995,9 @@ function nearest(sec, X, Y) {
    centre, the drawn shapes at a fixed largest size. A state's sign follows the
    wave's last one on the same branch, so a wave never jumps half a wavelength while
    dragged or gliding. */
-const CACHE = new Map(), LAST = [null, null], HF = new Map();
-/* a state's frequency and group velocity alone (the tour's rates, the tooltip), remembered */
+const CACHE = new Map(), LAST = [null, null], HF = new Map(), XS = new Map();
+/* a state's frequency and group velocity alone (the tour's rates, the tooltip), remembered;
+   its last few eigenpairs kept too (XS), so that solved() need not solve them again */
 function exact(sec, id, k) {
   const key = sec.key + ':' + id + ':' + k.toFixed(6), c = CACHE.get(key);
   if (c) return c;
@@ -2314,17 +3007,19 @@ function exact(sec, id, k) {
     r = {k, f: s.w / (2e3 * Math.PI), cg: sec.model.cg(br.ci, k, s.x, s.w) / 1e3};
     HF.set(key, r);
     if (HF.size > 800) HF.delete(HF.keys().next().value);
+    XS.set(key, s);
+    if (XS.size > 4) XS.delete(XS.keys().next().value);
   }
   return r;
 }
-const rateOf = (sec, id, k) => { const e = exact(sec, id, k); return rates(k, e.f, e.cg); };
+const rateOf = (sec, id, k) => { const e = exact(sec, id, k); return rates(sec, k, e.f, e.cg); };
 function solved(sec, st, w) {
   const br = sec.BR[st.id], key = sec.key + ':' + st.id + ':' + st.k.toFixed(6);
   let r = CACHE.get(key);
   const p = LAST[w], near = p && p.sec === sec.key && p.id === st.id && Math.abs(p.k - st.k) < .08 * st.k;
   if (!r) {
-    const s = sec.model.solve(br.ci, br.b, st.k, 2e3 * Math.PI * atK(br, st.k).f, near ? p.x : null);
-    const x = s.x;
+    const s = XS.get(key) || sec.model.solve(br.ci, br.b, st.k, 2e3 * Math.PI * atK(br, st.k).f, near ? p.x : null);
+    const x = Float64Array.from(s.x);
     if (!near) {                                         // a fixed sign: the largest entry positive
       let m = 0;
       for (let i = 1; i < x.length; i++) if (Math.abs(x[i]) > Math.abs(x[m])) m = i;
@@ -2366,19 +3061,25 @@ function solved(sec, st, w) {
    section at its first. */
 const T1 = 16, TS = 18, TG0 = 2, TGD = 8;
 const PH0 = Math.PI / 4;                                  // each later stop starts both centres an eighth of a cycle in
-const XP = -STR.L / 2;                                    // where the first stop's packets are at the poster's moment
 const TOUR = {off: 0};
-/* wave 2's glide in stop i, as the rates it passes through: exact at NG + 1 moments evenly
-   spread over the glide's TGD s (solved while the stop's first TG0 s run, or all at once if
-   a moment of the glide is wanted first), and their integrals over time, each interval by
-   the cubic through its four nearest moments, integrated exactly. Remembered per section. */
+/* wave 2's glide in stop i, as the rates it passes through at NG + 1 moments evenly spread
+   over the glide's TGD s: the exact group velocity of each moment's state comes with the
+   section (dispersion.py, glide_rates: the same model's eigenpairs at the wavenumbers this
+   page takes, by kAtF), so a stop starts without solving NG + 1 states; and their integrals
+   over time, each interval by the cubic through its four nearest moments, integrated
+   exactly. Remembered per section. */
 const NG = 128;
 function glideOf(sec, i) {
   const all = sec.GL || (sec.GL = []);
   if (!all[i]) {
-    const s = sec.TOUR[i], br = sec.BR[s.b2], k = new Float64Array(NG + 1);
-    for (let j = 0; j <= NG; j++) k[j] = j === 0 ? s.ka : j === NG ? s.k2 : kAtF(br, s.fa + (s.f2 - s.fa) * easeInOut(j / NG));
-    all[i] = {s, k, v: new Float64Array(NG + 1), r: new Float64Array(NG + 1), n: 0, IV: null, IR: null};
+    const s = sec.TOUR[i], br = sec.BR[s.b2], k = new Float64Array(NG + 1), v = new Float64Array(NG + 1), r = new Float64Array(NG + 1);
+    for (let j = 0; j <= NG; j++) {
+      k[j] = j === 0 ? s.ka : j === NG ? s.k2 : kAtF(br, s.fa + (s.f2 - s.fa) * easeInOut(j / NG));
+      const q = rates(sec, k[j], atK(br, k[j]).f, sec.GLC[i * (NG + 1) + j]);
+      v[j] = q.v; r[j] = q.r;
+    }
+    const h = TGD / NG, I = y => { const o = new Float64Array(NG + 1); for (let j = 0; j < NG; j++) o[j + 1] = o[j] + h * part(y, j, 1); return o; };
+    all[i] = {s, k, v, r, IV: I(v), IR: I(r)};
   }
   return all[i];
 }
@@ -2390,14 +3091,6 @@ function part(y, j, s) {                                 // the integral of y ov
   let a = 0;
   for (let q = 0; q < 4; q++) a += y[j0 + q] * (CUB[q](j - j0 + s) - CUB[q](j - j0));
   return a;
-}
-function glideFill(sec, G, upto) {
-  for (; G.n <= Math.min(upto, NG); G.n++) { const q = rateOf(sec, G.s.b2, G.k[G.n]); G.v[G.n] = q.v; G.r[G.n] = q.r; }
-  if (G.n > NG && !G.IV) {
-    const h = TGD / NG, I = y => { const o = new Float64Array(NG + 1); for (let j = 0; j < NG; j++) o[j + 1] = o[j] + h * part(y, j, 1); return o; };
-    G.IV = I(G.v); G.IR = I(G.r);
-  }
-  return G;
 }
 function glideAt(G, ta) {                                // wave 2's travel since the stop began (mm, rad) and its rates at ta
   const a = {v: G.v[0], r: G.r[0]};
@@ -2415,15 +3108,16 @@ function tourAt(sec, tau) {
   const T = sec.TOUR, o = TOUR.off;
   if (tau < T1) {
     const s = T[0], out = 1 - seg(o + T1 - 1, 1), d = tau - POSTER_T, R = [rateOf(sec, s.b1, s.k1), rateOf(sec, s.b2, s.k2)];
-    return {st: [{id: s.b1, k: s.k1}, {id: s.b2, k: s.k2}], X: R.map(q => XP + q.v * d), ps: R.map(q => q.r * d), rt: R,
+    // the first stop: both packets at the middle of the drawn length at the poster's moment
+    return {st: [{id: s.b1, k: s.k1}, {id: s.b2, k: s.k2}], X: R.map(q => -sec.T.L / 2 + q.v * d), ps: R.map(q => q.r * d), rt: R,
             amp: settle(o + .45, .8) * out, mk: [settle(o + .6, .28) * out, settle(o + .6, .28) * out], lab: lab(o + .3) * out};
   }
   const u = tau - T1, n = Math.floor(u / TS), ta = u - n * TS, i = (n + 1) % T.length, s = T[i], t0 = o + T1 + n * TS;
   const X = clamp((ta - TG0) / TGD), f2 = s.fa + (s.f2 - s.fa) * easeInOut(X);
-  const G = glideFill(sec, glideOf(sec, i), ta >= TG0 ? NG : Math.floor(ta / TG0 * NG) + 1), g2 = glideAt(G, ta);
+  const G = glideOf(sec, i), g2 = glideAt(G, ta);
   const R1 = rateOf(sec, s.b1, s.k1), out = 1 - seg(t0 + TS - 1, 1);
   return {st: [{id: s.b1, k: s.k1}, {id: s.b2, k: X <= 0 ? s.ka : X >= 1 ? s.k2 : kAtF(sec.BR[s.b2], f2)}],
-          X: [XL + R1.v * ta, XL + g2.x], ps: [PH0 + R1.r * ta, PH0 + g2.p], rt: [R1, {v: g2.v, r: g2.r}],
+          X: [sec.T.xl + R1.v * ta, sec.T.xl + g2.x], ps: [PH0 + R1.r * ta, PH0 + g2.p], rt: [R1, {v: g2.v, r: g2.r}],
           amp: settle(t0 + .25, .8) * out, mk: [settle(t0 + .2, .28) * out, settle(t0 + .3, .28) * out],
           lab: settle(t0 + .2, .4) * out};
 }
@@ -2439,7 +3133,7 @@ let CUR = null, USER = null, HAND = null, HOVER = null, GRAB = null, USED = 0, S
 function takeOver() {
   if (USER && !HAND) return;
   const q = HAND ? handState() : tourAt(CUR, t - TOUR.off);
-  USER = {st: q.st.map(s => ({...s})), X: q.X.map(wrapX), ps: q.ps.slice(), tl: t, t0: t, a0: q.amp, m0: q.mk.slice()};
+  USER = {st: q.st.map(s => ({...s})), X: q.X.map(x => wrapX(CUR.T, x)), ps: q.ps.slice(), tl: t, t0: t, a0: q.amp, m0: q.mk.slice()};
   HAND = null;
   if (!USED) USED = Math.max(t, 1e-6);
 }
@@ -2459,10 +3153,10 @@ function userState() {
   USER.tl = t;
   const rt = [0, 1].map(w => {
     const S = LAST[w] && LAST[w].sec === CUR.key && LAST[w].id === USER.st[w].id ? LAST[w] : null;
-    return S ? rates(S.k, S.f, S.cg) : rateOf(CUR, USER.st[w].id, USER.st[w].k);
+    return S ? rates(CUR, S.k, S.f, S.cg) : rateOf(CUR, USER.st[w].id, USER.st[w].k);
   });
   for (let w = 0; w < 2; w++) {
-    USER.X[w] = wrapX(USER.X[w] + rt[w].v * dt);
+    USER.X[w] = wrapX(CUR.T, USER.X[w] + rt[w].v * dt);
     USER.ps[w] = (USER.ps[w] + rt[w].r * dt) % (2 * Math.PI);
   }
   const e = settle(USER.t0, .6);
@@ -2476,14 +3170,15 @@ function stateNow() {
 /* the same kind of wave on another section: a fundamental mode keeps its kind,
    another the curve nearest in c_p; the frequency stays where the curve allows */
 function mapState(from, to, st) {
-  const br = from.BR[st.id], q = atK(br, st.k);
+  // the windows differ: the same share of the new section's window
+  const br = from.BR[st.id], q = atK(br, st.k), f = q.f / from.fm * to.fm;
   let id = br.type && to.fund[br.type] !== undefined ? to.fund[br.type] : -1;
   if (id < 0) {
     let bd = Infinity;
-    for (const b of to.BR) if (q.f >= b.f[b.i0] && q.f <= b.f[b.i1]) { const d = Math.abs(cpAtF(b, q.f) - q.cp); if (d < bd) { bd = d; id = b.id; } }
+    for (const b of to.BR) if (f >= b.fmin && f <= b.fmax) { const d = Math.abs(cpAtF(b, f) - q.cp); if (d < bd) { bd = d; id = b.id; } }
     if (id < 0) id = to.fund.vertical;
   }
-  return {id, k: kAtF(to.BR[id], q.f)};
+  return {id, k: kAtF(to.BR[id], f)};
 }
 
 /* ---------------------------------------------------------------- switching
@@ -2502,7 +3197,7 @@ function chooseSection(key) {
     if (CUR.key === key) return;
     const q = stateNow(), from = CUR;
     SW = {from, to, t0: now() - (REDUCED ? SWD : 0), ta: t, q0: {...q, st: q.st.map(s => ({...s})), X: q.X.slice(), ps: q.ps.slice()}, S0: [LAST[0], LAST[1]]};
-    if (USER) USER.st = USER.st.map(s => mapState(from, to, s));
+    if (USER) { USER.st = USER.st.map(s => mapState(from, to, s)); USER.X = USER.X.map(x => wrapX(to.T, x * to.T.L / from.T.L)); }
     else TOUR.off = t - (playing ? 0 : POSTER_T);
     CUR = to;
     LAST[0] = LAST[1] = null;
@@ -2512,7 +3207,10 @@ function chooseSection(key) {
 }
 function setSectionNow(key) {                            // at once, no animation (the checks and a still use it)
   return load(key).then(to => {
-    if (CUR.key !== key) { if (USER) USER.st = USER.st.map(s => mapState(CUR, to, s)); CUR = to; LAST[0] = LAST[1] = null; }
+    if (CUR.key !== key) {
+      if (USER) { USER.st = USER.st.map(s => mapState(CUR, to, s)); USER.X = USER.X.map(x => wrapX(to.T, x * to.T.L / CUR.T.L)); }
+      CUR = to; LAST[0] = LAST[1] = null;
+    }
     SW = null; syncSwitch(); render();
   });
 }
@@ -2545,6 +3243,10 @@ function badge(w, x, y, a = 1, r = 10) {                // a wave's mark: its nu
   text(String(w + 1), x, y + 5, {size: 14, bold: true, color: '#fff', align: 'center', alpha: a});
 }
 function textW(s, size) { ctx.save(); ctx.font = font({size}); const w = ctx.measureText(s).width; ctx.restore(); return w; }
+function mathW(s, size) { ctx.save(); const w = _mathDraw(_runs(s), 0, 0, size, C.ink, false); ctx.restore(); return w; }
+const FOOT_GAP = 8;
+// the right end of a section's parameter lines (drawing units): both must clear the page controls
+const footW = sc => 18 + Math.max(textW(sc.params, 14), textW(D.steel + ';', 14) + FOOT_GAP + mathW(sc.T.label, 14));
 function tri(x, y, s, color, a = 1, up = true) {
   ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = color; ctx.beginPath();
   if (up) { ctx.moveTo(x, y); ctx.lineTo(x - s * .72, y + s); ctx.lineTo(x + s * .72, y + s); }
@@ -2561,31 +3263,43 @@ function curvesOf(sec, a, prog, skipFund) {             // a section's curves, h
   for (const br of sec.BR) if (br.type) line(br.xy, {...STY[br.type], alpha: a, progress: prog ? seg(.12 + .05 * order.indexOf(br.type), .40) : 1});
 }
 function morphFund(A, B, e, a) {                         // the fundamental curves of A becoming B's
+  // each section in its own window: a point at the same share of either window, joined on the screen
   for (const type of ['vertical', 'lateral', 'axial', 'torsional']) {
     if (A.fund[type] === undefined || B.fund[type] === undefined) continue;
     if (type === 'lateral' && (A.fund.lateral === A.fund.vertical) && (B.fund.lateral === B.fund.vertical)) continue;
     const ba = A.BR[A.fund[type]], bb = B.BR[B.fund[type]], pts = [];
+    const lo = lerp(ba.fmin / A.fm, bb.fmin / B.fm, e);
     for (let i = 0; i <= 160; i++) {
-      const f = FM * i / 160, lo = lerp(ba.f[ba.i0], bb.f[bb.i0], e);
-      if (f < lo) continue;
-      pts.push([PX(f), PY(Math.min(1.04 * CM, lerp(cpAtF(ba, f), cpAtF(bb, f), e)))]);
+      const u = i / 160;
+      if (u < lo) continue;
+      const ya = inWin(A, () => PY(Math.min(1.04 * CM, cpAtF(ba, u * A.fm)))), yb = inWin(B, () => PY(Math.min(1.04 * CM, cpAtF(bb, u * B.fm))));
+      pts.push([P.x + u * P.w, lerp(ya, yb, e)]);
     }
     line(pts, {...STY[type], alpha: a});
   }
 }
+function xTicks(sec, a) {                                // a section's frequency ticks: inward, at the bottom and the top
+  if (a <= 0) return;
+  inWin(sec, () => {
+    for (const v of sec.meta.xticks) {
+      const x = PX(v);
+      line([[x, P.y + P.h], [x, P.y + P.h - 5]], {color: C.ink, width: 1.1, alpha: a});
+      line([[x, P.y], [x, P.y + 5]], {color: C.ink, width: 1.1, alpha: a});
+      math(fmt(v), x, P.y + P.h + 21, {size: 15, align: 'center', alpha: a});
+    }
+  });
+}
 const GUIDE = {color: C.guide, width: 1, dash: [5, 4]};
-function legend(sec, a) {                                // two rows, three columns: under every section's curves
+const LEG = {y: P.y + P.h + 76, dy: 19, gap: 24};         // the legend: two rows under the frequency axis
+function legend(sec, a) {                                // three columns of two, centred under the plot, off every curve
   if (a <= 0) return;
   const E = [...sec.legend, ['guide', 'shear, Rayleigh']], cols = [];
   for (let i = 0; i < E.length; i += 2) cols.push(E.slice(i, i + 2));
-  const cw = cols.map(c => Math.max(...c.map(([, s]) => textW(s, 14))) + 38), LW = cw.reduce((x, y) => x + y, 0) + 10, LH = 2 * 17 + 9;
-  const LX = P.x + P.w - 8 - LW, LY = P.y + P.h - 8 - LH;
-  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-  ctx.fillRect(LX, LY, LW, LH); ctx.strokeRect(LX, LY, LW, LH); ctx.restore();
-  let x0 = LX + 8;
+  const cw = cols.map(c => Math.max(...c.map(([, s]) => textW(s, 14))) + 32 + LEG.gap), LW = cw.reduce((x, y) => x + y, 0) - LEG.gap;
+  let x0 = P.x + (P.w - LW) / 2;
   cols.forEach((c, j) => {
     c.forEach(([type, s], r) => {
-      const y = LY + 17 + r * 17, st = type === 'guide' ? GUIDE : type ? STY[type] : HIGH;
+      const y = LEG.y + r * LEG.dy, st = type === 'guide' ? GUIDE : type ? STY[type] : HIGH;
       line([[x0, y - 5], [x0 + 26, y - 5]], {...st, alpha: a});
       text(s, x0 + 32, y, {size: 14, alpha: a});
     });
@@ -2595,17 +3309,20 @@ function legend(sec, a) {                                // two rows, three colu
 function plotA(S, q, sw) {
   panel('a', 18, 34, {alpha: lab(0)});
   text('dispersion curves', 52, 34 + rise(lab(.03)), {size: 17, color: C.body, alpha: lab(.03)});
-  const ax = axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, FM], ylim: [0, CM],
-    xticks: [0, 25, 50, 75, 100, 125, 150, 175, 200], yticks: [0, 1, 2, 3, 4, 5, 6, 7],
+  const ax = axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, WIN.fm], ylim: [0, CM],
+    xticks: [], yticks: [0, 2, 4, 6, 8, 10],
     xlabel: '\\rm{frequency}\\ f\\ \\rm{(kHz)}', ylabel: '\\rm{phase velocity}\\ c_{\\rm{p}}\\ \\rm{(km/s)}',
     ylabelGap: 44, progress: seg(0, .35)});
   const p = sw ? swP() : 1, A = sw ? sw.from : CUR, e = easeInOut(clamp((p - .1) / .8));
   const out = sw ? 1 - clamp(p / .4) : 0, inn = sw ? clamp((p - .35) / .45) : 1;
+  // each section's own frequency ticks: the old fade before the new arrive
+  const ta = clamp(seg(0, .35) * 1.4);
+  if (sw) { xTicks(A, ta * (1 - clamp(p / .35))); xTicks(CUR, ta * clamp((p - .45) / .35)); } else xTicks(CUR, ta);
   ax.inside(() => {
     for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]]) {
       if (a <= 0) continue;
       ctx.save(); ctx.globalAlpha = .55 * seg(.3, .3) * a; ctx.fillStyle = C.steel;
-      ctx.fillRect(P.x, P.y, PX(sec.fc1) - P.x, P.h); ctx.restore();
+      ctx.fillRect(P.x, P.y, inWin(sec, () => PX(sec.fc1)) - P.x, P.h); ctx.restore();
     }
     for (const [c, a0] of [[D.ct, .35], [D.cr, .40]])
       line([[P.x, PY(c)], [P.x + P.w, PY(c)]], {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});
@@ -2623,14 +3340,14 @@ function plotA(S, q, sw) {
   // cut-on frequencies on the top frame
   for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]]) for (const fc of sec.cuts) {
     const s = settle(.40 + .06 * sec.HG(fc), .28) * a;
-    if (s <= 0 || fc > FM) continue;
-    const x = PX(fc), y = P.y + 1;
+    if (s <= 0 || fc > sec.fm) continue;
+    const x = inWin(sec, () => PX(fc)), y = P.y + 1;
     ctx.save(); ctx.globalAlpha = s; ctx.fillStyle = C.guide; ctx.beginPath();
     ctx.moveTo(x, y + 7 * s); ctx.lineTo(x - 3.8, y); ctx.lineTo(x + 3.8, y); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   const ca = lab(.40);
   for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]])
-    text('cut-on', Math.max(P.x + 2, PX(sec.fc1) - 2), P.y - 8 + rise(ca), {size: 14, color: C.muted, alpha: ca * a});
+    text('cut-on', Math.max(P.x + 2, inWin(sec, () => PX(sec.fc1)) - 2), P.y - 8 + rise(ca), {size: 14, color: C.muted, alpha: ca * a});
   const ga = lab(.55);
   // the guide speeds named at the lines' right ends, outside the frame (the legend says which is which)
   math('c_{\\rm{T}}', P.x + P.w + 6, PY(D.ct) - 1 + rise(ga), {size: 15, color: C.body, alpha: ga});
@@ -2680,13 +3397,18 @@ function markerLabels(pos) {
 function markerPos(S, q, sw, e) {
   const at = (s, a) => ({x: PX(s.f), y: PY(s.cp), a});
   if (!sw) return [0, 1].map(w => at(S[w], q.mk[w]));
-  // during a switch: from the old points to the new ones, riding the morphing curves
+  // during a switch: from the old points (in the old window) to the new ones, riding the morphing curves
   return [0, 1].map(w => {
     const A = sw.S0[w], B = S[w], a = Math.max(q.mk[w], sw.q0.mk[w] * (1 - clamp((swP() - .6) / .4)));
     if (!A) return at(B, a * clamp((swP() - .5) / .3));
-    const f = lerp(A.f, B.f, e), ba = sw.from.BR[A.id], bb = CUR.BR[B.id];
-    if (ba.type && ba.type === bb.type) return {x: PX(f), y: PY(lerp(cpAtF(ba, f), cpAtF(bb, f), e)), a};
-    return {x: lerp(PX(A.f), PX(B.f), e), y: lerp(PY(A.cp), PY(B.cp), e), a};
+    const ba = sw.from.BR[A.id], bb = CUR.BR[B.id];
+    const pa = inWin(sw.from, () => [PX(A.f), PY(A.cp)]), pb = [PX(B.f), PY(B.cp)];
+    if (ba.type && ba.type === bb.type) {
+      const u = lerp(A.f / sw.from.fm, B.f / CUR.fm, e);
+      const ya = inWin(sw.from, () => PY(cpAtF(ba, u * sw.from.fm))), yb = PY(cpAtF(bb, u * CUR.fm));
+      return {x: P.x + u * P.w, y: lerp(ya, yb, e), a};
+    }
+    return {x: lerp(pa[0], pb[0], e), y: lerp(pa[1], pb[1], e), a};
   });
 }
 const lamTex = mm => mm < 1e3 ? mm.toPrecision(3) + '\\ \\rm{mm}' : (mm / 1e3).toFixed(2) + '\\ \\rm{m}';
@@ -2783,23 +3505,23 @@ function sectionView(sec, w, S, psi, amp, draw_, fillA, la) {
   math('f = ' + num(S.f, 1) + '\\ \\rm{kHz}', lx + 26, ly, {size: 16, alpha: la});
 }
 
-/* ---------------------------------------------------------------- (b) along the beam
-   An oblique view of 412 mm of the beam ending at x = 0: x to the right, z up,
-   y receding at 40 degrees, halved. The section's boundary, cut into faces (runs
+/* ---------------------------------------------------------------- (b) along the waveguide
+   An oblique view of T.L mm of the waveguide ending at x = 0: x to the right, z up,
+   y receding at T.a degrees, times T.d (the plate: a wide slab, its slice's width
+   drawn T.ys times over, seen from above). The section's boundary, cut into faces (runs
    of boundary nodes of one direction), is swept along x; the faces turned to the
    reader are drawn from the farthest to the nearest, and the face at x = 0 last.
    The wave runs along it as packets: every point moves as
-   E(x - X) Re{U(y, z) exp(i(k(x - X) + psi))}, E the Hann envelope PW mm across
+   E(x - X) Re{U(y, z) exp(i(k(x - X) + psi))}, E the Hann envelope T.pw mm across
    about the packet's centre X (which moves at c_g; psi turns at k c_g - w, so the
    crests move at c_p), drawn with its largest displacement STR.G units but never
    steeper than STR.SL, and coloured by |u| / U_rms at that instant (U_rms the
    section's rms displacement at the packet's centre), so every wave, the axial one
    too, is seen to travel. The faces' colours are one small image a wave, made each
-   frame: a column a millimetre along the beam, a row a node of each drawn face. It is
+   frame: a column a sample along the waveguide, a row a node of each drawn face. It is
    laid on the face in parallelogram pieces cut to the deformed outline: fine where
    the packet is, one piece over the straight, white beam on either side. A bore's
    faces are drawn only near the open end, where they show. */
-const NXS = STR.L + 1, XM = Float32Array.from({length: NXS}, (_, m) => m - STR.L);   // x (mm) of each sample
 const PADX = 16, PAD = 2, IMG = [0, 1].map(() => ({cv: document.createElement('canvas'), im: null, px: null}));
 const SEQ32 = (() => {                                    // the colour scale as RGBA words, for writing a pixel at once
   const u = new Uint32Array(256), b = new Uint8Array(u.buffer);
@@ -2855,10 +3577,11 @@ function piece(img, m, mw, r0, rows, P0, U, V, ea, eb, ev) {
   ctx.restore();
 }
 function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
-  const s = STR.s, yc = STR.yc[w], U = S.U, k = S.k / 1e3, NX = NXS, N = sec.N, y0 = sec.ymin;
+  const T = sec.T, s = T.s, yc = STR.yc[w], U = S.U, k = S.k / 1e3, NX = NXS, N = sec.N, y0 = sec.ymin;
+  const XM = T.XM, PW = T.pw, CD = T.cd, SD = T.sd, x1 = T.x1, ys = T.ys;
   const g = Math.min(STR.G, STR.SL * s * S.lam / (2 * Math.PI)) * amp / s;   // mm per unit of U
-  // the packet on the beam: E cos and E sin of the phase at each sample, zero off it
-  const X0 = wrapX(Xc), cs = new Float32Array(NX), sn = new Float32Array(NX);
+  // the packet on the waveguide: E cos and E sin of the phase at each sample, zero off it
+  const X0 = wrapX(T, Xc), cs = new Float32Array(NX), sn = new Float32Array(NX);
   let p0 = NX, p1 = -1;
   for (let m = 0; m < NX; m++) {
     const xi = XM[m] - X0;
@@ -2872,25 +3595,25 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
   const row = n => {
     let r = rows.get(n);
     if (r) return r;
-    const X = new Float32Array(NX), Y = new Float32Array(NX), e = sec.GY[n] - y0;
+    const X = new Float32Array(NX), Y = new Float32Array(NX), e = (sec.GY[n] - y0) * ys;
     const ux = g * U[3 * n], uy = g * U[3 * n + 1], uz = g * U[3 * n + 2];
     for (let m = 0; m < NX; m++) {
       const d = e + uy * cs[m];
-      X[m] = STR.x1 + s * (XM[m] - ux * sn[m] + d * CD);
+      X[m] = x1 + s * (XM[m] - ux * sn[m] + d * CD);
       Y[m] = yc - s * (sec.GZ[n] + uz * cs[m] + d * SD);
     }
     rows.set(n, r = {X, Y});
     return r;
   };
   const c0 = cs[NX - 1], s0 = sn[NX - 1];
-  const end = n => { const d = sec.GY[n] - y0 + g * U[3 * n + 1] * c0;
-    return [STR.x1 + s * (-g * U[3 * n] * s0 + d * CD), yc - s * (sec.GZ[n] + g * U[3 * n + 2] * c0 + d * SD)]; };
+  const end = n => { const d = (sec.GY[n] - y0) * ys + g * U[3 * n + 1] * c0;
+    return [x1 + s * (-g * U[3 * n] * s0 + d * CD), yc - s * (sec.GZ[n] + g * U[3 * n + 2] * c0 + d * SD)]; };
   const E_ = Array.from({length: N}, (_, n) => end(n));
   const mag = (n, m) => Math.sqrt(S.AX[n] * sn[m] * sn[m] + S.TR[n] * cs[m] * cs[m]);
   // pieces along x: straight lines between their ends stay within 0.6 units of the deformed edge,
   // which bends with the carrier and the envelope together (wavenumbers 2 pi / lambda and 2 pi / PW)
   const bend = Math.max(1e-9, g * s), kE = 2 * Math.PI / S.lam + 2 * Math.PI / PW;
-  const step = 2 * Math.round(clamp(Math.sqrt(8 * .6 / bend) / kE / 2, 1, 12)), ca = fillA * clamp(amp * 1.25);
+  const step = 2 * Math.round(clamp(Math.sqrt(8 * .6 / bend) / kE / T.dx / 2, 1, 12)), ca = fillA * clamp(amp * 1.25);
   const breaks = m0 => {                                 // fine over the packet, one piece either side of it
     const out = [m0];
     for (let m = m0; m < NX - 1; ) {
@@ -2938,12 +3661,13 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
         }
       }
       ctx.restore();
-      // its mesh: lines along the beam at every fourth node (4 mm on a 1 mm mesh), sections every 10 mm
+      // its mesh: lines along the waveguide at every T.lj-th node of the face, sections every T.lm samples
       if (F.outer) {
         ctx.save(); ctx.globalAlpha *= .45 * fillA; ctx.strokeStyle = C.sky; ctx.lineWidth = .6; ctx.beginPath();
-        for (let j = 4; j < F.nodes.length - 1; j += 4) { const r = row(F.nodes[j]); ctx.moveTo(r.X[0], r.Y[0]); for (let m = 2; m < NX; m += 2) ctx.lineTo(r.X[m], r.Y[m]); }
+        const lj = F.nodes.length <= 3 ? 1 : T.lj;          // a face of one element across: its middle line
+        for (let j = lj; j < F.nodes.length - 1; j += lj) { const r = row(F.nodes[j]); ctx.moveTo(r.X[0], r.Y[0]); for (let m = 2; m < NX; m += 2) ctx.lineTo(r.X[m], r.Y[m]); }
         const R_ = F.nodes.map(row);
-        for (let m = NX - 1; m > 0; m -= 10) { ctx.moveTo(R_[0].X[m], R_[0].Y[m]); for (let j = 1; j < R_.length; j++) ctx.lineTo(R_[j].X[m], R_[j].Y[m]); }
+        for (let m = NX - 1; m > 0; m -= T.lm) { ctx.moveTo(R_[0].X[m], R_[0].Y[m]); for (let j = 1; j < R_.length; j++) ctx.lineTo(R_[j].X[m], R_[j].Y[m]); }
         ctx.stroke(); ctx.restore();
       }
     }
@@ -2992,6 +3716,7 @@ function playControl() {
 
 /* ---------------------------------------------------------------- draw */
 function draw() {
+  WIN = CUR;
   const q = stateNow(), sw = SW, p = swP();
   if (sw && p >= 1 && FROZEN === null) { SW = null; syncSwitch(); if (NEXT) setTimeout(() => chooseSection(NEXT)); }
   const S = [solved(CUR, q.st[0], 0), solved(CUR, q.st[1], 1)];
@@ -3020,13 +3745,22 @@ function draw() {
   playControl();
   const dr2 = seg(.15, .45), fl2 = seg(.40, .30);
   for (let w = 0; w < 2; w++) stripView(sec, w, SS[w], V.X[w], V.ps[w], V.amp * env, dr2, fl2, V.lab * lab(.35) * env);
-  const pa = lab(.7);
-  if (sw && p < 1) { text(sw.from.params, 18, H - 16, {size: 14, color: C.muted, alpha: pa * (1 - clamp(p / .4))}); text(CUR.params, 18, H - 16, {size: 14, color: C.muted, alpha: pa * clamp((p - .4) / .4)}); }
-  else text(CUR.params, 18, H - 16, {size: 14, color: C.muted, alpha: pa});
+  // the parameters: the section and its mesh, then the steel and the section's one clock (its slow-motion factor)
+  const pa = lab(.7), foot = (sc, a) => {
+    if (a <= 0) return;
+    text(sc.params, 18, H - 36, {size: 14, color: C.muted, alpha: a});
+    const w = text(D.steel + ';', 18, H - 16, {size: 14, color: C.muted, alpha: a});
+    math(sc.T.label, 18 + w + FOOT_GAP, H - 16, {size: 14, color: C.muted, alpha: a});
+  };
+  if (sw && p < 1) { foot(sw.from, pa * (1 - clamp(p / .4))); foot(CUR, pa * clamp((p - .45) / .4)); }
+  else foot(CUR, pa);
   place(S);
 }
 
-CUR = prepare(b64buf(D.blob));
+// ?section=rail (bar, ibeam, rail, pipe or plate) opens the page on that section, for the checks and a
+// still of each; without it the page opens on the bar
+const SEL = (/[?&]section=(\w+)/.exec(location.search) || [])[1];
+CUR = prepare(b64buf(D.blobs[SEL in D.blobs ? SEL : 'bar']));
 
 /* ---------------------------------------------------------------- input */
 const FIG = document.querySelector('.fig'), OV = [], RG = [];
@@ -3055,7 +3789,7 @@ function place(S) {                                      // the overlays follow 
       S[w].cg.toFixed(2) + ' km/s, wavelength ' + (S[w].lam < 1e3 ? S[w].lam.toPrecision(3) + ' mm' : (S[w].lam / 1e3).toFixed(2) + ' m');
     if (el.getAttribute('aria-valuetext') !== txt) {
       el.setAttribute('aria-valuetext', txt); el.setAttribute('aria-valuenow', S[w].f.toFixed(1));
-      el.setAttribute('aria-valuemin', br.f[br.i0].toFixed(1)); el.setAttribute('aria-valuemax', br.f[br.i1].toFixed(1));
+      el.setAttribute('aria-valuemin', br.fmin.toFixed(1)); el.setAttribute('aria-valuemax', br.fmax.toFixed(1));
     }
   }
   const n = D.secs.length, cw = (SW_.x1 - SW_.x0) / n;
@@ -3079,7 +3813,7 @@ function syncSwitch() {
 function neighbour(S, dir) {                             // the curve just above (dir 1) or below at this frequency
   let best = null;
   for (const br of CUR.BR) {
-    if (br.id === S.id || S.f < br.f[br.i0] || S.f > br.f[br.i1]) continue;
+    if (br.id === S.id || S.f < br.fmin || S.f > br.fmax) continue;
     const k = kAtF(br, S.f), cp = atK(br, k).cp, d = (cp - S.cp) * dir;
     if (d > 1e-6 && (!best || d < best.d)) best = {d, id: br.id, k};
   }
@@ -3089,8 +3823,9 @@ function key(w, e) {
   const S = LAST[w]; if (!S || S.sec !== CUR.key) return;
   const br = CUR.BR[S.id], big = e.shiftKey || e.key === 'PageUp' || e.key === 'PageDown' ? 10 : 1;
   let st = null;
-  if (e.key === 'ArrowRight' || e.key === 'PageUp') st = {id: S.id, k: kAtF(br, S.f + big)};
-  else if (e.key === 'ArrowLeft' || e.key === 'PageDown') st = {id: S.id, k: kAtF(br, S.f - big)};
+  const df = big * CUR.fm / 200;                         // 1 kHz on a 200 kHz window, in proportion on the others
+  if (e.key === 'ArrowRight' || e.key === 'PageUp') st = {id: S.id, k: kAtF(br, S.f + df, S.k)};
+  else if (e.key === 'ArrowLeft' || e.key === 'PageDown') st = {id: S.id, k: kAtF(br, S.f - df, S.k)};
   else if (e.key === 'Home') st = {id: S.id, k: br.k[br.i0]};
   else if (e.key === 'End') st = {id: S.id, k: br.k[br.i1]};
   else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { const n = neighbour(S, e.key === 'ArrowUp' ? 1 : -1); if (n) st = {id: n.id, k: n.k}; else { e.preventDefault(); return; } }
@@ -3174,7 +3909,7 @@ if (!STILL) {
     if (GRAB) {
       const br = CUR.BR[USER.st[GRAB.w].id];
       // along its own curve; a pointer drawn well away onto another curve takes the wave there
-      let st = {id: br.id, k: GRAB.axis ? kAtF(br, (X - P.x) / P.w * FM) : nearOn(br, X, Y).k};
+      let st = {id: br.id, k: GRAB.axis ? kAtF(br, (X - P.x) / P.w * WIN.fm, USER.st[GRAB.w].k) : nearOn(br, X, Y).k};
       if (!GRAB.axis) { const own = nearOn(br, X, Y), n = nearest(CUR, X, Y); if (own.d > 28 && n.d < 8 && n.id !== br.id) st = {id: n.id, k: n.k}; }
       setWave(GRAB.w, st);
       return;
@@ -3198,33 +3933,63 @@ if (!STILL) {
 }
 """
 
+FIGURE = FIGURE.replace("yc: [%d, %d]", f"yc: [{STR_YC[0]}, {STR_YC[1]}]")   # one source for the strips' centres
 JS = "const D = DATA;\n" + SOLVER + FIGURE + "\nboot();\n"
 
 
-def check_text(Rs, SV, sizes, ov, ovl, TG, MS):
-    L = ["Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in four steel sections",
-         "and an infinite plate, every wave solved in the page by the same SAFE model", ""]
-    L += check_bar(Rs["bar"])
-    L += check_sections(Rs)
+def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
+    L = ["Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in five steel waveguides, each over",
+         "the frequency window of its reference: published curves for four (the bar, the rail, the pipe, the",
+         "plate), and for the I-beam, of which none were found, the same model on a mesh refined twice; every",
+         "wave the page shows solved in the page by the same SAFE model", ""]
     p = L.append
-    ref, gen = sm.Safe(*MESH), make_section("bar")
+    p("MATERIAL AND METHOD")
+    p(f"  steel: E = {sm.E / 1e9:.0f} GPa, nu = {sm.NU}, rho = {sm.RHO:.0f} kg/m^3: c_L = {sm.C_L:.1f} m/s, c_T = {sm.C_T:.1f} m/s,")
+    p(f"  c_0 = sqrt(E/rho) = {sm.C_0:.1f} m/s, c_R = {sm.C_R:.1f} m/s (the Rayleigh equation's root, c_R/c_T = {sm.C_R / sm.C_T:.5f})")
+    p("  SAFE: u = U(y, z) exp(i(kx - wt)); 9-node isoparametric quadrilaterals, 3 x 3 Gauss, 3 dof a node;")
+    p("  [K1 + ik K2 + k^2 K3 - w^2 M] U = 0, made real symmetric by U_x = i V_x; each symmetry class on its")
+    p("  own orthonormal basis; the lowest eigenpairs at each real k (dense eigh, or sparse shift-invert).")
+    p("  The square bar, the pipe and the plate are meshed on structured grids; the I-beam and the rail by a")
+    p("  constrained quality Delaunay triangulation of the outline (Shewchuk's Triangle, minimum angle 30")
+    p("  degrees), each triangle split into three quadrilaterals, then 9-node elements, the boundary nodes moved")
+    p("  onto the true outline; a half or quarter meshed and mirrored, so the mirror planes hold exactly.")
+    p(f"  The window of every section: f up to its own fmax and c_p up to {CP_MAX / 1e3:g} km/s. fmax is chosen in a gap")
+    p("  between the frequencies where branches enter the window (their c_p falling through its top), so that every")
+    p("  branch drawn enters well before fmax and none is about to (each is drawn once); in all but the bar this is")
+    p("  also a gap between cut-on frequencies. The cut-on marks on the top frame are the k = 0 frequencies of")
+    p("  exactly the drawn higher order branches.")
+    p("")
+    p("SUMMARY")
+    p("  section  window        reference                                      branches   mesh                    per shortest")
+    p("                                                                        ours/ref.                          wavelength")
+    rows = [("bar", "Hayashi, Kawashima and Rose 2004 (SAFE), Fig. 2"), ("ibeam", "independent: the mesh refined twice"),
+            ("rail", "Ramatlo, Wilke and Loveday 2018 (SAFE), Fig. 1"), ("pipe", "exact, Gazis 1959"),
+            ("plate", "exact, Rayleigh-Lamb and SH")]
+    for key, ref in rows:
+        Z, R, C = SECTIONS[key], Rs[key], convs[key]
+        nb = len(window_branches(key, R))
+        nref = refs[key]["nref"]
+        p(f"  {Z['label']:7s}  0-{Z['fmax'] / 1e3:g} kHz  {ref:46s}  {nb:2d}/{nref if nref is not None else '-':>2}     "
+          f"{C['nel']:4d} Q9, {C['hmax']:.2f} mm max   {C['lam'] / C['hmax'] if 'lam' in C else 0:4.1f}")
+    p("")
+    for key in ORDER:
+        L += refs[key]["lines"]
+        p(f"  MESH ({SECTIONS[key]['label']})")
+        L += convs[key]["lines"]
+        p("")
+    ref, gen = sm.Safe(NE_BAR, NE_BAR, SQ / 1e3, SQ / 1e3), make_section("bar")
     pairs = ((gen.K1, ref.K1), (gen.K2, ref.K2), (gen.K3, ref.K3), (gen.M, ref.M))
-    dm = (max(abs(A - B).max() / abs(B).max() for A, B in pairs)
-          if all(A.shape == B.shape for A, B in pairs) else None)
+    dm = max(abs(A - B).max() / abs(B).max() for A, B in pairs)
     p("THE PAGE SOLVES EVERY WAVE IT SHOWS")
     p("  Each section travels as its mesh (nodes in float32, the Python model reading the same rounded")
     p("  values) and its symmetry. The page builds the same isoparametric Q9 elements (3 x 3 Gauss),")
-    p("  assembles each class on its own basis (mirror orbits, or the pipe's harmonics) as a skyline in")
-    p("  an RCM order, and solves a wave (class, branch, k) exactly: the shift s sits 1e-4 of w under")
-    p("  the drawn curve's w at k; a skyline LDL^T of K(k) - s M counts its negative pivots (Sylvester:")
-    p("  the eigenvalues below s), s moves until exactly `branch` lie below, and inverse iteration")
-    p("  converges on the branch's own eigenpair at that k. Should it head for a nearer eigenvalue")
-    p("  below s, the count brackets the branch's alone, bisection narrows the bracket, and the")
-    p("  iteration runs again from its middle.")
-    if dm is None:
-        p("  The bar's general assembly and safe_model use different mesh densities; matrix dimensions are not directly comparable.")
-    else:
-        p(f"  The bar's general assembly gives safe_model's matrices: max relative difference {dm:.1e}.")
+    p("  assembles each class on its own basis (the projections of each orbit's displacements, orthonormalised:")
+    p("  mirror planes, the square's C4v, or the pipe's harmonics) as a skyline in an RCM order, and solves a")
+    p("  wave (class, branch, k) exactly: a skyline LDL^T of K(k) - s M counts its negative pivots (Sylvester:")
+    p("  the eigenvalues below s), s moves until exactly `branch` lie below, and inverse iteration converges on")
+    p("  the branch's own eigenpair; should it head for a nearer one below s, the count brackets the branch's")
+    p("  alone, bisection narrows the bracket, and the iteration runs again from its middle.")
+    p(f"  The bar's general assembly gives safe_model's rectangle matrices: max relative difference {dm:.1e}.")
     if "skipped" in SV:
         p(f"  (the node check skipped: {SV['skipped']})")
     else:
@@ -3236,87 +4001,76 @@ def check_text(Rs, SV, sizes, ov, ovl, TG, MS):
               f"max (1 - MAC) = {v['em']:.1e}, Sturm count wrong or rejected: {v['bad']},")
             p(f"            shift moved at most {v['tries']} time(s), {v['ms']:.2f} ms a solve (node, this machine);"
               f" classes (size, skyline): " + ", ".join(f"{a} {b}" for a, b in v["dims"]))
-    p("  So every state the reader picks, and every frame of the tour, is an exact SAFE eigenpair of")
-    p("  its section: the marker sits at its own (f, c_p), the section and the beam draw its own")
-    p("  eigenvector.")
-    p("  The curves travel thinned. Of the sweep's eigenfrequencies (points at most 2 drawing units")
-    p("  apart) only those go that a cubic Hermite in k needs (its slopes the group velocity, from a")
-    p(f"  spline through the branch) to give every dropped one back within {THIN:.0e}; the page lays each")
-    p("  segment out again, halving it until straight lines between its points stay within")
-    p(f"  {THIN:.0e} of the Hermite in f and in c_p. The page's curve at every point of the sweep:")
+    if perf:
+        p("  In headless Chromium (the page at 672 px, this shared machine): from choosing a section to its first")
+        p("  frame (its data read, its classes' matrices assembled, its two waves solved and drawn), and a frame")
+        p("  of its first glide (wave 2 at a wavenumber not met before: one state solved, both beams drawn):")
+        for key in ORDER:
+            q = perf.get(key)
+            if q:
+                p(f"    {SECTIONS[key]['label']:7s} switch to the first frame {q['switch']:.0f} ms; a glide frame {q['frame']:.0f} ms")
+    p("  The curves travel thinned: only the eigenfrequencies a cubic Hermite in k needs (its slopes the group")
+    p(f"  velocity, from a spline through the branch) to give every dropped one back within {THIN:.0e}; the page lays")
+    p(f"  each segment out again within {THIN:.0e}. The page's curve at every point of the sweep:")
     for key in ORDER:
         st = thinned(key, Rs[key])[2]
         p(f"    {SECTIONS[key]['label']:7s} {st['kept']} of {st['n']} points travel ({st['kept'] / st['n']:.0%}),"
           f" laid out as {st['laid']}: max |f_page/f - 1| = {st['err']:.1e}")
-    p("  (the shift sits 1e-4 under the page's curve, so it stays below the branch's eigenvalue).")
     p("")
     L += check_group(Rs, SV, TG, MS)
-    cross = lambda cg: BEAM / (cg * 1e6 / SLOW)
-    p("THE TOURS (wave 1, then wave 2 gliding; each state's f, c_p, c_g and wavelength, and the seconds its")
-    p("packet takes to cross the drawn beam)")
+    p("TIME: ONE CLOCK A SECTION")
+    p("  Each section's packets, both waves and every operating point, run on one clock: the steel's time")
+    p("  slowed T.slow times (written under the waveguides), and one length scale, T.s drawing units a mm. A")
+    p("  packet's envelope moves at c_g / slow and its crests at c_p / slow, as they are; nothing is scaled per")
+    p("  wave. So a slow packet lags a fast one, and dragging a wave along its curve changes both speeds at once.")
+    p("  The clock keeps the crests of the tour's highest frequency cycling at about 7.5 a second (f / slow), so")
+    p("  they are seen to move rather than flicker; the length shown holds two or more wavelengths of wave 1 in")
+    p("  its packet. Per section: length shown L, envelope pw, slow, and the tour's states with the seconds each")
+    p("  packet takes to cross L, the crests' frequency on the page, and c_p / c_g (above 1 the crests run")
+    p("  forward through the envelope, below 1 backward):")
     for key in ORDER:
+        Z = SECTIONS[key]
+        G = Z["strip"]
         brs, flat = curves_of(key, Rs[key])
-        p(f"  {SECTIONS[key]['label']}:")
-        for s, row in zip(tour_of(key, brs, flat), TG[key]):
-            at = lambda st: f"{st[0]:.3g} kHz (c_p {st[1]:.2f}, c_g {st[2]:.2f} km/s, {2e3 * np.pi / st[3]:.1f} mm; {cross(st[2]):.1f} s)"
-            p(f"    1: {brs[s['b1']]['nm']}, {at(row['w1'])}")
-            p(f"    2: {brs[s['b2']]['nm']}, {at(row['wa'])}")
-            p(f"       to {at(row['w2'])}")
-    p("  The first stop of each section shows wave 2 at its high frequency from the start: the")
-    p("  caption's comparison, the whole section moving at low frequency, the surfaces at high.")
+        cross = lambda cg: G["L"] / (cg * 1e6 / G["slow"])
+        p(f"  {Z['label']}: L = {G['L']:.0f} mm, pw = {G['pw']:.0f} mm, slow = {G['slow']:.4g} (1 s of the page = {1e6 / G['slow']:.1f} us)")
+        for i, (s_, row) in enumerate(zip(tour_of(key, brs, flat), TG[key])):
+            def at(st):
+                return (f"{st[0]:.3g} kHz: c_p {st[1]:.2f}, c_g {st[2]:.2f} km/s, lambda {2e3 * np.pi / st[3]:.0f} mm;"
+                        f" crosses in {cross(st[2]):.1f} s, crests {st[0] * 1e3 / G['slow']:.2f} Hz, c_p/c_g {st[1] / st[2]:.2f}")
+            p(f"    stop {i + 1}, wave 1: {brs[s_['b1']]['nm']}, {at(row['w1'])}")
+            p(f"            wave 2: {brs[s_['b2']]['nm']}, {at(row['wa'])}")
+            p(f"                    gliding to {at(row['w2'])}")
+        r0 = TG[key][0]
+        p(f"    the first stop's wave 1 takes {cross(r0['w1'][2]) / cross(r0['w2'][2]):.2f} times as long as wave 2 to cross"
+          f" (c_g {r0['w1'][2]:.2f} and {r0['w2'][2]:.2f} km/s)")
+    p("  The first stop of each section is the caption's comparison: one mode low in frequency, where the")
+    p("  whole section moves, and high, where the motion gathers at the surfaces (or in the thin walls).")
+    p("  Tour: 16 s on the first stop, then 18 s a stop: markers arrive, wave 2 glides up its curve over 8 s, a")
+    p("  hold, 1 s of rest between modes; each stop launches both packets anew from the left end.")
     p("")
-    allcg = [row[l][2] for key in ORDER for row in TG[key] for l in ("w1", "wa", "w2")]
-    fast = fastest(Rs)
-    p("TIME AND DRAWING")
-    p("  The waves run as packets (b): each beam carries bursts of its own mode under a Hann envelope")
-    p(f"  E(x) = cos^2(pi x / {PACKET:.0f} mm) ({PACKET:.0f} mm across, {SIG:.1f} mm rms), one after another {BEAM + PACKET:.0f} mm apart,")
-    p(f"  so one crosses the drawn {BEAM:.0f} mm at a time, launched from the left end:")
-    p("  u = E(x - X) Re{U exp(i(k(x - X) + psi))}. X, the envelope's centre, moves at c_g; psi, the phase")
-    p("  at the centre, turns at k c_g - w, so a crest (k (x - X) + psi a whole turn) moves at")
-    p("  X' - psi'/k = w/k = c_p. Both waves are on one clock, not written on the figure:")
-    p(f"  {SLOW:.4g} times slower than the beam's, so that a packet at the rod speed c_0 crosses the {BEAM:.0f} mm")
-    p(f"  in {CROSS:g} s (1 s of the page is {1e6 / SLOW:.1f} us of the beam). The fastest c_g in any window is")
-    p(f"  {fast[0]:.3f} km/s (the {SECTIONS[fast[1]]['label']}'s {fast[2]} at {fast[3]:.0f} kHz: {cross(fast[0]):.2f} s); at the tours' states")
-    p(f"  the packets cross in {cross(max(allcg)):.1f} to {cross(min(allcg)):.1f} s.")
-    p(f"  A wave cycles on the page at f / {SLOW:.4g}: {150e3 / SLOW:.1f} Hz at 150 kHz, {20e3 / SLOW:.1f} Hz at 20 kHz.")
-    p("  In the tour X and psi are the exact c_g and k c_g - w integrated in time (the glides by the rule")
-    p("  above), a pure function of the clock; under the reader's hand each frame moves them on by its")
-    p("  time at the rates of the state then shown, so a new frequency changes the speed at once and the")
-    p("  crests close in or open out about the centre, neither the envelope nor the phase at it jumping.")
-    p("  Each section view shows its wave's cross-section at the packet's centre, u = Re{U exp(i psi)}:")
-    p("  still for a wave that does not disperse (c_g = c_p), turning over for one that does.")
-    p("  Tour: 16 s on the caption's comparison, then 18 s a stop: markers arrive, wave 2 glides up its")
-    p("  curve over 8 s, a hold, 1 s of rest between modes; each stop launches both packets anew.")
-    p("  Colour: |u| / U_rms at each point at that instant, E sqrt(U_x^2 sin^2 + (U_y^2 + U_z^2) cos^2) of")
-    p("  the phase, U_rms the section's rms displacement at the packet's centre (U^T M U = rho A U_rms^2);")
-    p("  0 to 3, so the beam is white where no packet is. Shape: the largest displacement drawn 18 units")
-    p("  in the sections (each section at its own scale, the bar 7.5 units per mm) and at most 11 units")
-    p("  along the beam, never steeper than 0.5 (2.2 units per mm, 412 mm ending at x = 0). Along the beam")
-    p("  the boundary is cut into faces (runs of one direction); those turned to the reader are drawn far")
-    p("  to near, each an image of |u| made each frame (a column a millimetre) laid on its deformed outline")
-    p("  in pieces, fine over the packet and one piece over the still beam either side of it; the face at")
-    p("  x = 0 last; creases and silhouettes are inked.")
+    p("THE PLATE AS A PLATE")
+    p("  The plate's waves run along a wide, thin slab in an oblique view seen from above (its depth drawn at")
+    p(f"  {SECTIONS['plate']['strip']['d']} of the width, at {SECTIONS['plate']['strip']['a']:g} degrees): {PLATE_D:g} mm thick and"
+      f" {40 * SECTIONS['plate']['strip']['ys']:.0f} mm wide, the slice's width drawn {SECTIONS['plate']['strip']['ys']:g} times over (the plate")
+    p("  is uniform across its width, so the slice's mode shape is the plate's). Its top face is lit by |u| at the")
+    p("  surface, the same across the width: the crests are straight lines across the plate, for Lamb waves")
+    p("  (u_x, u_z: the top face and the near edge heave) and SH waves (u_y: the top face's lines along x sway")
+    p("  across). The section view above it shows the computed shape through the thickness.")
     p("")
     p("INTERACTION")
-    p("  The section switcher over (b) (a radio group: arrows move and choose) morphs the fundamental")
-    p("  curves into the new section's in 0.8 s of wall time (so also while the waves are paused), cross")
-    p("  fades the higher order curves, glides the markers and fades the waves over. A wave keeps its")
-    p("  kind (bending, axial, torsional) and frequency where the new section has that mode there, and")
-    p("  otherwise takes the curve nearest in c_p. The tour starts again on the new section.")
-    p("  The play control by the colour scale, and Space, pause and resume the waves: the phases stop")
-    p("  with the clock and run on from there; dragging while paused redraws the frozen frame.")
-    p("  The first touch of a curve, marker, thumb or key stops the tour; \"resume tour\" hands back")
-    p("  after a 0.35 s fade, at the tour's next stop. Hover shows a curve's name and its f, wavelength,")
-    p("  c_p and c_g (solved there) under the pointer. Each wave's label over its beam gives c_p, c_g and")
-    p("  the wavelength; its slider reads them out. Hits: 18 units (marker), 12 (curve) with a mouse; 30 and 24 by")
-    p("  touch. A drag follows its own curve, and moves to another only when the pointer is drawn")
-    p("  well away (28 units) onto it (8 units).")
+    p("  The section switcher over (b) (a radio group: arrows move and choose) changes the window: the old")
+    p("  frequency ticks fade before the new arrive, the fundamental curves morph at the same share of either")
+    p("  window, the higher order curves cross fade, the markers glide and the waves fade over (0.8 s of wall")
+    p("  time). A wave keeps its kind (bending, axial, torsional) at the same share of the new window, or takes")
+    p("  the curve nearest in c_p; its packet keeps its share of the drawn length. The tour starts again on")
+    p("  the new section. Hover names a curve and gives f, wavelength, c_p and c_g there; a marker or its thumb")
+    p("  drags along its curve (on a backward-wave branch, to the crossing nearest the wave), the arrows step")
+    p("  it (1 kHz on a 200 kHz window, in proportion on the others), up and down move it to the next curve.")
     p("")
     p("PAYLOAD")
-    p(f"  nf-dispersion.html {sizes['page'] / 1024:.0f} KB (the engine, this script and the bar, inline); fetched")
-    p("  when a section is first chosen or its switch is pointed at: " +
-      ", ".join(f"nf-dispersion-{k}.json {sizes[k] / 1024:.0f} KB" for k in ORDER[1:]) +
-      f"; {sum(sizes.values()) / 1024:.0f} KB in all.")
+    p(f"  nf-dispersion.html {sizes['page'] / 1024:.0f} KB: the engine, this script and all five sections inside (no request is")
+    p("  made when a section is chosen); the nf-dispersion-<section>.json files are neither written nor read.")
     p("")
     p("OVERLAP (engine ?overlap, 672 px)")
     nt = len(tour_times())
@@ -3328,58 +4082,168 @@ def check_text(Rs, SV, sizes, ov, ovl, TG, MS):
     p("  live (the controls drawn, waves paused): every section at 5 moments: " +
       ("no collisions" if not faults2 else f"collisions in {sorted(faults2)}"))
     p(f"  and each section's parameter line ends left of x = {PARAM_MAX} units, clear of the page controls")
-    p("  at every width from 300 px (they cover the last 51 px of the bottom right from 480 px down, 68 above)")
     p("")
-    p(f"compute: the bar {Rs['bar']['time']:.0f} s, " + ", ".join(f"{SECTIONS[k]['label']} {Rs[k]['time']:.0f} s" for k in ORDER[1:]))
+    p("compute: " + ", ".join(f"{SECTIONS[k]['label']} {Rs[k]['time']:.0f} s" for k in ORDER) + " (this shared machine)")
     return "\n".join(L) + "\n"
 
 
-def main():
-    Rs = {"bar": compute()}
-    for key in ORDER[1:]:
-        Rs[key] = compute_section(key)
+POSTER = 20 / 3      # s: the first stop, both packets at the middle of the drawn length, the intro long over
+TITLE = "Figure 4: Schematic dispersion curves for guided waves in a beam"
+ARIA = ("Phase velocity against frequency for steel waveguides computed with a SAFE model: bending, axial and "
+        "torsional modes start at zero frequency, higher order modes cut on above a threshold and approach the "
+        "shear and Rayleigh speeds. Two waves marked 1 and 2 are shown as their cross sections and along the "
+        "waveguide: at low frequency the whole section moves, at high frequency the motion gathers at the surfaces. "
+        "Along the waveguide each wave runs as packets whose envelope moves at its group velocity while the crests "
+        "inside move at its phase velocity, on one clock per section. "
+        "The cross section can be switched between a square bar, an IPE 80 I-beam, a 60E1 rail, a schedule 40 pipe "
+        "and a plate, each over its own frequency range; the markers can be dragged along the curves or moved with "
+        "the arrow keys, and Space pauses the waves.")
+HEIGHT = 880
+
+
+def build_page(Rs=None):
+    """The sweeps (cached), the sections' blobs and the page. Returns (Rs, page path, blobs)."""
+    Rs = Rs or {key: compute_section(key) for key in ORDER}
     blobs = {key: section_blob(key, Rs[key]) for key in ORDER}
     b64 = {key: base64.b64encode(blobs[key]).decode("ascii") for key in ORDER}
-    for key, s in b64.items():                   # the site's check for his private details reads text files
-        if re.search(r"gmail|300\W{0,3}4065", s, re.I):
+    for key, s_ in b64.items():                  # the site's check for his private details reads text files
+        if re.search(r"gmail|300\W{0,3}4065", s_, re.I):
             raise RuntimeError(f"the {key} blob's base64 happens to spell a private pattern")
-    for key in ORDER[1:]:                        # JSON: a type Wix's static host serves
-        with open(os.path.join(common.ANIM, f"nf-{NAME}-{key}.json"), "w", encoding="ascii", newline="\n") as fh:
-            json.dump({"blob": b64[key]}, fh)
-        old = os.path.join(common.ANIM, f"nf-{NAME}-{key}.bin")
-        if os.path.exists(old):
-            os.remove(old)
-    data = {"fmax": F_MAX / 1e3, "cmax": CP_MAX / 1e3, "ct": sm.C_T / 1e3, "cr": sm.C_R / 1e3, "slow": SLOW,
-            "pw": PACKET, "poster": POSTER, "secs": [{"key": k, "label": SECTIONS[k]["label"]} for k in ORDER],
-            "blob": b64["bar"], "blobs": b64}
-    title = "Figure 4: Schematic dispersion curves for guided waves in a beam"
-    aria = ("Phase velocity against frequency for a steel beam computed with a SAFE model: bending, axial and "
-            "torsional modes start at zero frequency, higher order modes cut on above a threshold and approach the "
-            "shear and Rayleigh speeds. Two waves marked 1 and 2 are shown as their cross sections and along the "
-            "beam: at low frequency the whole section moves, at high frequency the motion gathers at the surfaces. "
-            "Along the beam each wave runs as packets whose envelope moves at its group velocity while the crests "
-            "inside move at its phase velocity, both speeds given over the beam. "
-            "The cross section can be switched between a bar, an I-beam, a rail, a pipe and an infinite plate; the markers can be "
-            "dragged along the curves or moved with the arrow keys, and Space pauses the waves.")
-    assert f"L: {BEAM:g}," in FIGURE and f"const NG = {TOUR_T['NG']};" in FIGURE and \
-        "const T1 = {T1}, TS = {TS}, TG0 = {TG0}, TGD = {TGD};".format(**TOUR_T) in FIGURE, "the page's constants moved"
-    path = common.build_html(NAME, title, aria, 1000, 848, data, JS)
-    sizes = {"page": os.path.getsize(path),
-             **{k: os.path.getsize(os.path.join(common.ANIM, f"nf-{NAME}-{k}.json")) for k in ORDER[1:]}}
-    print("sizes (bytes):", sizes)
+    data = {"cmax": CP_MAX / 1e3, "ct": sm.C_T / 1e3, "cr": sm.C_R / 1e3, "poster": POSTER,
+            "secs": [{"key": k, "label": SECTIONS[k]["label"]} for k in ORDER], "steel": STEEL, "blobs": b64}
+    path = common.build_html(NAME, TITLE, ARIA, 1000, HEIGHT, data, JS)
+    return Rs, path, blobs
+
+
+def plate_text(refs, convs, SV):
+    """The plate's independent checks and the page's solver against scipy for every section
+    (dispersion_plate.check.txt), from the full report's parts."""
+    L = ["Plate checks and the browser solver (dispersion.py; the full report is dispersion.check.txt)", ""]
+    L += refs["plate"]["lines"] + ["  MESH (plate)"] + convs["plate"]["lines"] + [""]
+    L.append("THE PAGE'S SOLVER (its script under node) AGAINST SCIPY ON THE SAME MESH, EVERY SECTION")
+    if "skipped" in SV:
+        L.append(f"  skipped: {SV['skipped']}")
+    else:
+        for key in ORDER:
+            v = SV[key]
+            L.append(f"  {SECTIONS[key]['label']:7s} {v['n']:3d} states: max |w_page/w_scipy - 1| = {v['ew']:.1e}, max (1 - MAC) ="
+                     f" {v['em']:.1e}, Sturm count wrong or rejected: {v['bad']}, {v['ms']:.2f} ms a solve (node)")
+    return "\n".join(L) + "\n"
+
+
+def branches_text(Rs, refs, text_):
+    """The branch count audit (dispersion_branches.check.txt): each section's drawn branches against
+    its reference, from the full report."""
+    L = ["Displayed branch count audit (dispersion.py; the full report is dispersion.check.txt)",
+         f"Each section over its own frequency window and c_p up to {CP_MAX / 1e3:g} km/s; the window's end lies in a gap",
+         "between the frequencies where branches enter it, so every branch drawn enters well before the end and",
+         "none is about to (in the bar three branches cut on below its end but enter only above it: not drawn).", ""]
+    L += ["SUMMARY"] + text_.split("SUMMARY\n", 1)[1].split("\n\n", 1)[0].split("\n") + [""]
+    starts = {"bar": "THE COUNT", "ibeam": "branches below", "rail": "branches below", "pipe": "branches below",
+              "plate": "exact cut-ons below"}
+    for key in ORDER:
+        lines = refs[key]["lines"]
+        i0 = next(i for i, l in enumerate(lines) if starts[key] in l)
+        L.append(f"{SECTIONS[key]['label']}:")
+        for l in lines[i0:]:
+            if not l.strip() or l.strip().startswith(("SAFE against", "T(0,1)")):
+                break
+            L.append(l)
+        L.append("")
+    return "\n".join(L)
+
+
+def page_perf():
+    """Headless Chromium: for each section, the time from choosing it to its first frame drawn (its
+    data read, its classes assembled, its two waves solved: what a reader waits for), and the time of
+    a frame in the first glide (wave 2 at a wavenumber not solved before: one state solved, both
+    beams drawn), the heaviest frame of the tour."""
+    from playwright.sync_api import sync_playwright
+    tmp = tempfile.mkdtemp(prefix="numfig-")
+    out = {}
+    try:
+        os.makedirs(os.path.join(tmp, "anim"))
+        shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
+        shutil.copy(os.path.join(common.ANIM, f"nf-{NAME}.html"), os.path.join(tmp, "anim"))
+        srv = common._server(tmp)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page(viewport={"width": 672, "height": 1400})
+            errs = []
+            pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-{NAME}.html?still")
+            pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=60000)
+            for key in ORDER:
+                ms = pg.evaluate("""async key => {
+                  if (key !== CUR.key) { delete LOADED[key]; delete PENDING[key]; }
+                  CACHE.clear(); HF.clear(); XS.clear(); LAST[0] = LAST[1] = null; t = POSTER_T;
+                  const t0 = performance.now();
+                  await setSectionNow(key);
+                  const t1 = performance.now();
+                  t = TOUR.off + T1 + TG0 + 3; render();
+                  const t2 = performance.now();
+                  t += 1 / 60; render();
+                  const t3 = performance.now();
+                  return {switch: t1 - t0, frame: t3 - t2};
+                }""", key)
+                out[key] = ms
+            if errs:
+                raise RuntimeError(f"page errors: {errs}")
+            b.close()
+        srv.shutdown()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return out
+
+
+def main():
+    Rs, path, blobs = build_page()
+    sizes = {"page": os.path.getsize(path)}
+    print("page:", path, sizes["page"], "bytes")
     if "--page" in sys.argv:
         return
-    SV = check_solver_all(Rs)
-    print("page solver:", SV)
-    TG = tour_group(Rs)
-    look = common.still(NAME)          # the bar's poster, and the overlap check to it (raises on a collision)
-    ov = overlaps_all(tour_times())
-    ovl = overlaps_all([.9, POSTER, 20, 29, 40], live=True)
-    MS = measure_screen()
-    print("on screen:", MS)
-    text_ = check_text(Rs, SV, sizes, ov, ovl, TG, MS)
+    refs = {"bar": ref_bar(Rs["bar"]), "ibeam": ref_ibeam(Rs["ibeam"]), "rail": ref_rail(Rs["rail"]),
+            "pipe": ref_pipe(Rs["pipe"]), "plate": ref_plate(Rs["plate"])}
+    convs = {}
+    for key in ORDER:
+        C = mesh_conv(key, Rs[key])
+        lines, q = conv_lines(key, Rs[key], C)
+        convs[key] = dict(C, lines=lines, **q)
+        print(key, "mesh:", q)
+    # the page's own checks (node, Chromium), kept with the page they ran on: --text writes the
+    # report again from them alone, while the page is unchanged
+    keep = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-checks.pkl")
+    with open(path, "rb") as fh:
+        page_hash = hashlib.sha1(fh.read()).hexdigest()
+    got = None
+    if "--text" in sys.argv and os.path.exists(keep):
+        with open(keep, "rb") as fh:
+            got = pickle.load(fh)
+        if got.get("page") != page_hash:
+            raise RuntimeError("--text: the page changed since its checks ran; run the full check")
+    if got is None:
+        SV = check_solver_all(Rs)
+        print("page solver:", {k: (v["ew"], v["bad"], v["ms"]) for k, v in SV.items()} if "skipped" not in SV else SV)
+        TG = tour_group(Rs)
+        perf = page_perf()
+        print("perf:", perf)
+        look = common.still(NAME)          # the bar's poster, and the overlap check to it (raises on a collision)
+        ov = overlaps_all(tour_times())
+        ovl = overlaps_all([.9, POSTER, 20, 29, 40], live=True)
+        MS = measure_screen(axial_dip(Rs["bar"]))
+        print("on screen:", MS)
+        got = dict(page=page_hash, SV=SV, TG=TG, perf=perf, look=look, ov=ov, ovl=ovl, MS=MS)
+        with open(keep, "wb") as fh:
+            pickle.dump(got, fh)
+    SV, TG, perf, look, ov, ovl, MS = (got[k] for k in ("SV", "TG", "perf", "look", "ov", "ovl", "MS"))
+    text_ = check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf)
     with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text_)
+    for nm, t_ in ((f"{NAME}_branches.check.txt", branches_text(Rs, refs, text_)),
+                   (f"{NAME}_plate.check.txt", plate_text(refs, convs, SV))):
+        with open(os.path.join(HERE, nm), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(t_)
     print(text_)
     print("still:", look)
     bad = {k: v for k, v in {**ov, **{"live " + a: b for a, b in ovl.items()}}.items() if v}

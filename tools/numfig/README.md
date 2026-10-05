@@ -90,7 +90,7 @@ document picture to its page; the controller (not you) adds your mapping.
 - **Axes.** Real numeric ticks in real units (kHz, m/s, km/s, mm, µs, Hz, m), inward
   ticks, a full box, and a light grid only where reading values matters.
 - **Parameter line.** A small parameter line in `C.muted`, size 14, gives credibility, for
-  example `steel, 20 × 40 mm, E = 210 GPa, ν = 0.29`.
+  example `steel, 20 × 20 mm, E = 210 GPa, ν = 0.29`.
 - **Strokes.**
   - Axes: 1.3.
   - Structures: 1.6 to 2.

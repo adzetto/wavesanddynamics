@@ -1,5 +1,7 @@
 """A semi-analytical finite element (SAFE) model of a solid rectangular steel
-bar: the one model behind Figures 4 and 5 (dispersion.py, safe.py).
+bar: the one model behind Figures 4 and 5 (dispersion.py, safe.py). The bar
+of both figures is the 20 x 20 mm square of B, H below, meshed 16 x 16 (Q9
+elements of 1.25 mm, dispersion.NE_BAR); any b x h rectangle can be built.
 
 The cross-section (y, z) is meshed with 9-node quadratic quadrilaterals (Q9),
 three displacements per node (ux along the bar, uy, uz in the section). Along
@@ -21,16 +23,17 @@ one of the four fundamental modes:
     (+, +) axial, (+, -) vertical bending (uz), (-, +) lateral bending (uy),
     (-, -) torsional;
 
-every other branch cuts on at a finite frequency w(k -> 0) > 0.
+every other branch cuts on at a finite frequency w(k -> 0) > 0. On the square
+(b = h) the two bending classes have the same frequencies: one bending pair.
 """
 import numpy as np
 import scipy.linalg as sla
 import scipy.sparse as sp
 from scipy.optimize import brentq
 
-# steel, 20 x 40 mm (width b along y, height h along z)
+# steel, 20 x 20 mm (width b along y, height h along z): Figure 4's square bar
 E, NU, RHO = 210e9, 0.29, 7850.0
-B, H = 0.020, 0.040
+B, H = 0.020, 0.020
 
 MU = E / (2 * (1 + NU))
 LAM = E * NU / ((1 + NU) * (1 - 2 * NU))
@@ -125,7 +128,7 @@ def _element(dy, dz):
 class Safe:
     """The SAFE model on an ny x nz mesh of the b x h section."""
 
-    def __init__(self, ny=10, nz=20, b=B, h=H):
+    def __init__(self, ny=16, nz=16, b=B, h=H):
         self.ny, self.nz, self.b, self.h = ny, nz, b, h
         self.nodes, self.elems = mesh(ny, nz, b, h)
         nn = len(self.nodes)

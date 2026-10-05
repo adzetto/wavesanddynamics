@@ -1,8 +1,15 @@
-Figure 4a: the same meshes, curves, solver and wave packets as Figure 4.
-No second fitted dispersion relation: k = 2 pi f/c_p exactly.
+Figure 4a: the same meshes, curves, solver, wave packets and clocks as Figure 4 (nf-dispersion.html's
+data, all five sections inside the page: nothing is fetched).
+No second fitted dispersion relation: k = 2 pi f/c_p exactly, at every point of Figure 4's curves.
 Units: k in rad/m, f in kHz, c_p in km/s.
 At f = 50 kHz and c_p = 5 km/s: k = 62.832 rad/m.
-The same branches and phase-velocity window as Figure 4 are retained for direct comparison.
+Each section over its own frequency window, as in Figure 4: bar 0 to 190 kHz, I-beam 0 to 52 kHz, rail 0 to 22.5 kHz, pipe 0 to 175 kHz, plate 0 to 250 kHz; the same branches
+(Figure 4's count, checked there against each section's reference) and Figure 4's phase-velocity window
+(c_p up to 10 km/s), so a branch begins where it enters that window, not at k = 0.
+The shear and Rayleigh references become the curves k = 2 pi f/c_T and 2 pi f/c_R.
 Curves are adaptively refined in log(k) to a midpoint chord error below 0.2 drawing units.
 Vertical range 1 to 1000 rad/m, logarithmic; k tends to zero as frequency tends to zero.
-Poster and intro sampled by common.still, additional frames at 0.6, 3 and 20 s.
+Overlaps (engine ?overlap): the bar at the poster and t = 0.6, 3, 6.67 and 20 s; every section at
+t = 0.9, 6.66667, 20, 29, 40, 47, 65 s with every switch held at 30, 60 and 85 %, and live (the controls
+drawn) at 5 moments: none.
+Page 324 KB. Poster and intro sampled by common.still, frames at 0.6, 3 and 20 s.

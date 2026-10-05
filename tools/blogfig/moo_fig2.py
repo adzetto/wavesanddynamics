@@ -160,6 +160,9 @@ DI = np.array([CP[0], AI[1]])
 CI = np.array([CP[0], V0 + K1 / (CP[0] - U0)])     # C: the vertical through C' meets u^{t-1}(1)
 BI_TOP = 1.30                               # B, at the top of that vertical
 SR = -0.19                                  # the slope of S_r through A, in the frame's fractions
+C1_END, C2_END = 1.12, 1.16                 # where u^{t-1}(1) and u^t(1) end, fractions of F1
+SR_PAST = 20.0                              # S_r runs on this far (pt) past u^{t-1}(1)'s end, as his
+                                            # dotted S_r does, and its label hangs on S_r's own end
 assert K2 > K1 and DI[1] < CI[1] < CP[1]
 
 
@@ -190,9 +193,10 @@ def interactive():
     se = AI + 0.38 * (AI - (CP[0], BI_TOP)) / (BI_TOP - AI[1])        # S_e: from B through A, on
     stroke("fs aux", [B, I(*se)])
     l0 = CP[0] + 0.02 - AI[0]                # S_r starts just right of the vertical through D
-    sr0, sr1 = AI + (l0, l0 * SR), AI + (0.27, 0.27 * SR)
+    l1 = C1_END + SR_PAST / ax - AI[0]       # and ends SR_PAST beyond the end of u^{t-1}(1)
+    sr0, sr1 = AI + (l0, l0 * SR), AI + (l1, l1 * SR)
     stroke("fs aux", [I(*sr0), I(*sr1)])
-    c1, c2 = level(K1, 1.16, 1.12), level(K2, 1.30, 1.16)
+    c1, c2 = level(K1, 1.16, C1_END), level(K2, 1.30, C2_END)
     stroke("fs curve", [I(*q) for q in c1], 0.709)
     stroke("fs curve", [I(*q) for q in c2], 0.709)
     du, nn = I(*(AI + (0.09, 0.36))), I(*(AI + (0.21, 0.22)))
@@ -215,7 +219,7 @@ def interactive():
     L.append(S.place(r"$u^t\,(1)$", I(*c2[0]), (-1, 0), 2.0))
     L.append(S.place(r"$\Delta u(X^{t-1})$", du, (0.35, 1), 2.0))
     L.append(S.place("$N^{t-1}$", nn, (1, 0.2), 2.0))
-    L.append(S.place("$S_r^{t-1}$", I(*sr1), (0.3, -1), 2.0))
+    L.append(S.place("$S_r^{t-1}$", I(*sr1), (0.15, -1), 2.0))
     L.append(S.place("$S_e^{t-1}$", I(*se), (1, -0.4), 2.0))
     L.append(S.place("$f_2^{t-1}$", (x0, A[1]), (-1, 0), 3.0))
     # the step on F1, a1 df1 = Delta f1, from D to A

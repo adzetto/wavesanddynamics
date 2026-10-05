@@ -90,13 +90,14 @@ def network():
     return L
 
 
-def legend(L, xr, yb, rows):
-    """A legend box, its lower right corner at (xr, yb)."""
+def legend(L, xr, yb, rows, rh=12.0, m=7.0):
+    """A legend box, its lower right corner at (xr, yb): rows rh apart, the
+    first and last row's middle m inside its top and bottom."""
     w = max(size(t)[0] for _, t in rows) + 18
-    h = 12.0 * len(rows) + 2
+    h = rh * (len(rows) - 1) + 2 * m
     L.append(rf"\draw[fs thin] {pt(xr - w, yb)} rectangle {pt(xr, yb + h)};")
     for k, (kind, text) in enumerate(rows):
-        y = yb + h - 7 - 12 * k
+        y = yb + h - m - rh * k
         if kind == "neuron":
             L.append(rf"\node[circle, draw=fsLine, line width=\FigThin, fill=fsElemFill, minimum size=7pt, inner sep=0pt] at {pt(xr - w + 7, y)} {{}};")
         else:
@@ -114,7 +115,14 @@ def feature_map():
     gap = min(np.hypot(*(his(p) - his(q))) for p in INPUTS for q in NEURONS.values()) - R - DOT / 2
     assert gap > 0.5, f"an input touches a neuron ({gap:.2f} pt)"
     axes_sign(L, BX0 + 6.0, -101.0)
-    legend(L, BX0 + BW - 4, -FH + 4, (("dot", "Input"), ("neuron", "Neuron")))
+    # his legend where his stood, its rows close enough that his input point above it,
+    # (1054.9, 254.6), stays clear of its top (it touched it with rows 12 pt apart)
+    yb, rh, m = -FH + 4, 10.5, 6.5
+    top = yb + rh + 2 * m
+    w = max(size(t)[0] for t in ("Input", "Neuron")) + 18
+    near = [his(p) for p in INPUTS if BX0 + BW - 4 - w - DOT < his(p)[0] < BX0 + BW - 4 + DOT]
+    assert min(q[1] - DOT / 2 for q in near) - top >= 2.0, "an input point sits on the legend"
+    legend(L, BX0 + BW - 4, yb, (("dot", "Input"), ("neuron", "Neuron")), rh, m)
     L.append(rf"\FigPanel{{({BX0 - 13:.2f},{-10:.2f})}}{{b}}")
     return L
 

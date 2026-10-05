@@ -19,6 +19,11 @@ GAP = 46.0                                  # from the lower edge of (a) to the 
 XT = (0.189, 0.1895, 0.19, 0.1905, 0.191, 0.1915)
 XL = ("0.189", "0.1895", "0.19", "0.1905", "0.191", "0.1915")
 KEYS = {"a": ("$s$", r"$\bar{m}_{17}^{s}$"), "b": (r"$\Delta^4 s$", r"$\bar{m}_{125}^{\Delta^4 s}$")}
+# each legend's box, drawn inside his (pt): its top lowered off the median, which ran along
+# his box's top edge in (b) and 1 pt above it in (a), and in (b) its right side drawn back
+# from the spike at 0.19147 s, which ran 2 pt beside his. What his box hid stays unread and
+# white: only the border moves, inward.
+SHRINK = {"a": {"drop": 2.0, "pull": 0.0}, "b": {"drop": 3.0, "pull": 2.5}}
 
 
 def coords(P, scale=1e3):
@@ -38,8 +43,9 @@ def axis(key, P, y0):
          r" x tick label style={/pgf/number format/fixed}]"]
     for line in P["solid"]:
         L.append(rf"\addplot[line width=\FigMed, fsLine, line join=round] coordinates {{{coords(line)}}};")
-    # his legend, over the same stretch of the plot
-    a, b = (t(lx0), v(ly1)), (t(lx1), v(ly0))
+    # his legend, over the same stretch of the plot, its border inside his (SHRINK)
+    s = SHRINK[key]
+    a, b = (t(lx0), v(ly1)), (t(lx1) - s["pull"] / AW * 0.0025, v(ly0) - s["drop"] / AH * 10.0)
     L.append(rf"\draw[fs thin, fill=white] (axis cs:{a[0]:.7f},{a[1]:.4f}) rectangle (axis cs:{b[0]:.7f},{b[1]:.4f});")
     for k, (style, text) in enumerate(((r"only marks", KEYS[key][0]), ("line", KEYS[key][1]))):
         fy = 0.70 - 0.42 * k               # the two rows, as fractions of the box

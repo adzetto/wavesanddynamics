@@ -56,6 +56,7 @@ SNR_DB = 10.0
 NPER, HOP = 512, 128                      # 32 ms Hann, 8 ms hop
 DB_RANGE = 60.0
 SEED = 7
+HOLD = 5.0                                # page s the finished pictures rest before the sweep starts again
 
 # formant frequencies (Hz) of the vowels, Peterson and Barney (1952), men
 VOWEL = {"u": [300, 870, 2240, 3300], "a": [730, 1090, 2440, 3400], "e": [530, 1840, 2480, 3500],
@@ -250,8 +251,10 @@ def validate(r):
     say("")
     say("DISPLAY")
     say(f"  a cursor sweeps the {DUR:g} s in real time; the waveforms are drawn up to it (each column's")
-    say("  minimum and maximum), and each spectrogram column appears when its window's centre")
-    say("  has passed; then the picture rests and the sweep starts again.")
+    say("  minimum and maximum), and each spectrogram column appears once its window's centre has")
+    say(f"  passed (none before the sweep starts); then the finished pictures rest {HOLD:g} s, fade in 0.35 s")
+    say(f"  and the sweep starts again: a loop of {DUR + HOLD + 0.35:g} s, the finished pictures on screen")
+    say(f"  {HOLD / (DUR + HOLD + 0.35) * 100:.0f} % of it. Both spectrograms are 250 x 234 page units (they were 180 x 190).")
     return "\n".join(L) + "\n"
 
 
@@ -269,13 +272,13 @@ function cursor() {                         // seconds of audio drawn so far, an
 }
 
 /* ------------------------------------------------------------ places */
-const WN = { x: 22, y: 60, w: 138, h: 46 }, WS = { x: 22, y: 172, w: 138, h: 46 };
-const MXB = { x: 186, y: 112, w: 86, h: 52 };
-const WM = { x: 298, y: 115, w: 136, h: 46 };
-const VT1 = { x: 468, y: 108, w: 124, h: 60 };
-const SPM = { x: 440, y: 232, w: 180, h: 190 }, SPC = { x: 770, y: 232, w: 180, h: 190 };
-const VAE = { x: 648, y: 277, w: 96, h: 100 };
-const VT2 = { x: 292, y: 496, w: 124, h: 60 };
+const WN = { x: 22, y: 50, w: 120, h: 44 }, WS = { x: 22, y: 150, w: 120, h: 44 };
+const MXB = { x: 168, y: 96, w: 86, h: 54 };
+const WM = { x: 280, y: 101, w: 120, h: 44 };
+const VT1 = { x: 424, y: 90, w: 128, h: 66 };
+const SPM = { x: 262, y: 192, w: 250, h: 234 }, SPC = { x: 684, y: 192, w: 250, h: 234 };
+const VAE = { x: 548, y: 259, w: 100, h: 100 };
+const VT2 = { x: 110, y: 512, w: 132, h: 58 };
 const BOTY = VT2.y + VT2.h / 2;
 
 /* ------------------------------------------------------------ helpers */
@@ -283,8 +286,8 @@ function box(b, words, p, t0) {
   if (p <= 0) return;
   ctx.save(); ctx.globalAlpha *= clamp(p * 1.5); ctx.fillStyle = C.steel; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.restore();
   line([[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h], [b.x, b.y]], { width: 1.5, progress: p });
-  const a = lab(t0), n = words.length, lh = 17;
-  words.forEach((w, i) => text(w, b.x + b.w / 2, b.y + b.h / 2 + (i - (n - 1) / 2) * lh + 5, { size: 15, align: 'center', alpha: a }));
+  const a = lab(t0), n = words.length, lh = 18;
+  words.forEach((w, i) => text(w, b.x + b.w / 2, b.y + b.h / 2 + (i - (n - 1) / 2) * lh + 5.5, { size: 16, align: 'center', alpha: a }));
 }
 function wave(W, env, u, a, t0) {
   const n = env.length / 2, mid = W.y + W.h / 2;
@@ -303,7 +306,7 @@ function wave(W, env, u, a, t0) {
 function spectro(P, cvs, u, a, t0) {
   const ap = seg(t0, .35);
   if (cvs && a > 0) {
-    const cols = D.frames, done = clamp(Math.floor((u - D.tf0) / D.hop) + 1, 0, cols);
+    const cols = D.frames, done = u > 0 ? clamp(Math.floor((u - D.tf0) / D.hop) + 1, 0, cols) : 0;
     if (done > 0) {
       ctx.save(); ctx.beginPath(); ctx.rect(P.x, P.y, P.w * done / cols, P.h); ctx.clip();
       ctx.globalAlpha *= a; ctx.imageSmoothingEnabled = true; ctx.drawImage(cvs, P.x, P.y, P.w, P.h); ctx.restore();
@@ -315,10 +318,10 @@ function spectro(P, cvs, u, a, t0) {
 function spAxes(P, left, t0) {
   const ap = seg(t0, .35);
   axes({ x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, SW], ylim: [0, 8], xticks: [0, .5, 1, 1.5], yticks: [0, 2, 4, 6, 8],
-         progress: ap, yfmt: left ? (v => fmt(v)) : (() => ''), xlabel: left ? 't\\ (\\rm{s})' : '' });
+         progress: ap, tickSize: 16, labelSize: 17, yfmt: left ? (v => fmt(v)) : (() => ''), xlabel: left ? 't\\ (\\rm{s})' : '' });
   if (!left) {
-    for (const v of [0, 2, 4, 6, 8]) math(fmt(v), P.x + P.w + 8, P.y + P.h - v / 8 * P.h + 5, { size: 15, alpha: clamp(ap * 1.4) });
-    math('f\\ (\\rm{kHz})', P.x + P.w + 44, P.y + P.h / 2, { size: 17, align: 'center', rot: -Math.PI / 2, alpha: clamp(ap * 1.4) });
+    for (const v of [0, 2, 4, 6, 8]) math(fmt(v), P.x + P.w + 8, P.y + P.h - v / 8 * P.h + 5.6, { size: 16, alpha: clamp(ap * 1.4) });
+    math('f\\ (\\rm{kHz})', P.x + P.w + 40, P.y + P.h / 2, { size: 17, align: 'center', rot: -Math.PI / 2, alpha: clamp(ap * 1.4) });
   } else math('f\\ (\\rm{kHz})', P.x - 40, P.y + P.h / 2, { size: 17, align: 'center', rot: -Math.PI / 2, alpha: clamp(ap * 1.4) });
 }
 function arr(pts, p, o = {}) {                  // a polyline ending in an arrow tip
@@ -354,24 +357,24 @@ function vae(p, t0) {
   line([[zx - zw / 2, cy - 14], [zx + zw / 2, cy - 14], [zx + zw / 2, cy + 14], [zx - zw / 2, cy + 14], [zx - zw / 2, cy - 14]], { width: 1.3, progress: p });
   line([[VAE.x + tw, cy], [zx - zw / 2, cy]], { width: 1.2, alpha: a });
   line([[zx + zw / 2, cy], [VAE.x + VAE.w - tw, cy]], { width: 1.2, alpha: a });
-  math('z', zx, cy + 6, { size: 16, align: 'center', alpha: a });
-  text('encoder', VAE.x + tw / 2, VAE.y + VAE.h + 20, { size: 14, color: C.muted, align: 'center', alpha: a });
-  text('decoder', VAE.x + VAE.w - tw / 2, VAE.y + VAE.h + 20, { size: 14, color: C.muted, align: 'center', alpha: a });
+  math('z', zx, cy + 6, { size: 17, align: 'center', alpha: a });
+  text('encoder', VAE.x + tw / 2, VAE.y + VAE.h + 22, { size: 16, color: C.body, align: 'center', alpha: a });
+  text('decoder', VAE.x + VAE.w - tw / 2, VAE.y + VAE.h + 22, { size: 16, color: C.body, align: 'center', alpha: a });
 }
 
 function draw() {
   const c = cursor(), u = c.u, fa = c.a;
   // sources, mixing, mixed audio
   const la = lab(.05);
-  text('Background noise', WN.x, WN.y - 12, { size: 16, alpha: la });
-  text('Speech audio', WS.x, WS.y - 12, { size: 16, alpha: lab(.08) });
+  text('Background noise', WN.x, WN.y - 12, { size: 17, alpha: la });
+  text('Speech audio', WS.x, WS.y - 12, { size: 17, alpha: lab(.08) });
   wave(WN, EN, u, fa, .05);
   wave(WS, ES, u, fa, .08);
   box(MXB, ['Audio', 'mixing'], seg(.1, .35), .15);
   arr([[WN.x + WN.w + 6, WN.y + WN.h / 2], [MXB.x - 4, MXB.y + 14]], seg(.15, .3));
   arr([[WS.x + WS.w + 6, WS.y + WS.h / 2], [MXB.x - 4, MXB.y + MXB.h - 14]], seg(.17, .3));
   arr([[MXB.x + MXB.w + 4, MXB.y + MXB.h / 2], [WM.x - 6, MXB.y + MXB.h / 2]], seg(.22, .3));
-  text('Mixed audio', WM.x, WM.y - 12, { size: 16, alpha: lab(.2) });
+  text('Mixed audio', WM.x, WM.y - 12, { size: 17, alpha: lab(.2) });
   wave(WM, EM, u, fa, .2);
   arr([[WM.x + WM.w + 6, WM.y + WM.h / 2], [VT1.x - 4, WM.y + WM.h / 2]], seg(.28, .3));
   box(VT1, ['Visual', 'transformation', 'representation'], seg(.25, .35), .3);
@@ -380,14 +383,14 @@ function draw() {
   spectro(SPM, IMGS.mix, u, fa, .3);
   spAxes(SPM, true, .3);
   const nm = lab(.4);
-  ['Visual representation', 'mixed audio'].forEach((w, i) => text(w, SPM.x + SPM.w / 2, SPM.y + SPM.h + 66 + i * 19, { size: 16, align: 'center', alpha: nm }));
+  ['Visual representation', 'mixed audio'].forEach((w, i) => text(w, SPM.x + SPM.w / 2, SPM.y + SPM.h + 76 + i * 20, { size: 17, align: 'center', alpha: nm }));
   arr([[SPM.x + SPM.w + 6, VAE.y + VAE.h / 2], [VAE.x - 4, VAE.y + VAE.h / 2]], seg(.38, .3));
   vae(seg(.34, .4), .42);
-  ['Variational', 'Autoencoder'].forEach((w, i) => text(w, VAE.x + VAE.w / 2, VAE.y - 34 + i * 19, { size: 16, align: 'center', alpha: lab(.42) }));
+  ['Variational', 'Autoencoder'].forEach((w, i) => text(w, VAE.x + VAE.w / 2, VAE.y - 36 + i * 20, { size: 17, align: 'center', alpha: lab(.42) }));
   arr([[VAE.x + VAE.w + 4, VAE.y + VAE.h / 2], [SPC.x - 6, VAE.y + VAE.h / 2]], seg(.44, .3));
   spectro(SPC, IMGS.clean, u, fa, .4);
   spAxes(SPC, false, .4);
-  ['Visual representation', 'speech audio'].forEach((w, i) => text(w, SPC.x + SPC.w / 2, SPC.y - 34 + i * 19, { size: 16, align: 'center', alpha: lab(.46) }));
+  ['Visual representation', 'speech audio'].forEach((w, i) => text(w, SPC.x + SPC.w / 2, SPC.y - 36 + i * 20, { size: 17, align: 'center', alpha: lab(.46) }));
   // the speech audio's own path: the target
   const bx = WS.x + 50;
   arr([[bx, WS.y + WS.h + 6], [bx, BOTY], [VT2.x - 4, BOTY]], seg(.3, .4));
@@ -395,11 +398,11 @@ function draw() {
   arr([[VT2.x + VT2.w + 4, BOTY], [D.upx, BOTY], [D.upx, SPC.y + SPC.h + 6]], seg(.42, .45));
   // the colour scale
   colorbar(seg(.5, .3));
-  math(D.params, 22, H - 12, { size: 14, color: C.muted, alpha: seg(.55, .3) });
+  math(D.params, 22, H - 10, { size: 15, color: C.muted, alpha: seg(.55, .3) });
 }
 function colorbar(a) {
   if (a <= 0) return;
-  const x0 = VAE.x + 4, w = VAE.w - 8, y0 = SPM.y + SPM.h + 26, h = 8;
+  const x0 = VAE.x + 4, w = VAE.w - 8, y0 = SPM.y + SPM.h + 28, h = 8;
   if (!colorbar.c) { const c = document.createElement('canvas'); c.width = 256; c.height = 1; const g = c.getContext('2d'), d = g.createImageData(256, 1);
     for (let i = 0; i < 256; i++) d.data.set([SEQ[3 * i], SEQ[3 * i + 1], SEQ[3 * i + 2], 255], 4 * i); g.putImageData(d, 0, 0); colorbar.c = c; }
   ctx.save(); ctx.globalAlpha *= a; ctx.imageSmoothingEnabled = true; ctx.drawImage(colorbar.c, x0, y0, w, h); ctx.restore();
@@ -407,9 +410,9 @@ function colorbar(a) {
   for (const v of [-60, -30, 0]) {
     const x = x0 + (v + D.dbr) / D.dbr * w;
     line([[x, y0 + h], [x, y0 + h + 3]], { width: .8, alpha: a });
-    math(fmt(v), x, y0 + h + 18, { size: 14, align: 'center', alpha: a });
+    math(fmt(v), x, y0 + h + 19, { size: 16, align: 'center', alpha: a });
   }
-  text('dB', x0 + w + 6, y0 + h, { size: 14, alpha: a });
+  text('dB', x0 + w + 7, y0 + h + 1, { size: 16, alpha: a });
 }
 Promise.all([RAW.mix.decode(), RAW.clean.decode()]).then(() => { paint('mix'); paint('clean'); }).catch(() => {}).finally(() => boot());
 """
@@ -425,11 +428,11 @@ def page_data(r):
         img[key] = np.round(db[::-1] * 255).astype(np.uint8)       # high frequencies up
     tf = r["t"]
     return {
-        "poster": 0.5 + DUR + 0.4, "t0": 0.5, "dur": DUR, "hold": 1.8,
+        "poster": 0.5 + DUR + 0.4, "t0": 0.5, "dur": DUR, "hold": HOLD,
         "env_n": envelope(n, cols, scale), "env_s": envelope(s, cols, scale), "env_m": envelope(x, cols, scale),
         "img_mix": png_uri(img["dbx"]), "img_clean": png_uri(img["dbs"]),
         "frames": int(tf.size), "tf0": float(tf[0]), "hop": float(tf[1] - tf[0]), "dbr": DB_RANGE,
-        "upx": 770 + 180 * 0.75 / DUR,               # between the time labels 0.5 and 1
+        "upx": 684 + 250 * 0.75 / DUR,               # between the time labels 0.5 and 1
         "params": (r"\rm{synthetic speech, }f_{0} = %d\rm{ to }%d\,\rm{Hz, and pink noise, SNR 10 dB;"
                    r"\ \ STFT: Hann 32 ms, hop 8 ms, 16 kHz;\ \ real time}"
                    % (int(round(r["f0"].min())), int(round(r["f0"].max())))),

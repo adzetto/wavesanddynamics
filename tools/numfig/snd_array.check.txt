@@ -21,14 +21,14 @@ MODEL
   Additional Distance: (p_n - p_m).s = 2.668836 cm
                        d cos(theta + gamma - beta_n) = 2.668836 cm (difference 4.4e-16)
                        the drawn construction, |m F| with F on m's ray and nF normal to s:
-                       2.668836 cm; nF.s = -4.4e-16 (a right angle at F)
+                       2.668836 cm; nF.s = -2.4e-16 (a right angle at F)
   time delay tau = Dd / c = 77.809 us
 
 (b) CIRCULAR ARRAY SENSORS
   six sensors on a circle of radius rho = 3 cm, sensor k at beta_k = 60 k deg; theta = 25 deg
   d_{0,2} = rho sqrt(3) = 5.1962 cm (5.1962), gamma = 30.000 deg
   Additional Distance: (p_0 - p_2).s = 2.980391 cm
-                       d_{0,2} cos(theta + gamma) = 2.980391 cm (difference 4.4e-16)
+                       d_{0,2} cos(theta + gamma) = 2.980391 cm (difference 0.0e+00)
                        |2 F| = 2.980391 cm
   time delay tau = Dd / c = 86.892 us
   every sensor's delay after sensor 0 (us): 0: 0.00, 1: 7.62, 2: 86.89, 3: 158.54, 4: 150.91, 5: 71.65
@@ -44,16 +44,20 @@ CHECK: the delays a correlator measures. White noise (48 kHz, 8192 samples) arri
 DISPLAY
   both panels at 52 page units per cm; the front moves at c, time slowed 1e+04:
   3.43 cm of travel per second of the page; it crosses the extra distance of (a) in 0.78 s
-  and of (b) in 0.87 s. The loop is 5.01 s; both fronts reach the far sensor (m, 2)
+  and of (b) in 0.87 s. The loop is 5.21 s; both fronts reach the far sensor (m, 2)
   2.26 s into it; the printed frame is that moment.
   The red Additional Distance grows from F to m exactly as the front travels it; each
   sensor lights when the front reaches it. The front is drawn only inside the axes and is
   left out where it would pass a label or a sensor (the gap a TikZ node's white fill leaves).
+  The intro: the axes and his two rays per panel are drawn from their far ends, each arrow's head
+  fading in once its shaft is longer than the head (no bare heads in the first frames).
+  Type: the labels with subscripts ((rho_m, beta_m), d_{n,m}, Delta d, ...) are 20, so their
+  subscripts are 14; the formula lines 18 (subscripts 12.6); the parameter line 15.
   Type: the engine sets Greek in CMU Serif, whose theta and rho are its Greek-text shapes
   (TeX's vartheta, and a rho with a curled tail); TeX's math italic theta and rho (the
   closed theta, the plain rho) are in Latin Modern Math, which the figure fonts do not carry.
 
 OVERLAP (engine.js ?overlap, through common.overlaps)
-  the poster and every 0.1 s from 0.1 to 5.9 s (60 moments, the intro
+  the poster and every 0.1 s from 0.1 to 6.1 s (62 moments, the intro
   and a whole loop of the motion): no label meets another, no stroke crosses a label;
   nothing is excused (common.still is called with no allow list).

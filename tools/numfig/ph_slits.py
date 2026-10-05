@@ -177,8 +177,8 @@ const LAM = D.lam, L = D.L, Y = D.Y, HD = D.d / 2, HA = D.a / 2, KW = 2 * Math.P
 const YC = 279, FT = YC - Y * LAM, FB = YC + Y * LAM;       // the axis, the field's top and bottom
 const py = y => YC - y * LAM;                               // the model's y (up) on the page
 function geo(x0) {
-  const src = x0 + 18, xb = x0 + 124, xs = xb + L * LAM;
-  return { x0, src, xb, xs, brk: x0 + 74, sw: 34, pl: xs + 34, pw: 90 };
+  const src = x0 + 16, xb = x0 + 110, xs = xb + L * LAM;
+  return { x0, src, xb, xs, brk: x0 + 66, sw: 34, pl: xs + 34, ax: xs + 34 + 84 };
 }
 const GA = geo(0), GB = geo(500);
 function bytes(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
@@ -256,7 +256,7 @@ function h0phase(r) {
   return KW * r - Math.PI / 4 + T.v[i] * (1 - w) + T.v[i + 1] * w;
 }
 let SZ = null;                                             // the source's zone
-const NEAR = 2.5, CONE = 42 * Math.PI / 180, BAND = 3.3, BANDX = 2.1;
+const NEAR = 2.2, CONE = 42 * Math.PI / 180, BAND = 3.3, BANDX = 1.9;
 function buildSource(res) {
   const G = GA, x0 = G.src - 8, w = G.xb - x0, h = 2 * BAND * LAM + 8, y0 = YC - h / 2;
   const nx = Math.round(w * res), ny = Math.round(h * res), n = nx * ny;
@@ -368,24 +368,55 @@ function screenPlate(G, pr) {
   if (pr > 0) { ctx.save(); ctx.fillStyle = C.steel; ctx.fillRect(x, FT, w, (FB - FT) * pr); ctx.restore(); }
   line([[x, FT], [x, FB]], { color: C.ink, width: 2, progress: pr });
 }
+/* the landed dots: a dot that has landed never moves, so each panel keeps
+   them in a canvas of its own at the frame's pixels (PL.base), whole blocks
+   of BLK photons at a time, and only adds new blocks; it is drawn again from
+   the first block when the dots' size, the frame's size or the cycle
+   changes. Each frame the plate (PL.plate) is the base and the last part
+   block, laid on the frame at once: the same pixels at a given t whatever
+   frames came before, and one draw instead of 20,000 dots */
+const BLK = 256, PL = [{}, {}];
+function plateDots(g, P, i0, i1, x0, w, r, round) {
+  g.beginPath();
+  for (let i = i0; i < i1; i++) {
+    const x = x0 + P.z[i] / 255 * w, y = py(P.y[i]);
+    if (round) { g.moveTo(x + r, y); g.arc(x, y, r, 0, 2 * Math.PI); } else g.rect(x - r, y - r, 2 * r, 2 * r);
+  }
+  g.fill();
+}
+function plate(G, P, c, ns, r, round) {
+  const kx = cv.width / W, ky = cv.height / H, ox = Math.floor(G.xs * kx), oy = Math.floor((FT - 3) * ky);
+  const pw = Math.ceil((G.xs + G.sw) * kx) - ox + 1, ph = Math.ceil((FB + 3) * ky) - oy + 1;
+  const key = `${cv.width}x${cv.height}:${r}`;
+  if (c.key !== key) {
+    for (const k of ['base', 'plate']) { c[k] = document.createElement('canvas'); c[k].width = pw; c[k].height = ph; }
+    c.gb = c.base.getContext('2d'); c.gp = c.plate.getContext('2d');
+    for (const g of [c.gb, c.gp]) { g.setTransform(kx, 0, 0, ky, -ox, -oy); g.fillStyle = C.navy; }
+    c.key = key; c.blocks = 0;
+  }
+  const x0 = G.xs + 2.5, w = G.sw - 5, nb = Math.floor(ns / BLK);
+  if (nb < c.blocks) { c.gb.save(); c.gb.setTransform(1, 0, 0, 1, 0, 0); c.gb.clearRect(0, 0, pw, ph); c.gb.restore(); c.blocks = 0; }
+  if (nb > c.blocks) { plateDots(c.gb, P, c.blocks * BLK, nb * BLK, x0, w, r, round); c.blocks = nb; }
+  c.gp.save(); c.gp.setTransform(1, 0, 0, 1, 0, 0); c.gp.clearRect(0, 0, pw, ph); c.gp.drawImage(c.base, 0, 0); c.gp.restore();
+  plateDots(c.gp, P, nb * BLK, ns, x0, w, r, round);
+  return { img: c.plate, x: ox / kx, y: oy / ky, w: pw / kx, h: ph / ky };
+}
 /* a dot's radius once landed: clear single dots while few have landed, fine
-   grain once thousands have (the plate then shows their density) */
-const grain = n => .5 + 1.3 * clamp(1 - Math.log10(Math.max(n, 1)) / 3.3);
-function grains(G, P, tau, st, fade) {                     // the dots on the screen, and the fresh ones arriving
+   grain once thousands have (the plate then shows their density); in steps
+   of 1/32 of a unit, so the kept dots are drawn again only when it shows */
+const grain = n => Math.round(32 * (.5 + 1.3 * clamp(1 - Math.log10(Math.max(n, 1)) / 3.3))) / 32;
+function grains(G, P, tau, st, fade, c) {                  // the dots on the screen, and the fresh ones arriving
   const n = landed(P, tau);
   if (n <= 0 || fade <= 0) return n;
   // a fresh detection lands as a dot and settles into the plate; only while
   // they come few at a time (the expected rate, n0 / tau0 e^{tau / tau0})
   const x0 = G.xs + 2.5, w = G.sw - 5, hl = clamp((30 - D.n0ph / D.tau0 * Math.exp(tau / D.tau0)) / 24);
   const r = grain(n), round = r > .8;
-  ctx.save(); ctx.globalAlpha *= fade * .82; ctx.fillStyle = C.navy; ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    if (hl > 0 && tau - P.t[i] < .32) continue;
-    const x = x0 + P.z[i] / 255 * w, y = py(P.y[i]);
-    if (round) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 2 * Math.PI); } else ctx.rect(x - r, y - r, 2 * r, 2 * r);
-  }
-  ctx.fill(); ctx.restore();
-  for (let i = n - 1; hl > 0 && i >= 0 && tau - P.t[i] < .32; i--) {
+  let ns = n;                                              // the settled ones: all but those still arriving
+  if (hl > 0) while (ns > 0 && tau - P.t[ns - 1] < .32) ns--;
+  const im = plate(G, P, c, ns, r, round);
+  ctx.save(); ctx.globalAlpha *= fade * .82; ctx.drawImage(im.img, im.x, im.y, im.w, im.h); ctx.restore();
+  for (let i = n - 1; i >= ns; i--) {
     const s = settle(st + P.t[i], .26), x = x0 + P.z[i] / 255 * w, y = py(P.y[i]);
     dot(x, y, lerp(lerp(r, 3.6, hl), r, s), { color: C.navy, fill: C.navy, width: 0, alpha: fade * lerp(1, .82, s) });
   }
@@ -406,26 +437,50 @@ function histogram(G, P, n, fade) {
   }
   ctx.fill(); ctx.restore();
 }
-function curve(G, v, color, width, pr, alpha = 1) {
+function curve(G, v, color, width, pr, alpha = 1, dash = null) {
   const pts = [];
   for (let i = 0; i < v.length; i++) pts.push([G.pl + v[i] * D.S, py(-Y + i * D.dc)]);
-  line(pts, { color, width, progress: pr, alpha });
+  line(pts, { color, width, progress: pr, alpha, dash });
 }
 function plotAxis(G, pr) {                                // the plate's back, the histogram's zero
   line([[G.pl, FT], [G.pl, FB]], { color: C.ink, width: 1.3, progress: pr });
+}
+/* the position on the screen, in wavelengths: an axis right of the intensity */
+function scale(G, pr) {
+  line([[G.ax, FT], [G.ax, FB]], { color: C.ink, width: 1.1, progress: pr });
+  const a = clamp((pr - .5) * 2);
+  for (const v of [-10, -5, 0, 5, 10]) {
+    line([[G.ax, py(v)], [G.ax - 5, py(v)]], { color: C.ink, width: 1.1, alpha: a });
+    math(fmt(v), G.ax + 6, py(v) + 5.6, { size: 16, alpha: a });
+  }
+  math('y/\\lambda', G.ax, FT - 12, { size: 17, alpha: a });
+}
+/* his P_A and P_B, the two single-slit patterns of (b): a legend in the
+   intensity's upper right, between y = 9.4 and 6.8 wavelengths, where every
+   curve stays within 10 units of the plate */
+function curveKey(G, a) {
+  if (a <= 0) return;
+  const x = G.pl + 24, y = py(9.4), w = 54, h = py(6.8) - py(9.4);
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: C.guide, width: 1, fill: 'white', close: true, alpha: a });
+  for (const [i, sym, col, dash] of [[0, 'P_{A}', C.blue, null], [1, 'P_{B}', C.accent, [5, 3]]]) {
+    const yy = y + 20 + i * 21;
+    line([[x + 6, yy - 5], [x + 22, yy - 5]], { color: col, width: 1.6, dash, alpha: a });
+    math(sym, x + 27, yy, { size: 17, alpha: a });
+  }
 }
 
 /* ---------------------------------------------------------------- the panels */
 function panelA(ck) {
   const G = GA;
   panel('a', 18, 34, { alpha: lab(0) });
-  text('Path not recorded: fringes', 52, 34, { size: 17, color: C.body, alpha: lab(.03) });
+  text('Path not recorded: fringes', 53, 34, { size: 18, color: C.body, alpha: lab(.03) });
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(F.A.c, G.xb, FT, L * LAM, FB - FT); ctx.restore();
   sourceZone(G);
   barrier(G, seg(0, .22));
-  photonsPanel(G, PH[0], ck);
+  photonsPanel(G, PH[0], ck, PL[0]);
   plotAxis(G, seg(.04, .35));
+  scale(G, seg(.06, .35));
   curve(G, D.pa, C.navy, 2.2, seg(.3, .45));
   labels(G, 'Same polarization: waves add and cancel at the screen');
 }
@@ -433,53 +488,56 @@ function panelB(ck) {
   const G = GB;
   line([[500, 18], [500, H - 44]], { color: C.rule, width: 1, alpha: seg(0, .3) });
   panel('b', 518, 34, { alpha: lab(.02) });
-  text('Paths tagged: no fringes', 552, 34, { size: 17, color: C.body, alpha: lab(.05) });
+  text('Paths tagged: no fringes', 553, 34, { size: 18, color: C.body, alpha: lab(.05) });
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(F.B.c, G.xb, FT, L * LAM, FB - FT); ctx.restore();
   sourceZone(G);
   barrier(G, seg(0, .22));
-  photonsPanel(G, PH[1], ck);
+  photonsPanel(G, PH[1], ck, PL[1]);
   plotAxis(G, seg(.04, .35));
+  scale(G, seg(.08, .35));
   curve(G, D.pA, C.blue, 1.4, seg(.42, .4));
-  curve(G, D.pB, C.accent, 1.4, seg(.46, .4));
+  curve(G, D.pB, C.accent, 1.4, seg(.46, .4), 1, [5, 3]);
   curve(G, D.pb, C.navy, 2.2, seg(.3, .45));
+  curveKey(G, lab(.6));
   // his polarization arrows: A vertical, B horizontal
   const pa = settle(.3, .28), xa = G.xb - 34;
   arrow(xa, py(HD + HA + 1.55) + 17, xa, py(HD + HA + 1.55) - 17, { color: C.blue, width: 2.4, head: 10, both: true, alpha: clamp(pa) });
   arrow(xa - 17, py(-HD - HA - 1.7), xa + 17, py(-HD - HA - 1.7), { color: C.accent, width: 2.4, head: 10, both: true, alpha: clamp(settle(.34, .28)) });
   labels(G, 'Perpendicular polarizations at A and B: the two waves cannot cancel');
 }
-function photonsPanel(G, P, ck) {
+function photonsPanel(G, P, ck, c) {
   screenPlate(G, seg(.04, .35));
   let n = 0, fade = 1;
-  if (ck) { fade = ck.fade; n = grains(G, P, ck.tau, ck.start, fade); }
+  if (ck) { fade = ck.fade; n = grains(G, P, ck.tau, ck.start, fade, c); }
   histogram(G, P, n, fade);
   const ca = lab(.9) * (ck ? 1 : 0);
   if (ca > 0 && n > 0) {
     const s = n === 1 ? '1 photon' : `${n.toLocaleString('en-US')} photons`;
-    text(s, G.xs + G.sw / 2 + 45, FT - 12, { size: 15, color: C.muted, align: 'center', alpha: ca * fade });
+    text(s, G.xs + G.sw / 2 + 28, FT - 12, { size: 16, color: C.body, align: 'center', alpha: ca * fade });
   }
 }
 function labels(G, sentence) {
   const la = lab(.2), lb = lab(.26);
-  text('A', G.xb - 12, py(HD + HA) - 7 + rise(la), { size: 17, align: 'right', alpha: la });
-  text('B', G.xb - 12, py(-HD - HA) + 19 - rise(la), { size: 17, align: 'right', alpha: la });
-  const y = FB + 26;
-  text('Source', Math.max(G.src, G.x0 + 30), y + rise(lb), { size: 16, align: 'center', alpha: lb });
-  text('Screen', G.xs + G.sw / 2, y + rise(lb), { size: 16, align: 'center', alpha: lb });
-  text('Intensity', G.pl + 56, y + rise(lb), { size: 16, align: 'center', alpha: lb });
-  const ls = lab(.45);
-  text(sentence, G.x0 + 18, FB + 58 + rise(ls), { size: 15, color: C.body, alpha: ls });
+  text('A', G.xb - 12, py(HD + HA) - 7 + rise(la), { size: 18, align: 'right', alpha: la });
+  text('B', G.xb - 12, py(-HD - HA) + 20 - rise(la), { size: 18, align: 'right', alpha: la });
+  const y = FB + 24;
+  text('Source', Math.max(G.src, G.x0 + 30), y + rise(lb), { size: 17, align: 'center', alpha: lb });
+  text('Screen', G.xs + G.sw, y + rise(lb), { size: 17, align: 'right', alpha: lb });
+  text('Intensity', G.pl + 44, y + rise(lb), { size: 17, align: 'center', alpha: lb });
+  const ls = lab(.45), at = sentence.indexOf(': ') + 1;
+  [sentence.slice(0, at), sentence.slice(at + 1)].forEach((s, i) =>
+    text(s, G.x0 + 18, FB + 51 + i * 21 + rise(ls), { size: 17, color: C.body, alpha: ls }));
 }
 
 let lastW = -1;
 function draw() {
-  if (cv.width !== lastW) { lastW = cv.width; buildField(clamp(cv.width / W, .5, 1.5)); }
+  if (cv.width !== lastW) { lastW = cv.width; buildField(clamp(cv.width / W, .5, 1)); }
   const ph = KW * t / D.period, cw = Math.cos(ph), sw = Math.sin(ph);
   paintSource(cw, sw); paintField(cw, sw);
   const ck = photonClock();
   panelA(ck); panelB(ck);
-  math(D.params, 18, H - 14, { size: 14, color: C.muted, alpha: lab(.5) });
+  math(D.params, 18, H - 9, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """
@@ -497,7 +555,7 @@ def main():
     step = int(round(DC / DY))
     pa, pb = pdf_a[::step], pdf_b[::step]
     pA, pB = (np.abs(ua) ** 2 / norm_b)[::step], (np.abs(ub) ** 2 / norm_b)[::step]
-    S = 84.0 / pdf_a.max()                                      # drawing units per unit of probability density
+    S = 76.0 / pdf_a.max()                                      # drawing units per unit of probability density
     # the display's darkness: A's field alone at its brightest on the screen, 0.85
     rho_s = np.hypot(L_SCR, ys - D_S / 2)
     n0 = float((np.abs(ua) * np.sqrt(rho_s + RHO0)).max() / 0.85)
@@ -735,9 +793,9 @@ def validate(m, data, stats, info):
     say("  of the plane lies under it, where the grid's error is largest. Just behind it, in units of max |E|:")
     for lo, hi, e in near:
         say(f"    {lo:g} <= x < {hi:g}: largest error {e:.1e}")
-    say("  the source's field H0(k r) is drawn near the source (r < 2.5, a 42 deg cone) and in front of the slits")
-    say(f"  (the last 2.1 wavelengths, |y| < 3.3, {S_SRC:g} from the source); the break mark on the axis stands for the")
-    say("  95 wavelengths between. The phase of H0 beyond k r - pi/4 is tabulated from scipy for r < 3.")
+    say("  the source's field H0(k r) is drawn near the source (r < 2.2, a 42 deg cone) and in front of the slits")
+    say(f"  (the last 1.9 wavelengths, |y| < 3.3, {S_SRC:g} from the source); the break mark on the axis stands for the")
+    say(f"  {S_SRC - 2.2 - 1.9:.1f} wavelengths between. The phase of H0 beyond k r - pi/4 is tabulated from scipy for r < 3.")
     say("")
     say("THE PHOTONS")
     say(f"  {N_PH} per screen; each lands at y drawn from the screen's intensity as a probability density (inverse")
@@ -752,6 +810,14 @@ def validate(m, data, stats, info):
     say(f"  the histogram: bins of {2*Y_SCR/N_BIN:g} wavelength, counts / (max(n, {N_REF}) bin), in the same units as the")
     say("  curve (the probability density), so its bars grow with the first photons and then settle onto the curve.")
     say("  both panels use one density scale: the same light, in (a) moved into fringes twice the smooth level.")
+    say("  the screen carries a position scale, y / lambda = -10 ... 10, right of each intensity plot; in (b) the two")
+    say("  single-slit patterns are named as the document names them, P_A (solid, blue) and P_B (dashed, crimson),")
+    say("  P = P_A + P_B, in a legend in the plot's upper right (from 6.8 to 9.4 wavelengths up, where every curve")
+    say("  stays within 10 units of the plate).")
+    say("  drawing: landed dots never move, so each panel keeps them in a canvas of its own at the frame's pixels,")
+    say(f"  whole blocks of 256 photons at a time, and lays it on the frame in one draw (the last part block and the")
+    say("  dots still arriving are drawn each frame); the field is rebuilt at the frame's resolution up to 1 pixel per")
+    say("  unit (a full-screen frame scales it up, smoothly).")
     say("")
     say("TIME")
     say(f"  one optical period per second of the page (for 600 nm light, time slowed {3e8/600e-9:.0e} times); the crests")

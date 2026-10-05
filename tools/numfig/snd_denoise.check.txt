@@ -21,7 +21,7 @@ SIGNALS
     of the mixed audio's largest value, 60 dB shown, one scale for both pictures
 
 CHECKS
-  1. The transform is linear: max |X_mix - X_speech - X_noise| / max |X_mix| = 1.5e-16;
+  1. The transform is linear: max |X_mix - X_speech - X_noise| / max |X_mix| = 2.1e-16;
      mixing adds the signals, and their transforms add (their magnitudes do not)
   2. The picture keeps the signal: the inverse STFT gives the mixed audio back to 4.4e-16 (Hann at 75 % overlap sums to a constant)
   3. The speech picture's harmonics are the synthesised pitch: in 34 voiced frames the
@@ -42,10 +42,12 @@ THE MODEL BOX
 
 DISPLAY
   a cursor sweeps the 1.6 s in real time; the waveforms are drawn up to it (each column's
-  minimum and maximum), and each spectrogram column appears when its window's centre
-  has passed; then the picture rests and the sweep starts again.
+  minimum and maximum), and each spectrogram column appears once its window's centre has
+  passed (none before the sweep starts); then the finished pictures rest 5 s, fade in 0.35 s
+  and the sweep starts again: a loop of 6.95 s, the finished pictures on screen
+  72 % of it. Both spectrograms are 250 x 234 page units (they were 180 x 190).
 
 OVERLAP (engine.js ?overlap, through common.overlaps)
-  the poster and every 0.1 s from 0.1 to 4.6 s (47 moments, the intro
+  the poster and every 0.1 s from 0.1 to 7.8 s (79 moments, the intro
   and a whole loop of the motion): no label meets another, no stroke crosses a label;
   nothing is excused (common.still is called with no allow list).

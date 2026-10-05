@@ -212,86 +212,100 @@ def validate(seed, x0, z, kf):
     say(f"   at {V:g} m/s, which the model allows)")
     say("")
     say("DISPLAY")
-    say(f"  one filter step (Dt = {DT:g} s) every 2.7 s of the page: the last estimate moves on with the")
-    say("  model and widens (predict), the measurement arrives, the gain's pointer slides from 0 to")
-    say("  K_n while the estimate moves and narrows with it (update), then the picture rests. The")
-    say("  shapes between two steps are a transition; where each step lands is the filter's numbers,")
+    say(f"  one filter step (Dt = {DT:g} s) every {TS:g} s of the page: time slowed {SLOW:g} times, said in the")
+    say(f"  parameter line. The target flies at its constant {V:g} m/s all the while ({V / SLOW:.2f} m per second of")
+    say("  the page) and passes the place it is measured at as the measurement arrives (n TS into the")
+    say("  loop). Then: the measurement grows in (0.3 s); the update, 0.3 to 0.9 s, slides the gain's")
+    say("  pointer from 0 to K_n while the estimate moves and narrows with it; the finished step (its three")
+    say(f"  Gaussians, K_n and the three uncertainties' values) holds {TS - 0.85 - 0.9:.2f} s; the step's prediction")
+    say("  and measurement leave (0.25 s) and the estimate moves on with the model and widens into the next")
+    say("  prediction (0.6 s), arriving at the next measurement. The first estimate holds from the start")
+    say(f"  until the first prediction ({TS - 0.6:g} s); after the last step's hold the picture fades (0.5 s) and")
+    say(f"  the first estimate fades in (0.4 s) with the target at its start: a loop of {(NSTEP + 1) * TS:g} s, the")
+    say(f"  target's {(NSTEP + 1) * DT:g} s, and nothing rewinds. The poster is step 2, {1.2:g} s after its measurement.")
+    say("  The shapes between two steps are a transition; where each step lands is the filter's numbers,")
     say("  and the K_n printed is always the step's own. His names sit under their Gaussians' means,")
     say("  pushed apart only as far as they must be; the uncertainties, his words, are listed with")
-    say("  their values under them. The airplane is the target, at its true position at each step.")
+    say("  their values under them. The y axis is the Gaussians' value, a probability density in 1/m.")
+    say("  Type: names 17 and their symbols 21, the legend's symbols and K_n 20, so the subscripts that")
+    say("  tell n|n from n|n-1 are set at 14 to 14.7 (the engine's scripts are 0.7 of their label).")
     return "\n".join(L) + "\n"
 
 
 JS = r"""
 const D = DATA, ST = D.steps, NS = ST.length;
 const POSTER_T = D.poster;
-const lab = t0 => settle(t0, .28);
-const T0 = D.t0, TS = D.ts, PER = NS * TS + D.reset;
+const TS = D.ts, PER = D.per, SLOW = D.slow, TR = D.truth;
 /* the box */
-const BX = { x: 104, y: 104, w: 720, h: 292 };
+const BX = { x: 112, y: 100, w: 700, h: 296 };
 const XL = D.xlim, YMAX = D.ymax;
 const X = v => BX.x + (v - XL[0]) / (XL[1] - XL[0]) * BX.w;
 const Yp = v => BX.y + BX.h - v / YMAX * BX.h;
-const KY = BX.y + 42;                               // the gain's arrow
+const KY = BX.y + 46;                               // the gain's arrow
 const COL = { prior: C.blue, meas: C.body, post: C.accent };
 const FILL = { prior: C.steel, meas: C.grid, post: C.wash };
 const pdf = (x, m, s) => Math.exp(-.5 * ((x - m) / s) ** 2) / (Math.sqrt(2 * Math.PI) * s);
+const ez = x => easeInOut(clamp(x));
 
 /* ------------------------------------------------------------ the clock
-   each step: predict (the last estimate moves on with the model and widens),
-   measure (the measurement arrives), update (the gain slides from 0 to K_n
-   and the estimate moves and narrows with it), then hold. */
-const B_PRED = [0, .55], B_MEAS = [.55, .35], B_UPD = [1.0, .6];
-function clock() {
-  if (t < T0) return { n: 0, u: -1, rs: 0 };
-  const p = (t - T0) % PER, n = Math.floor(p / TS);
-  if (n >= NS) return { n: NS - 1, u: TS + 1, rs: (p - NS * TS) / D.reset };   // resetting
-  return { n, u: p - n * TS, rs: 0, base: t - p + n * TS };
-}
-const sg = (u, b) => easeInOut(clamp((u - b[0]) / b[1]));
+   One filter step is TS page seconds, DT of the target's time: time slowed
+   SLOW times, and the target flies at its constant speed all the while. The
+   measurement of step n arrives at M_n = n TS of the loop, as the target
+   passes the place it was measured at. Then the measurement grows in, the
+   update moves the estimate (the gain slides from 0 to K_n) and the finished
+   step holds; then the step's prediction and measurement leave, and the
+   estimate moves on with the model and widens into the next prediction,
+   which arrives at M_{n+1}. After the last step the picture fades and the
+   first estimate fades in again, the target with it: nothing rewinds. */
+const U0 = .3, OUT = .85, OUTD = .25, PR = .6, SEAM = .9;
+const planeAt = p => TR[0] + D.v * p / SLOW;        // the target, p page seconds after it passed TR[0]
 
 /* ------------------------------------------------------------ what is drawn now */
 function state() {
-  const c = clock(), out = [];
-  const tgt = D.truth;
-  let n = c.n, u = c.u;
-  const rs = c.rs;
-  if (c.u < 0) {                                   // before the loop: the first estimate
-    return { bells: [{ k: 'post', m: D.x0, s: D.s0, a: seg(.05, .3) }], plane: tgt[0], step: 0, K: null, rs: 0, legend: null };
+  const p = t % PER, base = t - p, S = (p0, v) => settle(base + p0, v);
+  const bells = [], leg = {};
+  if (p >= PER - SEAM) {                             // the loop's seam: a cross-fade
+    if (p < PER - .4) {
+      const f = 1 - ez((p - (PER - SEAM)) / .5), s = ST[NS - 1];
+      bells.push({ k: 'prior', m: s.mp, s: s.sp, a: f }, { k: 'meas', m: s.z, s: s.sm, a: f }, { k: 'post', m: s.mu, s: s.su, a: f });
+      leg.prior = { v: s.sp, a: f }; leg.meas = { v: s.sm, a: f }; leg.post = { v: s.su, a: f };
+      return { bells, leg, K: { s, a: f, g: 1 }, step: NS, plane: { x: planeAt(p), a: f } };
+    }
+    const g = ez((p - (PER - .4)) / .4);
+    bells.push({ k: 'post', m: D.x0, s: D.s0, a: g }); leg.post = { v: D.s0, a: g };
+    return { bells, leg, K: null, step: 0, plane: { x: planeAt(p - PER), a: g } };
   }
-  if (rs > 0) {                                    // the last step's picture fades, the target flies back
-    const s = ST[NS - 1], f = 1 - easeInOut(clamp(rs / .5));
-    return { bells: [{ k: 'prior', m: s.mp, s: s.sp, a: f }, { k: 'meas', m: s.z, s: s.sm, a: f },
-                     { k: 'post', m: s.mu, s: s.su, a: f }, { k: 'post', m: D.x0, s: D.s0, a: easeInOut(clamp((rs - .45) / .5)) }],
-             plane: lerp(tgt[NS], tgt[0], easeInOut(clamp(rs / .9))), step: rs < .5 ? NS : 0, K: { s, f, g: 1 }, rs, legend: { n: NS - 1, f } };
+  const n = Math.min(NS, Math.floor(p / TS)), u = p - n * TS, first = t < PER;
+  const plane = { x: planeAt(p), a: first ? seg(.1, .3) : 1 };
+  let K = null, step = n;
+  if (n === 0) {                                     // the first estimate, as the loop starts
+    const a = first ? seg(.05, .3) : 1;
+    bells.push({ k: 'post', m: D.x0, s: D.s0, a }); leg.post = { v: D.s0, a };
+  } else {                                           // step n: measured, updated, held
+    const s = ST[n - 1], M = n * TS;
+    const lv = n < NS ? 1 - ez((u - (TS - OUT)) / OUTD) : 1;
+    const g = u >= U0 ? S(M + U0, .55) : 0, ap = clamp((u - U0) / .12), am = clamp(u / .1);
+    bells.push({ k: 'prior', m: s.mp, s: s.sp, a: lv }, { k: 'meas', m: s.z, s: s.sm, a: lv * am, grow: S(M, .3) });
+    if (ap > 0) bells.push({ k: 'post', m: lerp(s.mp, s.mu, g), s: lerp(s.sp, s.su, g), a: ap });
+    leg.prior = { v: s.sp, a: lv }; leg.meas = { v: s.sm, a: lv * am }; leg.post = { v: s.su, a: clamp((u - U0 - .45) / .15) };
+    K = { s, a: lv * clamp((u - .12) / .2), g };
   }
-  const s = ST[n], prev = n > 0 ? ST[n - 1] : null;
-  const from = prev ? { m: prev.mu, s: prev.su } : { m: D.x0, s: D.s0 };
-  const bells = [];
-  // the previous step's prediction and measurement leave
-  const out0 = 1 - easeInOut(clamp(u / .22));
-  if (prev && out0 > 0) { bells.push({ k: 'prior', m: prev.mp, s: prev.sp, a: out0 }); bells.push({ k: 'meas', m: prev.z, s: prev.sm, a: out0 }); }
-  // predict: the last estimate moves on and widens, and becomes the previous estimate
-  const gp = settle(c.base + B_PRED[0], .45);
-  const mp = lerp(from.m, s.mp, gp), spp = lerp(from.s, s.sp, gp);
-  const ghost = 1 - easeInOut(clamp(u / .35));
-  if (ghost > 0) bells.push({ k: 'post', m: from.m, s: from.s, a: ghost, ghost: true });
-  bells.push({ k: 'prior', m: mp, s: spp, a: clamp(u / .12) });
-  // measure
-  const am = settle(c.base + B_MEAS[0], .3);
-  if (u >= B_MEAS[0]) bells.push({ k: 'meas', m: s.z, s: s.sm, a: am, grow: am });
-  // update
-  const g = u >= B_UPD[0] ? settle(c.base + B_UPD[0], .5) : 0;
-  if (u >= B_UPD[0]) bells.push({ k: 'post', m: lerp(s.mp, s.mu, g), s: lerp(s.sp, s.su, g), a: clamp((u - B_UPD[0]) / .12) });
-  const plane = lerp(n > 0 ? D.truth[n] : D.truth[0], D.truth[n + 1], gp);
-  return { bells, plane, step: n + 1, K: u >= B_UPD[0] - .2 ? { s, f: clamp((u - B_UPD[0] + .2) / .2), g } : null, rs: 0,
-           legend: { n, u } };
+  if (n < NS && u >= TS - PR) {                      // the next prediction: on with the model, wider
+    const s = ST[n], from = n ? { m: ST[n - 1].mu, s: ST[n - 1].su } : { m: D.x0, s: D.s0 };
+    const q = u - (TS - PR), gp = S((n + 1) * TS - PR, .5);
+    for (const b of bells) if (b.k === 'post') { b.ghost = true; b.a *= 1 - ez(q / .35); }
+    if (leg.post) leg.post = { v: leg.post.v, a: leg.post.a * (1 - ez(q / .25)) };
+    bells.push({ k: 'prior', m: lerp(from.m, s.mp, gp), s: lerp(from.s, s.sp, gp), a: clamp(q / .1) });
+    leg.prior = { v: s.sp, a: clamp((q - .4) / .15) }; leg.meas = null;
+    step = n + 1;
+  }
+  return { bells, leg, K, step, plane };
 }
 
 /* ------------------------------------------------------------ drawing helpers */
 function bell(b, fillPass) {
   const pts = [], lo = Math.max(XL[0], b.m - 5 * b.s), hi = Math.min(XL[1], b.m + 5 * b.s);
-  if (hi <= lo) return;
+  if (hi <= lo || b.a <= 0) return;
   const N = 220;
   for (let i = 0; i <= N; i++) { const x = lo + (hi - lo) * i / N; pts.push([X(x), Yp(pdf(x, b.m, b.s) * (b.grow ?? 1))]); }
   if (fillPass) {
@@ -315,22 +329,13 @@ function xhat(sub, x, y, o) {
   ctx.stroke(); ctx.restore();
   return w;
 }
-/* text and math in a row */
-function row(parts, x, y, o = {}) {
-  const wd = ([k, v]) => k === 't' ? text(v, 0, -1e4, { ...o, alpha: 0 }) : k === 'h' ? xhat(v, 0, -1e4, { ...o, alpha: 0 }) : math(v, 0, -1e4, { ...o, alpha: 0 });
-  const w = parts.reduce((s, p) => s + wd(p), 0);
-  let cx = o.align === 'right' ? x - w : o.align === 'center' ? x - w / 2 : x;
-  for (const [k, v] of parts) {
-    const oo = { ...o, align: 'left' };
-    cx += k === 't' ? text(v, cx, y, oo) : k === 'h' ? xhat(v, cx, y, oo) : math(v, cx, y, oo);
-  }
-  return w;
-}
 
 /* ------------------------------------------------------------ labels under the axis
    his three names, each under its Gaussian's mean; where two would meet
    they are pushed apart the least they must (clusters merged, as a 1D
-   label placement does), and kept inside the box's width */
+   label placement does), and kept inside the box's width. The words are
+   17, the symbols 21, so that n|n and n|n-1 are set at 14.7 */
+const NW = 17, NSY = 21;
 const LAB = {
   prior: [['t', 'Previous'], ['t', 'estimate'], ['h', 'n|n-1']],
   post: [['t', 'Present'], ['t', 'estimate'], ['h', 'n|n']],
@@ -339,7 +344,7 @@ const LAB = {
 const LW = {};
 function labW(k) {
   if (LW[k]) return LW[k];
-  const ws = LAB[k].map(([kk, v]) => kk === 't' ? text(v, 0, -1e4, { size: 16, alpha: 0 }) : kk === 'h' ? xhat(v, 0, -1e4, { size: 17, alpha: 0 }) : math(v, 0, -1e4, { size: 17, alpha: 0 }));
+  const ws = LAB[k].map(([kk, v]) => kk === 't' ? text(v, 0, -1e4, { size: NW, alpha: 0 }) : kk === 'h' ? xhat(v, 0, -1e4, { size: NSY, alpha: 0 }) : math(v, 0, -1e4, { size: NSY, alpha: 0 }));
   return (LW[k] = Math.max(...ws));
 }
 function place(items, lo, hi, gap) {
@@ -366,17 +371,16 @@ function nameLabels(bells) {
   const best = {};
   for (const b of bells) if (!b.ghost && (!best[b.k] || b.a > best[b.k].a)) best[b.k] = b;
   const items = Object.values(best).filter(b => b.a > .02).map(b => ({ k: b.k, x: X(clamp(b.m, XL[0], XL[1])), w: labW(b.k), a: b.a }));
-  place(items, BX.x - 30, BX.x + BX.w + 30, 16);
+  place(items, BX.x - 40, BX.x + BX.w + 30, 18);
+  const y0 = BX.y + BX.h + 52;
   for (const it of items) {
-    const y0 = BX.y + BX.h + 50;
     LAB[it.k].forEach(([k, v], i) => {
-      const o = { size: k === 't' ? 16 : 17, color: COL[it.k], align: 'center', alpha: it.a };
-      const y = y0 + i * 19 + (i === 2 ? 3 : 0);
+      const o = { size: k === 't' ? NW : NSY, color: COL[it.k], align: 'center', alpha: it.a };
+      const y = y0 + i * 22 + (i === 2 ? 6 : 0);
       if (k === 't') text(v, it.cx, y, o); else if (k === 'h') xhat(v, it.cx, y, o); else math(v, it.cx, y, o);
     });
     // the mean, marked on the axis
-    const xm = it.x;
-    line([[xm, BX.y + BX.h], [xm, BX.y + BX.h - 7]], { color: COL[it.k], width: 2, alpha: it.a });
+    line([[it.x, BX.y + BX.h], [it.x, BX.y + BX.h - 7]], { color: COL[it.k], width: 2, alpha: it.a });
   }
 }
 
@@ -399,66 +403,67 @@ function plane(xc, yc, a) {
 /* ------------------------------------------------------------ draw */
 function draw() {
   const S = state();
-  const ap = seg(0, .4);
+  const ap = seg(0, .4), aa = clamp(ap * 1.4);
   const A = axes({ x: BX.x, y: BX.y, w: BX.w, h: BX.h, xlim: XL, ylim: [0, YMAX], xticks: D.xticks, yticks: D.yticks,
-                   progress: ap, ylabel: '\\rm{Probability}', ylabelGap: 62, yfmt: v => v === 0 ? '0' : v.toFixed(2) });
-  math('\\rm{System\\ state}\\ (\\rm{m})', BX.x + BX.w + 12, BX.y + BX.h + 5, { size: 17, alpha: clamp(ap * 1.4) });
+                   progress: ap, tickSize: 16, labelSize: 17, ylabel: '\\rm{Probability\\ density}\\ (\\rm{1/m})', ylabelGap: 64,
+                   yfmt: v => v === 0 ? '0' : v.toFixed(2) });
+  math('\\rm{System\\ state}\\ (\\rm{m})', BX.x + BX.w + 12, BX.y + BX.h + 5, { size: 17, alpha: aa });
   // the Gaussians: fills, then strokes
   A.inside(() => { for (const b of S.bells) bell(b, true); for (const b of S.bells) bell(b, false); });
   // the gain: from 0 at the previous estimate to 1 at the measurement
-  if (S.K) {
-    const { s, f, g } = S.K, x0 = X(s.mp), x1 = X(s.z), dir = Math.sign(x1 - x0) || 1;
+  if (S.K && S.K.a > 0) {
+    const { s, a: f, g } = S.K, x0 = X(s.mp), x1 = X(s.z), dir = Math.sign(x1 - x0) || 1;
     arrow(x0, KY, x1, KY, { width: 1.5, head: 9, both: true, alpha: f });
-    text('0', x0 - dir * 10, KY + 5, { size: 16, align: dir > 0 ? 'right' : 'left', alpha: f });
-    text('1', x1 + dir * 10, KY + 5, { size: 16, align: dir > 0 ? 'left' : 'right', alpha: f });
-    const pk = s.K * (g ?? 1), xk = lerp(x0, x1, pk);
+    text('0', x0 - dir * 10, KY + 6, { size: 17, align: dir > 0 ? 'right' : 'left', alpha: f });
+    text('1', x1 + dir * 10, KY + 6, { size: 17, align: dir > 0 ? 'left' : 'right', alpha: f });
+    const pk = s.K * g, xk = lerp(x0, x1, pk);
     const gp = { color: C.guide, width: 1, dash: [4, 4] };
     line([[x0, KY + 6], [x0, Yp(pdf(s.mp, s.mp, s.sp))]], { ...gp, alpha: f });
     line([[x1, KY + 6], [x1, Yp(pdf(s.z, s.z, s.sm))]], { ...gp, alpha: f });
-    const su = lerp(s.sp, s.su, g ?? 1);
+    const su = lerp(s.sp, s.su, g);
     line([[xk, KY + 6], [xk, Yp(pdf(0, 0, su))]], { color: C.accent, width: 1.2, dash: [4, 4], alpha: f });
     ctx.save(); ctx.globalAlpha *= f; ctx.fillStyle = C.accent; ctx.beginPath();
     ctx.moveTo(xk, KY + 1); ctx.lineTo(xk - 6, KY - 9); ctx.lineTo(xk + 6, KY - 9); ctx.closePath(); ctx.fill(); ctx.restore();
     // the value is K_n itself, over the place the pointer is going to
-    const kx = clamp(lerp(x0, x1, s.K), BX.x + 60, BX.x + BX.w - 60);
-    math(`K_{n} = ${s.K.toFixed(2)}`, kx, KY - 15, { size: 17, align: 'center', alpha: f });
+    const kx = clamp(lerp(x0, x1, s.K), BX.x + 70, BX.x + BX.w - 70);
+    math(`K_{n} = ${s.K.toFixed(2)}`, kx, KY - 17, { size: 20, align: 'center', alpha: f });
   }
   // his names under the axis
   nameLabels(S.bells);
-  // the target, flying above
-  const pa = seg(.1, .3), px = X(S.plane);
-  plane(px, 64, pa);
-  text('target', px - 42, 68, { size: 15, color: C.muted, align: 'right', alpha: pa });
-  math(`n = ${S.step}`, BX.x + BX.w, 36, { size: 17, align: 'right', alpha: seg(.2, .3) });
-  legend(S);
-  math(D.params, 22, H - 14, { size: 14, color: C.muted, alpha: seg(.5, .3) });
+  // the target, flying above at its constant speed
+  const px = X(S.plane.x);
+  plane(px, 62, S.plane.a);
+  text('target', px - 46, 67, { size: 16, color: C.body, align: 'right', alpha: S.plane.a });
+  math(`n = ${S.step}`, BX.x + BX.w, 34, { size: 20, align: 'right', alpha: seg(.2, .3) });
+  legend(S.leg);
+  math(D.params, 22, H - 10, { size: 15, color: C.muted, alpha: seg(.5, .3) });
 }
 
 /* ------------------------------------------------------------ the uncertainties, his words, with values */
-function legend(S) {
-  const y = BX.y + BX.h + 150, cols = [BX.x - 40, BX.x + 238, BX.x + 486];
-  const L = S.legend;
-  let vals = null;
-  if (L) {
-    const s = ST[L.n];
-    const upd = L.u === undefined ? 1 : L.u >= B_UPD[0] ? 1 : 0, mea = L.u === undefined ? 1 : L.u >= B_MEAS[0] ? 1 : 0;
-    const f = L.f ?? 1;
-    vals = [{ v: s.sp, a: f }, { v: s.su, a: f * upd }, { v: s.sm, a: f * mea }];
+const ENT = [['prior', 'Previous estimate uncertainty', 'P_{n|n-1}'], ['post', 'Present estimate uncertainty', 'P_{n|n}'],
+             ['meas', 'Measurement uncertainty', 'R_{n}']];
+let LEGX = null;
+function legend(V) {
+  const y = BX.y + BX.h + 154, la = seg(.3, .3);
+  if (!LEGX) {                                       // the three entries in a row, centred under the box
+    const ws = ENT.map(([, w]) => 36 + text(w, 0, -1e4, { size: 17, alpha: 0 })), gap = 58;
+    const x0 = BX.x + BX.w / 2 + 30 - (ws[0] + ws[1] + ws[2] + 2 * gap) / 2;
+    LEGX = [x0, x0 + ws[0] + gap, x0 + ws[0] + ws[1] + 2 * gap];
   }
-  const ent = [['prior', 'Previous estimate uncertainty', 'P_{n|n-1}'], ['post', 'Present estimate uncertainty', 'P_{n|n}'],
-               ['meas', 'Measurement uncertainty', 'R_{n}']];
-  const la = seg(.3, .3);
-  ent.forEach(([k, words, sym], i) => {
-    const x = cols[i];
-    line([[x, y - 5], [x + 26, y - 5]], { color: COL[k], width: k === 'post' ? 2.4 : 2.2, dash: k === 'meas' ? [7, 4] : null, alpha: la });
-    text(words, x + 34, y, { size: 15, color: C.body, alpha: la });
-    const v = vals ? vals[i] : null;
-    const tail = v && v.a > 0 ? ` = (${v.v.toFixed(1)}\\,\\rm{m})^{2}` : '';
-    math(sym + tail, x + 34, y + 21, { size: 16, alpha: la });
+  ENT.forEach(([k, words, sym], i) => {
+    const x = LEGX[i];
+    line([[x, y - 6], [x + 28, y - 6]], { color: COL[k], width: k === 'post' ? 2.4 : 2.2, dash: k === 'meas' ? [7, 4] : null, alpha: la });
+    text(words, x + 36, y, { size: 17, color: C.body, alpha: la });
+    const w = math(sym, x + 36, y + 25, { size: 20, alpha: la }), v = V[k];
+    if (v && v.a > 0) math(`= (${v.v.toFixed(1)}\\,\\rm{m})^{2}`, x + 36 + w + 6, y + 25, { size: 20, alpha: la * v.a });
   });
 }
 boot();
 """
+
+
+TS = 4.5                                   # page seconds per filter step: time slowed TS / DT = 9
+SLOW = TS / DT
 
 
 def page_data(seed, z, kf):
@@ -470,13 +475,13 @@ def page_data(seed, z, kf):
     peak = 1 / (np.sqrt(2 * np.pi) * min(st["su"] for st in steps))          # the sharpest estimate
     ymax = float(np.ceil(peak * 1.36 / 0.02) * 0.02)
     return {
-        "steps": steps, "x0": kf["x0"][0], "s0": SIG0[0], "truth": tr, "t0": 0.25, "ts": 2.7, "reset": 1.0,
+        "steps": steps, "x0": kf["x0"][0], "s0": SIG0[0], "truth": tr, "v": V,
+        "ts": TS, "slow": SLOW, "per": (NSTEP + 1) * TS,
         "xlim": [-20.0, 160.0], "xticks": [0, 50, 100, 150], "ymax": ymax,
         "yticks": [round(v, 2) for v in np.arange(0, ymax + 1e-9, 0.02)],
-        "poster": 0.25 + 1 * 2.7 + 2.2,
-        "params": (r"\rm{target at %g m/s; constant velocity model, }\Delta t = %g\,\rm{s},\ q = %g\,\rm{m}^{2}\rm{/s}^{3}\rm{;"
-                   r"\ \ }K_{n} = P_{n|n-1}/(P_{n|n-1} + R_{n})\rm{, position part}"
-                   % (V, DT, Q_DENS)),
+        "poster": 2 * TS + 1.2,                 # step 2, just updated: the target 1.2 s past its measurement
+        "params": (r"\rm{target at %g m/s; constant velocity model, }\Delta t = %g\,\rm{s},\ q = %g\,\rm{m}^{2}\rm{/s}^{3}"
+                   r"\rm{;\ \ time slowed }%g\,\times" % (V, DT, Q_DENS, SLOW)),
     }
 
 
@@ -494,9 +499,9 @@ def main():
             "estimate, narrower than either, placed between them by the Kalman gain K between 0 and 1.")
     common.build_html(NAME, title, aria, 1000, 616, data, JS)
     print("still:", common.still(NAME))
-    snd_common.append(os.path.join(HERE, "snd_kalman.check.txt"), snd_common.loop_overlaps(NAME, data["t0"] + len(data["steps"]) * data["ts"] + data["reset"] + 0.4))
+    snd_common.append(os.path.join(HERE, "snd_kalman.check.txt"), snd_common.loop_overlaps(NAME, data["per"] + data["ts"] + 0.4))
     if "--look" in sys.argv:
-        print(common.frames(NAME, [0.4, 0.8, 1.2, 1.6, 2.4, 3.3, 4.2, 6.5, 9.0, 11.5]))
+        print(common.frames(NAME, [0.4, 0.8, 1.2, 3.0, 4.2, 4.6, 4.9, 5.4, 7.0, 10.2, 21.0, 21.9, 22.3, 23.0]))
 
 
 if __name__ == "__main__":

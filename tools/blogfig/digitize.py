@@ -302,9 +302,24 @@ def knee_plot(g, box, thr=150):
     ss = np.linspace(sp[0], sp[-1], 240)
     curve = [[round(float(a), 3), round(float(b), 9)] for a, b in zip(fx_(ss), fy_(ss))]
     # the last neurons, above the curve's top at the right edge: specks
-    tail = [c for c in comps if c["a"] <= 6 and c["cx"] > x1 - 0.08 * (x1 - x0)]
+    tail = [(c["cx"], c["cy"]) for c in comps if c["a"] <= 6 and c["cx"] > x1 - 0.08 * (x1 - x0)]
+    # His highest MD values stand in a column of dots on the frame's right edge, touching
+    # its line, which the mask above leaves out (it keeps 2 px off the frame) or cuts in
+    # half. Over that edge and above the curve's top (where it ends, at the plot's edge),
+    # the frame line's own grey is taken out column by column (its median down the edge,
+    # where most rows hold no dot), and what is darker than it by more than a dot's rim is
+    # read as specks, each at its darkness-weighted centre; a speck of fewer than 3 pixels
+    # is the end of a tick.
+    ctop = y1 - (max(q[1] for q in curve) - yl[0]) * sy        # the curve's top, a row of the picture
+    ex0, ex1, ey0, ey1 = int(x1) - 6, int(x1) + 2, int(y0) + 3, int(ctop) - 1
+    strip = g[ey0:ey1, ex0:ex1 + 1]
+    dark = np.clip(np.median(strip, axis=0)[None, :] - strip, 0, None)
+    lab_e, n_e = ndimage.label(dark > 60, structure=np.ones((3, 3)))
+    edge = [(ex0 + cx, ey0 + cy) for cy, cx in
+            (ndimage.center_of_mass(dark * (lab_e == i)) for i in range(1, n_e + 1) if (lab_e == i).sum() >= 3)]
+    tail = [p for p in tail if p[1] >= ey1] + edge          # a speck the mask cut in half is read whole here
     return {"curve": curve,
-            "tail": sorted([[round(float(to_x(c["cx"])), 3), round(float(to_y(c["cy"])), 9)] for c in tail]),
+            "tail": sorted([[round(float(to_x(cx)), 3), round(float(to_y(cy)), 9)] for cx, cy in tail]),
             "line1": [[float(to_x(l1x0)), float(to_y(c1 + d1 * l1x0))], [float(to_x(l1x1)), float(to_y(c1 + d1 * l1x1))]],
             "line2": [[float(to_x(a2 + b2 * l2y1)), float(to_y(l2y1))], [float(to_x(a2 + b2 * l2y0)), float(to_y(l2y0))]],
             "knee": [float(to_x(kx)), float(to_y(ky)), float(kr / sx)],

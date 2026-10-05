@@ -38,7 +38,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </div>
 <script>
 const W = 1000, H = 556;
-const DATA = {"poster":2.80015,"sc":52.0,"v":3.43,"t0":0.5,"per":5.01041,"oa":[70.0,460.0],"cb":[735.0,290.0],"rect_a":[70.0,64.0,475.0,460.0],"rect_b":[530.0,66.0,985.0,470.0],"a":{"pn":[5.84622,1.34971],"pm":[1.01228,4.38467],"F":[3.32356,5.71908],"th":0.5236,"th_on":3.36849,"th_om":2.58095,"s0":10.7527,"s1":-0.2,"off":0.02,"tn":1.46206,"tm":2.24015,"sF":5.73783,"dd":2.66884,"tau":77.80863,"dlab":[234.49603,338.92611],"glab":[314.83694,385.84921],"tlab":[443.55012,377.1803],"alab":[188.0,126.60767],"aline":194.26095,"ddlab":[207.1542,212.29628]},"b":{"pk":[[3.0,0.0],[1.5,2.59808],[-1.5,2.59808],[-3.0,3.67394e-16],[-1.5,-2.59808],[1.5,-2.59808]],"F":[1.20115,3.85764],"th":0.43633,"s0":6.37776,"s1":-5.23585,"off":0.32451,"tk":[1.06672,1.14295,1.93563,2.65209,2.57586,1.78318],"sF":2.71892,"dd":2.98039,"tau":86.89185,"dlab":[786.0,207.66541],"glab":[833.04445,280.47086],"tlab":[963.2459,279.98347],"ddlab":[775.01106,127.93814]},"params":"\\rm{sound in air, }c = 343\\,\\rm{m/s;\\ \\ time slowed }10^{4}\\,\\times;\\ \\ \\ (\\rm{a})\\ \\rho_{n} = 6\\,\\rm{cm},\\ \\beta_{n} = 13\\deg,\\ \\rho_{m} = 4.5\\,\\rm{cm},\\ \\beta_{m} = 77\\deg,\\ \\theta\\ = 30\\deg;\\ \\ \\ (\\rm{b})\\ \\rho\\ = 3\\,\\rm{cm},\\ \\beta_{k} = 60\\deg\\,k,\\ \\theta\\ = 25\\deg"};
+const DATA = {"poster":2.80015,"sc":52.0,"v":3.43,"t0":0.5,"per":5.21041,"oa":[70.0,460.0],"cb":[735.0,290.0],"rect_a":[70.0,64.0,475.0,460.0],"rect_b":[530.0,66.0,985.0,470.0],"a":{"pn":[5.84622,1.34971],"pm":[1.01228,4.38467],"F":[3.32356,5.71908],"th":0.5236,"th_on":3.36849,"th_om":2.58095,"s0":10.7527,"s1":-0.2,"off":0.02,"tn":1.46206,"tm":2.24015,"sF":5.73783,"dd":2.66884,"tau":77.80863,"dlab":[234.49603,338.92611],"glab":[314.83694,385.84921],"tlab":[443.55012,377.1803],"alab":[188.0,126.60767],"aline":194.26095,"ddlab":[207.1542,212.29628]},"b":{"pk":[[3.0,0.0],[1.5,2.59808],[-1.5,2.59808],[-3.0,3.67394e-16],[-1.5,-2.59808],[1.5,-2.59808]],"F":[1.20115,3.85764],"th":0.43633,"s0":6.37776,"s1":-5.23585,"off":0.32451,"tk":[1.06672,1.14295,1.93563,2.65209,2.57586,1.78318],"sF":2.71892,"dd":2.98039,"tau":86.89185,"dlab":[786.0,207.66541],"glab":[833.04445,280.47086],"tlab":[963.2459,279.98347],"ddlab":[775.01106,127.93814]},"params":"\\rm{sound in air, }c = 343\\,\\rm{m/s;\\ \\ time slowed }10^{4}\\,\\times;\\ \\ \\ (\\rm{a})\\ \\rho_{n} = 6\\,\\rm{cm},\\ \\beta_{n} = 13\\deg,\\ \\rho_{m} = 4.5\\,\\rm{cm},\\ \\beta_{m} = 77\\deg,\\ \\theta\\ = 30\\deg;\\ \\ \\ (\\rm{b})\\ \\rho\\ = 3\\,\\rm{cm},\\ \\beta_{k} = 60\\deg\\,k,\\ \\theta\\ = 25\\deg"};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
    `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
@@ -676,11 +676,27 @@ function sensor(p, name, a, flash) {
   ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 2 * Math.PI); ctx.fillStyle = C.navy; ctx.fill();
   if (flash > .01) { ctx.globalAlpha *= flash; ctx.fillStyle = C.amber; ctx.fill(); ctx.globalAlpha /= flash; }
   ctx.strokeStyle = C.ink; ctx.lineWidth = 1.3; ctx.stroke(); ctx.restore();
-  math(name, p[0], p[1] + 6, { size: 17, color: '#fff', align: 'center', alpha: a });
+  math(name, p[0], p[1] + 6, { size: 18, color: '#fff', align: 'center', alpha: a });
 }
 /* a right angle mark at F, between the directions u and v */
 function rightAngle(F, u, v, k, o) {
   line([add(F, u, k), add(add(F, u, k), v, k), add(F, v, k)], o);
+}
+/* the wave's ray of length L along u, arriving at tip as p goes from 0 to 1: drawn
+   from its far end, its head fading in once its shaft is longer than the head */
+function ray(tip, u, L, p) {
+  const len = L * p;
+  if (len <= 0) return;
+  const tail = add(tip, u, L), now = add(tail, u, -len), ha = clamp((len - 14) / 12);
+  if (ha < 1) line([tail, add(now, u, ha * 7)], { width: 1.8 });
+  if (ha > 0) arrow(tail[0], tail[1], now[0], now[1], { width: 1.8, head: 12, alpha: ha });
+}
+/* an axis drawn from (x1, y1) to (x2, y2) as p goes from 0 to 1, its head likewise */
+function axisArrow(x1, y1, x2, y2, p) {
+  if (p <= 0) return;
+  const ex = lerp(x1, x2, p), ey = lerp(y1, y2, p), len = Math.hypot(ex - x1, ey - y1), ha = clamp((len - 12) / 12);
+  if (ha < 1) line([[x1, y1], [ex, ey]], { width: 1.4 });
+  if (ha > 0) arrow(x1, y1, ex, ey, { width: 1.4, head: 10, alpha: ha });
 }
 /* the flash of a sensor the front reached at page time th (in the loop) */
 const flashAt = (ph, th) => ph < th ? 0 : Math.exp(-(ph - th) / .45);
@@ -705,26 +721,26 @@ function wave(P, O, rect, keep) {
 /* ================================================================ (a) */
 const pn = scr(OA, A.pn), pm = scr(OA, A.pm), FA = scr(OA, A.F), SA = dir(A.th);
 const LA = [
-  ['m', 'x', 468, OA[1] + 25, { size: 17, align: 'center' }],
-  ['m', 'y', OA[0] - 17, 80, { size: 17, align: 'center' }],
-  ['m', '(\\rho_{m},\\ \\beta_{m})', pm[0] - 6, pm[1] - 30, { size: 17, align: 'center' }],
-  ['m', '(\\rho_{n},\\ \\beta_{n})', pn[0] + 4, pn[1] + 40, { size: 17, align: 'center' }],
-  ['m', 'd_{n,m}', A.dlab[0], A.dlab[1], { size: 17, align: 'center' }],
-  ['m', '\\gamma', A.glab[0], A.glab[1], { size: 17, align: 'center' }],
-  ['m', '\\theta', A.tlab[0], A.tlab[1], { size: 17, align: 'center' }],
-  ['t', 'Additional Distance', A.alab[0], A.alab[1], { size: 16, color: C.accent, align: 'center' }],
-  ['m', '\\Delta d', A.ddlab[0], A.ddlab[1], { size: 17, color: C.accent, align: 'center' }],
+  ['m', 'x', 468, OA[1] + 26, { size: 18, align: 'center' }],
+  ['m', 'y', OA[0] - 18, 80, { size: 18, align: 'center' }],
+  ['m', '(\\rho_{m},\\ \\beta_{m})', pm[0] - 6, pm[1] - 30, { size: 20, align: 'center' }],
+  ['m', '(\\rho_{n},\\ \\beta_{n})', pn[0] + 4, pn[1] + 42, { size: 20, align: 'center' }],
+  ['m', 'd_{n,m}', A.dlab[0], A.dlab[1], { size: 20, align: 'center' }],
+  ['m', '\\gamma', A.glab[0], A.glab[1], { size: 20, align: 'center' }],
+  ['m', '\\theta', A.tlab[0], A.tlab[1], { size: 20, align: 'center' }],
+  ['t', 'Additional Distance', A.alab[0], A.alab[1], { size: 17, color: C.accent, align: 'center' }],
+  ['m', '\\Delta d', A.ddlab[0], A.ddlab[1], { size: 20, color: C.accent, align: 'center' }],
 ];
 let KA = null;
 function panelA() {
   const ph = phase(), off = A.off, P = { s0: A.s0, s1: A.s1, off, th: A.th };
   panel('a', 18, 30, { alpha: lab(0) });
-  text('linear array sensors', 54, 30, { size: 17, color: C.body, alpha: lab(.04) });
+  text('linear array sensors', 54, 30, { size: 18, color: C.body, alpha: lab(.04) });
   if (!KA) KA = LA.map(([k, s, x, y, o]) => box(k, s, x, y, o)).concat([pn, pm].map(p => ({ x: p[0], y: p[1], r: RD + 3 })));
   // the axes
   const ap = seg(0, .4);
-  arrow(OA[0], OA[1], OA[0] + (475 - OA[0]) * ap, OA[1], { width: 1.4, head: 10, alpha: ap > 0 ? 1 : 0 });
-  arrow(OA[0], OA[1], OA[0], OA[1] - (OA[1] - 64) * ap, { width: 1.4, head: 10, alpha: ap > 0 ? 1 : 0 });
+  axisArrow(OA[0], OA[1], 475, OA[1], ap);
+  axisArrow(OA[0], OA[1], OA[0], 64, ap);
   // the geometry he draws, grey and dashed
   const gp = seg(.12, .35), G = { color: C.guide, width: 1.1, dash: [5, 4] };
   line([OA, add(pm, nrm(sub(OA, pm)), RD + 1)], { ...G, progress: gp });
@@ -739,11 +755,8 @@ function panelA() {
   arc(pn, 54, 0, A.th, { color: C.guide, width: 1.3, progress: aa });
   // the wave: his two rays, and the front itself sweeping in
   const ra = seg(.15, .35);
-  if (ra > 0) {
-    const r1 = add(pn, SA, RD + 3), r2 = FA;
-    arrow(add(r1, SA, 96 * ra)[0], add(r1, SA, 96 * ra)[1], r1[0], r1[1], { width: 1.8, head: 12 });
-    arrow(add(r2, SA, 96 * ra)[0], add(r2, SA, 96 * ra)[1], r2[0], r2[1], { width: 1.8, head: 12 });
-  }
+  ray(add(pn, SA, RD + 3), SA, 96, ra);
+  ray(FA, SA, 96, ra);
   const w = wave(P, OA, D.rect_a, KA);
   // the Additional Distance: faint until the front has passed n, then drawn as it travels
   const mEdge = add(pm, SA, RD + 1), full = Math.hypot(FA[0] - mEdge[0], FA[1] - mEdge[1]);
@@ -763,26 +776,26 @@ function panelA() {
   // what it gives
   const fa = lab(.45);
   math(`\\Delta d = d_{n,m}\\,\\rm{cos}(\\theta\\ + \\gamma\\ - \\beta_{n}) = ${A.dd.toFixed(2)}\\,\\rm{cm},\\quad \\tau\\ = \\Delta d/c = ${A.tau.toFixed(1)}\\,\\rm{µs}`,
-       22, 508, { size: 16, alpha: fa });
+       22, 512, { size: 18, alpha: fa });
 }
 
 /* ================================================================ (b) */
 const PK = B.pk.map(p => scr(CB, p)), FB = scr(CB, B.F), SB = dir(B.th);
 const LB = [
-  ['m', 'x', 982, CB[1] + 25, { size: 17, align: 'center' }],
-  ['m', 'y', CB[0] - 17, 78, { size: 17, align: 'center' }],
-  ['m', '(\\rho,\\ \\beta_{2})', PK[2][0] - 38, PK[2][1] - 30, { size: 17, align: 'center' }],
-  ['m', '(\\rho,\\ \\beta_{0})', PK[0][0] + 30, PK[0][1] + 42, { size: 17, align: 'center' }],
-  ['m', 'd_{0,2}', B.dlab[0], B.dlab[1], { size: 17, align: 'center' }],
-  ['m', '\\Delta d', B.ddlab[0], B.ddlab[1], { size: 17, color: C.accent, align: 'center' }],
-  ['m', '\\gamma', B.glab[0], B.glab[1], { size: 17, align: 'center' }],
-  ['m', '\\theta', B.tlab[0], B.tlab[1], { size: 17, align: 'center' }],
+  ['m', 'x', 982, CB[1] + 26, { size: 18, align: 'center' }],
+  ['m', 'y', CB[0] - 18, 78, { size: 18, align: 'center' }],
+  ['m', '(\\rho,\\ \\beta_{2})', PK[2][0] - 40, PK[2][1] - 30, { size: 20, align: 'center' }],
+  ['m', '(\\rho,\\ \\beta_{0})', PK[0][0] + 30, PK[0][1] + 44, { size: 20, align: 'center' }],
+  ['m', 'd_{0,2}', B.dlab[0], B.dlab[1], { size: 20, align: 'center' }],
+  ['m', '\\Delta d', B.ddlab[0], B.ddlab[1], { size: 20, color: C.accent, align: 'center' }],
+  ['m', '\\gamma', B.glab[0], B.glab[1], { size: 20, align: 'center' }],
+  ['m', '\\theta', B.tlab[0], B.tlab[1], { size: 20, align: 'center' }],
 ];
 let KB = null;
 function panelB() {
   const ph = phase(), off = B.off, P = { s0: B.s0, s1: B.s1, off, th: B.th };
   panel('b', 520, 30, { alpha: lab(.02) });
-  text('circular array sensors', 556, 30, { size: 17, color: C.body, alpha: lab(.06) });
+  text('circular array sensors', 556, 30, { size: 18, color: C.body, alpha: lab(.06) });
   const discs = PK.map(p => ({ x: p[0], y: p[1], r: RD + 3 }));
   if (!KB) KB = LB.map(([k, s, x, y, o]) => box(k, s, x, y, o)).concat(discs);
   // the axes, round the sensors that sit on them
@@ -790,7 +803,7 @@ function panelB() {
   if (ap > 0) {
     cutLine([530, CB[1]], [530 + (975 - 530) * ap, CB[1]], discs, { width: 1.4 });
     if (ap >= 1) arrow(975, CB[1], 985, CB[1], { width: 1.4, head: 10 });
-    arrow(CB[0], 470, CB[0], 470 - (470 - 66) * ap, { width: 1.4, head: 10 });
+    axisArrow(CB[0], 470, CB[0], 66, ap);
   }
   // the hexagon he draws, light; the radius to sensor 2 and the chord 0 to 2, grey
   const hp = seg(.1, .4);
@@ -809,11 +822,8 @@ function panelB() {
   arc(PK[0], 54, 0, B.th, { color: C.guide, width: 1.3, progress: aa });
   // the rays, and the front
   const ra = seg(.17, .35);
-  if (ra > 0) {
-    const r1 = add(PK[0], SB, RD + 3), r2 = FB;
-    arrow(add(r1, SB, 80 * ra)[0], add(r1, SB, 80 * ra)[1], r1[0], r1[1], { width: 1.8, head: 12 });
-    arrow(add(r2, SB, 80 * ra)[0], add(r2, SB, 80 * ra)[1], r2[0], r2[1], { width: 1.8, head: 12 });
-  }
+  ray(add(PK[0], SB, RD + 3), SB, 80, ra);
+  ray(FB, SB, 80, ra);
   const w = wave(P, CB, D.rect_b, KB);
   const mEdge = add(PK[2], SB, RD + 1), full = Math.hypot(FB[0] - mEdge[0], FB[1] - mEdge[1]);
   line([FB, mEdge], { color: C.accent, width: 2.6, alpha: .22 * seg(.32, .3) });
@@ -827,12 +837,12 @@ function panelB() {
   put(LB, lab(.32));
   const fa = lab(.47);
   math(`\\Delta d = d_{0,2}\\,\\rm{cos}(\\theta\\ + \\gamma) = ${B.dd.toFixed(2)}\\,\\rm{cm},\\quad \\tau\\ = \\Delta d/c = ${B.tau.toFixed(1)}\\,\\rm{µs}`,
-       520, 508, { size: 16, alpha: fa });
+       524, 512, { size: 18, alpha: fa });
 }
 
 function draw() {
   panelA(); panelB();
-  math(D.params, 22, H - 14, { size: 14, color: C.muted, alpha: lab(.6) });
+  math(D.params, 22, H - 10, { size: 15, color: C.muted, alpha: lab(.6) });
 }
 boot();
 </script>

@@ -47,7 +47,7 @@ CHECK 2b, the whole double slit's Fraunhofer formula, angles from the midpoint, 
   the fringes move the light, they do not make or lose it
 
 CONVERGENCE
-  (a) on the screen with 400 Gauss points instead of 800: largest change 1.8e-14 of the peak
+  (a) on the screen with 400 Gauss points instead of 800: largest change 1.7e-14 of the peak
   (a) on the screen with 1600 Gauss points instead of 800: largest change 8.5e-14 of the peak
   the grid's first column behind the slit (x = 1/6): 800 against 3200 points, largest change 2.6e-13
 
@@ -72,9 +72,9 @@ THE FIELD ON THE PAGE
     0.17 <= x < 0.35: largest error 5.0e-02
     0.35 <= x < 0.5: largest error 1.9e-02
     0.5 <= x < 1: largest error 8.9e-03
-  the source's field H0(k r) is drawn near the source (r < 2.5, a 42 deg cone) and in front of the slits
-  (the last 2.1 wavelengths, |y| < 3.3, 100 from the source); the break mark on the axis stands for the
-  95 wavelengths between. The phase of H0 beyond k r - pi/4 is tabulated from scipy for r < 3.
+  the source's field H0(k r) is drawn near the source (r < 2.2, a 42 deg cone) and in front of the slits
+  (the last 1.9 wavelengths, |y| < 3.3, 100 from the source); the break mark on the axis stands for the
+  95.9 wavelengths between. The phase of H0 beyond k r - pi/4 is tabulated from scipy for r < 3.
 
 THE PHOTONS
   10000 per screen; each lands at y drawn from the screen's intensity as a probability density (inverse
@@ -91,6 +91,14 @@ THE PHOTONS
   the histogram: bins of 0.25 wavelength, counts / (max(n, 800) bin), in the same units as the
   curve (the probability density), so its bars grow with the first photons and then settle onto the curve.
   both panels use one density scale: the same light, in (a) moved into fringes twice the smooth level.
+  the screen carries a position scale, y / lambda = -10 ... 10, right of each intensity plot; in (b) the two
+  single-slit patterns are named as the document names them, P_A (solid, blue) and P_B (dashed, crimson),
+  P = P_A + P_B, in a legend in the plot's upper right (from 6.8 to 9.4 wavelengths up, where every curve
+  stays within 10 units of the plate).
+  drawing: landed dots never move, so each panel keeps them in a canvas of its own at the frame's pixels,
+  whole blocks of 256 photons at a time, and lays it on the frame in one draw (the last part block and the
+  dots still arriving are drawn each frame); the field is rebuilt at the frame's resolution up to 1 pixel per
+  unit (a full-screen frame scales it up, smoothly).
 
 TIME
   one optical period per second of the page (for 600 nm light, time slowed 5e+14 times); the crests

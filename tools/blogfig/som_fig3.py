@@ -9,7 +9,9 @@ his points ran together into solid ink, that ink as filled shapes; in (d)
 the curve, his two straight lines (each fitted to its own dashes, each
 drawn as his ran: Line 1 from the axis to Line 2, Line 2 from the axis to
 the plot's edge), the ring of the knee point, his label and his legend
-where they stood. The axes, ticks and labels are drawn here, in the house
+where they stood, and his last neurons as dots: above the curve's top they
+stand in a column on the frame's right edge, up to 3.75e-4, read with the
+frame line's own grey taken out. The axes, ticks and labels are drawn here, in the house
 style, over the plots' own data ranges."""
 import json
 import os

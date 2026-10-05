@@ -38,7 +38,7 @@ CHECK 1: the present estimate is the normalised product of the two Gaussians (th
 CHECK 2: batch least squares. The whole trajectory x_0 ... x_n estimated at once from the
   first estimate, the process model and the measurements (information form, one linear
   solve); its last state and that state's marginal covariance against the filter:
-    largest difference in the state 2.7e-12, in the covariance 6.8e-12
+    largest difference in the state 2.0e-12, in the covariance 9.8e-12
 
 CHECK 3: Monte Carlo, 40000 flights drawn from the filter's own model (start around the
   first estimate with its uncertainty, random acceleration of density q, measurement noise
@@ -53,15 +53,25 @@ CHECK 3: Monte Carlo, 40000 flights drawn from the filter's own model (start aro
    at 40 m/s, which the model allows)
 
 DISPLAY
-  one filter step (Dt = 0.5 s) every 2.7 s of the page: the last estimate moves on with the
-  model and widens (predict), the measurement arrives, the gain's pointer slides from 0 to
-  K_n while the estimate moves and narrows with it (update), then the picture rests. The
-  shapes between two steps are a transition; where each step lands is the filter's numbers,
+  one filter step (Dt = 0.5 s) every 4.5 s of the page: time slowed 9 times, said in the
+  parameter line. The target flies at its constant 40 m/s all the while (4.44 m per second of
+  the page) and passes the place it is measured at as the measurement arrives (n TS into the
+  loop). Then: the measurement grows in (0.3 s); the update, 0.3 to 0.9 s, slides the gain's
+  pointer from 0 to K_n while the estimate moves and narrows with it; the finished step (its three
+  Gaussians, K_n and the three uncertainties' values) holds 2.75 s; the step's prediction
+  and measurement leave (0.25 s) and the estimate moves on with the model and widens into the next
+  prediction (0.6 s), arriving at the next measurement. The first estimate holds from the start
+  until the first prediction (3.9 s); after the last step's hold the picture fades (0.5 s) and
+  the first estimate fades in (0.4 s) with the target at its start: a loop of 22.5 s, the
+  target's 2.5 s, and nothing rewinds. The poster is step 2, 1.2 s after its measurement.
+  The shapes between two steps are a transition; where each step lands is the filter's numbers,
   and the K_n printed is always the step's own. His names sit under their Gaussians' means,
   pushed apart only as far as they must be; the uncertainties, his words, are listed with
-  their values under them. The airplane is the target, at its true position at each step.
+  their values under them. The y axis is the Gaussians' value, a probability density in 1/m.
+  Type: names 17 and their symbols 21, the legend's symbols and K_n 20, so the subscripts that
+  tell n|n from n|n-1 are set at 14 to 14.7 (the engine's scripts are 0.7 of their label).
 
 OVERLAP (engine.js ?overlap, through common.overlaps)
-  the poster and every 0.1 s from 0.1 to 12.4 s (125 moments, the intro
+  the poster and every 0.1 s from 0.1 to 27.4 s (275 moments, the intro
   and a whole loop of the motion): no label meets another, no stroke crosses a label;
   nothing is excused (common.still is called with no allow list).

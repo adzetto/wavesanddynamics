@@ -17,9 +17,9 @@ THE PICTURE
   clipped to the beam (the direct fronts; the faces' reflections are not drawn), its stroke fading
   as 1/sqrt(r) (2D spreading); a front is not drawn through his words "Steel beam"
     step 1 at t = 0.55 s: tip (36.2, 25.9) mm, nearest point of the sensor 26.48 mm away: heard 4.488 us later (449 ms on the page)
-    step 2 at t = 2.55 s: tip (45.3, 17.6) mm, nearest point of the sensor 22.87 mm away: heard 3.876 us later (388 ms on the page)
-    step 3 at t = 4.55 s: tip (53.4, 24.5) mm, nearest point of the sensor 33.40 mm away: heard 5.661 us later (566 ms on the page)
-    step 4 at t = 6.55 s: tip (59.8, 15.2) mm, nearest point of the sensor 32.83 mm away: heard 5.565 us later (556 ms on the page)
+    step 2 at t = 4.805 s: tip (45.3, 17.6) mm, nearest point of the sensor 22.87 mm away: heard 3.876 us later (388 ms on the page)
+    step 3 at t = 9.059 s: tip (53.4, 24.5) mm, nearest point of the sensor 33.40 mm away: heard 5.661 us later (566 ms on the page)
+    step 4 at t = 13.314 s: tip (59.8, 15.2) mm, nearest point of the sensor 32.83 mm away: heard 5.565 us later (556 ms on the page)
   the fronts travel at c_L: CHECK 1 (shm_ndt.check.txt, CHECK 1), the scheme's own P travel time, an
     80 mm probe's back wall echo through 40 mm, Richardson extrapolated: 13.5610 us against 2d/c_L = 13.5593 us (+0.012 %)
   CHECK 2 (shm_ndt.check.txt, CHECK 4): the model with the crack as a 0.3 mm void along the whole path
@@ -27,12 +27,15 @@ THE PICTURE
     the P front's geometric arrival at the sensor's nearest point, 32.849 mm away, is 5.568 us (+0.061 us: the source pulse's rise and the threshold)
 
 TIME
-  time slowed 1e5 (10 us of the model a second); the loop is 8.4 s, growth steps at t = 0.55, 2.55, 4.55, 6.55 s
-  poster (printed frame) at t = 7.166 s: the fourth step heard, the crack grown
+  shown 100,000 times slower (10 us of the model a second); the loop is 16.8 s, growth steps at t = 0.55, 4.805, 9.059, 13.314 s
+  poster (printed frame) at t = 13.9 s: the fourth step heard, its front arriving at the sensor,
+  the crack grown
+  the sensor only listens: it lights up (sky) as a front reaches it; within 9 mm of it a short arrow rides
+  the front on the line from the step to the sensor, pointing in; nothing leaves the sensor
   drawn at his picture's proportions: 1000 x 317 (his 691 x 219)
 
 OVERLAP (engine.js ?overlap)
   common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
   no stroke crosses a label (the still would not have been written otherwise)
-  common.overlaps() every 0.05 s from 0.05 to 16.8 s (two loops, 337 moments): nothing collides
+  common.overlaps() every 0.05 s from 0.05 to 33.6 s (two loops, 673 moments): nothing collides
   no knockout is relied on and nothing is allowed (still(allow=()))

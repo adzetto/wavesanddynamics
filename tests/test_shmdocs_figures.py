@@ -35,7 +35,8 @@ SHM = "understanding-shm-and-ndt"
 BROCHURE = "brochure-shm-and-ndt-2-pages"
 PAGES = {   # name: (title, W, H)
     "nf-sd-omaema.html": ("Figure 2: OMA and EMA workflow", 1000, 552),
-    "nf-sd-waves.html": ("Figure 5: Guided wave testing and bulk wave, pulse echo ultrasonic testing", 1000, 780),
+    # two columns since 5 Oct 2026 (his text: guided waves on the left, bulk on the right)
+    "nf-sd-waves.html": ("Figure 5: Guided wave testing and bulk wave, pulse echo ultrasonic testing", 1000, 694),
     "nf-sd-ae.html": ("Acoustic emission, a passive technique", 1000, 317),
     "nf-sd-pe.html": ("Ultrasonic testing, pulse echo, an active technique", 1000, 435),
     "nf-sd-img.html": ("Ultrasonic testing, imaging, an active technique", 1000, 312),

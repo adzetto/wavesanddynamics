@@ -103,4 +103,4 @@ OVERLAP (engine.js ?overlap)
   no stroke crosses a label (the still would not have been written otherwise)
   common.overlaps() every 0.1 s from 0.1 to 44.6 s (two loops, 447 moments): nothing collides
   each input held by the reader (?view=shaker, ?view=earthquake), at the poster and every 0.2 s from 0.1 to 44.5 s (223 moments each): nothing collides
-  one label sits on a knockout by design: the bottom plot's key (model, H1) is a white box drawn after the sweep's cursor, which passes behind it; nothing is allowed (still(allow=()))
+  no knockout is relied on and nothing is allowed (still(allow=()))

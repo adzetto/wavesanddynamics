@@ -262,7 +262,7 @@ def check(R, tp, lay):
       f" max relative error {R['super']:.1e}")
     p(f"  displacements drawn x {DEF:.0f} ({GAIN/1e3:.2f} units per mm; a storey is {SH_U:.0f} units for"
       f" {H_S} m); the 2nd mode panel x {MAG[1]} more and the 3rd x {MAG[2]} more (stated in the figure)")
-    p(f"  time slowed {SLOW:.0f}: on screen f_1 = {f[0]/SLOW:.3f} Hz ... f_5 = {f[-1]/SLOW:.3f} Hz;"
+    p(f"  shown {SLOW:.0f} x slower (the figure says so): on screen f_1 = {f[0]/SLOW:.3f} Hz ... f_5 = {f[-1]/SLOW:.3f} Hz;"
       f" the impulse at t = {T0} s of the page's clock; a change by the reader strikes the changed")
     p("  building again from rest (while it plays)")
     p(f"  poster (printed frame) at t = {tp} s")
@@ -359,11 +359,13 @@ function solveStiffness(factors) {
           Q:phi.map((v,j)=>v[N-1]*m[N-1]*D.v0/w[j])};
 }
 
-// FFT of the exact undamped roof displacement over 32 physical seconds.
+// FFT of the exact undamped roof displacement over 32 physical seconds (2048 samples, Hann),
+// zero padded to 16384 points: the peaks read the modal amplitudes wherever a mode falls between
+// the record's own bins (to 0.2 %, the check file; without the padding up to 15 % low)
 function fftSpectrum(model) {
-  const n=2048, fs=64, re=new Float64Array(n), im=new Float64Array(n); let ws=0;
-  for(let i=0;i<n;i++) {
-    const window=.5-.5*Math.cos(2*Math.PI*i/(n-1)); ws+=window;
+  const m=2048, n=16384, fs=64, re=new Float64Array(n), im=new Float64Array(n); let ws=0;
+  for(let i=0;i<m;i++) {
+    const window=.5-.5*Math.cos(2*Math.PI*i/(m-1)); ws+=window;
     re[i]=1000*window*model.w.reduce((a,w,j)=>a+model.Q[j]*model.phi[j][N-1]*Math.sin(w*i/fs),0);
   }
   for(let i=1,j=0;i<n;i++) {
@@ -390,7 +392,8 @@ function column(cx, x0, u, s, o) {         // the column of storey s: fixed-fixe
   line(pts, o);
 }
 /* a building: its changed storeys' columns in crimson (the stiffness the reader
-   changed), and in the total the storey of the highlight */
+   changed), and in the total the storey of the highlight, in navy (the highlight only
+   explains the matrices; crimson is kept for a changed storey) */
 function building(cx, u, o = {}) {
   const {color = C.blue, width = 1.8, dash = null, alpha = 1, progress = 1, thin = false, hl = 0, hs = 0} = o;
   const pr = progress * N;
@@ -400,7 +403,7 @@ function building(cx, u, o = {}) {
     const mark = !thin && CHG[s - 1];
     for (const x0 of [-BW / 2, BW / 2]) {
       column(cx, x0, u, s, {color: mark ? C.accent : color, width: mark ? width + .4 : width, dash, alpha, progress: ps});
-      if (hl > 0 && s === hs) column(cx, x0, u, s, {color: C.accent, width: width + .4, alpha: alpha * hl, progress: ps});
+      if (hl > 0 && s === hs) column(cx, x0, u, s, {color: C.navy, width: width + 1, alpha: alpha * hl, progress: ps});
     }
     if (ps >= 1 && !thin)                  // a rigid floor
       line([[cx - BW / 2 + u[s] - 3, lev(s)], [cx + BW / 2 + u[s] + 3, lev(s)]], {color: C.navy, width: 3, alpha});
@@ -438,19 +441,22 @@ const KENT = Array.from({length: N}, (_, i) => Array.from({length: N}, (_, j) =>
   if (Math.abs(i - j) === 1) return [['k', Math.max(i, j) + 1, '-']];
   return [['0']];
 }));
-/* an entry centred at x; the terms of a marked storey or floor (mk[index] = strength) in crimson */
-function entry(terms, x, y, sz, kind, mk, alpha) {
+/* an entry centred at x; the terms of a marked storey or floor (mk[index] = strength) in the
+   mark's colour (crimson for a changed storey, blue for the highlight) */
+function entry(terms, x, y, sz, kind, mk, alpha, mc) {
   const str = tm => tm[0] === '0' ? '0' : tm[2] + tm[0] + '_{' + tm[1] + '}';
   const w = terms.reduce((s, tm) => s + math(str(tm), 0, -1e4, {size: sz, alpha: 0}), 0);
   let cx = x - w / 2;
   for (const tm of terms) {
     const a = tm[0] === kind ? (mk[tm[1]] || 0) : 0;
-    const ww = math(str(tm), cx, y, {size: sz, alpha, color: a >= 1 ? C.accent : C.ink});
-    if (a > 0 && a < 1) math(str(tm), cx, y, {size: sz, color: C.accent, alpha: alpha * a});
+    const ww = math(str(tm), cx, y, {size: sz, alpha, color: a >= 1 ? mc : C.ink});
+    if (a > 0 && a < 1) math(str(tm), cx, y, {size: sz, color: mc, alpha: alpha * a});
     cx += ww;
   }
 }
-function matrix(name, P, ents, kind, mk, alpha, bp) {
+/* mc, mw: the marks' colour and the wash of their blocks (crimson and its tint for the storeys the
+   reader changed, blue and steel for the highlight) */
+function matrix(name, P, ents, kind, mk, alpha, bp, mc = C.accent, mw = C.wash) {
   const {y0, dy, sz} = MY, {x0, dx} = P;
   math(name + ' =', P.lx, y0 + 2 * dy + 8, {size: 24, align: 'right', alpha});
   // the block each marked storey (or floor) assembles into
@@ -460,10 +466,10 @@ function matrix(name, P, ents, kind, mk, alpha, bp) {
     const r = kind === 'k' ? [Math.max(0, s - 2), s - 1] : [s - 1, s - 1];
     const xa = x0 + r[0] * dx - dx / 2 + 5, xb = x0 + r[1] * dx + dx / 2 - 5;
     const ya = y0 + r[0] * dy - 22, yb = y0 + r[1] * dy + 9;
-    ctx.save(); ctx.globalAlpha *= a * alpha; ctx.fillStyle = C.wash; ctx.fillRect(xa, ya, xb - xa, yb - ya); ctx.restore();
+    ctx.save(); ctx.globalAlpha *= a * alpha; ctx.fillStyle = mw; ctx.fillRect(xa, ya, xb - xa, yb - ya); ctx.restore();
   }
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++)
-    entry(ents[i][j], x0 + j * dx, y0 + i * dy, sz, kind, mk, alpha);
+    entry(ents[i][j], x0 + j * dx, y0 + i * dy, sz, kind, mk, alpha, mc);
   const left = x0 - dx / 2 + 2, right = x0 + 4 * dx + dx / 2 - 2, top = y0 - 24, bot = y0 + 4 * dy + 12;
   for (const [x, s] of [[left, 1], [right, -1]])
     line([[x + 8 * s, top], [x, top], [x, bot], [x + 8 * s, bot]], {width: 1.4, progress: bp});
@@ -567,12 +573,12 @@ function draw() {
     if (ms <= 0) continue;
     const x = CX[0] + tot[i], y = lev(i), on = hl > 0 && hs === i;
     dot(x, y, 9.5 * (.5 + .5 * ms), {color: C.ink, fill: C.steel, width: 1.2, alpha: ms});
-    if (on) dot(x, y, 9.5, {color: C.accent, fill: C.wash, width: 1.8, alpha: hl});
+    if (on) dot(x, y, 9.5, {color: C.navy, fill: C.steel2, width: 2, alpha: hl});
     math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', alpha: ms});
-    if (on) math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', color: C.accent, alpha: hl});
+    if (on) math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', color: C.blue, alpha: hl});
     const ky = lev(i - 1) - SH / 2 + 7;
     math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: CHG[i - 1] ? C.accent : C.ink, alpha: ms});
-    if (on) math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: C.accent, alpha: hl});
+    if (on) math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: C.blue, alpha: hl});
   }
   // =, +, and the higher modes in words
   const oa = lab(.35), oy = lev(2.5) + 12;
@@ -592,9 +598,9 @@ function draw() {
   const mm = {}, km = {};
   if (hl > 0) { mm[hs] = hl; km[hs] = hl; }
   CHG.forEach((v, i) => { if (v) km[i + 1] = 1; });
-  const bpm = seg(.5, .30);
-  matrix('M', MM, MENT, 'm', mm, lab(.55), bpm);
-  matrix('K', KM, KENT, 'k', km, lab(.60), bpm);
+  const bpm = seg(.5, .30), mc = changed ? C.accent : C.blue, mw = changed ? C.wash : C.steel;
+  matrix('M', MM, MENT, 'm', mm, lab(.55), bpm, mc, mw);
+  matrix('K', KM, KENT, 'k', km, lab(.60), bpm, mc, mw);
   spectrum(lab(.62));
 
   // the reader's controls: damage chips and storey sliders
@@ -635,9 +641,11 @@ function setCase(c) {
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfc{position:absolute;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;color:transparent;' +
-    'cursor:pointer;font:inherit;overflow:hidden;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
-    '.nfc::after{content:"";position:absolute;left:0;right:0;top:11.1%;bottom:11.1%}' +
-    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}' +
+    'cursor:pointer;font:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
+    // the focus ring 3 units outside the drawn chip, a white gap between
+    '.nfc::after{content:"";position:absolute;left:' + (-300 / CH.w) + '%;right:' + (-300 / CH.w) + '%;' +
+    'top:' + ((CH.pitch - CH.h) / 2 - 3) / CH.pitch * 100 + '%;bottom:' + ((CH.pitch - CH.h) / 2 - 3) / CH.pitch * 100 + '%}' +
+    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:0}' +
     '.nfr{position:absolute;box-sizing:border-box;-webkit-appearance:none;appearance:none;background:transparent;margin:0;padding:0;' +
     'cursor:pointer;-webkit-tap-highlight-color:transparent}' +
     '.nfr::-webkit-slider-runnable-track{background:transparent;border:0;height:100%}' +
@@ -739,6 +747,41 @@ def overlaps_at(query, times, width=672):
     return out
 
 
+NFFT, NREC = 16384, 2048                                  # the spectrum: 32 s at 64 Hz, zero padded
+
+
+def spectrum(Q, P, w):
+    """The roof displacement's amplitude spectrum as the page computes it (mm): the exact
+    undamped record, 2048 samples at 64 Hz, Hann window, zero padded to 16384 points."""
+    tt = np.arange(NREC) / 64
+    roof = 1000 * ((Q * P[-1])[:, None] * np.sin(w[:, None] * tt)).sum(0)
+    win = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(NREC) / (NREC - 1))
+    amp = np.abs(np.fft.rfft(roof * win, NFFT)) * 2 / win.sum()
+    amp[[0, -1]] *= 0.5
+    return amp
+
+
+def peak_reading(R):
+    """Each preset's first four spectral peaks against its modal roof amplitudes |Q_j phi_j(roof)|,
+    with the record's own 2048 point FFT and with the zero padded one the page draws."""
+    out = []
+    for c in R["cases"]:
+        w, P, Q = roof_case(R["m"], R["k"], R["v0"], c["factor"])
+        for nfft in (NREC, NFFT):
+            tt = np.arange(NREC) / 64
+            roof = 1000 * ((Q * P[-1])[:, None] * np.sin(w[:, None] * tt)).sum(0)
+            win = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(NREC) / (NREC - 1))
+            amp = np.abs(np.fft.rfft(roof * win, nfft)) * 2 / win.sum()
+            fr = np.fft.rfftfreq(nfft, 1 / 64)
+            errs = []
+            for j in range(4):
+                f = w[j] / 2 / np.pi
+                near = np.abs(fr - f) < 0.12
+                errs.append(amp[near].max() / (1000 * abs(Q[j] * P[-1, j])) - 1)
+            out.append((c["label"], nfft, errs))
+    return out
+
+
 def browser_checks(R):
     """The page's own eigensolver and spectrum (the code the reader's changes
     run) against scipy, at the presets and the sliders' extremes; and the
@@ -763,11 +806,7 @@ def browser_checks(R):
                 Pg = np.array(g["phi"]).T
                 Qg = np.array(g["Q"])
                 worst["Q"] = max(worst["Q"], float(np.abs(Pg * Qg - P * Q).max() / np.abs(P * Q).max()))
-                tt = np.arange(2048) / 64
-                roof = 1000 * ((Q * P[-1])[:, None] * np.sin(w[:, None] * tt)).sum(0)
-                win = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(2048) / 2047)
-                amp = np.abs(np.fft.rfft(roof * win)) * 2 / win.sum()
-                amp[[0, -1]] *= 0.5
+                amp = spectrum(Q, P, w)
                 worst["spec"] = max(worst["spec"], float(np.abs(np.array(g["sp"]) - amp).max() / amp.max()))
             # the drawn floors at the poster: the page's disp() against this model
             tp = R["tp"]
@@ -797,7 +836,7 @@ def main():
               "off": lay["off"], "g0": 24.0, "g1": lay["op"][3] - OP_HALF},
         "params": ("floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; "
                    f"impulse at the roof, C = 0; displacements × {DEF:.0f}"),
-        "slowtxt": f"time slowed {SLOW:.0f} ×",
+        "slowtxt": f"shown {SLOW:.0f} × slower",
         "cases": R["cases"],
         "m": R["m"].tolist(), "k": R["k"].tolist(), "v0": R["v0"],
     }
@@ -834,13 +873,23 @@ def main():
     for b in bad:
         print("COLLISION", b)
     worst, ncombo = browser_checks(R)
+    peaks = peak_reading(R)
+    txt += "\n".join([
+        "",
+        "THE SPECTRUM: the roof displacement over 32 s (2048 samples at 64 Hz, df = 0.031 Hz), Hann window, zero padded",
+        "  to 16384 points (df = 0.0039 Hz): each mode's peak against its roof amplitude |Q_j phi_j(roof)| (modes 1 to 4)",
+    ] + [f"  {lbl:17s} {nf:5d} points: " + ", ".join(f"{e * 100:+.1f} %" for e in errs) for lbl, nf, errs in peaks] + [
+        "  (without the padding a peak reads up to 15 % low where its mode falls between two bins, so comparing a",
+        "  damaged building's peaks with the undamaged one's mixed the damage with the bin position)", "",
+    ])
     txt += "\n".join([
         "",
         "THE PAGE'S OWN NUMBERS (evaluated in the browser, Playwright)",
         f"  the page's Jacobi eigensolver against scipy.linalg.eigh at {ncombo} stiffness settings (the presets'",
         "  storeys, each slider at both ends, all at both ends, the worst swings): largest relative difference",
         f"  of the frequencies {worst['w']:.1e}, of the modal terms Q_j phi_j {worst['Q']:.1e}",
-        f"  its 2048 point FFT spectrum against numpy.fft.rfft of the same record: {worst['spec']:.1e} of the peak",
+        f"  its spectrum (2048 samples zero padded to 16384 points) against numpy.fft.rfft of the same record:"
+        f" {worst['spec']:.1e} of the peak",
         f"  the drawn floors at the poster against this model: largest difference {worst['disp']:.1e} units",
         "",
         "OVERLAP (engine.js ?overlap)",

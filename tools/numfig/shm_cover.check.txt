@@ -77,8 +77,10 @@ DRAWING AND CLOCK
   to the same scale; the defect accent filled and hatched (his sketch), drawn dashed over the image
   fronts: incident C.blue 2.2, the back wall's echo C.sky 1.9, the void's echo crimson 2.4; their
   opacity falls as 1/sqrt(r) (cylindrical spreading), from 1 at r = 4 mm to 0.35 (the void's echo
-  never below 0.55); the receivers flash crimson as the void's echo arrives, fading over 1.5 us
-  the waves' time slowed 10^5 (10 us of the model per second); a firing every 0.70 s (7 us shown each), 16 firings
+  never below 0.55); the receivers flash crimson as the void's echo arrives, fading over 1.5 us;
+  the element firing is drawn light (C.sky) with a blue marker over it: crimson is only the defect and its echo
+  the inset's waves shown 100,000 times slower (10 us of the model per second; the inset says so,
+  the building beside it sways in real time); a firing every 0.70 s (7 us shown each), 16 firings
   from t = 0.515 s; the image complete from 11.71 s; the loop is 14.190 s, 11 sways of the building,
   the image fading in its last 0.35 s; the building's motion has no seam (one cosine).
   the still (print, and a reader who asks for less motion): t = 11.315 s, 3 us into the 16th firing (the void's echo on its way back),

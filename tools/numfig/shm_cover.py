@@ -563,13 +563,13 @@ function inset() {
     if (fired) {
       const hit = tau - T0P - I.arrive[k][j];             // the void's echo reaches element j
       if (hit > 0) { ctx.save(); ctx.globalAlpha *= Math.exp(-hit / 1.5) * .9; ctx.fillStyle = C.accent; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
-      if (j === k) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - I.dur) / 1.5, .35, 1); ctx.fillStyle = C.amber; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
+      if (j === k) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - I.dur) / 1.5, .45, 1); ctx.fillStyle = C.sky; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
     }
   }
   ctx.strokeStyle = '#fff'; ctx.lineWidth = .9;
   for (let j = 1; j < NE; j++) { const x = (px(I.xe[j - 1]) + px(I.xe[j])) / 2; ctx.beginPath(); ctx.moveTo(x, ay0); ctx.lineTo(x, ay0 + ah); ctx.stroke(); }
   ctx.restore();
-  if (fired) tip(px(I.xe[k]), ay0 - 3, Math.PI / 2, C.amber, 9, ap);
+  if (fired) tip(px(I.xe[k]), ay0 - 3, Math.PI / 2, C.blue, 9, ap);   // the element firing: light, its marker blue (crimson is the echo)
   // the image, firing by firing, beside the piece
   arrow(PX0 + WPu + 12, PY0 + DPu / 2, IX0 - 12, PY0 + DPu / 2, { width: 2.6 * K(), head: 12, alpha: settle(.35, .28) });
   const done = ph < TF0 ? 0 : Math.min(NE, Math.floor((ph - TF0) / DTF));
@@ -607,6 +607,8 @@ function draw() {
   // the two words
   math('f_1 = ' + B.f1.toFixed(2) + '\\,\\rm{Hz}', BX + BW + 22, 52, { size: 18, color: C.body, alpha: lab(.34) });
   text('imaging', FX0 + 18, FY0 + 40, { size: 21, color: C.ink, alpha: lab(.3) });
+  // the building sways in real time; the inset's waves run slowed (its own clock, said here)
+  text(I.slowtxt, FX1 - 14, FY0 + 26, { size: 16, color: C.muted, align: 'right', alpha: lab(.5) });
 }
 const IMG = new Image();
 IMG.src = I.img;
@@ -631,7 +633,7 @@ def page_data(r):
         "i": {"xe": XE, "ew": EW, "wp": WP, "dp": DP, "def": DEF, "cl": F.CL, "t0b": T0B, "dur": DUR,
               "us": r["US"], "tf0": r["tf0"], "dtf": r["DTF"], "tfire": T_FIRE, "s": 10.5,
               "arrive": r["arrive"], "img": r["img"], "tw": r["tw"], "th": r["th"], "cols": r["cols"],
-              "zmax": ZMAX, "pix": PIX, "db": DB},
+              "zmax": ZMAX, "pix": PIX, "db": DB, "slowtxt": f"shown {SLOW:,.0f} × slower"},
     }
 
 
@@ -768,8 +770,10 @@ def report(r, page, counts, over):
     say("  to the same scale; the defect accent filled and hatched (his sketch), drawn dashed over the image")
     say("  fronts: incident C.blue 2.2, the back wall's echo C.sky 1.9, the void's echo crimson 2.4; their")
     say("  opacity falls as 1/sqrt(r) (cylindrical spreading), from 1 at r = 4 mm to 0.35 (the void's echo")
-    say("  never below 0.55); the receivers flash crimson as the void's echo arrives, fading over 1.5 us")
-    say(f"  the waves' time slowed 10^5 ({r['US']:g} us of the model per second); a firing every {r['DTF']:.2f} s"
+    say("  never below 0.55); the receivers flash crimson as the void's echo arrives, fading over 1.5 us;")
+    say("  the element firing is drawn light (C.sky) with a blue marker over it: crimson is only the defect and its echo")
+    say(f"  the inset's waves shown {SLOW:,.0f} times slower ({r['US']:g} us of the model per second; the inset says so,")
+    say(f"  the building beside it sways in real time); a firing every {r['DTF']:.2f} s"
         f" ({T_FIRE:g} us shown each), 16 firings")
     say(f"  from t = {r['tf0']:.3f} s; the image complete from {r['tf0']+NE*r['DTF']:.2f} s; the loop is {r['period']:.3f} s,"
         f" {r['period']/b['T1']:.0f} sways of the building,")

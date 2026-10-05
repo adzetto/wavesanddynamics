@@ -3,22 +3,28 @@ nf-standing: Figure 3, flexural waves in a supported beam
 MODEL
   steel bar 40 x 10 mm, EI = 700.0 N m^2, m = 3.140 kg/m, L = 1.0 m, pins at both ends
   drive: moment M0 g(t) sin(w_c t) at the left pin; g: 1.5 period raised cosine on, 6.0 periods
-  held, 1.5 off, then 12.0 periods free (periods of the 3rd mode, T3 = 4.738 ms)
+  held, 1.5 off, then 6.0 periods free (periods of the 3rd mode, T3 = 4.738 ms)
   damping: viscous, c = 416.444 N s/m^2, every mode decays as e^(-sigma t), sigma = 66.31 1/s
   (zeta = 0.05 at the 3rd mode)
   row 1: k L = 3 pi, f = 211.080 Hz (the 3rd resonance)
   row 2: k L = 3.5 pi, f = 287.303 Hz (between the 3rd and 4th)
-  synthesis: FFT over 2368 steps of 74.02 us (175.3 ms, the last 16 T3 padding),
-  exact span solution at every frequency; 81 points along the span
+  synthesis: FFT over one cycle, 960 steps of 74.02 us (71.06 ms): the periodic steady state of the
+  drive repeated every cycle; exact span solution at every frequency; 81 points along the span
 
 CHECK 1: the synthesis against an independent modal time integration (300 modes, exact
-  discretisation of each mode for piecewise linear forcing), total displacement:
+  discretisation of each mode for piecewise linear forcing) run from rest through four cycles of the
+  repeated drive, its last cycle; total displacement:
   res: max |difference| / max |w| over the cycle at x = 0.2, 0.5, 0.8 m: 8.1e-04
-  off: max |difference| / max |w| over the cycle at x = 0.2, 0.5, 0.8 m: 3.1e-03
+  off: max |difference| / max |w| over the cycle at x = 0.2, 0.5, 0.8 m: 1.4e-03
+
+  (res: the drive's mean over the cycle, +7.40e-18 of its amplitude, deflects the beam statically by 2.2e-17
+   of max |w|: the exact static solution is the synthesis' zero frequency term)
+  (off: the drive's mean over the cycle, -4.25e-04 of its amplitude, deflects the beam statically by 4.1e-03
+   of max |w|: the exact static solution is the synthesis' zero frequency term)
 
 CHECK 2: the boundary conditions hold in the time domain (the synthesis builds them in)
-  res: max |w(0, t)|, |w(L, t)| relative to max |w|: 7.9e-17, 8.0e-17
-  off: max |w(0, t)|, |w(L, t)| relative to max |w|: 8.7e-17, 7.3e-17
+  res: max |w(0, t)|, |w(L, t)| relative to max |w|: 4.0e-17, 5.0e-17
+  off: max |w(0, t)|, |w(L, t)| relative to max |w|: 1.3e-16, 1.7e-16
 
 CHECK 3: the frames: the complex envelope interpolated linearly between stored instants, against
   the exact synthesis at the midpoints, max |error| / max |w| over the cycle:
@@ -26,18 +32,27 @@ CHECK 3: the frames: the complex envelope interpolated linearly between stored i
   off: 5.9e-03 (and int8 storage adds at most 1/254 of each series' maximum)
 
 CHECK 4: what the figure shows, in numbers
-  largest |w| over the cycle, off resonance / at resonance: 0.304
-  resonance, end of the drive: travelling right / left amplitude 1.285 (the damping across one span)
+  largest |w| over the cycle, off resonance / at resonance: 0.306
+  resonance, end of the drive: traveling right / left amplitude 1.284 (the damping across one span)
   building up (first 6 T3): resonance, crossings of the larger shapes stay within 44 mm of L/3 and 2L/3;
-    off resonance they spread over 0.89 m, in 69 distinct places (to 1 cm)
+    off resonance they spread over 0.87 m, in 68 distinct places (to 1 cm)
   ringing down (the free part): resonance, crossings of the larger shapes stay within 16 mm of L/3 and 2L/3;
-    off resonance they spread over 0.84 m, in 49 distinct places (to 1 cm)
+    off resonance they spread over 0.82 m, in 45 distinct places (to 1 cm)
 
-TIME: slowed 211 x: the 3rd mode oscillates at 1.00 Hz on screen; the page opens 3 T3
-  into the drive (the build up already under way); the cycle
-  (21 T3 = 99.5 ms) lasts 21.0 s and repeats; the response has decayed to
-  1.9e-02 of its maximum when it does.
+TIME: shown 200 x slower (the factor of Figures 2 and 6, the same bar): the 3rd mode oscillates at
+  1.06 Hz on screen; the page opens 3 T3 into the drive (the build up already under way); the cycle
+  (15 T3 = 71.1 ms) lasts 14.2 s and repeats: the response is the periodic steady
+  state of the repeated drive, so the loop runs on from the cycle's end into its start (at the end the
+  resonant beam still rings at 0.13 of its largest |w|, the off resonant at 0.06 of its own,
+  and the next cycle's drive takes over from there; the page draws Re{W e^{i w_c t}} with t the time within
+  the cycle, so every loop is the same).
   Under M(t) the two parts are named: forced vibration while the moment drives, 0 to 9 T3 = 42.64 ms
-  (9.0 s on screen), free vibration from then to the cycle's end (12 T3, 12.0 s); the name the cursor is in is set in ink.
+  (8.5 s on screen), free vibration from then to the cycle's end (6 T3, 5.7 s); the name the cursor is in is set in ink.
   In the free part the resonant beam rings down at its own damping: the largest |w| of each period,
-  fitted over periods 2 to 12, falls by 0.7309 a period against e^(-sigma T3) = 0.7304.
+  fitted over periods 2 to 6, falls by 0.7356 a period against e^(-sigma T3) = 0.7304.
+
+OVERLAP (engine.js ?overlap)
+  common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
+  no stroke crosses a label (the still would not have been written otherwise)
+  common.overlaps() every 0.1 s from 0.1 to 28.9 s (two loops, 290 moments): nothing collides
+  no knockout is relied on and nothing is allowed (still(allow=()))

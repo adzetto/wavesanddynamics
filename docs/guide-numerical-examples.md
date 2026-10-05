@@ -90,7 +90,8 @@ slider for each of its five storeys (20–150% of the baseline). A symmetric
 Jacobi eigensolver recomputes mass-normalized modes and frequencies in the
 browser. Every comparison keeps the original roof impulse. The spectrum is
 the FFT of 32 physical seconds of the exact undamped roof displacement, sampled
-at 64 Hz with a Hann window and coherent-gain amplitude correction.
+at 64 Hz with a Hann window and coherent-gain amplitude correction, zero-padded
+to 16384 points so each peak reads within 0.2 % of its height.
 
 Figure 18b's neuron-count selection also draws its fitted 1–N–1 network, with
 N hidden tanh units and every input/output connection. Its displayed output

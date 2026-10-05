@@ -27,6 +27,7 @@ JS = lib.PRELUDE + r"""
 const B = D.b, BS = D.bs, BX0 = D.bx0, BY0 = D.by0, BW = B.w * BS, BD = B.d * BS;
 const bx = x => BX0 + x * BS, by = z => BY0 + z * BS;
 const POSTER_T = D.poster;
+const NEAR = 9;                                               // mm: a front this close to the sensor is drawn arriving
 /* a front: points c + R (cos, sin) (mm) where keep(p) holds, drawn as runs */
 function front(cx, cz, R, keep, o) {
   if (R <= 0) return;
@@ -40,12 +41,12 @@ function front(cx, cz, R, keep, o) {
 }
 function draw() {
   const la = lab(.04);
-  text('Acoustic Emission (sensor is only listening)', D.tx, D.ty + rise(la), { size: 22, alpha: la });
+  text('Acoustic Emission (sensor is only listening)', D.tx, D.ty + rise(la), { size: 30, alpha: la });
   piece(BX0, BY0, BW, BD, seg(.04, .35), { cut: false });
   // his label, and the room the fronts leave it
-  const sb = lab(.3), sw = text('Steel beam', 0, -1e4, { size: 19, alpha: 0 });
-  const lx1 = BX0 + BW - 14, ly = BY0 + BD - 14, box = [lx1 - sw - 5, ly - 19, lx1 + 5, ly + 7];
-  text('Steel beam', lx1, ly, { size: 19, color: C.body, align: 'right', alpha: sb });
+  const sb = lab(.3), sw = text('Steel beam', 0, -1e4, { size: 24, alpha: 0 });
+  const lx1 = BX0 + BW - 14, ly = BY0 + BD - 14, box = [lx1 - sw - 5, ly - 23, lx1 + 5, ly + 8];
+  text('Steel beam', lx1, ly, { size: 24, color: C.body, align: 'right', alpha: sb });
   const inBox = p => { const X = bx(p[0]), Y = by(p[1]); return X > box[0] && X < box[2] && Y > box[1] && Y < box[3]; };
   const ph = phase(), P = B.crack.map(p => [bx(p[0]), by(p[1])]);
   const reset = 1 - clamp((ph - (MASTER - .35)) / .3);
@@ -58,32 +59,33 @@ function draw() {
     grown.push([lerp(P[k + 1][0], P[k + 2][0], g), lerp(P[k + 1][1], P[k + 2][1], g)]);
   });
   if (grown.length > 1) line(grown, { color: C.accent, width: 3, alpha: reset });
-  // the P fronts, radius c_L tau from each new tip, inside the beam
+  // the P fronts, radius c_L tau from each new tip, inside the beam; as a front comes within
+  // 9 mm of the sensor a short arrow rides it on the line from the step to the sensor, pointing in
+  const SX = B.sensor[0];
   B.events.forEach((te, k) => {
     const tau = (ph - te) * US;
     if (tau <= 0 || t < te) return;
     const r = CL * tau;                                        // mm
     if (r > 160) return;
     const a = clamp(Math.sqrt(8 / r), .3, 1) * reset;         // 2D spreading, 1 / sqrt r
-    const tipmm = B.crack[k + 2];
-    front(tipmm[0], tipmm[1], r, p => p[0] > 0 && p[0] < B.w && p[1] > 0 && p[1] < B.d && !inBox(p),
-          { color: C.blue, width: 1.8, alpha: a });
+    const T = B.crack[k + 2], inBeam = p => p[0] > 0 && p[0] < B.w && p[1] > 0 && p[1] < B.d && !inBox(p);
+    front(T[0], T[1], r, inBeam, { color: C.blue, width: 1.8, alpha: a });
+    const dS = Math.hypot(T[0] - SX, T[1]);
+    const arr = clamp((r - (dS - NEAR)) / 3) * (1 - clamp((r - dS - 1) / 4)) * reset;
+    if (arr <= 0) return;
+    const ux = (SX - T[0]) / dS, uz = -T[1] / dS, qx = T[0] + r * ux, qz = T[1] + r * uz;
+    if (qz > .4) arrow(bx(qx - 5 * ux), by(qz - 5 * uz), bx(qx), by(qz), { color: C.navy, width: 1.8, head: 11, alpha: arr });
   });
-  // the sensor, and each front it hears
-  const sp = settle(.15, .28), sx = bx(B.sensor[0]), sw_ = B.sensor[1] * BS, sh = 18;
+  // the sensor: it only listens, and lights up as each front reaches it
+  const sp = settle(.15, .28), sx = bx(SX), sw_ = B.sensor[1] * BS, sh = 18;
   ctx.save(); ctx.globalAlpha *= sp; ctx.fillStyle = C.navy; ctx.fillRect(sx - sw_ / 2, BY0 - sh + rise(sp), sw_, sh); ctx.restore();
   let heard = 0;
-  B.events.forEach((te, k) => { const th = te + B.hits[k] / US; if (t >= th && ph >= th) heard = Math.max(heard, Math.exp(-(ph - th) / .3)); });
-  if (heard > .01) {
-    ctx.save(); ctx.globalAlpha *= heard; ctx.fillStyle = C.amber; ctx.fillRect(sx - sw_ / 2, BY0 - sh, sw_, sh);
-    ctx.strokeStyle = C.accent; ctx.lineWidth = 1.8;
-    for (const r of [10, 17]) { ctx.beginPath(); ctx.arc(sx, BY0 - sh, r, -Math.PI * .8, -Math.PI * .2); ctx.stroke(); }
-    ctx.restore();
-  }
+  B.events.forEach((te, k) => { const th = te + B.hits[k] / US; if (t >= th && ph >= th) heard = Math.max(heard, Math.exp(-(ph - th) / .5)); });
+  if (heard > .01) { ctx.save(); ctx.globalAlpha *= heard * reset; ctx.fillStyle = C.sky; ctx.fillRect(sx - sw_ / 2, BY0 - sh, sw_, sh); ctx.restore(); }
   const pa = lab(.85);
   row([['t', 'P wave fronts, radius '], ['m', 'c_{\\rm{L}}\\,t'], ['t', ', from each step of the crack; steel, '],
-       ['m', 'c_{\\rm{L}} = 5900\\,\\rm{m/s}']], BX0, H - 12, { size: 15, color: C.muted, alpha: pa });
-  math('\\rm{time slowed }10^{5}\\,\\times', BX0 + BW, D.ty, { size: 15, color: C.muted, align: 'right', alpha: pa });
+       ['m', 'c_{\\rm{L}} = 5900\\,\\rm{m/s}']], BX0, H - 11, { size: 16, color: C.muted, alpha: pa });
+  text(`shown ${(1e6 / US).toLocaleString('en-US')} × slower`, BX0 + BW, D.ty - 6, { size: 16, color: C.muted, align: 'right', alpha: pa });
 }
 boot();
 """
@@ -95,7 +97,7 @@ def main():
     bs = 6.5                         # the beam ends short of the page's pause and restart buttons
     page = {"master": data["master"], "us": data["us"], "cl": data["cl"], "f0": data["f0"], "nc": data["nc"],
             "dur": data["dur"], "poster": data["poster"], "b": b, "bs": bs, "bx0": 100.0, "by0": 88.0,
-            "tx": 100.0, "ty": 30.0}
+            "tx": 100.0, "ty": 38.0}
     c = L["c"]
     say = []
     p = say.append
@@ -123,9 +125,12 @@ def main():
       f" {L['rmin']/c:.3f} us ({L['first']-L['rmin']/c:+.3f} us: the source pulse's rise and the threshold)")
     p("")
     p("TIME")
-    p(f"  time slowed 1e5 (10 us of the model a second); the loop is {data['master']:g} s, growth steps at"
+    p(f"  shown 100,000 times slower (10 us of the model a second); the loop is {data['master']:g} s, growth steps at"
       f" t = " + ", ".join(f"{v:g}" for v in b["events"]) + " s")
-    p(f"  poster (printed frame) at t = {data['poster']} s: the fourth step heard, the crack grown")
+    p(f"  poster (printed frame) at t = {data['poster']} s: the fourth step heard, its front arriving at the sensor,")
+    p("  the crack grown")
+    p("  the sensor only listens: it lights up (sky) as a front reaches it; within 9 mm of it a short arrow rides")
+    p("  the front on the line from the step to the sensor, pointing in; nothing leaves the sensor")
     p(f"  drawn at his picture's proportions: {W} x {H} (his 691 x 219)")
     txt = "\n".join(say) + "\n"
     with open(os.path.join(HERE, "sd_ae.check.txt"), "w", encoding="utf-8", newline="\n") as fh:

@@ -8,16 +8,24 @@ frequency of the FFT grid the span's general solution
     w = A e^{-ikx} + B e^{-ik(L-x)} + C e^{-kx} + D e^{-k(L-x)},
     k^4 = (m w^2 - i c w)/EI,
 is fitted to w = 0 at both pins, EI w'' = M at x = 0 and w'' = 0 at x = L.
-A e^{-ikx} is the wave travelling right (the source and every reflection
-from the left pin), B e^{-ik(L-x)} the wave travelling left (every reflection
+A e^{-ikx} is the wave traveling right (the source and every reflection
+from the left pin), B e^{-ik(L-x)} the wave traveling left (every reflection
 from the right pin: his 'Reflection'), C and D the near fields of the ends.
 Row 1: w_c at the 3rd resonance, k L = 3 pi (three half wavelengths fit);
 row 2: k L = 3.5 pi (they do not). Cross checked against an independent
 modal time integration.
 
+The drive repeats every cycle (on, held, off, then free), and the synthesis
+is over exactly one cycle: the response is the periodic steady state of the
+repeated drive, so the page's loop runs from the end of one cycle into the
+next with nothing jumping (the free part rings down to about 15 % before the
+moment drives again; the check file compares the synthesis with a modal time
+integration run from rest until it is periodic).
+
 The page stores the complex envelope W(x, t) = z(x, t) e^{-i w_c t} (z the
-analytic signal) and draws Re{W e^{i w_c t}}: exact at the stored instants,
-the envelope interpolated between them (error in the check file).
+analytic signal) and draws Re{W e^{i w_c t}}, t the time within the cycle:
+exact at the stored instants, the envelope interpolated between them (error
+in the check file).
 
 Run: python tools/numfig/standing.py
 """
@@ -43,18 +51,17 @@ T3 = 1 / fc["res"]
 ZETA3 = 0.05
 SIGMA = ZETA3 * 2 * np.pi * fc["res"]     # every mode decays as e^{-sigma t}
 CV = 2 * M * SIGMA                        # viscous coefficient c (N s/m^2)
-RAMP_P, HOLD_P, OFF_P = 1.5, 6.0, 12.0   # in periods of the 3rd mode
+RAMP_P, HOLD_P, OFF_P = 1.5, 6.0, 6.0    # in periods of the 3rd mode
 CYCLE = (2 * RAMP_P + HOLD_P + OFF_P) * T3
-PAD = 16 * T3
 DT = T3 / 64
 NX = 81
 FPS = 8                                    # stored envelope frames per T3
-SLOW = 211
+SLOW = 200                                 # as Figures 2 and 6 of the waves guide show the same bar
 TS, RAMP = 0.35, 0.25
 
 xs = np.linspace(0, L, NX)
-tt = np.arange(0, CYCLE + PAD, DT)
-NT = len(tt)
+NT = int(round(CYCLE / DT))                # one cycle: the synthesis is its periodic steady state
+tt = np.arange(NT) * DT
 
 
 def envelope(t):
@@ -85,6 +92,8 @@ def coefficients(w):
 
 
 def synthesize(key):
+    """The analytic signal z(x, t) of each part over one cycle (the periodic
+    steady state of the drive repeated every cycle)."""
     wc = 2 * np.pi * fc[key]
     drive = envelope(tt) * np.sin(wc * tt)
     Mw = np.fft.rfft(drive)
@@ -95,22 +104,29 @@ def synthesize(key):
     R = co[:, 0, None] * np.exp(-1j * kx)
     Lg = co[:, 1, None] * np.exp(-1j * (np.outer(k, L - xs)))
     N = co[:, 2, None] * np.exp(-kx) + co[:, 3, None] * np.exp(-np.outer(k, L - xs))
+    # the drive's mean over the cycle deflects the beam statically: at w = 0 the exact solution of
+    # EI w'' = M (1 - x/L), w(0) = w(L) = 0, per unit moment (no waves: in the total only)
+    static = (xs ** 2 / 2 - xs ** 3 / (6 * L) - L * xs / 3) / EI
     out = {}
     for name, part in (("tot", R + Lg + N), ("left", Lg), ("right", R)):
         spec = part * Mw[:, None]
+        if name == "tot":
+            spec[0] = static * Mw[0]
         full = np.zeros((NT, NX), complex)                 # analytic signal: positive frequencies x 2
         full[:len(w)] = spec
-        full[1:len(w)] *= 2
-        z = np.fft.ifft(full, axis=0)
-        out[name] = z * np.exp(-1j * wc * tt)[:, None]    # complex envelope
+        full[1:(NT + 1) // 2] *= 2                         # (DC and, NT even, the Nyquist bin once)
+        out[name] = np.fft.ifft(full, axis=0)
     return out, drive
 
 
-def modal_reference(key, x_probe, nmodes=300):
+def modal_reference(key, x_probe, nmodes=300, cycles=4):
     """Independent check: modal superposition, each mode integrated exactly
-    for piecewise linear forcing (ramp invariant discretisation)."""
+    for piecewise linear forcing (ramp invariant discretisation), from rest
+    over `cycles` cycles of the repeated drive; the last cycle is returned
+    (what the start leaves has decayed by e^(-3 sigma CYCLE), 1e-6)."""
     wc = 2 * np.pi * fc[key]
-    drive = envelope(tt) * np.sin(wc * tt)
+    drive = np.tile(envelope(tt) * np.sin(wc * tt), cycles)
+    nt = drive.size
     n = np.arange(1, nmodes + 1)
     wn = (n * np.pi / L) ** 2 * np.sqrt(EI / M)
     Qn = -(n * np.pi / L) / (M * L / 2)   # end moment's generalized force per modal mass (EI w''(0) = M)
@@ -123,20 +139,28 @@ def modal_reference(key, x_probe, nmodes=300):
         E4 = expm(Z)
         Phi[j], G0[j], G1[j] = E4[:2, :2], E4[:2, 2], E4[:2, 3]
     s = np.zeros((nmodes, 2))
-    q = np.zeros((NT, nmodes))
-    for i in range(NT - 1):
+    q = np.zeros((nt, nmodes))
+    for i in range(nt - 1):
         s = np.einsum("jab,jb->ja", Phi, s) + (G0 * drive[i] + G1 * (drive[i + 1] - drive[i])) * Qn[:, None]
         q[i + 1] = s[:, 0]
-    return q @ np.sin(np.outer(n, x_probe) * np.pi / L)
+    return (q @ np.sin(np.outer(n, x_probe) * np.pi / L))[-NT:]
 
 
 res = {}
 for key in CASES:
     res[key] = synthesize(key)
 
-# frames for the page: every T3/FPS over one cycle
-tf = np.arange(0, CYCLE + T3 / FPS / 2, T3 / FPS)          # includes the cycle's end
+# frames for the page: every T3/FPS over one cycle, its end included (the start again: the
+# response is periodic); the complex envelope W = z e^{-i w_c t} at each
+tf = np.arange(0, CYCLE + T3 / FPS / 2, T3 / FPS)
 idx = np.round(tf / DT).astype(int)
+assert idx[-1] == NT and np.allclose(tf, idx * DT)
+
+
+def frames_of(key, part):
+    """The complex envelope of a part at the stored instants."""
+    z = res[key][0][part]
+    return z[idx % NT] * np.exp(-1j * 2 * np.pi * fc[key] * tf)[:, None]
 
 
 def pack(z):
@@ -161,20 +185,26 @@ say(f"  (zeta = {ZETA3} at the 3rd mode)")
 for key, v in CASES.items():
     say(f"  {'row 1' if key=='res' else 'row 2'}: k L = {v:g} pi, f = {fc[key]:.3f} Hz"
         f" ({'the 3rd resonance' if key=='res' else 'between the 3rd and 4th'})")
-say(f"  synthesis: FFT over {NT} steps of {DT*1e6:.2f} us ({(CYCLE+PAD)*1e3:.1f} ms, the last {PAD/T3:g} T3 padding),")
-say(f"  exact span solution at every frequency; {NX} points along the span")
+say(f"  synthesis: FFT over one cycle, {NT} steps of {DT*1e6:.2f} us ({CYCLE*1e3:.2f} ms): the periodic steady state of the")
+say(f"  drive repeated every cycle; exact span solution at every frequency; {NX} points along the span")
 say("")
 say("CHECK 1: the synthesis against an independent modal time integration (300 modes, exact")
-say("  discretisation of each mode for piecewise linear forcing), total displacement:")
+say("  discretisation of each mode for piecewise linear forcing) run from rest through four cycles of the")
+say("  repeated drive, its last cycle; total displacement:")
 probe = np.array([0.2, 0.5, 0.8])
 jp = [int(np.argmin(np.abs(xs - p))) for p in probe]
 for key in CASES:
     ref = modal_reference(key, xs[jp])
-    fft_w = res[key][0]["tot"][:, jp] * np.exp(1j * 2 * np.pi * fc[key] * tt)[:, None]
-    fft_w = fft_w.real
-    sel = tt < CYCLE
-    err = np.max(np.abs(fft_w[sel] - ref[sel])) / np.max(np.abs(ref[sel]))
+    fft_w = res[key][0]["tot"][:, jp].real
+    err = np.max(np.abs(fft_w - ref)) / np.max(np.abs(ref))
     say(f"  {key}: max |difference| / max |w| over the cycle at x = 0.2, 0.5, 0.8 m: {err:.1e}")
+say("")
+for key in CASES:
+    dr = res[key][1]
+    st = np.abs(dr.mean() * (xs ** 2 / 2 - xs ** 3 / (6 * L) - L * xs / 3) / EI).max()
+    say(f"  ({key}: the drive's mean over the cycle, {dr.mean():+.2e} of its amplitude, deflects the beam statically by"
+        f" {st / np.abs(res[key][0]['tot']).max():.1e}")
+    say("   of max |w|: the exact static solution is the synthesis' zero frequency term)")
 say("")
 say("CHECK 2: the boundary conditions hold in the time domain (the synthesis builds them in)")
 for key in CASES:
@@ -186,11 +216,11 @@ say("CHECK 3: the frames: the complex envelope interpolated linearly between sto
 say("  the exact synthesis at the midpoints, max |error| / max |w| over the cycle:")
 for key in CASES:
     z = res[key][0]["tot"]
-    zf = z[idx]
+    Wf = frames_of(key, "tot")
     mid = np.round((tf[:-1] + T3 / FPS / 2) / DT).astype(int)
-    interp = 0.5 * (zf[:-1] + zf[1:])
+    interp = 0.5 * (Wf[:-1] + Wf[1:])
     ph = np.exp(1j * 2 * np.pi * fc[key] * tt[mid])[:, None]
-    e = np.max(np.abs((interp * ph).real - (z[mid] * ph).real)) / np.max(np.abs(z))
+    e = np.max(np.abs((interp * ph).real - z[mid].real)) / np.max(np.abs(z))
     say(f"  {key}: {e:.1e} (and int8 storage adds at most 1/254 of each series' maximum)")
 say("")
 say("CHECK 4: what the figure shows, in numbers")
@@ -198,7 +228,7 @@ zr, zo = res["res"][0]["tot"], res["off"][0]["tot"]
 say(f"  largest |w| over the cycle, off resonance / at resonance: {np.max(np.abs(zo))/np.max(np.abs(zr)):.3f}")
 iend = int(np.round((RAMP_P + HOLD_P) * T3 / DT))
 sr = res["res"][0]
-say(f"  resonance, end of the drive: travelling right / left amplitude"
+say(f"  resonance, end of the drive: traveling right / left amplitude"
     f" {np.max(np.abs(sr['right'][iend]))/np.max(np.abs(sr['left'][iend])):.3f} (the damping across one span)")
 
 
@@ -206,7 +236,7 @@ def crossings(z, key, t0, t1):
     """Zero crossings inside the span of every instant in [t0, t1) whose shape is at least
     half as large as the largest in that window."""
     i0, i1 = int(np.round(t0 / DT)), int(np.round(t1 / DT))
-    w = (z[i0:i1] * np.exp(1j * 2 * np.pi * fc[key] * tt[i0:i1])[:, None]).real
+    w = z[i0:i1].real
     amp = np.max(np.abs(w), axis=1)
     out = []
     for s_, a in zip(w, amp):
@@ -225,17 +255,20 @@ for name, (t0, t1) in {"building up (first 6 T3)": (0, 6 * T3),
     say(f"  {name}: resonance, crossings of the larger shapes stay within {max(near)*1e3:.0f} mm of L/3 and 2L/3;")
     say(f"    off resonance they spread over {np.ptp(co_):.2f} m, in {len(np.unique(np.round(co_, 2)))} distinct places (to 1 cm)")
 say("")
-say(f"TIME: slowed {SLOW} x: the 3rd mode oscillates at {fc['res']/SLOW:.2f} Hz on screen; the page opens 3 T3")
-say("  into the drive (the build up already under way); the cycle")
-say(f"  ({CYCLE/T3:g} T3 = {CYCLE*1e3:.1f} ms) lasts {CYCLE*SLOW:.1f} s and repeats; the response has decayed to")
-say(f"  {np.max(np.abs(zr[int(np.round(CYCLE/DT))-1]))/np.max(np.abs(zr)):.1e} of its maximum when it does.")
+say(f"TIME: shown {SLOW} x slower (the factor of Figures 2 and 6, the same bar): the 3rd mode oscillates at")
+say(f"  {fc['res']/SLOW:.2f} Hz on screen; the page opens 3 T3 into the drive (the build up already under way); the cycle")
+say(f"  ({CYCLE/T3:g} T3 = {CYCLE*1e3:.1f} ms) lasts {CYCLE*SLOW:.1f} s and repeats: the response is the periodic steady")
+say(f"  state of the repeated drive, so the loop runs on from the cycle's end into its start (at the end the")
+say(f"  resonant beam still rings at {np.max(np.abs(zr[-1]))/np.max(np.abs(zr)):.2f} of its largest |w|, the off resonant at"
+    f" {np.max(np.abs(zo[-1]))/np.max(np.abs(zo)):.2f} of its own,")
+say("  and the next cycle's drive takes over from there; the page draws Re{W e^{i w_c t}} with t the time within")
+say("  the cycle, so every loop is the same).")
 t_off = (2 * RAMP_P + HOLD_P) * T3
 say(f"  Under M(t) the two parts are named: forced vibration while the moment drives, 0 to"
     f" {2 * RAMP_P + HOLD_P:g} T3 = {t_off * 1e3:.2f} ms")
 say(f"  ({t_off * SLOW:.1f} s on screen), free vibration from then to the cycle's end ({OFF_P:g} T3,"
     f" {OFF_P * T3 * SLOW:.1f} s); the name the cursor is in is set in ink.")
-zi_off = res["res"][0]["tot"][int(np.round(t_off / DT)):int(np.round(CYCLE / DT))]
-zf = (zi_off * np.exp(1j * 2 * np.pi * fc["res"] * tt[int(np.round(t_off / DT)):int(np.round(CYCLE / DT))])[:, None]).real
+zf = res["res"][0]["tot"][int(np.round(t_off / DT)):NT].real
 ring = np.abs(zf).max(axis=1)
 k_per = int(round(T3 / DT))
 per = np.array([ring[k * k_per:(k + 1) * k_per].max() for k in range(int(OFF_P))])
@@ -250,11 +283,11 @@ with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newlin
 # ------------------------------------------------------------------ data
 DATA = {"slow": SLOW, "L": L, "nx": NX, "fps": FPS, "T3": T3, "cycle": CYCLE,
         "nf": len(tf), "ramp": RAMP_P, "hold": HOLD_P, "nodes": [L / 3, 2 * L / 3], "rows": {}}
-gmax = max(np.max(np.abs(res[k][0]["tot"][idx])) for k in CASES)
+gmax = max(np.max(np.abs(frames_of(k, "tot"))) for k in CASES)
 for key in CASES:
-    r = res[key][0]
-    DATA["rows"][key] = {"f": fc[key], "kl": CASES[key], "tot": pack(r["tot"][idx]), "left": pack(r["left"][idx]),
-                         "max": float(np.max(np.abs(r["tot"][idx])) / gmax)}
+    Wt, Wl = frames_of(key, "tot"), frames_of(key, "left")
+    DATA["rows"][key] = {"f": fc[key], "kl": CASES[key], "tot": pack(Wt), "left": pack(Wl),
+                         "max": float(np.max(np.abs(Wt)) / gmax)}
 
 JS = r"""
 const POSTER_T = __POSTER_T__;
@@ -265,10 +298,11 @@ function unpack(p) { const q = b64i8(p.q), s = p.s / 127, out = new Float32Array
 const ROWS = {};
 for (const k of ['res', 'off']) { const r = DATA.rows[k]; ROWS[k] = { f: r.f, kl: r.kl, tot: unpack(r.tot), left: unpack(r.left) }; }
 const GMAX = Math.max(...['res', 'off'].map(k => { let m = 0; const a = ROWS[k].tot; for (let i = 0; i < a.length; i += 2) m = Math.max(m, Math.hypot(a[i], a[i + 1])); return m; }));
-/* the field at physical time tp (s): Re{W e^{i w_c tp}}, W interpolated between frames */
+const inCycle = tp => ((tp % DATA.cycle) + DATA.cycle) % DATA.cycle;   // the time within the cycle (the response repeats)
+/* the field at physical time tp (s): Re{W e^{i w_c c}}, c the time within the cycle, W interpolated between frames */
 function field(k, arr, tp) {
-  const c = ((tp % DATA.cycle) + DATA.cycle) % DATA.cycle, p = c / DATA.T3 * DATA.fps, j = Math.min(NF - 2, Math.floor(p)), s = p - j;
-  const ph = 2 * Math.PI * ROWS[k].f * tp, co = Math.cos(ph), si = Math.sin(ph), out = new Float32Array(NX);
+  const c = inCycle(tp), p = c / DATA.T3 * DATA.fps, j = Math.min(NF - 2, Math.floor(p)), s = p - j;
+  const ph = 2 * Math.PI * ROWS[k].f * c, co = Math.cos(ph), si = Math.sin(ph), out = new Float32Array(NX);
   for (let i = 0; i < NX; i++) {
     const a = (j * NX + i) * 2, b = ((j + 1) * NX + i) * 2;
     const re = lerp(arr[a], arr[b], s), im = lerp(arr[a + 1], arr[b + 1], s);
@@ -277,26 +311,29 @@ function field(k, arr, tp) {
   return out;
 }
 function envelope(tp) {
-  const c = ((tp % DATA.cycle) + DATA.cycle) % DATA.cycle, r = DATA.ramp * DATA.T3, h = DATA.hold * DATA.T3;
+  const c = inCycle(tp), r = DATA.ramp * DATA.T3, h = DATA.hold * DATA.T3;
   if (c < r) return .5 * (1 - Math.cos(Math.PI * c / r)); if (c < r + h) return 1;
   if (c < 2 * r + h) return .5 * (1 + Math.cos(Math.PI * (c - r - h) / r)); return 0;
 }
 const tphys = () => clock() / SLOW + __OFF__;             // the loop starts 3 periods into the drive
-function sub(letter, x, y, words, a) { panel(letter, x, y, { alpha: a }); text(words, x + 36, y, { size: 16, color: C.body, alpha: a }); }
+function sub(letter, x, y, words, a) { panel(letter, x, y, { alpha: a }); text(words, x + 36, y, { size: 18, color: C.body, alpha: a }); }
 const A = 40;
 function beamAt(x0, y, prog) {
   line([[x0, y], [x0 + 360, y]], { color: C.ink, width: 1.8, progress: prog });
   if (prog > 0) { pin(x0, y, { s: 12 }); pin(x0 + 360, y, { s: 12, alpha: clamp(prog * 4 - 3) }); }
 }
 const pts = (x0, y, w, amp) => Array.from(w, (v, i) => [x0 + i / (NX - 1) * 360, y - amp * v]);
-/* the moment at the left pin: an arc whose sweep follows M(t) */
+/* the moment M(t) at the left pin: an arc on the pin's outer side whose sweep follows M
+   (counterclockwise for M > 0), its head as large as the arc allows; it fades out as M
+   passes through zero, so no head is ever left without its arc */
 function momentArc(x, y, m, a) {
-  if (Math.abs(m) < .02 || a <= 0) return;
-  const r = 20, a0 = -Math.PI / 2, a1 = a0 - m * 2.4;
-  const p = []; for (let i = 0; i <= 24; i++) { const u = a0 + (a1 - a0) * i / 24; p.push([x + r * Math.cos(u), y + r * Math.sin(u)]); }
-  line(p, { color: C.accent, width: 1.6, alpha: a });
+  const r = 22, th = Math.abs(m) * 2.6, len = r * th, al = a * clamp((len - 9) / 9);
+  if (al <= 0) return;
+  const sg = Math.sign(m), from = Math.PI + sg * th / 2, to = Math.PI - sg * th / 2;
+  const p = []; for (let i = 0; i <= 24; i++) { const u = lerp(from, to, i / 24); p.push([x + r * Math.cos(u), y + r * Math.sin(u)]); }
+  line(p.slice(0, -2), { color: C.ink, width: 1.6, alpha: al });
   const e = p[p.length - 1], q = p[p.length - 3];
-  arrow(q[0], q[1], e[0], e[1], { color: C.accent, width: 1.6, head: 7, alpha: a });
+  arrow(q[0], q[1], e[0], e[1], { color: C.ink, width: 1.6, head: Math.min(8, .4 * len), alpha: al });
 }
 /* forced vibration while M(t) drives (switched on, held, switched off), free
    vibration from the moment it is off to the cycle's end */
@@ -304,7 +341,7 @@ const C_OFF = (2 * DATA.ramp + DATA.hold) * DATA.T3;
 /* 1 in the forced part, 0 in the free part; at each switch it passes to the
    other over 0.3 s of the page's clock, so the names follow the cursor */
 function forcedW(tp) {
-  const c = ((tp % DATA.cycle) + DATA.cycle) % DATA.cycle;
+  const c = inCycle(tp);
   return c < C_OFF ? easeInOut(clamp(c * SLOW / .3)) : 1 - easeInOut(clamp((c - C_OFF) * SLOW / .3));
 }
 /* a TikZ brace (decoration brace, mirrored) under [x0, x1] from height y, its tip h below at the middle */
@@ -317,25 +354,26 @@ function brace(x0, x1, y, h, o) {
 }
 function mixc(a, b, s) { const A = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16)), B = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
   return '#' + A.map((v, i) => Math.round(lerp(v, B[i], clamp(s))).toString(16).padStart(2, '0')).join(''); }
+const node = (x, y, a) => dot(x, y, 4.5, { color: C.ink, fill: '#fff', width: 1.6, alpha: a });   // a node: white, an ink ring
 
 function row(key, y0, letters, words, t0, tp) {
   const [la, lb] = letters, [wa, wb] = words;
   sub(la, 18, y0, wa, lab(t0)); sub(lb, 520, y0, wb, lab(t0 + .04));
-  const ya = y0 + 96, xa = 60, xb = 560;
+  const ya = y0 + 100, xa = 60, xb = 560;
   beamAt(xa, ya, seg(t0, .35)); beamAt(xb, ya, seg(t0 + .05, .35));
   const R = ROWS[key], tot = field(key, R.tot, tp), left = field(key, R.left, tp);
-  // (a), (c): the reflection and the sum
+  // (a), (c): the reflection (crimson, the one thing to follow) and the sum
   line(pts(xa, ya, left, A), { color: C.accent, width: 1.5, progress: seg(t0 + .2, .4) });
   line(pts(xa, ya, tot, A), { color: C.blue, width: 2.4, progress: seg(t0 + .15, .4) });
-  const env = envelope(tp), m = env * Math.sin(2 * Math.PI * R.f * tp);
+  const env = envelope(tp), m = env * Math.sin(2 * Math.PI * R.f * inCycle(tp));
   momentArc(xa, ya, m, lab(t0 + .3));
   const ha = lab(t0 + .4);
   arrow(xa + 40, y0 + 30, xa + 120, y0 + 30, { width: 1.8, head: 9, alpha: ha, color: C.ink });
-  text('Wave', xa + 40, y0 + 50, { size: 15, color: C.body, alpha: ha });
+  text('Wave', xa + 40, y0 + 53, { size: 17, color: C.body, alpha: ha });
   arrow(xa + 320, y0 + 30, xa + 240, y0 + 30, { width: 1.8, head: 9, alpha: ha, color: C.accent });
-  text('Reflection', xa + 320, y0 + 50, { size: 15, color: C.body, align: 'right', alpha: ha });
-  math(key === 'res' ? 'L = 3\\,\\lambda/2' : 'L = 3.5\\,\\lambda/2', xa + 180, ya + 58, { size: 16, align: 'center', alpha: ha });
-  math(`f = ${R.f.toFixed(1)}\\,\\rm{Hz}`, xa + 180, ya + 80, { size: 15, align: 'center', color: C.muted, alpha: ha });
+  text('Reflection', xa + 320, y0 + 53, { size: 17, color: C.body, align: 'right', alpha: ha });
+  math(key === 'res' ? 'L = 3\\,\\lambda/2' : 'L = 3.5\\,\\lambda/2', xa + 180, ya + 63, { size: 18, align: 'center', alpha: ha });
+  math(`f = ${R.f.toFixed(1)}\\,\\rm{Hz}`, xa + 180, ya + 86, { size: 16, align: 'center', color: C.muted, alpha: ha });
   // (b), (d): the last period, earlier shapes fading
   const sa = lab(t0 + .45);
   if (sa > 0) for (let j = 8; j >= 1; j--) {
@@ -344,53 +382,67 @@ function row(key, y0, letters, words, t0, tp) {
   }
   line(pts(xb, ya, tot, A), { color: C.blue, width: 2.4, progress: seg(t0 + .2, .4) });
   const za = lab(t0 + .5);
-  if (key === 'res') for (const z of DATA.nodes) dot(xb + z / DATA.L * 360, ya, 4, { color: C.accent, fill: C.accent, alpha: za });
+  if (key === 'res') for (const z of DATA.nodes) node(xb + z / DATA.L * 360, ya, za);
   // the drive, over the cycle: forced vibration while M(t) drives, free vibration once it is off
-  const yd = ya + 64, xd0 = xb, xd1 = xb + 360, da = lab(t0 + .55);
+  const yd = ya + 66, xd0 = xb, xd1 = xb + 360, da = lab(t0 + .55);
   if (da > 0) {
     const e = []; for (let i = 0; i <= 120; i++) { const c = i / 120 * DATA.cycle; e.push([lerp(xd0, xd1, i / 120), yd - 12 * envelope(c)]); }
     line(e, { color: C.guide, width: 1.1, alpha: da });
     line([[xd0, yd], [xd1, yd]], { color: C.rule, width: 1, alpha: da });
-    const c = ((tp % DATA.cycle) + DATA.cycle) % DATA.cycle, xc = lerp(xd0, xd1, c / DATA.cycle);
-    line([[xc, yd + 3], [xc, yd - 15]], { color: C.accent, width: 1.6, alpha: da });
-    math('M(t)', xd0 - 8, yd - 2, { size: 14, align: 'right', color: C.muted, alpha: da });
+    const xc = lerp(xd0, xd1, inCycle(tp) / DATA.cycle);
+    line([[xc, yd + 3], [xc, yd - 15]], { color: C.ink, width: 1.6, alpha: da });
+    math('M(t)', xd0 - 9, yd - 1, { size: 16, align: 'right', color: C.muted, alpha: da });
     // each part of the drive named under it, the one the cursor is in set in ink
     const xf = lerp(xd0, xd1, C_OFF / DATA.cycle), wf = forcedW(tp), ba = lab(t0 + .6);
     const parts = [[xd0 + 1, xf - 2.5, 'forced vibration', wf], [xf + 2.5, xd1 - 1, 'free vibration', 1 - wf]];
     for (const [x0, x1, s, w] of parts) {
       brace(x0, x1, yd + 5, 7, { color: mixc(C.guide, C.ink, w), width: 1.2, alpha: ba });
-      text(s, (x0 + x1) / 2, yd + 30, { size: 15, align: 'center', color: mixc(C.muted, C.ink, w), alpha: ba });
+      text(s, (x0 + x1) / 2, yd + 32, { size: 16, align: 'center', color: mixc(C.muted, C.ink, w), alpha: ba });
     }
   }
 }
 
 function draw() {
   const tp = tphys();
-  row('res', 34, ['a', 'b'], ['standing waves in constructive form', 'standing waves over time'], 0, tp);
-  row('off', 254, ['c', 'd'], ['non standing waves', 'non standing waves over time'], .06, tp);
-  const la = lab(.8);
-  const LY = 508;
-  line([[60, LY - 5], [86, LY - 5]], { color: C.blue, width: 2.4, alpha: la }); text('displacement, now', 92, LY, { size: 14, color: C.body, alpha: la });
-  line([[232, LY - 5], [258, LY - 5]], { color: C.mist, width: 1.6, alpha: la }); text('earlier', 264, LY, { size: 14, color: C.body, alpha: la });
-  line([[332, LY - 5], [358, LY - 5]], { color: C.accent, width: 1.5, alpha: la }); text('reflection, travelling left', 364, LY, { size: 14, color: C.body, alpha: la });
-  dot(560, LY - 5, 4, { color: C.accent, fill: C.accent, alpha: la }); text('nodes of the 3rd mode', 570, LY, { size: 14, color: C.body, alpha: la });
-  const ea = la; line([[748, LY - 5], [774, LY - 5]], { color: C.guide, width: 1.1, alpha: ea }); text('drive envelope', 780, LY, { size: 14, color: C.body, alpha: ea });
+  row('res', 36, ['a', 'b'], ['standing waves in constructive form', 'standing waves over time'], 0, tp);
+  row('off', 266, ['c', 'd'], ['non standing waves', 'non standing waves over time'], .06, tp);
+  // the key, its five entries spread evenly over the width
+  const la = lab(.8), LY = 508, SZ = 16;
+  const keys = [['displacement, now', o => line([[o, LY - 5], [o + 26, LY - 5]], { color: C.blue, width: 2.4, alpha: la })],
+                ['earlier', o => line([[o, LY - 5], [o + 26, LY - 5]], { color: C.mist, width: 1.6, alpha: la })],
+                ['reflection, traveling left', o => line([[o, LY - 5], [o + 26, LY - 5]], { color: C.accent, width: 1.5, alpha: la })],
+                ['nodes of the 3rd mode', o => node(o + 13, LY - 5, la)],
+                ['drive envelope', o => line([[o, LY - 5], [o + 26, LY - 5]], { color: C.guide, width: 1.1, alpha: la })]];
+  const ws = keys.map(([s]) => text(s, 0, -1e4, { size: SZ, alpha: 0 })), x0 = 40, x1 = 960;
+  const gap = (x1 - x0 - ws.reduce((a, w) => a + w + 34, 0)) / (keys.length - 1);
+  let kx = x0;
+  keys.forEach(([s, sw], i) => { sw(kx); text(s, kx + 34, LY, { size: SZ, color: C.body, alpha: la }); kx += ws[i] + 34 + gap; });
   const pa = lab(.9);
   text('steel bar 40 × 10 mm, L = 1 m, pins at both ends; moment M(t) at the left pin, switched on, held, off; ζ = 0.05',
-       18, H - 12, { size: 14, color: C.muted, alpha: pa });
-  text(`time slowed ${SLOW} ×`, W - 18, H - 12, { size: 14, color: C.muted, align: 'right', alpha: pa });
+       18, H - 13, { size: 15, color: C.muted, alpha: pa });
+  text(`shown ${SLOW} × slower`, W - 18, H - 13, { size: 15, color: C.muted, align: 'right', alpha: pa });
 }
 boot();
 """
 
-# the still: late in the hold, the resonant pattern near an extreme at mid span
+# the still: late in the hold, the resonant pattern large and both drive moments well away from
+# zero (each row's moment arc drawn whole, as the page draws it): the largest resonant shape among
+# the instants where |M| is at least 0.6 of its amplitude at resonance and 0.5 off it
 c_hold = (RAMP_P + HOLD_P - 0.3) * T3
-cand = np.arange(c_hold - 1.5 * T3, c_hold, T3 / 400)
-zi = res["res"][0]["tot"][np.round(cand / DT).astype(int)]
-vals = np.abs((zi * np.exp(1j * 2 * np.pi * fc["res"] * cand)[:, None]).real).max(axis=1)
-tbest = cand[int(np.argmax(vals))]
+cand = np.arange(c_hold - 3 * T3, c_hold, T3 / 400)
+ic = np.round(cand / DT).astype(int)
+zr_ = res["res"][0]["tot"]
+W_ = zr_[ic] * np.exp(-1j * 2 * np.pi * fc["res"] * tt[ic])[:, None]      # the envelope at the stored step
+vals = np.abs((W_ * np.exp(1j * 2 * np.pi * fc["res"] * cand)[:, None]).real).max(axis=1)
+m_res = envelope(cand) * np.sin(2 * np.pi * fc["res"] * cand)
+m_off = envelope(cand) * np.sin(2 * np.pi * fc["off"] * cand)
+ok = (np.abs(m_res) >= 0.6) & (np.abs(m_off) >= 0.5)
+tbest = cand[int(np.argmax(np.where(ok, vals, -1)))]
+ib = int(np.argmin(np.abs(cand - tbest)))
 OFF = 3 * T3
 POSTER = TS + RAMP / 2 + (tbest - OFF) * SLOW
+print(f"poster: resonant shape {vals[ib]/vals.max():.2f} of the window's largest, M {m_res[ib]:+.2f} (row 1),"
+      f" {m_off[ib]:+.2f} (row 2)")
 JS = JS.replace("__POSTER_T__", f"{POSTER:.4f}").replace("__OFF__", f"{OFF:.9f}")
 print(f"POSTER_T = {POSTER:.3f} s")
 
@@ -402,5 +454,8 @@ ARIA = ("Computed transient of a simply supported beam driven by a moment at its
         "reflections cancel, the response stays small and its zero crossings wander.")
 
 if __name__ == "__main__":
-    common.build_html(NAME, TITLE, ARIA, 1000, 548, DATA, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, 566, DATA, JS)
     print(common.still(NAME))
+    # the overlap check over two whole loops, every 0.1 s
+    import sd_check
+    sd_check.append(os.path.join(HERE, f"{NAME}.check.txt"), sd_check.record(NAME, 2 * CYCLE * SLOW + 0.5, 0.1, True))

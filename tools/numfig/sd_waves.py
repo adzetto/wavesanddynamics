@@ -58,6 +58,7 @@ TA0 = 0.35                          # s: (a)'s first cycle starts
 GAP = 0.6                           # s between the cycles
 HOLD = 1.5                          # s after (b)'s cycle
 FADE = 0.4                          # s: an idle state fades out before its panel's cycle, in after it
+H_PAGE = 694                        # the page's height (W = 1000): two columns, landscape
 
 
 def a_model():
@@ -190,11 +191,24 @@ function cutEdge(x, y0, y1, o = {}) {                      // a zigzag cut: the 
   for (let i = 0; i <= n; i++) pts.push([x + (i % 2 ? a : -a) * (i > 0 && i < n ? 1 : 0), lerp(y0 - 3, y1 + 3, i / n)]);
   line(pts, { color: C.ink, width: 1.3, ...o });
 }
-const title = (l, s1, s2, y, a) => {
-  const w = panel(l, 20, y, { alpha: a });
-  text(s1, 20 + w + 8, y, { size: 17, color: C.body, alpha: a });
-  text(s2, 20 + w + 8, y + 21, { size: 15, color: C.body, alpha: a });
+/* the two columns: (a) guided wave testing on the left, (b) bulk wave testing on the right,
+   each its test over its signal (his words: "shown on the left" and "on the right") */
+const COLA = 20, COLB = 512, COLW = 472;
+const title = (l, s1, s2, x, y, a) => {
+  const w = panel(l, x, y, { alpha: a });
+  text(s1, x + w + 8, y, { size: 18, color: C.body, alpha: a });
+  text(s2, x + w + 8, y + 22, { size: 16, color: C.body, alpha: a });
 };
+/* his words set in lines no wider than w: the words his, only the line breaks ours */
+function lines(s, w, o) {
+  const out = []; let cur = '';
+  for (const wd of s.split(' ')) {
+    const tr = cur ? cur + ' ' + wd : wd;
+    if (cur && text(tr, 0, -1e4, { ...o, alpha: 0 }) > w) { out.push(cur); cur = wd; } else cur = tr;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
 
 /* ------------------------------------------------------------ (a) guided */
 const XU = x => A.px0 + x * A.ppm, PY = A.py, PH = A.ph;
@@ -264,7 +278,7 @@ function packets(tm, al) {
 }
 function panelA() {
   const st = stateA(), a0 = lab(0);
-  title('a', 'Guided wave testing', '(active ultrasonic excitation, or passive acoustic emission)', 34, a0);
+  title('a', 'Guided wave testing', '(active ultrasonic excitation, or passive acoustic emission)', COLA, 34, a0);
   // the plate: steel, the model's field, the outline drawing itself
   const x0 = XU(0), x1 = XU(A.xend), pa = seg(0, .4);
   ctx.save(); ctx.globalAlpha *= seg(.05, .25); ctx.fillStyle = C.steel; ctx.fillRect(x0, PY, x1 - x0, PH); ctx.restore();
@@ -278,32 +292,36 @@ function panelA() {
   ctx.save(); ctx.globalAlpha *= tIn; ctx.fillStyle = C.navy; ctx.fillRect(x0, PY - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
   ctx.save(); ctx.translate(0, -8 * (1 - dIn)); notch(A.D, dIn); ctx.restore();
   const lIn = lab(.25);
-  text('transducer (send/receive)', x0 - 4, PY - 22 + rise(lIn), { size: 15, color: C.body, alpha: lIn });
-  text('defect', XU(A.D), PY - 22 + rise(lIn), { size: 15, color: C.body, align: 'center', alpha: lIn });
+  text('transducer (send/receive)', x0 - 4, PY - 22 + rise(lIn), { size: 16, color: C.body, alpha: lIn });
+  text('defect', XU(A.D), PY - 22 + rise(lIn), { size: 16, color: C.body, align: 'center', alpha: lIn });
   // the thickness, at the cut end
   const ha = lab(.35), xh = x1 + 16;
   arrow(xh, PY + PH / 2, xh, PY, { width: 1, head: 6, alpha: ha }); arrow(xh, PY + PH / 2, xh, PY + PH, { width: 1, head: 6, alpha: ha });
   math('h', xh + 7, PY + PH / 2 + 6, { size: 17, alpha: ha });
   // the packets under the plate, and his names for the two waves
   const pk = packets(st.tm, st.run ? 1 : st.idle);
-  const ly = PY + PH + 38, la = lab(.4);
+  const ly = PY + PH + 40, la = lab(.4);
   const on = (k) => st.run ? (k ? .45 + .55 * pk.echo : .45 + .55 * pk.inc) : 1;
   arrow(x0 + 4, ly - 5, x0 + 30, ly - 5, { color: C.ink, width: 1.5, head: 8, alpha: la * on(0) });
-  text('incident guided wave', x0 + 38, ly, { size: 15, alpha: la * on(0) });
-  arrow(x0 + 30, ly + 14, x0 + 4, ly + 14, { color: C.accent, width: 1.5, head: 8, alpha: la * on(1) });
-  text('reflected (echo) wave', x0 + 38, ly + 19, { size: 15, color: C.accent, alpha: la * on(1) });
-  cbar(XU(1.1), PY + PH + 30, 100, 'u_{z}/u_{0}', lab(.45));
+  text('incident guided wave', x0 + 38, ly, { size: 16, alpha: la * on(0) });
+  arrow(x0 + 30, ly + 16, x0 + 4, ly + 16, { color: C.accent, width: 1.5, head: 8, alpha: la * on(1) });
+  text('reflected (echo) wave', x0 + 38, ly + 21, { size: 16, color: C.accent, alpha: la * on(1) });
+  cbar(XU(1.12), PY + PH + 30, 100, 'u_{z}/u_{0}', lab(.45));
   // the A0 mode at 50 kHz, through the thickness, at true scale
   insetA(lab(.45));
-  const na = lab(.55);
-  math(A.note1, x0 - 4, A.ny, { size: 15, alpha: na });
-  text(A.note2[0], x0 - 4, A.ny + 21, { size: 14, color: C.muted, alpha: na });
-  text(A.note2[1], x0 - 4, A.ny + 38, { size: 14, color: C.muted, alpha: na });
+  // his two notes: the first in two lines (the words in parentheses on the second), the second
+  // set in lines of the column's width
+  const na = lab(.55), n1 = /^(.*\\rm\{)(.*?) (\(.*\))\}$/.exec(A.note1);
+  math(n1[1] + n1[2] + '}', x0 - 4, A.ny, { size: 16, alpha: na });
+  text(n1[3], x0 - 4, A.ny + 20, { size: 16, alpha: na });
+  lines(A.note2.join(' '), COLW - 12, { size: 15 }).forEach((l, i) =>
+    text(l, x0 - 4, A.ny + 43 + 18 * i, { size: 15, color: C.muted, alpha: na }));
   // the received signal
-  const P = A.plot, g = axes({ ...P, xlim: [0, A.tmax], ylim: [-1.15, 1.15], xticks: [0, 200, 400, 600, 800, 1000, 1200, 1400],
-                               yticks: [-1, 0, 1], ylabel: '\\rm{Amplitude}', ylabelGap: 36, progress: seg(.08, .4) });
+  const P = A.plot, g = axes({ ...P, xlim: [0, A.tmax], ylim: [-1.15, 1.3], xticks: [0, 200, 400, 600, 800, 1000, 1200, 1400],
+                               yticks: [-1, 0, 1], ylabel: '\\rm{Amplitude}', ylabelGap: 38, tickSize: 16, labelSize: 17,
+                               progress: seg(.08, .4) });
   const ta = lab(.2);
-  text('Received signal: dispersed wave packet', P.x + P.w / 2, P.y - 14 + rise(ta), { size: 16, align: 'center', alpha: ta });
+  text('Received signal: dispersed wave packet', P.x + P.w / 2, P.y - 14 + rise(ta), { size: 17, align: 'center', alpha: ta });
   const xl = seg(.3, .3);
   const w1 = text('Time ', 0, -1e4, { size: 17, alpha: 0 }), w2 = math('t\\ (\\rm{µs})', 0, -1e4, { size: 17, alpha: 0 });
   text('Time ', P.x + P.w / 2 - (w1 + w2) / 2, P.y + P.h + 48, { size: 17, alpha: xl });
@@ -318,18 +336,18 @@ function panelA() {
   }
   if (st.run && upto >= 0) {                                // the cursor, under the labels' band
     const xc = g.X(Math.min(upto, A.tmax)), i = clamp(Math.round(upto), 0, TR.length - 1);
-    line([[xc, g.Y(.5)], [xc, P.y + P.h - 2]], { color: C.ink, width: 1, alpha: .45 });
+    line([[xc, g.Y(.45)], [xc, P.y + P.h - 2]], { color: C.ink, width: 1, alpha: .45 });
     dot(xc, g.Y(upto < 0 ? 0 : TR[i]), 3, { color: C.navy, fill: C.navy });
   }
   const seen = te => st.run ? clamp((upto - te) / 40) : (t < TA0 ? 0 : wipe);
-  text('outgoing', g.X(80), g.Y(.86), { size: 15, color: C.body, alpha: seen(40) * lab(.4) });
-  text('pulse', g.X(80), g.Y(.86) + 17, { size: 15, color: C.body, alpha: seen(40) * lab(.4) });
+  text('outgoing', g.X(80), g.Y(.98), { size: 16, color: C.body, alpha: seen(40) * lab(.4) });
+  text('pulse', g.X(80), g.Y(.98) + 18, { size: 16, color: C.body, alpha: seen(40) * lab(.4) });
   const ex = g.X(A.echolab);
-  text('defect echo', ex, g.Y(.86), { size: 15, color: C.accent, align: 'center', alpha: seen(A.echo) });
-  text('(spread out by dispersion)', ex, g.Y(.86) + 17, { size: 15, color: C.accent, align: 'center', alpha: seen(A.echo) });
+  text('defect echo', ex, g.Y(.98), { size: 16, color: C.accent, align: 'center', alpha: seen(A.echo) });
+  text('(spread out by dispersion)', ex, g.Y(.98) + 18, { size: 16, color: C.accent, align: 'center', alpha: seen(A.echo) });
   const pl = lab(.8);
-  A.params.forEach((s, i) => text(s, P.x - 36, P.y + P.h + 80 + 18 * i, { size: 14, color: C.muted, alpha: pl }));
-  math('\\rm{time slowed }5\\,\\times\\,10^{3}', 958, 34, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  A.params.forEach((s, i) => text(s, x0 - 4, D.py + 18 * i, { size: 15, color: C.muted, alpha: pl }));
+  text(A.slowtxt, COLA + COLW, 34, { size: 15, color: C.muted, align: 'right', alpha: lab(.5) });
 }
 /* a colour bar of the field's ramp, -0.5 ... 0.5 */
 function cbar(x, y, w, labl, a) {
@@ -341,9 +359,9 @@ function cbar(x, y, w, labl, a) {
   for (const [v, s] of [[-.5, '-0.5'], [0, '0'], [.5, '0.5']]) {
     const xx = x + (v / D.clip + 1) / 2 * w;
     line([[xx, y + 8], [xx, y + 11]], { width: .8, alpha: a });
-    math(s, xx, y + 25, { size: 14, align: 'center', alpha: a });
+    math(s, xx, y + 26, { size: 15, align: 'center', alpha: a });
   }
-  math(labl, x - 8, y + 9, { size: 15, align: 'right', alpha: a });
+  math(labl, x - 8, y + 9, { size: 16, align: 'right', alpha: a });
 }
 function insetA(a) {
   if (a <= 0) return;
@@ -358,14 +376,14 @@ function insetA(a) {
   const x0 = I.x0, y0 = I.y0;
   // one wavelength, dimensioned: |<- label ->|, the line broken for the label (no knockout to fade)
   const d0 = x0 + I.lam * .25, d1 = x0 + I.lam * 1.25, dy = y0 + I.h + 20, dl = '\\lambda\\ = ' + I.lam_mm.toFixed(0) + '\\,\\rm{mm}';
-  const dw = math(dl, 0, -1e4, { size: 15, alpha: 0 }), dm = (d0 + d1) / 2;
+  const dw = math(dl, 0, -1e4, { size: 16, alpha: 0 }), dm = (d0 + d1) / 2;
   arrow(dm - dw / 2 - 6, dy, d0, dy, { width: 1.1, head: 7, alpha: a }); arrow(dm + dw / 2 + 6, dy, d1, dy, { width: 1.1, head: 7, alpha: a });
   line([[d0, dy - 6], [d0, dy + 6]], { width: 1, alpha: a }); line([[d1, dy - 6], [d1, dy + 6]], { width: 1, alpha: a });
-  math(dl, dm, dy + 5, { size: 15, align: 'center', alpha: a });
+  math(dl, dm, dy + 5.5, { size: 16, align: 'center', alpha: a });
   const xh = x0 + I.w + 14;
   arrow(xh, y0 + I.h / 2, xh, y0, { width: 1, head: 6, alpha: a }); arrow(xh, y0 + I.h / 2, xh, y0 + I.h, { width: 1, head: 6, alpha: a });
-  math('h = 10\\,\\rm{mm}', xh + 7, y0 + I.h / 2 + 5, { size: 15, alpha: a });
-  math(A.insetlab, x0, y0 - 12, { size: 14, color: C.muted, alpha: a });
+  math('h = 10\\,\\rm{mm}', xh + 7, y0 + I.h / 2 + 5.5, { size: 16, alpha: a });
+  math(A.insetlab, x0, y0 - 12, { size: 15, color: C.muted, alpha: a });
 }
 
 /* ------------------------------------------------------------ (b) bulk */
@@ -414,11 +432,11 @@ function ride(s, x, z, up, col, a) {                        // a label riding a 
   if (a <= 0) return;
   const y0 = YB(up ? z - 1.2 : z + 1.2), y1 = YB(up ? z - 3.7 : z + 3.7);
   arrow(XB(x), y0, XB(x), y1, { color: col, width: 1.4, head: 7, alpha: a });
-  text(s, XB(x + 1.1), (y0 + y1) / 2 + 5, { size: 15, color: col, alpha: a });
+  text(s, XB(x + 1.1), (y0 + y1) / 2 + 5.5, { size: 16, color: col, alpha: a });
 }
 function panelB() {
   const st = stateB(), a0 = lab(.05);
-  title('b', 'Bulk wave testing', '(conventional pulse echo / phased array ultrasonic testing)', Bb.ty, a0);
+  title('b', 'Bulk wave testing', '(conventional pulse echo / phased array ultrasonic testing)', COLB, Bb.ty, a0);
   ctx.save(); ctx.globalAlpha *= seg(.05, .3); ctx.fillStyle = C.steel; ctx.fillRect(BX, BY, BW, BD); ctx.restore();
   const fa = (st.run ? 1 : st.idle) * seg(.1, .4);
   if (fa > 0 && fieldFrame(clamp(Math.round(st.ts / Bb.field.dt), 0, Bb.field.n - 1))) {
@@ -433,14 +451,14 @@ function panelB() {
   const sp = settle(.18, .28), [p0, p1] = Bb.probe;
   ctx.save(); ctx.globalAlpha *= sp; ctx.fillStyle = C.navy; ctx.fillRect(XB(p0), BY - 15 - 12 * (1 - sp), (p1 - p0) * S, 15); ctx.restore();
   const la = lab(.3);
-  text('transducer', XB((p0 + p1) / 2), BY - 23 + rise(la), { size: 15, color: C.body, align: 'center', alpha: la });
-  text('flaw', XB(Bb.flaw.lab[0]), YB(Bb.flaw.lab[1]), { size: 15, color: C.accent, align: 'right', alpha: lab(.35) });
-  text('back wall', BX + BW, BY + BD + 20, { size: 15, color: C.body, align: 'right', alpha: lab(.38) });
+  text('transducer', XB((p0 + p1) / 2), BY - 23 + rise(la), { size: 16, color: C.body, align: 'center', alpha: la });
+  text('flaw', XB(Bb.flaw.lab[0]), YB(Bb.flaw.lab[1]), { size: 16, color: C.accent, align: 'right', alpha: lab(.35) });
+  text('back wall', BX + BW, BY + BD + 21, { size: 16, color: C.body, align: 'right', alpha: lab(.38) });
   // the thickness h and one wavelength
   const da = lab(.35), xd = BX - 16;
   arrow(xd, BY + 1, xd, BY + BD - 1, { width: 1.1, head: 7, both: true, alpha: da });
-  text('thickness', xd - 8, BY + BD / 2 - 2, { size: 15, color: C.body, align: 'right', alpha: da });
-  math('h', xd - 8, BY + BD / 2 + 17, { size: 17, align: 'right', alpha: da });
+  text('thickness', xd - 8, BY + BD / 2 - 2, { size: 16, color: C.body, align: 'right', alpha: da });
+  math('h', xd - 8, BY + BD / 2 + 18, { size: 17, align: 'right', alpha: da });
   // one wavelength at the block's own scale, beside it: lambda against h
   // (a gap this small is dimensioned from outside: two arrows pointing in at its two lines)
   const lx = BX + BW + 15, lam = Bb.lam.mm * S, ly0 = BY + BD / 2 - lam / 2;
@@ -457,22 +475,22 @@ function panelB() {
   }
   cbar(BX + 44, BY + BD + 13, 100, 'p/p_{0}', lab(.45));
   const na = lab(.55);
-  math(Bb.note, BX - 50, Bb.ny, { size: 15, alpha: na });
-  math(Bb.params, BX - 50, Bb.ny + 22, { size: 14, color: C.muted, alpha: lab(.8) });
+  math(Bb.note, COLB + 4, Bb.ny, { size: 16, alpha: na });
+  Bb.params.forEach((s, i) => math(s, COLB + 4, D.py + 18 * i, { size: 15, color: C.muted, alpha: lab(.8) }));
   // the A scan: time, and the depth it reads
   const P = Bb.plot;
-  const g = axes({ ...P, xlim: [-0.5, 10], ylim: [-1.15, 1.15], xticks: [0, 2, 4, 6, 8, 10], yticks: [-1, 0, 1],
-                   ylabel: '\\rm{Amplitude}', ylabelGap: 36, progress: seg(.1, .4) });
+  const g = axes({ ...P, xlim: [-0.5, 10], ylim: [-1.15, 1.3], xticks: [0, 2, 4, 6, 8, 10], yticks: [-1, 0, 1],
+                   ylabel: '\\rm{Amplitude}', ylabelGap: 38, tickSize: 16, labelSize: 17, progress: seg(.1, .4) });
   const xa = seg(.3, .3);
   g.inside(() => line([[P.x, g.Y(0)], [P.x + P.w, g.Y(0)]], { color: C.rule, width: 1, alpha: xa }));
   for (const z of [0, 5, 10, 15, 20, 25]) {
     const x = g.X(2 * z / Bb.cl);
     line([[x, P.y], [x, P.y + 5]], { width: 1.1, alpha: xa });
-    math(String(z), x, P.y - 7, { size: 15, align: 'center', alpha: xa });
+    math(String(z), x, P.y - 8, { size: 16, align: 'center', alpha: xa });
   }
-  math('\\rm{depth }z = c_{\\rm{L}}t/2\\ (\\rm{mm})', P.x + P.w / 2, P.y - 28, { size: 15, align: 'center', alpha: xa });
+  math('\\rm{depth }z = c_{\\rm{L}}t/2\\ (\\rm{mm})', P.x + P.w / 2, P.y - 31, { size: 16, align: 'center', alpha: xa });
   const tt = lab(.22);
-  text('Resulting A scan', P.x + P.w / 2, P.y - 52 + rise(tt), { size: 16, align: 'center', alpha: tt });
+  text('Resulting A scan', P.x + P.w / 2, P.y - 55 + rise(tt), { size: 17, align: 'center', alpha: tt });
   const w1 = text('Time (≈ depth) ', 0, -1e4, { size: 17, alpha: 0 }), w2 = math('t\\ (\\rm{µs})', 0, -1e4, { size: 17, alpha: 0 });
   text('Time (≈ depth) ', P.x + P.w / 2 - (w1 + w2) / 2, P.y + P.h + 48, { size: 17, alpha: xa });
   math('t\\ (\\rm{µs})', P.x + P.w / 2 - (w1 + w2) / 2 + w1, P.y + P.h + 48, { size: 17, alpha: xa });
@@ -488,7 +506,7 @@ function panelB() {
   }
   if (st.run) {                                             // the cursor, under the labels' band
     const xc = g.X(tr);
-    line([[xc, g.Y(.55)], [xc, P.y + P.h - 2]], { color: C.ink, width: 1, alpha: .45 });
+    line([[xc, g.Y(.45)], [xc, P.y + P.h - 2]], { color: C.ink, width: 1, alpha: .45 });
     dot(xc, g.Y(AS[clamp(Math.round((tr - q0) / dq), 0, n - 1)]), 3, { color: C.navy });
   }
   const seen = te => (st.run ? clamp((tr - te) / 0.4) : 1) * outB;
@@ -496,11 +514,11 @@ function panelB() {
     const a = seen(te + .3) * .9;
     if (a > 0) line([[g.X(tt_), P.y + 1], [g.X(tt_), P.y + P.h - 1]], { color: C.guide, width: 1, dash: [5, 4], alpha: a });
   }
-  const two = (s1, s2, x, col, al, align = 'left') => { text(s1, x, g.Y(.86), { size: 15, color: col, align, alpha: al }); text(s2, x, g.Y(.86) + 17, { size: 15, color: col, align, alpha: al }); };
+  const two = (s1, s2, x, col, al, align = 'left') => { text(s1, x, g.Y(.98), { size: 16, color: col, align, alpha: al }); text(s2, x, g.Y(.98) + 18, { size: 16, color: col, align, alpha: al }); };
   two('initial', 'pulse', g.X(0.45), C.body, seen(0.3));
   two('flaw', 'echo', g.X(E.tf_th + 0.15), C.accent, seen(E.tf + .3));
   two('back wall', 'echo', g.X(E.tb_th - 0.15), C.body, seen(E.tb + .3), 'right');
-  math('\\rm{time slowed }8\\,\\times\\,10^{5}', 958, Bb.ty, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  text(Bb.slowtxt, COLB + COLW, Bb.ty, { size: 15, color: C.muted, align: 'right', alpha: lab(.5) });
 }
 
 function draw() { panelA(); panelB(); }
@@ -514,15 +532,16 @@ def main():
     A = a_model()
     Bm = b_model()
 
-    # ---- layout, drawing units
+    # ---- layout, drawing units: two columns, (a) on the left (x 20 to 492), (b) on the right
+    # (x 512 to 984), each its test over its signal; the parameter lines under both
     ppm = 230.0                                     # (a) plate: units per metre along it
-    px0, py, ph = 64.0, 118.0, 26.0
-    ins_x0, ins_y0, ins_s = 64.0, 232.0, 4.0        # the inset: its corner and units per mm
+    px0, py, ph = 32.0, 106.0, 26.0
+    ins_x0, ins_y0, ins_s = 32.0, 232.0, 4.0        # the inset: its corner and units per mm
     I = inset(A, ins_x0, ins_y0, ins_s)
     I.update(x0=ins_x0, y0=ins_y0)
-    b_s = 7.6                                       # (b) block: units per mm
-    bx, by = 110.0, 486.0
-    ty_b = 400.0
+    b_s = 7.0                                       # (b) block: units per mm
+    bx, by = 604.0, 124.0
+    ty_b = 34.0
 
     # ---- (b)'s field
     chunks, fsizes = field_chunks(Bm["field"])
@@ -538,24 +557,23 @@ def main():
 
     exag = ph / (G.D_PLATE * ppm)
     data = {
-        "loop": loop, "ta0": TA0, "gap": GAP, "fade": FADE, "poster": poster, "clip": 0.5,
-        "a": {"slow": SLOW_A, "m0": M0, "tend": TEND_A, "snap": SNAP_A, "tc": A["tc"], "cg": A["cg"],
+        "loop": loop, "ta0": TA0, "gap": GAP, "fade": FADE, "poster": poster, "clip": 0.5, "py": 662.0,
+        "a": {"slow": SLOW_A, "slowtxt": f"shown {SLOW_A:,.0f} × slower", "m0": M0, "tend": TEND_A, "snap": SNAP_A, "tc": A["tc"], "cg": A["cg"],
               "D": G.D_DEF, "R": G.R_DEF, "T": G.T_DEF, "xend": X_A, "nx": int(round(X_A / DXA)) + 1, "dx": DXA,
               "ppm": ppm, "px0": px0, "py": py, "ph": ph,
               "c": {k: common.f32(A["comp"][k]) for k in ("w", "k", "a", "p")},
               "trace": common.f32(A["trace"]), "tmax": T_TRACE * 1e6,
               "win": [v * 1e6 for v in A["win"]], "echo": A["echo_t"] * 1e6,
-              "plot": {"x": 598, "y": 84, "w": 360, "h": 170},
+              "plot": {"x": 92, "y": 446, "w": 380, "h": 144},
               "inset": I, "insetlab": r"A_{0}\rm{ at 50 kHz, true scale}", "echolab": 1010.0,
               "ny": 324.0,
               "note1": r"\lambda\ \sim\ h\ " + "⇒" + r"\ \rm{dispersive guided modes (wave occupies the full cross section)}",
               "note2": ["acoustic emission: the same guided modes, launched passively by the damage",
                         "event itself (e.g. crack growth) instead of by a transducer"],
               "params": [f"steel plate, h = 10 mm, drawn {exag:.0f} × thicker; E = 210 GPa, ν = 0.29",
-                         "A₀ mode: a 3 cycle Hann burst at 50 kHz",
-                         "defect 1.5 m away, reflection 0.5"]},
-        "b": {"slow": SLOW_B, "tend": 10.0, "snap": TSNAP_B, "t0": B.T0, "cl": B.CL, "s": b_s, "bx": bx, "by": by,
-              "wb": B.WB, "db": B.DB, "ty": ty_b, "rx": 35.0,
+                         "A₀, 3 cycle Hann burst at 50 kHz; defect at 1.5 m, reflection 0.5"]},
+        "b": {"slow": SLOW_B, "slowtxt": f"shown {SLOW_B:,.0f} × slower", "tend": 10.0, "snap": TSNAP_B, "t0": B.T0, "cl": B.CL, "s": b_s, "bx": bx, "by": by,
+              "wb": B.WB, "db": B.DB, "ty": ty_b, "rx": 31.0,
               "probe": [B.PROBE["x"] - B.PROBE["w"] / 2, B.PROBE["x"] + B.PROBE["w"] / 2],
               "flaw": {"x": ox, "z": oz, "top": [Bm["x_top"], Bm["d_f"]], "lab": [B.FLAW["x"] - B.FLAW["a"] - 1.0, B.FLAW["z"] + 0.6]},
               "lam": {"x": 23.0, "mm": lam_b},
@@ -565,11 +583,11 @@ def main():
                        "tf_th": Bm["tf_th"], "tb_th": Bm["tb_th"], "wf": Bm["wf"], "wb": Bm["wb"]},
               "field": {"n": int(Bm["field"].shape[0]), "w": int(Bm["field"].shape[1]), "h": int(Bm["field"].shape[2]),
                         "chunks": chunks, "span": 126, "dt": B.FRAME_EVERY * B.DT, "clip": B.FCLIP},
-              "plot": {"x": 598, "y": 486, "w": 360, "h": 190},
-              "ny": 742.0,
+              "plot": {"x": 584, "y": 446, "w": 380, "h": 144},
+              "ny": 361.0,
               "note": r"\lambda\ \ll\ h\ " + "⇒" + r"\ \rm{bulk wave behavior (no dispersive guided modes)}",
-              "params": (r"\rm{steel }50 \times\ 25\ \rm{mm},\ c_{\rm{L}} = 5900\ \rm{m/s};\ \rm{probe 10 mm, 5 MHz, 3 cycle Hann burst};\ "
-                         r"\lambda\ = " + f"{lam_b:.2f}" + r"\ \rm{mm}")},
+              "params": [r"\rm{steel }50 \times\ 25\ \rm{mm},\ c_{\rm{L}} = 5900\ \rm{m/s},\ \lambda\ = " + f"{lam_b:.2f}"
+                         + r"\ \rm{mm}", r"\rm{probe 10 mm, 5 MHz, 3 cycle Hann burst}"]},
     }
     txt = report(A, Bm, I, dict(loop=loop, dur_a=dur_a, dur_b=dur_b, poster=poster, exag=exag, fsizes=fsizes))
     with open(os.path.join(HERE, "sd_waves.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
@@ -581,7 +599,7 @@ def main():
             "and the mode at true scale shows a wavelength of the order of the thickness. (b) A 5 MHz pulse "
             "enters a 25 mm block, and the echoes from a flaw and from the back wall arrive compact, at times "
             "that read as depths.")
-    common.build_html(NAME, title, aria, 1000, 780, data, poster_js(JS, poster))
+    common.build_html(NAME, title, aria, 1000, H_PAGE, data, poster_js(JS, poster))
     # the page's own Fourier sum (fieldAt, every frame) against guided_ut's numpy field
     xg = np.arange(int(round(X_A / DXA)) + 1) * DXA
     moments = (366e-6, SNAP_A, 1100e-6)
@@ -627,7 +645,7 @@ def report(A, Bm, I, X):
         f" {ux.max()/uz.max():.3f} of |u_z|: the whole section moves (his \"wave occupies the full cross section\")")
     say(f"  the plate: {X_A:g} m drawn at 230 units/m, its thickness drawn {X['exag']:.0f} times enlarged (said on the page);")
     say(f"    the field is guided_ut's Fourier sum, evaluated by the page every frame on {int(round(X_A/DXA))+1} points")
-    say(f"  the arrows under the plate ride the packets' centres at c_g; time slowed {SLOW_A:g} times")
+    say(f"  the arrows under the plate ride the packets' centres at c_g; shown {SLOW_A:,.0f} times slower (said on the page)")
     say("")
     say("(b) BULK WAVES")
     say(f"  bulk_ut's EFIT model: steel block {B.WB:g} x {B.DB:g} mm, c_L = {B.CL*1e3:.0f} m/s, c_T = {B.CT*1e3:.0f} m/s;")
@@ -641,7 +659,7 @@ def report(A, Bm, I, X):
         " initial pulse, no spreading (the grid convergence and the plane wave check: bulk_ut.check.txt)")
     say(f"  the field: p = -(s_xx + s_zz)/2 over p0, every {B.FRAME_EVERY*B.DT:.3f} us, {B.BOX * B.DX:.1f} mm pixels, colour range +-{B.FCLIP:g}")
     say("    (the page's own copy: nf-sd-waves-field-0..3.png, " + ", ".join(f"{s/1e3:.0f}" for s in X["fsizes"]) + " kB)")
-    say(f"  the words ride the fronts at c_L (as bulk_ut's page); time slowed {SLOW_B:g} times")
+    say(f"  the words ride the fronts at c_L (as bulk_ut's page); shown {SLOW_B:,.0f} times slower (said on the page)")
     say("")
     say("TIME")
     say(f"  (a)'s cycle {X['dur_a']:.2f} s, a {GAP:g} s gap, (b)'s cycle {X['dur_b']:.2f} s, a {HOLD:g} s hold: the loop is"

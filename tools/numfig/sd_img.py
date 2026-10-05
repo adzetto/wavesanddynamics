@@ -81,9 +81,9 @@ function inkBox(s, x, y, size, align) {
 function draw() {
   piece(CX0, CY0, CWd, CHd, seg(.02, .35));
   // his words in the wall, and the room the fronts leave them
-  const sx = CX0 + 10, sy = CY0 + CHd - 12, kx = cxp(E2[0]) + 7, ky = czp(E2[1]) - 7;
-  BOXES = [inkBox('structure', sx, sy, 19, 'left'), inkBox('crack', kx, ky, 19, 'left')];
-  text('structure', sx, sy, { size: 19, color: C.body, alpha: lab(.3) });
+  const sx = CX0 + 10, sy = CY0 + CHd - 12, kx = cxp(E2[0]) + 7, ky = czp(E2[1]) - 8;
+  BOXES = [inkBox('structure', sx, sy, 23, 'left'), inkBox('crack', kx, ky, 23, 'left')];
+  text('structure', sx, sy, { size: 23, color: C.body, alpha: lab(.3) });
   const ph = phase(), nF = Cc.xe.length;
   const k = t < Cc.t0 ? -1 : Math.floor((ph - Cc.t0) / Cc.dt);   // the firing under way
   const reset = 1 - clamp((ph - (MASTER - .35)) / .3);
@@ -109,8 +109,8 @@ function draw() {
     ctx.restore();
   }
   crackLine([cxp(E1[0]), czp(E1[1])], [cxp(E2[0]), czp(E2[1])], Cc.cr.b * CS, 1, seg(.2, .25));
-  text('crack', kx, ky, { size: 19, color: C.accent, alpha: lab(.35) });
-  // the array: each element transmits in turn, all receive
+  text('crack', kx, ky, { size: 23, color: C.accent, alpha: lab(.35) });
+  // the array: each element transmits in turn (light), all receive (crimson as the crack's echo arrives)
   const ap = settle(.16, .28), ew = Cc.ew * CS, pitch = (Cc.xe[1] - Cc.xe[0]) * CS, ah = 15;
   ctx.save(); ctx.globalAlpha *= ap;
   const ax0 = cxp(Cc.xe[0]) - pitch / 2, ax1 = cxp(Cc.xe[nF - 1]) + pitch / 2, ay0 = CY0 - ah + rise(ap);
@@ -121,18 +121,18 @@ function draw() {
       const hit = tau - Cc.arrive[k][j];                          // the crack's echo front arrives
       if (hit > 0) { ctx.save(); ctx.globalAlpha *= Math.exp(-hit / 1.5) * .9; ctx.fillStyle = C.accent; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
     }
-    if (j === k && fired) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - D.dur) / 1.5, .35, 1); ctx.fillStyle = C.amber; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
+    if (j === k && fired) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - D.dur) / 1.5, .45, 1); ctx.fillStyle = C.sky; ctx.fillRect(x - ew / 2, ay0, ew, ah); ctx.restore(); }
   }
   ctx.strokeStyle = '#fff'; ctx.lineWidth = .9;
   for (let j = 1; j < nF; j++) { const x = (cxp(Cc.xe[j - 1]) + cxp(Cc.xe[j])) / 2; ctx.beginPath(); ctx.moveTo(x, ay0); ctx.lineTo(x, ay0 + ah); ctx.stroke(); }
   ctx.restore();
-  const sa = lab(.25), ya = CY0 - ah - 16;
-  text('Scanning transducers', ax0, ya - 14 + rise(sa), { size: 21, alpha: sa });
+  const sa = lab(.25), ya = CY0 - ah - 17;
+  text('Scanning transducers', ax0, ya - 14 + rise(sa), { size: 26, alpha: sa });
   arrow(ax0, ya, ax1, ya, { width: 1.4, head: 9, alpha: sa });
-  if (fired) tip(cxp(Cc.xe[k]), CY0 - ah - 3, Math.PI / 2, C.amber, 8, ap);
+  if (fired) tip(cxp(Cc.xe[k]), CY0 - ah - 1, Math.PI / 2, C.blue, 8, ap);
   // the image, transmitter by transmitter
   const ia = lab(.3), ip = seg(.15, .35), IW = CWd, IH = Cc.zmax * CS;
-  text('Resulting Image', IX0 + IW / 2, IY0 - 14 + rise(ia), { size: 21, align: 'center', alpha: ia });
+  text('Resulting Image', IX0 + IW / 2, IY0 - 15 + rise(ia), { size: 26, align: 'center', alpha: ia });
   arrow(CX0 + CWd + 14, CY0 + CHd / 2, IX0 - 14, CY0 + CHd / 2, { width: 3.2, head: 13, alpha: lab(.35) });
   const done = t < Cc.t0 ? 0 : Math.min(nF, Math.floor((ph - Cc.t0) / Cc.dt));   // firings completed
   if (TILE.length && done > 0 && reset > 0) {
@@ -146,11 +146,11 @@ function draw() {
   if (done > 0) {
     const ra = .9 * reset * clamp((ph - Cc.t0 - Cc.dt) / .3);
     line([[IX0 + E1[0] * CS, IY0 + E1[1] * CS], [IX0 + E2[0] * CS, IY0 + E2[1] * CS]], { color: C.accent, width: 1.1, dash: [3, 3], alpha: ra });
-    text('back wall', IX0 + 10, IY0 + (Cc.d - 3.4) * CS, { size: 17, color: C.muted, alpha: ra });
+    text('back wall', IX0 + 10, IY0 + (Cc.d - 3.5) * CS, { size: 20, color: C.muted, alpha: ra });
   }
   const pa = lab(.9);
-  text(`${nF} elements, pitch 1.5 mm, 2 MHz; total focusing method, 24 dB`, CX0, H - 12, { size: 15, color: C.muted, alpha: pa });
-  math('\\rm{time slowed }10^{5}\\,\\times', IX0 + IW, 30, { size: 15, color: C.muted, align: 'right', alpha: pa });
+  text(`${nF} elements, pitch 1.5 mm, 2 MHz; total focusing method, 24 dB`, CX0, H - 11, { size: 16, color: C.muted, alpha: pa });
+  text(`shown ${(1e6 / US).toLocaleString('en-US')} × slower`, IX0 + IW, 30, { size: 16, color: C.muted, align: 'right', alpha: pa });
 }
 const IMG = new Image();
 IMG.src = D.c.img;
@@ -185,17 +185,18 @@ def main():
       f" {L['recip']:.1e}")
     p(f"  CHECK 2 (CHECK 6): the image's crack peak at ({L['pc'][0]:.2f}, {L['pc'][1]:.2f}) mm, {L['dist']:.2f} mm from the"
       f" crack's line; the back wall imaged at z = {L['zb']:.2f} mm (true {c['d']:g}), {L['lvl_bw']:+.1f} dB")
-    p("  total focusing: I(x, z) = |sum_i sum_j H[h_ij](t_i + t_j)|, the mean over transmitters 1 ... k after the")
-    p("  k-th firing, in dB of the complete image's peak, 24 dB range")
+    p("  total focusing: I(x, z) = |sum_i sum_j H[h_ij](t_i + t_j)|; after the k-th firing the sum over transmitters")
+    p("  1 ... k divided by all 16 (the image grows out of white), in dB of the complete image's peak, 24 dB range")
     p("  the fronts drawn: the incident circle c_L t about the transmitter, cut where the crack shadows it;")
     p("  the crack's specular front (the transmitter's mirror image in the crack's line), its edge waves,")
     p("  the back wall's echo; a front is not drawn through his words \"structure\" and \"crack\"")
     p("")
     p("TIME")
-    p(f"  time slowed 1e5; a firing every {c['dt']:g} s from t = {c['t0']:g} s ({c['dt']*data['us']:.0f} us each); the loop is"
+    p(f"  shown 100,000 times slower; a firing every {c['dt']:g} s from t = {c['t0']:g} s ({c['dt']*data['us']:.0f} us each, every echo"
+      " back before the next firing); the loop is"
       f" {data['master']:g} s")
     p(f"  poster (printed frame) at t = {poster} s: the last firing 2.2 us in, its fronts in the wall, the image of")
-    p(f"  the {nF - 1} firings before it (the mean over transmitters 1 ... {nF - 1})")
+    p(f"  the {nF - 1} firings before it (the sum over transmitters 1 ... {nF - 1}, over all {nF})")
     p(f"  drawn at his picture's proportions: {W} x {H} (his 401 x 125)")
     txt = "\n".join(say) + "\n"
     with open(os.path.join(HERE, "sd_img.check.txt"), "w", encoding="utf-8", newline="\n") as fh:

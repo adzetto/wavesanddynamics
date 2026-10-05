@@ -38,7 +38,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </div>
 <script>
 const W = 1000, H = 730;
-const DATA = {"poster":6.064,"t0":0.45,"slow":5.0,"hl0":1.4,"hldt":1.8,"w":[11.883996816665,32.284318859173,49.667340149481,62.773071663866,74.223919135408],"f":[1.891396837061,5.138208930792,7.904802695016,9.990644648366,11.813103626053],"Q":[1.036409517928,0.394034739121,0.225242447453,0.103335811901,0.019298186479],"phi":[[0.00036413814,0.000719177376,0.001042007887,0.001301302992,0.001447304346],[-0.000906693707,-0.001295595385,-0.000823140839,0.00038195361,0.00149483097],[0.001153496803,0.000652358594,-0.000971738319,-0.001001752065,0.001314580202],[-0.001160841765,0.000380234442,0.001076552904,-0.001383165847,0.000762237276],[0.001169273903,-0.001494679408,0.001064620687,-0.000494031377,0.000168316359]],"gain":9000.0,"mag":[1,2,4],"lo":0.2,"hi":1.5,"L":{"gy":278.0,"sh":36.0,"bw":64.0,"cx":[138.3,370.7,561.1,760.2],"op":[279.6,461.7,660.5,859.9],"hx":934.0,"off":95.8,"g0":24.0,"g1":846.9},"params":"floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; impulse at the roof, C = 0; displacements \u00d7 800","slowtxt":"time slowed 5 \u00d7","cases":[{"label":"undamaged","factor":[1.0,1.0,1.0,1.0,1.0],"f":[1.891396837061,5.138208930792,7.904802695016,9.990644648366,11.813103626053],"w":[11.883996816665,32.284318859173,49.667340149481,62.773071663866,74.223919135408],"phi":[[0.00036413814,0.000719177376,0.001042007887,0.001301302992,0.001447304346],[-0.000906693707,-0.001295595385,-0.000823140839,0.00038195361,0.00149483097],[0.001153496803,0.000652358594,-0.000971738319,-0.001001752065,0.001314580202],[-0.001160841765,0.000380234442,0.001076552904,-0.001383165847,0.000762237276],[0.001169273903,-0.001494679408,0.001064620687,-0.000494031377,0.000168316359]],"Q":[1.036409517928,0.394034739121,0.225242447453,0.103335811901,0.019298186479]},{"label":"storey 3 damaged","factor":[1.0,1.0,0.55,1.0,1.0],"f":[1.736579674893,5.003329613294,7.107976081451,9.877585863969,11.02233796834],"w":[10.911251898036,31.436847113223,44.660730878757,62.062702370893,69.255391973439],"phi":[[0.000300358583,0.000597248403,0.001104839366,0.001325782006,0.001449004769],[-0.001011660798,-0.001478695319,-0.000641421158,0.000377541847,0.001283767183],[0.000880214364,0.000749739451,-0.0013238358,-0.000608606572,0.001433024886],[-0.000721370243,0.000197515118,0.001113122701,-0.00160389762,0.000915847898],[0.001609712645,-0.001362216221,0.000613453747,-0.000396074099,0.00016326656]],"Q":[1.130132295925,0.347521229324,0.273062435434,0.125581805965,0.02006216066]},{"label":"storey 5 damaged","factor":[1.0,1.0,1.0,1.0,0.55],"f":[1.865816409972,4.578437647531,6.95538720114,9.604212296599,11.782977470201],"w":[11.723270253028,28.767172156805,43.701986667946,60.345045589026,74.034630915595],"phi":[[0.000351358083,0.000694744583,0.001008814887,0.001264552516,0.001539297207],[-0.000697413571,-0.001087309942,-0.000916326915,-0.000135726102,0.001815964321],[0.001097199833,0.000990895374,-0.000387689561,-0.00140879972,0.00095167154],[-0.00131544764,0.000192553254,0.001383895972,-0.00111800945,0.000299794506],[0.00120661172,-0.001521885888,0.0010378662,-0.000384478321,6.2840236e-05]],"Q":[1.117397660803,0.537210128434,0.185319002801,0.042278162417,0.007223321539]}],"m":[200000.0,200000.0,200000.0,200000.0,150000.0],"k":[350000000.0,330000000.0,300000000.0,260000000.0,210000000.0],"v0":0.05673392028};
+const DATA = {"poster":6.064,"t0":0.45,"slow":5.0,"hl0":1.4,"hldt":1.8,"w":[11.883996816665,32.284318859173,49.667340149481,62.773071663866,74.223919135408],"f":[1.891396837061,5.138208930792,7.904802695016,9.990644648366,11.813103626053],"Q":[1.036409517928,0.394034739121,0.225242447453,0.103335811901,0.019298186479],"phi":[[0.00036413814,0.000719177376,0.001042007887,0.001301302992,0.001447304346],[-0.000906693707,-0.001295595385,-0.000823140839,0.00038195361,0.00149483097],[0.001153496803,0.000652358594,-0.000971738319,-0.001001752065,0.001314580202],[-0.001160841765,0.000380234442,0.001076552904,-0.001383165847,0.000762237276],[0.001169273903,-0.001494679408,0.001064620687,-0.000494031377,0.000168316359]],"gain":9000.0,"mag":[1,2,4],"lo":0.2,"hi":1.5,"L":{"gy":278.0,"sh":36.0,"bw":64.0,"cx":[138.3,370.7,561.1,760.2],"op":[279.6,461.7,660.5,859.9],"hx":934.0,"off":95.8,"g0":24.0,"g1":846.9},"params":"floors 200, 200, 200, 200, 150 t; storeys 350, 330, 300, 260, 210 MN/m, 3.2 m high; impulse at the roof, C = 0; displacements \u00d7 800","slowtxt":"shown 5 \u00d7 slower","cases":[{"label":"undamaged","factor":[1.0,1.0,1.0,1.0,1.0],"f":[1.891396837061,5.138208930792,7.904802695016,9.990644648366,11.813103626053],"w":[11.883996816665,32.284318859173,49.667340149481,62.773071663866,74.223919135408],"phi":[[0.00036413814,0.000719177376,0.001042007887,0.001301302992,0.001447304346],[-0.000906693707,-0.001295595385,-0.000823140839,0.00038195361,0.00149483097],[0.001153496803,0.000652358594,-0.000971738319,-0.001001752065,0.001314580202],[-0.001160841765,0.000380234442,0.001076552904,-0.001383165847,0.000762237276],[0.001169273903,-0.001494679408,0.001064620687,-0.000494031377,0.000168316359]],"Q":[1.036409517928,0.394034739121,0.225242447453,0.103335811901,0.019298186479]},{"label":"storey 3 damaged","factor":[1.0,1.0,0.55,1.0,1.0],"f":[1.736579674893,5.003329613294,7.107976081451,9.877585863969,11.02233796834],"w":[10.911251898036,31.436847113223,44.660730878757,62.062702370893,69.255391973439],"phi":[[0.000300358583,0.000597248403,0.001104839366,0.001325782006,0.001449004769],[-0.001011660798,-0.001478695319,-0.000641421158,0.000377541847,0.001283767183],[0.000880214364,0.000749739451,-0.0013238358,-0.000608606572,0.001433024886],[-0.000721370243,0.000197515118,0.001113122701,-0.00160389762,0.000915847898],[0.001609712645,-0.001362216221,0.000613453747,-0.000396074099,0.00016326656]],"Q":[1.130132295925,0.347521229324,0.273062435434,0.125581805965,0.02006216066]},{"label":"storey 5 damaged","factor":[1.0,1.0,1.0,1.0,0.55],"f":[1.865816409972,4.578437647531,6.95538720114,9.604212296599,11.782977470201],"w":[11.723270253028,28.767172156805,43.701986667946,60.345045589026,74.034630915595],"phi":[[0.000351358083,0.000694744583,0.001008814887,0.001264552516,0.001539297207],[-0.000697413571,-0.001087309942,-0.000916326915,-0.000135726102,0.001815964321],[0.001097199833,0.000990895374,-0.000387689561,-0.00140879972,0.00095167154],[-0.00131544764,0.000192553254,0.001383895972,-0.00111800945,0.000299794506],[0.00120661172,-0.001521885888,0.0010378662,-0.000384478321,6.2840236e-05]],"Q":[1.117397660803,0.537210128434,0.185319002801,0.042278162417,0.007223321539]}],"m":[200000.0,200000.0,200000.0,200000.0,150000.0],"k":[350000000.0,330000000.0,300000000.0,260000000.0,210000000.0],"v0":0.05673392028};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
    `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
@@ -674,11 +674,13 @@ function solveStiffness(factors) {
           Q:phi.map((v,j)=>v[N-1]*m[N-1]*D.v0/w[j])};
 }
 
-// FFT of the exact undamped roof displacement over 32 physical seconds.
+// FFT of the exact undamped roof displacement over 32 physical seconds (2048 samples, Hann),
+// zero padded to 16384 points: the peaks read the modal amplitudes wherever a mode falls between
+// the record's own bins (to 0.2 %, the check file; without the padding up to 15 % low)
 function fftSpectrum(model) {
-  const n=2048, fs=64, re=new Float64Array(n), im=new Float64Array(n); let ws=0;
-  for(let i=0;i<n;i++) {
-    const window=.5-.5*Math.cos(2*Math.PI*i/(n-1)); ws+=window;
+  const m=2048, n=16384, fs=64, re=new Float64Array(n), im=new Float64Array(n); let ws=0;
+  for(let i=0;i<m;i++) {
+    const window=.5-.5*Math.cos(2*Math.PI*i/(m-1)); ws+=window;
     re[i]=1000*window*model.w.reduce((a,w,j)=>a+model.Q[j]*model.phi[j][N-1]*Math.sin(w*i/fs),0);
   }
   for(let i=1,j=0;i<n;i++) {
@@ -705,7 +707,8 @@ function column(cx, x0, u, s, o) {         // the column of storey s: fixed-fixe
   line(pts, o);
 }
 /* a building: its changed storeys' columns in crimson (the stiffness the reader
-   changed), and in the total the storey of the highlight */
+   changed), and in the total the storey of the highlight, in navy (the highlight only
+   explains the matrices; crimson is kept for a changed storey) */
 function building(cx, u, o = {}) {
   const {color = C.blue, width = 1.8, dash = null, alpha = 1, progress = 1, thin = false, hl = 0, hs = 0} = o;
   const pr = progress * N;
@@ -715,7 +718,7 @@ function building(cx, u, o = {}) {
     const mark = !thin && CHG[s - 1];
     for (const x0 of [-BW / 2, BW / 2]) {
       column(cx, x0, u, s, {color: mark ? C.accent : color, width: mark ? width + .4 : width, dash, alpha, progress: ps});
-      if (hl > 0 && s === hs) column(cx, x0, u, s, {color: C.accent, width: width + .4, alpha: alpha * hl, progress: ps});
+      if (hl > 0 && s === hs) column(cx, x0, u, s, {color: C.navy, width: width + 1, alpha: alpha * hl, progress: ps});
     }
     if (ps >= 1 && !thin)                  // a rigid floor
       line([[cx - BW / 2 + u[s] - 3, lev(s)], [cx + BW / 2 + u[s] + 3, lev(s)]], {color: C.navy, width: 3, alpha});
@@ -753,19 +756,22 @@ const KENT = Array.from({length: N}, (_, i) => Array.from({length: N}, (_, j) =>
   if (Math.abs(i - j) === 1) return [['k', Math.max(i, j) + 1, '-']];
   return [['0']];
 }));
-/* an entry centred at x; the terms of a marked storey or floor (mk[index] = strength) in crimson */
-function entry(terms, x, y, sz, kind, mk, alpha) {
+/* an entry centred at x; the terms of a marked storey or floor (mk[index] = strength) in the
+   mark's colour (crimson for a changed storey, blue for the highlight) */
+function entry(terms, x, y, sz, kind, mk, alpha, mc) {
   const str = tm => tm[0] === '0' ? '0' : tm[2] + tm[0] + '_{' + tm[1] + '}';
   const w = terms.reduce((s, tm) => s + math(str(tm), 0, -1e4, {size: sz, alpha: 0}), 0);
   let cx = x - w / 2;
   for (const tm of terms) {
     const a = tm[0] === kind ? (mk[tm[1]] || 0) : 0;
-    const ww = math(str(tm), cx, y, {size: sz, alpha, color: a >= 1 ? C.accent : C.ink});
-    if (a > 0 && a < 1) math(str(tm), cx, y, {size: sz, color: C.accent, alpha: alpha * a});
+    const ww = math(str(tm), cx, y, {size: sz, alpha, color: a >= 1 ? mc : C.ink});
+    if (a > 0 && a < 1) math(str(tm), cx, y, {size: sz, color: mc, alpha: alpha * a});
     cx += ww;
   }
 }
-function matrix(name, P, ents, kind, mk, alpha, bp) {
+/* mc, mw: the marks' colour and the wash of their blocks (crimson and its tint for the storeys the
+   reader changed, blue and steel for the highlight) */
+function matrix(name, P, ents, kind, mk, alpha, bp, mc = C.accent, mw = C.wash) {
   const {y0, dy, sz} = MY, {x0, dx} = P;
   math(name + ' =', P.lx, y0 + 2 * dy + 8, {size: 24, align: 'right', alpha});
   // the block each marked storey (or floor) assembles into
@@ -775,10 +781,10 @@ function matrix(name, P, ents, kind, mk, alpha, bp) {
     const r = kind === 'k' ? [Math.max(0, s - 2), s - 1] : [s - 1, s - 1];
     const xa = x0 + r[0] * dx - dx / 2 + 5, xb = x0 + r[1] * dx + dx / 2 - 5;
     const ya = y0 + r[0] * dy - 22, yb = y0 + r[1] * dy + 9;
-    ctx.save(); ctx.globalAlpha *= a * alpha; ctx.fillStyle = C.wash; ctx.fillRect(xa, ya, xb - xa, yb - ya); ctx.restore();
+    ctx.save(); ctx.globalAlpha *= a * alpha; ctx.fillStyle = mw; ctx.fillRect(xa, ya, xb - xa, yb - ya); ctx.restore();
   }
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++)
-    entry(ents[i][j], x0 + j * dx, y0 + i * dy, sz, kind, mk, alpha);
+    entry(ents[i][j], x0 + j * dx, y0 + i * dy, sz, kind, mk, alpha, mc);
   const left = x0 - dx / 2 + 2, right = x0 + 4 * dx + dx / 2 - 2, top = y0 - 24, bot = y0 + 4 * dy + 12;
   for (const [x, s] of [[left, 1], [right, -1]])
     line([[x + 8 * s, top], [x, top], [x, bot], [x + 8 * s, bot]], {width: 1.4, progress: bp});
@@ -882,12 +888,12 @@ function draw() {
     if (ms <= 0) continue;
     const x = CX[0] + tot[i], y = lev(i), on = hl > 0 && hs === i;
     dot(x, y, 9.5 * (.5 + .5 * ms), {color: C.ink, fill: C.steel, width: 1.2, alpha: ms});
-    if (on) dot(x, y, 9.5, {color: C.accent, fill: C.wash, width: 1.8, alpha: hl});
+    if (on) dot(x, y, 9.5, {color: C.navy, fill: C.steel2, width: 2, alpha: hl});
     math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', alpha: ms});
-    if (on) math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', color: C.accent, alpha: hl});
+    if (on) math('m_{' + i + '}', CX[0] - L.off, y + 7, {size: 22, align: 'right', color: C.blue, alpha: hl});
     const ky = lev(i - 1) - SH / 2 + 7;
     math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: CHG[i - 1] ? C.accent : C.ink, alpha: ms});
-    if (on) math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: C.accent, alpha: hl});
+    if (on) math('k_{' + i + '}', CX[0] + L.off, ky, {size: 22, color: C.blue, alpha: hl});
   }
   // =, +, and the higher modes in words
   const oa = lab(.35), oy = lev(2.5) + 12;
@@ -907,9 +913,9 @@ function draw() {
   const mm = {}, km = {};
   if (hl > 0) { mm[hs] = hl; km[hs] = hl; }
   CHG.forEach((v, i) => { if (v) km[i + 1] = 1; });
-  const bpm = seg(.5, .30);
-  matrix('M', MM, MENT, 'm', mm, lab(.55), bpm);
-  matrix('K', KM, KENT, 'k', km, lab(.60), bpm);
+  const bpm = seg(.5, .30), mc = changed ? C.accent : C.blue, mw = changed ? C.wash : C.steel;
+  matrix('M', MM, MENT, 'm', mm, lab(.55), bpm, mc, mw);
+  matrix('K', KM, KENT, 'k', km, lab(.60), bpm, mc, mw);
   spectrum(lab(.62));
 
   // the reader's controls: damage chips and storey sliders
@@ -950,9 +956,11 @@ function setCase(c) {
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfc{position:absolute;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;color:transparent;' +
-    'cursor:pointer;font:inherit;overflow:hidden;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
-    '.nfc::after{content:"";position:absolute;left:0;right:0;top:11.1%;bottom:11.1%}' +
-    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}' +
+    'cursor:pointer;font:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
+    // the focus ring 3 units outside the drawn chip, a white gap between
+    '.nfc::after{content:"";position:absolute;left:' + (-300 / CH.w) + '%;right:' + (-300 / CH.w) + '%;' +
+    'top:' + ((CH.pitch - CH.h) / 2 - 3) / CH.pitch * 100 + '%;bottom:' + ((CH.pitch - CH.h) / 2 - 3) / CH.pitch * 100 + '%}' +
+    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:0}' +
     '.nfr{position:absolute;box-sizing:border-box;-webkit-appearance:none;appearance:none;background:transparent;margin:0;padding:0;' +
     'cursor:pointer;-webkit-tap-highlight-color:transparent}' +
     '.nfr::-webkit-slider-runnable-track{background:transparent;border:0;height:100%}' +

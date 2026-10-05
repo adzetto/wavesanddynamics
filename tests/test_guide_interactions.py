@@ -43,10 +43,12 @@ def test_browser_stiffness_solver_and_spectrum_against_scipy():
         q = phi[-1] * R['m'][-1] * R['v0'] / w
         roof = 1000 * np.sum((q * phi[-1])[:, None] * np.sin(w[:, None] * tt), axis=0)
         window = np.hanning(2048)
-        amp = abs(np.fft.rfft(roof * window)) * 2 / window.sum()
+        # the 2048-sample record zero-padded to 16384 points, so a peak is read
+        # within 0.2 % instead of up to 15 % low (the audit of 5 Oct 2026)
+        amp = abs(np.fft.rfft(roof * window, 16384)) * 2 / window.sum()
         amp[[0, -1]] *= .5
         actual = np.asarray(model['spectrum'])
-        assert np.allclose(actual[:, 0], np.fft.rfftfreq(2048, 1/64))
+        assert np.allclose(actual[:, 0], np.fft.rfftfreq(16384, 1/64))
         assert np.allclose(actual[:, 1], amp, atol=1e-10)
 
 

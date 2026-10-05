@@ -592,7 +592,7 @@ function box(c, r, p, o = {}) {
 function words(r, t0) {
   WORDS[r].forEach((ls, c) => {
     const a = lab(t0 + .03 * c), n = ls.length;
-    ls.forEach((s, i) => text(s, cx(c), ROW[r].lab - 20 * (n - 1 - i) + rise(a), { size: 17, align: 'center', alpha: a }));
+    ls.forEach((s, i) => text(s, cx(c), ROW[r].lab - 22 * (n - 1 - i) + rise(a), { size: 19, align: 'center', alpha: a }));
   });
 }
 function flow(r, a) {                                      // the arrows between the boxes
@@ -657,14 +657,14 @@ function shakerDraw(F, u3, a) {
   line([[b0, yr - 10], [b1, yr - 10], [b1, yr + 10], [b0, yr + 10]], { width: 1.4, fill: C.steel, close: true, alpha: a });
   line([[b1 - 5, yr - 10], [b1 - 5, yr + 10]], { color: C.ink, width: 1, alpha: a });      // its front plate
   dot(px, yr, 3, { color: C.ink, fill: '#fff', width: 1.2, alpha: a });                      // the trunnion's pivot
-  math('F', xe - 3.5, yr - 13, { size: 16, align: 'center', alpha: a });
+  math('F', xe - 3.5, yr - 13, { size: 17, align: 'center', alpha: a });
 }
 /* the earthquake: the ground moves under the frame, an accelerometer on the foundation records it */
 function quakeDraw(F, g, a) {
   if (a <= 0) return;
   const sx = F.X - F.HW - 18 + g;
   ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.navy; ctx.fillRect(sx - 3.5, F.yg - 8, 7, 7); ctx.restore();
-  math('a_{g}', F.X - F.HW - 27, F.yg - 14, { size: 16, align: 'right', alpha: a });
+  math('a_{g}', F.X - F.HW - 27, F.yg - 14, { size: 17, align: 'right', alpha: a });
   arrow(F.X - 24, F.yg + 16, F.X + 24, F.yg + 16, { color: C.guide, width: 1.4, head: 7, both: true, alpha: a });
 }
 
@@ -674,15 +674,17 @@ const FR = D.fr, SPEC = D.spec.map(s => b64f32(s));
 const FRF = [D.frf.b, D.frf.q].map(o => ({ f: o.f, est: b64f32(o.est), mod: b64f32(o.mod) }));
 function plot(r, p, which) {
   const P = PL(r), lim = D.ylim[which], ticks = D.yticks[which];
-  const g = axes({ ...P, ylim: lim, xticks: [0, 1, 2, 3, 4, 5, 6, 7], yticks: ticks, yfmt: () => '', progress: p });
+  const g = axes({ ...P, ylim: lim, xticks: [0, 1, 2, 3, 4, 5, 6, 7], yticks: ticks, yfmt: () => '', progress: p, tickSize: 16 });
   const a = clamp(p * 1.4);
-  for (const v of ticks) math(fmt(v), P.x + P.w + 7, g.Y(v) + 5, { size: 15, alpha: a });
-  math(D.ylab[which], 993, P.y + P.h / 2, { size: 16, align: 'center', rot: -Math.PI / 2, alpha: a });
+  for (const v of ticks) math(fmt(v), P.x + P.w + 7, g.Y(v) + 5.5, { size: 16, alpha: a });
+  math(D.ylab[which], 992, P.y + P.h / 2, { size: 17, align: 'center', rot: -Math.PI / 2, alpha: a });
   return { g, P: { ...P, ylim: lim } };
 }
+/* a curve inside the plot, clipped by its box (a value beyond the axis leaves the plot, it is not
+   drawn along the frame) */
 function curve(g, P, xs, ys, o, upto = Infinity) {
   const pts = [];
-  for (let i = 0; i < xs.length; i++) { if (xs[i] > upto) break; pts.push([g.X(xs[i]), g.Y(clamp(ys[i], P.ylim[0], P.ylim[1]))]); }
+  for (let i = 0; i < xs.length; i++) { if (xs[i] > upto) break; pts.push([g.X(xs[i]), g.Y(ys[i])]); }
   if (pts.length > 1) g.inside(() => line(pts, o));
 }
 function yAt(xs, ys, f) {
@@ -698,7 +700,7 @@ function marks(g, P, xs, ys, fid, al, am) {
     if (ak <= 0) return;
     const x = g.X(fid[k]), y = g.Y(yAt(xs, ys, fid[k]));
     dot(x, y, 3.6, { color: C.accent, fill: C.accent, alpha: ak });
-    math(fid[k].toFixed(2), x, y - 9 + rise(ak), { size: 15, color: C.accent, align: 'center', alpha: ak });
+    math(fid[k].toFixed(2), x, y - 9 + rise(ak), { size: 16, color: C.accent, align: 'center', alpha: ak });
   });
 }
 
@@ -714,11 +716,11 @@ function rowA() {
   for (let j = 0; j < 3; j++) {
     const fl = 2 - j, kn = KN[fl], nk = kn.length;
     const fAt = q => { const u = q * D.fs, i = Math.floor(u), w = u - i; return lerp(kn[wrap(i, nk)], kn[wrap(i + 1, nk)], w) / 127; };
-    math('F_{' + (fl + 1) + '}', x0 + 8, lvl[j] + 5, { size: 16, color: C.muted, alpha: lab(.3) });
+    math('F_{' + (fl + 1) + '}', x0 + 8, lvl[j] + 5, { size: 17, color: C.muted, alpha: lab(.3) });
     zeroLine(x0 + 34, x0 + sw - 8, lvl[j], tr);
     trace(fAt, s - D.tw, s, x0 + 34, x0 + sw - 8, lvl[j], 13, { color: C.guide, width: 1.1, alpha: tr });
     const ac = AA[fl], x3 = COL[2].x;
-    math('a_{' + (fl + 1) + '}', x3 + 8, lvl[j] + 5, { size: 16, alpha: lab(.34) });
+    math('a_{' + (fl + 1) + '}', x3 + 8, lvl[j] + 5, { size: 17, alpha: lab(.34) });
     zeroLine(x3 + 34, x3 + COL[2].w - 8, lvl[j], tr);
     trace(q => cr(ac, q) / 127, s - D.tw, s, x3 + 34, x3 + COL[2].w - 8, lvl[j], 13, { color: C.navy, width: 1.2, alpha: tr });
   }
@@ -745,11 +747,13 @@ function rowA() {
   const done = !first() || t >= T0 + D.pick;
   const am = D.fn.map((_, i) => done ? (first() ? lab(T0 + D.pick + .08 * i) : 1) : 0);
   marks(g, P, FR, SPEC[nL - 1], D.oma, lab(.5), am);
-  text('record ' + D.rec[k], g.X(D.reclab), P.y + 20, { size: 15, color: C.muted, align: 'center', alpha: lab(.45) });
+  // the record so far, under the spectrum between the first two modes
+  text('record ' + D.rec[k], g.X(D.reclab), g.Y(D.recdb), { size: 16, color: C.muted, align: 'center', alpha: lab(.45) });
+  math('f\\ (\\rm{Hz})', P.x + P.w / 2, P.y + P.h + 42, { size: 17, align: 'center', alpha: seg(.3, .3) });
 }
 
 /* ------------------------------------------------------------ bottom row: EMA, a shaker or an earthquake */
-const CHIP = [{x: 30, w: 64}, {x: 100, w: 86}], CHY = ROW[1].y + 8, CHH = 24;
+const CHIP = [{x: 30, w: 62}, {x: 98, w: 88}], CHY = ROW[1].y + 7, CHH = 27;
 function rowB() {
   const r = 1, y0 = ROW[r].y, s = tau(), k = testNo(), cs = shown();
   words(r, .14);
@@ -762,7 +766,7 @@ function rowB() {
   if (fp >= 1) arrow(cx(2), yf, cx(2), yb + 7, { width: 1.8, head: 9 });
   // the reader's choice of input, in the input's box
   const ca = lab(.3);
-  INPUT.forEach((nm, i) => uiChip(CHIP[i].x, CHY, CHIP[i].w, CHH, nm, { on: i === cs, hover: HC === i, down: DC === i }, ca));
+  INPUT.forEach((nm, i) => uiChip(CHIP[i].x, CHY, CHIP[i].w, CHH, nm, { on: i === cs, hover: HC === i, down: DC === i, size: 16 }, ca));
   // the test: the input and the response, drawn up to the cursor while it runs; between two tests
   // the last one fades and, while they take turns, the next input takes its place
   const w0 = BT0 - .5, w1 = BT0 + SWT + 1.5;              // loop times shown in the boxes
@@ -777,10 +781,10 @@ function rowB() {
   const XS = (c, q) => COL[c].x + 34 + (COL[c].w - 42) * (q - w0) / (w1 - w0);
   const TOP = y0 + 46, BOT = y0 + 106, YI = y0 + 92;
   const inName = cs === 0 ? 'F' : 'a_{g}', inRec = cs === 0 ? (q => sweepF(q - BT0)) : agOf;
-  math(inName, x1 + 8, YI + 5, { size: 16, alpha: lab(.34) * own });
+  math(inName, x1 + 8, YI + 5, { size: 17, alpha: lab(.34) * own });
   zeroLine(x1 + 34, x1 + COL[0].w - 8, YI, tr);
-  math(inName, x3 + 8, TOP + 5, { size: 16, alpha: lab(.38) * own });
-  math('a_{3}', x3 + 8, BOT + 5, { size: 16, alpha: lab(.4) });
+  math(inName, x3 + 8, TOP + 5, { size: 17, alpha: lab(.38) * own });
+  math('a_{3}', x3 + 8, BOT + 5, { size: 17, alpha: lab(.4) });
   zeroLine(x3 + 34, x3 + COL[2].w - 8, TOP, tr); zeroLine(x3 + 34, x3 + COL[2].w - 8, BOT, tr);
   const al = tr * wipe * (swap ? enter : 1);
   const draw3 = (c, f, y, hh) => trace(f, w0, upto, XS(c, w0), XS(c, upto), y, hh, { color: C.navy, width: 1.1, alpha: al });
@@ -831,18 +835,16 @@ function rowB() {
   }
   curve(g, P, R.f, R.est, { color: C.navy, width: 1.6, alpha: ra, progress: mp }, reach);
   marks(g, P, R.f, R.mod, cs === 0 ? D.ema : D.emaq, lab(.5), am);
-  // the axis, and the key to the two curves, in the band the curves leave free between the first two
-  // peaks (where the top plot notes its record)
-  const xl = seg(.3, .3), kx = g.X(D.keyx);
-  math('f\\ (\\rm{Hz})', P.x + P.w / 2, P.y + P.h + 42, { size: 16, align: 'center', alpha: xl });
-  // (as the family sets a key: a thin box, white fill; the sweep's cursor passes behind it)
-  const kw = 5 + 18 + 6 + text('model', 0, -1e4, { size: 15, alpha: 0 }) + 5;
-  line([[kx - 5, P.y + 5], [kx - 5 + kw, P.y + 5], [kx - 5 + kw, P.y + 44], [kx - 5, P.y + 44]],
-       { color: C.ink, width: 1, fill: '#fff', close: true, alpha: xl });
-  line([[kx, P.y + 16], [kx + 18, P.y + 16]], { color: C.mist, width: 6, alpha: xl });
-  text('model', kx + 24, P.y + 21, { size: 15, color: C.body, alpha: xl });
-  line([[kx, P.y + 34], [kx + 18, P.y + 34]], { color: C.navy, width: 1.6, alpha: xl });
-  math('H_{1}', kx + 24, P.y + 39, { size: 15, alpha: xl });
+  // the axis, and the key to the two curves: a row under the axis label, at the plot's right (both
+  // inputs' curves fill the plot, and its free bands are where the identified values stand)
+  const xl = seg(.3, .3), ky = P.y + P.h + 64;
+  math('f\\ (\\rm{Hz})', P.x + P.w / 2, P.y + P.h + 42, { size: 17, align: 'center', alpha: xl });
+  const wm = text('model', 0, -1e4, { size: 16, alpha: 0 }), wh = math('H_{1}', 0, -1e4, { size: 16, alpha: 0 });
+  const k1 = P.x + P.w - wh, k0 = k1 - 26 - 20 - wm;
+  line([[k0 - 24, ky - 5], [k0 - 6, ky - 5]], { color: C.mist, width: 6, alpha: xl });
+  text('model', k0, ky, { size: 16, color: C.body, alpha: xl });
+  line([[k1 - 24, ky - 5], [k1 - 6, ky - 5]], { color: C.navy, width: 1.6, alpha: xl });
+  math('H_{1}', k1, ky, { size: 16, alpha: xl });
 }
 
 function draw() {
@@ -857,10 +859,11 @@ function draw() {
    on a chip, or just beside one, never pauses the figure */
 if (!STILL) {
   const FIG = document.querySelector('.fig'), css = document.createElement('style');
+  // the focus ring 3 units outside the drawn chip, a white gap between (its box set per chip below)
   css.textContent = '.nfc{position:absolute;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;color:transparent;' +
-    'cursor:pointer;font:inherit;overflow:hidden;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
-    '.nfc::after{content:"";position:absolute;left:0;right:0;top:16.7%;bottom:16.7%}' +
-    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}';
+    'cursor:pointer;font:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
+    '.nfc::after{content:"";position:absolute;left:var(--rx);right:var(--rx);top:var(--ry);bottom:var(--ry)}' +
+    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:0}';
   document.head.appendChild(css);
   const group = document.createElement('div');
   group.setAttribute('role', 'radiogroup');
@@ -876,6 +879,7 @@ if (!STILL) {
     b.setAttribute('aria-label', names[i]);
     b.style.left = pct(CHIP[i].x, W); b.style.width = pct(CHIP[i].w, W);
     b.style.top = pct(CHY + CHH / 2 - 18, H); b.style.height = pct(36, H);
+    b.style.setProperty('--rx', pct(-3, CHIP[i].w)); b.style.setProperty('--ry', pct(18 - CHH / 2 - 3, 36));
     b.addEventListener('click', e => { e.stopPropagation(); pick(i); });
     b.addEventListener('keydown', e => {
       const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
@@ -963,9 +967,9 @@ def main():
         "rec": [rec_len(n) for n in levels],
         "frf": {"b": frf_b, "q": frf_q},
         "ylim": [[-45, 12], [-45, 12], [-35, 45]], "yticks": [[0, -20, -40], [0, -20, -40], [40, 20, 0, -20]],
-        "ylab": [r"\rm{spectrum\ (dB)}", r"|a_{3}/F|\ (\rm{dB})", r"|a_{3}/a_{g}|\ (\rm{dB})"], "reclab": 2.65,
+        "ylab": [r"\rm{spectrum\ (dB)}", r"|a_{3}/F|\ (\rm{dB})", r"|a_{3}/a_{g}|\ (\rm{dB})"], "reclab": 2.62, "recdb": -42.0,
         "fn": fn, "fpass": fpass, "oma": O["f"], "ema": E["fit"][:, 0], "emaq": Q["fit"][:, 0],
-        "arias": arias, "d95": float(Q["d95"]), "keyx": 1.925,
+        "arias": arias, "d95": float(Q["d95"]),
         "params": (r"\rm{shear frame, 3 floors: }m\rm{ = 25 t, }k\rm{ = 9.5 MN/m, }\zeta\rm{ = 2%;   model }"
                    r"f_{n}\rm{ = " + ", ".join(f"{v:.2f}" for v in fn) + r" Hz (dashed)}"),
         # (the hyphen is U+2010: math() sets an ASCII hyphen as a minus sign)
@@ -1029,9 +1033,7 @@ def main():
         f"  the page's Arias intensity (its 20 Hz table, linear between; it fades the earthquake's estimate in)"
         f" against the record's: {arias_err:.1e}"])
     print("still:", common.still(NAME))
-    rec = sd_check.record(NAME, 2 * LOOP + T0, 0.1, "--dense" in sys.argv,
-                          knock="the bottom plot's key (model, H1) is a white box drawn after the sweep's cursor,"
-                                " which passes behind it")
+    rec = sd_check.record(NAME, 2 * LOOP + T0, 0.1, "--dense" in sys.argv)
     # each input held by the reader (?view=), over two loops
     times = [round(float(x), 2) for x in np.arange(0.1, 2 * LOOP + T0 + 1e-9, 0.2)]
     held = {}

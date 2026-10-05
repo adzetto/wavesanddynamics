@@ -16,7 +16,7 @@ bulk_ut.py (Figure 11); their own checks are in guided_ut.check.txt and bulk_ut.
     u_z varies -7.2 % through the thickness; |u_x| at the faces 0.532 of |u_z|: the whole section moves (his "wave occupies the full cross section")
   the plate: 1.8 m drawn at 230 units/m, its thickness drawn 11 times enlarged (said on the page);
     the field is guided_ut's Fourier sum, evaluated by the page every frame on 721 points
-  the arrows under the plate ride the packets' centres at c_g; time slowed 5000 times
+  the arrows under the plate ride the packets' centres at c_g; shown 5,000 times slower (said on the page)
 
 (b) BULK WAVES
   bulk_ut's EFIT model: steel block 50 x 25 mm, c_L = 5900 m/s, c_T = 3230 m/s;
@@ -27,7 +27,7 @@ bulk_ut.py (Figure 11); their own checks are in guided_ut.check.txt and bulk_ut.
   the echoes stay compact: flaw echo 0.254, back wall 0.554 of the initial pulse, no spreading (the grid convergence and the plane wave check: bulk_ut.check.txt)
   the field: p = -(s_xx + s_zz)/2 over p0, every 0.050 us, 0.2 mm pixels, colour range +-0.5
     (the page's own copy: nf-sd-waves-field-0..3.png, 15, 108, 373, 681 kB)
-  the words ride the fronts at c_L (as bulk_ut's page); time slowed 800000 times
+  the words ride the fronts at c_L (as bulk_ut's page); shown 800,000 times slower (said on the page)
 
 TIME
   (a)'s cycle 6.90 s, a 0.6 s gap, (b)'s cycle 8.00 s, a 1.5 s hold: the loop is 17.00 s; each panel rests at its idle moment (the still's) while the other runs

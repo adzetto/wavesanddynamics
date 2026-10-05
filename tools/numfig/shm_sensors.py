@@ -1,5 +1,8 @@
-"""Figure 1 of the SHM article (understanding-shm-and-ndt, image2; the
-brochure's image5): "Example of a building's dynamic response".
+"""The brochure's building with sensors (brochure-shm-and-ndt-2-pages, image5,
+uncaptioned): "Example of a building's dynamic response", the title of his
+animation, which was Figure 1 of the SHM article (image2) until the article's
+Figure 1 became the waves guide's (nf-building, his notes of 5 Oct 2026); the
+page keeps that title (tests/test_shm_figures.py names it).
 
 His drawing: the vibration of a structure, measured by sensors along its
 height, equals its 1st vibration mode (shape and frequency) plus its 2nd
@@ -312,9 +315,10 @@ function ground(x0, x1, y, progress) {
   ctx.stroke(); ctx.restore();
 }
 function ordinal(n, suf, rest, x, y, a) {                 // "1st vibration mode", the suffix raised
-  const w = math(n + '^{\\rm{' + suf + '}}\\rm{ ' + rest + '}', 0, -1e4, { size: 18, alpha: 0 });
-  math(n + '^{\\rm{' + suf + '}}\\rm{ ' + rest + '}', x - w / 2, y, { size: 18, alpha: a });
+  const w = math(n + '^{\\rm{' + suf + '}}\\rm{ ' + rest + '}', 0, -1e4, { size: TS, alpha: 0 });
+  math(n + '^{\\rm{' + suf + '}}\\rm{ ' + rest + '}', x - w / 2, y, { size: TS, alpha: a });
 }
+const TS = 24;                                            // his words: at his picture's own relative size
 
 function draw() {
   const tau = t - D.t0, qs = D.w.map((_, j) => q(j, tau));
@@ -325,16 +329,16 @@ function draw() {
 
   // titles: his words
   const tt = [lab(.06), lab(.10), lab(.14), lab(.18)];
-  text('Vibration of', CX[0], 36 + rise(tt[0]), { size: 18, align: 'center', alpha: tt[0] });
-  text('structure', CX[0], 57 + rise(tt[0]), { size: 18, align: 'center', alpha: tt[0] });
-  ordinal('1', 'st', 'vibration mode', CX[1], 36 + rise(tt[1]), tt[1]);
-  text('shape and frequency', CX[1], 57 + rise(tt[1]), { size: 18, align: 'center', alpha: tt[1] });
-  ordinal('2', 'nd', 'vibration mode', CX[2], 36 + rise(tt[2]), tt[2]);
-  text('shape and frequency', CX[2], 57 + rise(tt[2]), { size: 18, align: 'center', alpha: tt[2] });
+  text('Vibration of', CX[0], 34 + rise(tt[0]), { size: TS, align: 'center', alpha: tt[0] });
+  text('structure', CX[0], 61 + rise(tt[0]), { size: TS, align: 'center', alpha: tt[0] });
+  ordinal('1', 'st', 'vibration mode', CX[1], 34 + rise(tt[1]), tt[1]);
+  text('shape and frequency', CX[1], 61 + rise(tt[1]), { size: TS, align: 'center', alpha: tt[1] });
+  ordinal('2', 'nd', 'vibration mode', CX[2], 34 + rise(tt[2]), tt[2]);
+  text('shape and frequency', CX[2], 61 + rise(tt[2]), { size: TS, align: 'center', alpha: tt[2] });
   const fa = [lab(.30), lab(.34)];
-  math('f_{1} = ' + D.f[0].toFixed(2) + '\\,\\rm{Hz}', CX[1], 82 + rise(fa[0]), { size: 16, align: 'center', alpha: fa[0] });
-  math('f_{2} = ' + D.f[1].toFixed(2) + '\\,\\rm{Hz}', CX[2], 82 + rise(fa[1]), { size: 16, align: 'center', alpha: fa[1] });
-  math('\\times\\ ' + D.mag2, CX[2], 101 + rise(fa[1]), { size: 14, color: C.muted, align: 'center', alpha: fa[1] });
+  math('f_{1} = ' + D.f[0].toFixed(2) + '\\,\\rm{Hz}', CX[1], 87 + rise(fa[0]), { size: 20, align: 'center', alpha: fa[0] });
+  math('f_{2} = ' + D.f[1].toFixed(2) + '\\,\\rm{Hz}', CX[2], 87 + rise(fa[1]), { size: 20, align: 'center', alpha: fa[1] });
+  math('\\times\\ ' + D.mag2, CX[2] + 44, TOP - 7 + rise(fa[1]), { size: 16, color: C.muted, alpha: fa[1] });
 
   // ground and buildings
   ground(46, 890, GY, seg(0, .30));
@@ -359,9 +363,9 @@ function draw() {
   text('=', 305, oy + rise(oa), { size: 32, align: 'center', alpha: oa });
   text('+', 598, oy + rise(oa), { size: 32, align: 'center', alpha: oa });
   text('+', 886, oy + rise(oa), { size: 32, align: 'center', alpha: oa });
-  text('Higher', 946, oy - 26 + rise(tt[3]), { size: 18, align: 'center', alpha: tt[3] });
-  text('modes', 946, oy - 5 + rise(tt[3]), { size: 18, align: 'center', alpha: tt[3] });
-  text('…', 946, oy + 18 + rise(tt[3]), { size: 20, color: C.body, align: 'center', alpha: tt[3] });
+  text('Higher', 946, oy - 30 + rise(tt[3]), { size: TS, align: 'center', alpha: tt[3] });
+  text('modes', 946, oy - 3 + rise(tt[3]), { size: TS, align: 'center', alpha: tt[3] });
+  text('…', 946, oy + 22 + rise(tt[3]), { size: TS, color: C.body, align: 'center', alpha: tt[3] });
 
   // swinging, back and forth
   const da = lab(.40);
@@ -369,7 +373,7 @@ function draw() {
 
   // the sensors ride on the structure, and so does what he calls them
   const la = lab(.45), lx = CX[0] - 22 + at(tot, .5), ly = lev(.5);
-  text('Sensors', lx, ly, { size: 16, align: 'center', base: 'middle', rot: -Math.PI / 2, alpha: la });
+  text('Sensors', lx, ly, { size: 20, align: 'center', base: 'middle', rot: -Math.PI / 2, alpha: la });
   D.sensors.forEach((xh, i) => {
     const ms = settle(.30 + .03 * i, .28);
     if (ms <= 0) return;
@@ -378,15 +382,15 @@ function draw() {
     ctx.save(); ctx.globalAlpha *= ms; ctx.fillStyle = C.navy; ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz); ctx.restore();
     if (la > 0) {
       const ty = ly + (sy - ly) * .55;
-      arrow(lx + 11, ty, sx - 9, sy, { width: 1, head: 6, alpha: la });
+      arrow(lx + 13, ty, sx - 9, sy, { width: 1.1, head: 7, alpha: la });
     }
   });
 
   const pa = lab(.8);
   let x = 18;
-  x += text('building ' + D.H + ' m tall, walls and frames (continuum, ', x, H - 14, { size: 14, color: C.muted, alpha: pa });
-  x += math('\\alpha\\ = ' + D.alpha, x, H - 14, { size: 14, color: C.muted, alpha: pa });
-  text('); a 0.3 s push at the roof, then free, undamped; displacements × ' + D.def + '; real time', x, H - 14, { size: 14, color: C.muted, alpha: pa });
+  x += text('building ' + D.H + ' m tall, walls and frames (continuum, ', x, H - 13, { size: 16, color: C.muted, alpha: pa });
+  x += math('\\alpha\\ = ' + D.alpha, x, H - 13, { size: 16, color: C.muted, alpha: pa });
+  text('); a 0.3 s push at the roof, then free, undamped; displacements × ' + D.def + '; real time', x, H - 13, { size: 16, color: C.muted, alpha: pa });
 }
 boot();
 """

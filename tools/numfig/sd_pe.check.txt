@@ -24,14 +24,14 @@ THE PICTURE
     at 13.559 us; the lanes show where the waves are, the recorded signal how strong
 
 TIME
-  time slowed 1e5; a shot every 4.2 s from t = 0.5 s; in the first shot the signal draws itself as the probe records it and each of his words arrives as the signal passes it; after it the
+  shown 100,000 times slower; a shot every 5.6 s from t = 0.5 s; in the first shot the signal draws itself as the probe records it and each of his words arrives as the signal passes it; after it the
   signal stays whole and each shot's cursor replays it
-  poster (printed frame) at t = 5.2 s: the second shot 5 us in (the crack's echo rising in the right
+  poster (printed frame) at t = 6.6 s: the second shot 5 us in (the crack's echo rising in the right
   lane, the pulse past the crack going down in the left), the whole signal beside it
   drawn at his picture's proportions: 1000 x 435 (his 398 x 173)
 
 OVERLAP (engine.js ?overlap)
   common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
   no stroke crosses a label (the still would not have been written otherwise)
-  common.overlaps() every 0.05 s from 0.05 to 16.8 s (two loops, 337 moments): nothing collides
+  common.overlaps() every 0.05 s from 0.05 to 33.6 s (two loops, 673 moments): nothing collides
   one label sits on a knockout by design: the 2d/c_L value in the recorded signal, on a white box drawn after its dimension line (as nf-shm-ndt draws it); nothing is allowed (still(allow=()))

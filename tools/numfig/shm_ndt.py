@@ -62,7 +62,8 @@ A_LANES = (0.5, 4.0)               # the lanes, mm right of the probe's axis
 B_W, B_D = 120.0, 30.0
 B_CRACK = [(19.9, 30.0), (29.9, 21.7), (36.2, 25.9), (45.3, 17.6), (53.4, 24.5), (59.8, 15.2)]
 B_SENSOR = (26.7, 8.0)             # centre and width on the top face, mm
-B_EVENTS = [0.55, 2.55, 4.55, 6.55]
+B_E0 = 0.55                        # the first growth step (page s); the last is heard just before the poster
+B_HEARD = 0.03                     # s: the poster comes this long after the last step is heard
 
 # (c) imaging: a wall 12 mm thick, 40 mm of it drawn, the model 25 mm longer each side
 C_W, C_D, C_M = 40.0, 12.0, 25.0
@@ -70,11 +71,15 @@ C_CR = dict(x=24.0, z=8.0, a=4.0, b=0.25, tilt=20.0)
 C_N, C_P, C_EW = 16, 1.5, 1.3
 C_XE = 20.0 + C_P * (np.arange(C_N) - (C_N - 1) / 2)
 C_T = 8.0
-C_T0, C_DT = 0.6, 0.4              # first firing and the interval between firings (page s)
+# first firing and the interval between firings (page s): each firing is given its whole
+# 8 us record (0.8 s at 10^5), so every echo of it, the back wall's included, comes back
+# before the next element fires
+C_T0, C_DT = 0.6, 0.8
 C_IMG = dict(dx=0.2, zmax=14.0, db=24.0)
 
-MASTER = 8.4                       # the loop: (a) twice, (b) four events, (c) sixteen firings
-A_T0 = 0.5
+MASTER = 16.8                      # the loop: (a) three shots, (b) four events, (c) sixteen firings
+A_T0, A_SHOT = 0.5, MASTER / 3     # (a): the first shot and the time between shots (page s)
+POSTER = 13.9                      # the printed frame: (a) recorded, (b) the last step heard, (c) complete
 
 
 def drive(t):
@@ -246,6 +251,9 @@ def main():
         tip = np.array(B_CRACK[k + 2])
         nx = np.clip(tip[0], sx0, sx1)
         hits.append(float(np.hypot(tip[0] - nx, tip[1]) / c))
+    # the growth steps, evenly spaced from B_E0, the last one heard B_HEARD before the poster
+    e3 = round(POSTER - B_HEARD - hits[3] / US, 3)
+    B_EVENTS = [round(B_E0 + k * (e3 - B_E0) / 3, 3) for k in range(4)]
 
     # ---- (c)
     data, ref, dtc = F.cached("c", (DX, C_W, C_D, C_M, C_CR, C_N, C_P, C_EW, F0, NC, C_T, 2), c_fmc)
@@ -259,7 +267,9 @@ def main():
     xs = np.arange(0, C_W + 1e-9, C_IMG["dx"])
     zs = np.arange(0, C_IMG["zmax"] + 1e-9, C_IMG["dx"])
     Ci = tfm(h, tsc, xs, zs)
-    parts = np.cumsum(Ci, axis=0) / np.arange(1, C_N + 1)[:, None, None]
+    # after the k-th firing: the sum over transmitters 1 ... k, over all sixteen (as the cover's
+    # inset builds its image): the image grows out of white as the firings add up
+    parts = np.cumsum(Ci, axis=0) / C_N
     full = np.abs(parts[-1])
     peak = full.max()
     tiles = np.clip(20 * np.log10(np.abs(parts) / peak + 1e-12), -C_IMG["db"], 0)
@@ -289,10 +299,12 @@ def main():
 
     # ---- the page's clock
     last_hit = B_EVENTS[3] + hits[3] / US
-    poster = round(last_hit + 0.06, 3)
-    pa = (poster - A_T0) % (MASTER / 2)
-    assert (A_T - T0B) / US < pa < MASTER / 2 - 0.4, pa            # (a): the whole signal recorded
+    poster = POSTER
+    assert last_hit < poster < last_hit + 0.1                         # (b): the last step just heard
+    pa = (poster - A_T0) % A_SHOT
+    assert (A_T - T0B) / US + 0.3 < pa < A_SHOT - 0.4, pa             # (a): the whole signal recorded, its words in
     assert C_T0 + C_N * C_DT + 0.15 < poster < MASTER - 0.4           # (c): the image complete
+    assert abs(MASTER / A_SHOT - round(MASTER / A_SHOT)) < 1e-9       # (a)'s shots tile the loop
 
     # ---- report
     say("Figure 3 (nf-shm-ndt): NDT, (a) pulse echo, (b) acoustic emission, (c) imaging")
@@ -352,6 +364,8 @@ def main():
         f" {B_SENSOR[1]:g} mm wide on top at x = {B_SENSOR[0]:g} mm")
     say("  each step sends a P wave front from the new tip: radius c_L t on the page, clipped to the")
     say("  beam (the fronts are the direct ones; the reflections from the faces are not drawn)")
+    say("  the sensor only listens: it lights up as a front reaches it, and within 9 mm of it a short arrow")
+    say("  rides the front on the line from the step to the sensor, pointing in (nothing leaves the sensor)")
     for k in range(4):
         say(f"    step {k+1}: tip ({B_CRACK[k+2][0]:.1f}, {B_CRACK[k+2][1]:.1f}) mm, nearest point of the sensor"
             f" {hits[k]*c:.2f} mm away: heard {hits[k]:.3f} us later ({hits[k]/US*1e3:.0f} ms on the page)")
@@ -372,8 +386,11 @@ def main():
     say("  half space (no echo within the record) at the same element distance |i - j|")
     say(f"  CHECK 5, reciprocity of the scattered data: max|h_ij - h_ji| / max|h| = {recip:.1e}")
     say("  total focusing: I(x, z) = |sum_i sum_j H[h_ij](t_i + t_j)|, t = distance / c_L, the burst's")
-    say(f"  centre as time zero, {C_IMG['dx']:g} mm pixels; the page shows the mean over transmitters 1 ... k")
-    say(f"  after the k-th firing, in dB of the complete image's peak, {C_IMG['db']:g} dB range")
+    say(f"  centre as time zero, {C_IMG['dx']:g} mm pixels; after the k-th firing the page shows the sum over")
+    say(f"  transmitters 1 ... k divided by all {C_N} (as the cover's inset does: the image grows out of white),")
+    say(f"  in dB of the complete image's peak, {C_IMG['db']:g} dB range")
+    grow = [20 * np.log10(np.abs(parts[k]).max() / peak) for k in (0, 3, 7, 11, C_N - 1)]
+    say("    its peak after 1, 4, 8, 12 and 16 firings: " + ", ".join(f"{v:+.1f}" for v in grow) + " dB")
     say(f"  CHECK 6, the image: the crack's peak at ({pc[0]:.2f}, {pc[1]:.2f}) mm, {dist:.2f} mm from the crack's"
         f" line (the crack")
     say(f"    runs from ({cx0:.2f}, {cz0:.2f}) to ({cx1:.2f}, {cz1:.2f}) mm); the back wall imaged at z = {zb:.2f} mm"
@@ -387,23 +404,32 @@ def main():
     say("  light up when the first crack echo reaches them (shortest path via the crack).")
     say("")
     say("TIME")
-    say(f"  time slowed {SLOW:.0e} (10 us of the model per second) in all three panels; the loop is"
-        f" {MASTER:g} s:")
-    say(f"  (a) a shot every {MASTER/2:g} s from t = {A_T0} s; (b) growth steps at t = "
-        + ", ".join(f"{v:g}" for v in B_EVENTS) + " s;")
+    say(f"  shown {SLOW:,.0f} times slower (10 us of the model per second) in all three panels, as the figure")
+    say(f"  says; the loop is {MASTER:g} s:")
+    say(f"  (a) a shot every {A_SHOT:g} s from t = {A_T0} s (the {A_T:g} us record takes {A_T/US:.2f} s; the whole"
+        f" signal and its words then stay {A_SHOT - 0.35 - (A_T - T0B) / US - 0.25:.1f} s);")
+    say("  (b) growth steps at t = " + ", ".join(f"{v:g}" for v in B_EVENTS) + " s (the crack grown stays"
+        f" {MASTER - 0.35 - last_hit:.1f} s);")
     late = int((arrive > C_DT * US).sum())
-    say(f"  (c) a firing every {C_DT:g} s from t = {C_T0:g} s ({C_DT*US:.1f} us each); the crack's first echo"
-        f" reaches a receiver {arrive.min():.2f} to {arrive.max():.2f} us")
-    say(f"      after the burst starts ({late} of {C_N*C_N} pairs later than the firing's {C_DT*US:.1f} us:"
-        f" those receivers are not lit)")
-    say(f"  poster (printed frame) at t = {poster} s: (a) recorded, (b) the last step heard, (c) the image complete")
+    bw_far = 2 * np.hypot(C_D, (C_XE[-1] - C_XE[0]) / 2) / c + DUR
+    say(f"  (c) a firing every {C_DT:g} s from t = {C_T0:g} s ({C_DT*US:.1f} us each, the whole record); the crack's"
+        f" first echo reaches a receiver {arrive.min():.2f} to {arrive.max():.2f} us")
+    say(f"      after the burst starts ({late} of {C_N*C_N} pairs later than the firing's {C_DT*US:.1f} us); the back"
+        f" wall's echo is back under the transmitter at {2*C_D/c:.2f} us")
+    say(f"      and has passed the farthest receiver by {bw_far:.2f} us (its path with the burst's {DUR:g} us): every"
+        " echo of a firing comes back before the next")
+    say(f"      firing; the image grows a firing every {C_DT:g} s and stays complete"
+        f" {MASTER - 0.35 - (C_T0 + C_N * C_DT + 0.15):.1f} s")
+    say(f"  poster (printed frame) at t = {poster} s: (a) recorded, its words in; (b) the last step heard"
+        f" {poster - last_hit:.2f} s before,")
+    say("    its front arriving at the sensor; (c) the image complete")
     txt = "\n".join(rep) + "\n"
 
     # ---- data for the page
     dec = 2
     data = {
         "poster": poster, "us": US, "master": MASTER, "f0": F0, "nc": NC, "dur": DUR, "cl": c,
-        "a": {"t0": A_T0, "win": A_WIN[1] - A_WIN[0], "d": A_D, "px": A_PX - A_WIN[0], "pw": A_PW,
+        "a": {"t0": A_T0, "shot": A_SHOT, "win": A_WIN[1] - A_WIN[0], "d": A_D, "px": A_PX - A_WIN[0], "pw": A_PW,
               "lanes": list(A_LANES), "z1": z1, "z2": z2,
               "crack": [[x0 - A_WIN[0], zz0], [x1 - A_WIN[0], zz1]], "cb": A_CR["b"],
               "sig": {"t0": float(ts[0]), "dt": float(ts[dec] - ts[0]), "v": np.round(va[::dec], 3).tolist()},
@@ -484,7 +510,8 @@ const A = D.a, AX0 = 200, AY0 = 92, AS = 4, AW = A.win * AS, AH = A.d * AS;
 const PCX = AX0 + A.px * AS, LD = PCX + A.lanes[0] * AS, LU = PCX + A.lanes[1] * AS;
 const ay = z => AY0 + z * AS, ax = x => AX0 + x * AS;
 const SIG = A.sig, NS = SIG.v.length;
-const G = { x: 480, y: 92, w: 480, h: 160, xlim: [-1, 16], ylim: [-1.25, 1.25] };
+/* the recorded signal's axes; below -1 a band for the 2d / c_L dimension */
+const G = { x: 480, y: 90, w: 480, h: 168, xlim: [-1, 16], ylim: [-1.6, 1.3] };
 const gX = v => G.x + (v - G.xlim[0]) / (G.xlim[1] - G.xlim[0]) * G.w;
 const gY = v => G.y + G.h - (v - G.ylim[0]) / (G.ylim[1] - G.ylim[0]) * G.h;
 const SW = 7;                                                 // a lane pulse's half width
@@ -501,26 +528,26 @@ function panelA() {
   // the probe, and what he calls it
   const pp = settle(.1, .28), la = lab(.2);
   ctx.save(); ctx.globalAlpha *= pp; ctx.fillStyle = C.navy; ctx.fillRect(PCX - A.pw * AS / 2, AY0 - 14 + rise(pp), A.pw * AS, 14); ctx.restore();
-  text('Acoustic sensor', 250, 50 + rise(la), { size: 16, align: 'right', alpha: la });
-  text('(sends and receives waves)', 250, 69 + rise(la), { size: 15, color: C.body, align: 'right', alpha: la });
-  arrow(256, 60, PCX - A.pw * AS / 2 - 3, AY0 - 9, { width: 1.2, head: 7, alpha: la });
+  text('Acoustic sensor', 252, 50 + rise(la), { size: 18, align: 'right', alpha: la });
+  text('(sends and receives waves)', 252, 71 + rise(la), { size: 16, color: C.body, align: 'right', alpha: la });
+  arrow(258, 61, PCX - A.pw * AS / 2 - 3, AY0 - 9, { width: 1.2, head: 7, alpha: la });
   // the beam
   piece(AX0, AY0, AW, AH, seg(.02, .35));
-  text('Steel beam', AX0 + 8, AY0 + AH - 10, { size: 15, color: C.body, alpha: lab(.3) });
+  text('Steel beam', AX0 + 8, AY0 + AH - 10, { size: 17, color: C.body, alpha: lab(.3) });
   const dA = lab(.4);                                          // its depth d, as the signal's 2d / c_L uses it
   arrow(AX0 - 16, AY0, AX0 - 16, AY0 + AH, { width: 1, head: 7, both: true, color: C.ink, alpha: dA });
-  math('d', AX0 - 24, AY0 + AH / 2 + 6, { size: 17, align: 'right', alpha: dA });
+  math('d', AX0 - 24, AY0 + AH / 2 + 6, { size: 18, align: 'right', alpha: dA });
   const [c0, c1] = A.crack, cp = seg(.2, .25);
   crackLine([ax(c0[0]), ay(c0[1])], [ax(c1[0]), ay(c1[1])], A.cb * AS, 1, cp);
-  text('crack', ax(c1[0]) + 6, ay(c1[1]) - 4, { size: 15, color: C.accent, alpha: lab(.35) });
+  text('crack', ax(c1[0]) + 6, ay(c1[1]) - 5, { size: 17, color: C.accent, alpha: lab(.35) });
   // the lanes' guides
   const gp = seg(.25, .3), ga = .9;
   line([[LD, AY0 + 5], [LD, AY0 + AH - 5]], { color: C.guide, width: 1, dash: [3, 4], progress: gp, alpha: ga });
   line([[LU, AY0 + AH - 5], [LU, AY0 + 5]], { color: C.guide, width: 1, dash: [3, 4], progress: gp, alpha: ga });
   if (gp >= 1) { tip(LD, AY0 + AH - 3, Math.PI / 2, C.guide, 6, ga); tip(LU, AY0 + 3, -Math.PI / 2, C.guide, 6, ga); }
-  // the shot: tau, us after the probe starts to send
-  const s = t - A.t0, ph = s < 0 ? -1 : s % (MASTER / 2), tau = ph * US;
-  const fade = ph < 0 ? 0 : 1 - clamp((ph - (MASTER / 2 - .35)) / .3);
+  // the shot: tau, us after the probe starts to send; a shot every A.shot s
+  const s = t - A.t0, ph = s < 0 ? -1 : s % A.shot, tau = ph * US;
+  const fade = ph < 0 ? 0 : 1 - clamp((ph - (A.shot - .35)) / .3);
   if (ph >= 0) {
     ctx.save(); ctx.beginPath(); ctx.rect(AX0, AY0 - 1, AW, AH + 2); ctx.clip();
     const d = A.d, z1 = A.z1, z2 = A.z2;
@@ -536,9 +563,9 @@ function panelA() {
   }
   // the recorded signal
   const ap = seg(.05, .4);
-  text('Recorded signal', G.x + G.w / 2, G.y - 12 + rise(lab(.1)), { size: 16, color: C.body, align: 'center', alpha: lab(.1) });
-  const g = axes({ ...G, xticks: [0, 4, 8, 12, 16], yticks: [-1, 0, 1], progress: ap,
-                   xlabel: '\\rm{Time}\\ \\ t\\ (\\rm{µs})', ylabel: '\\rm{Amplitude}', ylabelGap: 40 });
+  text('Recorded signal', G.x + G.w / 2, G.y - 12 + rise(lab(.1)), { size: 18, color: C.body, align: 'center', alpha: lab(.1) });
+  const g = axes({ ...G, xticks: [0, 4, 8, 12, 16], yticks: [-1, 0, 1], progress: ap, tickSize: 16, labelSize: 17,
+                   xlabel: '\\rm{Time}\\ t\\ (\\rm{µs})', ylabel: '\\rm{Amplitude}', ylabelGap: 40 });
   g.inside(() => line([[G.x, gY(0)], [G.x + G.w, gY(0)]], { color: C.rule, width: 1, alpha: ap }));
   if (ph >= 0 && fade > 0) {
     const tn = tau - A.tdur;                                  // the signal's own time (burst centre = 0)
@@ -552,18 +579,20 @@ function panelA() {
       });
     }
     const seen = te => fade * clamp((tn - te) / 2.5);         // a label arrives as the signal passes
-    keepText('Excitation', gX(.75), gY(1.02), { size: 15, color: C.body, alpha: seen(0) });
-    keepText('Reflection', gX(A.tc) - 18, gY(A.ac) - 10, { size: 15, color: C.accent, alpha: seen(A.tc) });
-    keepText('Boundary', gX(A.tb) - 18, gY(A.ab) - 10, { size: 15, color: C.body, alpha: seen(A.tb) });
-    const da = seen(A.tb) * .95, yd = gY(-1.12);
+    keepText('Excitation', gX(.75), gY(1.02), { size: 17, color: C.body, alpha: seen(0) });
+    keepText('Reflection', gX(A.tc) - 18, gY(A.ac) - 10, { size: 17, color: C.accent, alpha: seen(A.tc) });
+    keepText('Boundary', gX(A.tb) - 18, gY(A.ab) - 10, { size: 17, color: C.body, alpha: seen(A.tb) });
+    // the two way time through the beam, in the band under the signal: the dimension line, a
+    // knockout as deep as the label's ink and clear of the axis box, fading in with the label
+    const da = seen(A.tb) * .95, yd = gY(-1.32);
     if (da > 0) {
       arrow(gX(0), yd, gX(2 * A.d / CL), yd, { width: .9, head: 6, both: true, color: C.muted, alpha: da });
-      const lw = math('2d/c_{\\rm{L}} = ' + (2 * A.d / CL).toFixed(1) + '\\,\\rm{µs}', 0, -1e4, { size: 14, alpha: 0 });
-      const xm = (gX(0) + gX(2 * A.d / CL)) / 2, kb = [xm - lw / 2 - 4, yd - 10, xm + lw / 2 + 4, yd + 10];
-      // the knockout as deep as the label's ink (the slash, the subscript), opaque from the first frame
-      ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(kb[0], kb[1], kb[2] - kb[0], kb[3] - kb[1]); ctx.restore();
+      const s_ = '2d/c_{\\rm{L}} = ' + (2 * A.d / CL).toFixed(1) + '\\,\\rm{µs}';
+      const lw = math(s_, 0, -1e4, { size: 16, alpha: 0 });
+      const xm = (gX(0) + gX(2 * A.d / CL)) / 2, kb = [xm - lw / 2 - 4, yd - 9, xm + lw / 2 + 4, yd + 11];
+      ctx.save(); ctx.globalAlpha *= da; ctx.fillStyle = '#fff'; ctx.fillRect(kb[0], kb[1], kb[2] - kb[0], kb[3] - kb[1]); ctx.restore();
       KEEP.push(kb);
-      math('2d/c_{\\rm{L}} = ' + (2 * A.d / CL).toFixed(1) + '\\,\\rm{µs}', xm, yd + 5, { size: 14, color: C.muted, align: 'center', alpha: da });
+      math(s_, xm, yd + 5.5, { size: 16, color: C.muted, align: 'center', alpha: da });
     }
     // the cursor, last: it passes behind the labels
     if (n > 1 && tn < G.xlim[1]) {
@@ -573,19 +602,20 @@ function panelA() {
     }
   }
   const pa = lab(.8);
-  row([['m', 'c_{\\rm{L}} = 5900\\,\\rm{m/s}'], ['t', ', beam 40 mm deep']], AX0, AY0 + AH + 22, { size: 14, color: C.muted, alpha: pa });
-  text('probe 12 mm, 2 MHz, 3 cycles', AX0, AY0 + AH + 40, { size: 14, color: C.muted, alpha: pa });
+  row([['m', 'c_{\\rm{L}} = 5900\\,\\rm{m/s}'], ['t', ', beam 40 mm deep']], AX0, AY0 + AH + 25, { size: 15, color: C.muted, alpha: pa });
+  text('probe 12 mm, 2 MHz, 3 cycles', AX0, AY0 + AH + 45, { size: 15, color: C.muted, alpha: pa });
 }
 
 /* ================================================================ (b) acoustic emission */
 const B = D.b, BX0 = 40, BY0 = 400, BS = 3;
 const bx = x => BX0 + x * BS, by = z => BY0 + z * BS;
+const NEAR = 9;                                               // mm: a front this close to the sensor is drawn arriving
 function panelB() {
   const la = lab(.04);
-  panel('b', 18, 352, { alpha: la });
-  text('Acoustic Emission (sensor is only listening)', 54, 352, { size: 16, color: C.body, alpha: la });
+  panel('b', 18, 350, { alpha: la });
+  text('Acoustic Emission (sensor is only listening)', 54, 350, { size: 18, color: C.body, alpha: la });
   piece(BX0, BY0, B.w * BS, B.d * BS, seg(.06, .35), { cut: false });
-  const sbO = { size: 15, color: C.body, align: 'right', alpha: lab(.3) }, sbB = inkBox('Steel beam', bx(B.w) - 8, by(B.d) - 9, sbO);
+  const sbO = { size: 17, color: C.body, align: 'right', alpha: lab(.3) }, sbB = inkBox('Steel beam', bx(B.w) - 8, by(B.d) - 9, sbO);
   text('Steel beam', bx(B.w) - 8, by(B.d) - 9, sbO);
   const ph = phase(), P = B.crack.map(p => [bx(p[0]), by(p[1])]);
   const reset = 1 - clamp((ph - (MASTER - .35)) / .3);
@@ -598,8 +628,10 @@ function panelB() {
     grown.push([lerp(P[k + 1][0], P[k + 2][0], g), lerp(P[k + 1][1], P[k + 2][1], g)]);
   });
   if (grown.length > 1) line(grown, { color: C.accent, width: 2.6, alpha: reset });
-  // the P fronts, radius c_L tau from each new tip, inside the beam
-  // inside the beam, and behind its name (the name's box, 3 units round, cut out of the clip)
+  // the P fronts, radius c_L tau from each new tip, inside the beam, and behind its name
+  // (the name's box, 3 units round, cut out of the clip); as a front comes within 9 mm of the
+  // sensor a short arrow rides it on the line from the step to the sensor, pointing in
+  const SX = B.sensor[0];
   ctx.save(); ctx.beginPath(); ctx.rect(BX0, BY0, B.w * BS, B.d * BS);
   ctx.rect(sbB[0] - 3, sbB[1] - 3, sbB[2] - sbB[0] + 6, sbB[3] - sbB[1] + 6); ctx.clip('evenodd');
   B.events.forEach((te, k) => {
@@ -608,28 +640,29 @@ function panelB() {
     const r = CL * tau;                                       // mm
     if (r > 160) return;
     const a = clamp(Math.sqrt(8 / r), .3, 1) * reset;       // 2D spreading, 1 / sqrt r
+    const T = B.crack[k + 2];
     ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.blue; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(P[k + 2][0], P[k + 2][1], r * BS, 0, 2 * Math.PI); ctx.stroke(); ctx.restore();
+    const dS = Math.hypot(T[0] - SX, T[1]);
+    const arr = clamp((r - (dS - NEAR)) / 3) * (1 - clamp((r - dS - 1) / 4)) * reset;
+    if (arr <= 0) return;
+    const ux = (SX - T[0]) / dS, uz = -T[1] / dS, qx = T[0] + r * ux, qz = T[1] + r * uz;
+    if (qz > .4) arrow(bx(qx - 6 * ux), by(qz - 6 * uz), bx(qx), by(qz), { color: C.navy, width: 1.6, head: 8, alpha: arr });
   });
   ctx.restore();
-  // the sensor, and each front it hears
-  const sp = settle(.15, .28), sx = bx(B.sensor[0]), sw = B.sensor[1] * BS;
+  // the sensor: it only listens, and lights up as each front reaches it
+  const sp = settle(.15, .28), sx = bx(SX), sw = B.sensor[1] * BS;
   ctx.save(); ctx.globalAlpha *= sp; ctx.fillStyle = C.navy; ctx.fillRect(sx - sw / 2, BY0 - 16 + rise(sp), sw, 16); ctx.restore();
   let heard = 0;
-  B.events.forEach((te, k) => { const th = te + B.hits[k] / US; if (t >= th && ph >= th) heard = Math.max(heard, Math.exp(-(ph - th) / .3)); });
-  if (heard > .01) {
-    ctx.save(); ctx.globalAlpha *= heard; ctx.fillStyle = C.amber; ctx.fillRect(sx - sw / 2, BY0 - 16, sw, 16);
-    ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5;
-    for (const r of [9, 15]) { ctx.beginPath(); ctx.arc(sx, BY0 - 16, r, -Math.PI * .8, -Math.PI * .2); ctx.stroke(); }
-    ctx.restore();
-  }
+  B.events.forEach((te, k) => { const th = te + B.hits[k] / US; if (t >= th && ph >= th) heard = Math.max(heard, Math.exp(-(ph - th) / .5)); });
+  if (heard > .01) { ctx.save(); ctx.globalAlpha *= heard * reset; ctx.fillStyle = C.sky; ctx.fillRect(sx - sw / 2, BY0 - 16, sw, 16); ctx.restore(); }
   const pa = lab(.85);
-  row([['t', 'P wave fronts, radius '], ['m', 'c_{\\rm{L}}\\,t'], ['t', ', from each step of the crack']], BX0, 514, { size: 14, color: C.muted, alpha: pa });
+  row([['t', 'P wave fronts, radius '], ['m', 'c_{\\rm{L}}\\,t'], ['t', ', from each step of the crack']], BX0, 524, { size: 15, color: C.muted, alpha: pa });
 }
 
 /* ================================================================ (c) imaging */
-const Cc = D.c, CX0 = 466, CY0 = 410, CS = 5.75, CWd = Cc.w * CS, CHd = Cc.d * CS;
-const IX0 = 750, IY0 = 410;
+const Cc = D.c, CX0 = 466, CY0 = 412, CS = 5.75, CWd = Cc.w * CS, CHd = Cc.d * CS;
+const IX0 = 750, IY0 = 412;
 const cxp = x => CX0 + x * CS, czp = z => CY0 + z * CS;
 const E1 = Cc.crack[0], E2 = Cc.crack[1];
 function crosses(p0, p1, q0, q1) {
@@ -673,9 +706,9 @@ function tiles() {
 }
 function panelC() {
   const la = lab(.08);
-  panel('c', 440, 352, { alpha: la });
+  panel('c', 440, 350, { alpha: la });
   piece(CX0, CY0, CWd, CHd, seg(.1, .35));
-  const stO = { size: 15, color: C.body, alpha: lab(.3) }, crO = { size: 15, color: C.accent, alpha: lab(.35) };
+  const stO = { size: 17, color: C.body, alpha: lab(.3) }, crO = { size: 17, color: C.accent, alpha: lab(.35) };
   const crX = cxp(E2[0]) + 5, crY = czp(E2[1]) - 5;
   QUIET = [inkBox('structure', CX0 + 8, CY0 + CHd - 8, stO), inkBox('crack', crX, crY, crO)];
   text('structure', CX0 + 8, CY0 + CHd - 8, stO);
@@ -709,7 +742,7 @@ function panelC() {
   }
   crackLine([cxp(E1[0]), czp(E1[1])], [cxp(E2[0]), czp(E2[1])], Cc.cr.b * CS, 1, seg(.22, .25));
   text('crack', crX, crY, crO);
-  // the array: each element transmits in turn, all receive
+  // the array: each element transmits in turn (light), all receive (crimson as the crack's echo arrives)
   const ap = settle(.18, .28), ew = Cc.ew * CS, pitch = (Cc.xe[1] - Cc.xe[0]) * CS;
   ctx.save(); ctx.globalAlpha *= ap;
   const ax0 = cxp(Cc.xe[0]) - pitch / 2, ax1 = cxp(Cc.xe[nF - 1]) + pitch / 2, ay0 = CY0 - 12 + rise(ap);
@@ -720,18 +753,18 @@ function panelC() {
       const hit = tau - Cc.arrive[k][j];                        // the crack's echo front arrives
       if (hit > 0) { ctx.save(); ctx.globalAlpha *= Math.exp(-hit / 1.5) * .9; ctx.fillStyle = C.accent; ctx.fillRect(x - ew / 2, ay0, ew, 12); ctx.restore(); }
     }
-    if (j === k && fired) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - D.dur) / 1.5, .35, 1); ctx.fillStyle = C.amber; ctx.fillRect(x - ew / 2, ay0, ew, 12); ctx.restore(); }
+    if (j === k && fired) { ctx.save(); ctx.globalAlpha *= clamp(1 - (tau - D.dur) / 1.5, .45, 1); ctx.fillStyle = C.sky; ctx.fillRect(x - ew / 2, ay0, ew, 12); ctx.restore(); }
   }
   ctx.strokeStyle = '#fff'; ctx.lineWidth = .8;
   for (let j = 1; j < nF; j++) { const x = (cxp(Cc.xe[j - 1]) + cxp(Cc.xe[j])) / 2; ctx.beginPath(); ctx.moveTo(x, ay0); ctx.lineTo(x, ay0 + 12); ctx.stroke(); }
   ctx.restore();
   const sa = lab(.25);
-  text('Scanning transducers', ax0, 374 + rise(sa), { size: 16, alpha: sa });
-  arrow(ax0, 386, ax1, 386, { width: 1.3, head: 8, alpha: sa });
-  if (fired) tip(cxp(Cc.xe[k]), 391, Math.PI / 2, C.amber, 7, ap);
+  text('Scanning transducers', ax0, 374 + rise(sa), { size: 18, alpha: sa });
+  arrow(ax0, 387, ax1, 387, { width: 1.3, head: 8, alpha: sa });
+  if (fired) tip(cxp(Cc.xe[k]), CY0 - 13, Math.PI / 2, C.blue, 7, ap);
   // the image, transmitter by transmitter
   const ia = lab(.3), ip = seg(.15, .35), IW = CWd, IH = Cc.zmax * CS;
-  text('Resulting Image', IX0 + IW / 2, IY0 - 12 + rise(ia), { size: 16, color: C.body, align: 'center', alpha: ia });
+  text('Resulting Image', IX0 + IW / 2, IY0 - 13 + rise(ia), { size: 18, color: C.body, align: 'center', alpha: ia });
   arrow(CX0 + CWd + 10, CY0 + CHd / 2, IX0 - 10, CY0 + CHd / 2, { width: 3, head: 11, alpha: lab(.35) });
   const done = t < Cc.t0 ? 0 : Math.min(nF, Math.floor((ph - Cc.t0) / Cc.dt));   // firings completed
   if (TILE.length && done > 0 && reset > 0) {
@@ -745,16 +778,16 @@ function panelC() {
   if (done > 0) {
     const ra = .9 * reset * clamp((ph - Cc.t0 - Cc.dt) / .3);
     line([[IX0 + E1[0] * CS, IY0 + E1[1] * CS], [IX0 + E2[0] * CS, IY0 + E2[1] * CS]], { color: C.accent, width: 1, dash: [3, 3], alpha: ra });
-    text('back wall', IX0 + 8, IY0 + (Cc.d - 3.2) * CS, { size: 14, color: C.muted, alpha: ra });
+    text('back wall', IX0 + 8, IY0 + (Cc.d - 3.4) * CS, { size: 16, color: C.muted, alpha: ra });
   }
   const pa = lab(.9);
-  text(`${nF} elements, pitch 1.5 mm, 2 MHz; total focusing method, 24 dB`, CX0, 514, { size: 14, color: C.muted, alpha: pa });
+  text(`${nF} elements, pitch 1.5 mm, 2 MHz; total focusing method, 24 dB`, CX0, 524, { size: 15, color: C.muted, alpha: pa });
 }
 
 function draw() {
   KEEP.length = 0;
   panelA(); panelB(); panelC();
-  math('\\rm{time slowed }10^{5}\\,\\times', W - 18, 34, { size: 14, color: C.muted, align: 'right', alpha: lab(.9) });
+  text(`shown ${(1e6 / US).toLocaleString('en-US')} × slower`, W - 18, 34, { size: 15, color: C.muted, align: 'right', alpha: lab(.9) });
 }
 const IMG = new Image();
 IMG.src = D.c.img;
@@ -774,6 +807,13 @@ def main_page():
             "element after another and the echoes build an image that shows the crack.")
     common.build_html(NAME, title, aria, 1000, 548, data, JS)
     print("still:", common.still(NAME))
+    # the overlap check over two whole loops (the first loop's intro and the second's start),
+    # every 0.1 s, as the brochure's three diagrams record theirs
+    import sd_check
+    sd_check.append(os.path.join(HERE, "shm_ndt.check.txt"),
+                    sd_check.record(NAME, 2 * MASTER, 0.1, True,
+                                    knock="the 2d/c_L value in the recorded signal, on a white box drawn after its"
+                                          " dimension line (the box clear of the axis box, fading in with the label)"))
     if "--look" in sys.argv:
         print(common.frames(NAME, [0.3, 0.8, 1.4, 2.0, 3.0, 4.6, 6.0]))
 

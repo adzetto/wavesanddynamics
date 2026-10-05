@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 12: One signal at two sensors, recovered by generalized cross-correlation and a Wiener filter</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.6;transition:opacity .16s cubic-bezier(.2,0,.38,.9);}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+@media (hover:none){.ctl{opacity:.85;}}
+/* the site's tokens (site/parts/theme.py), written out: the frame is a document of its own.
+   ring --line-strong, glyph --ink, hover --surface, pressed --line, focus --focus */
+.ctl button{position:relative;box-sizing:border-box;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid #8A857C;
+  background:#fff;color:#27221C;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+  transition:background-color .12s cubic-bezier(.2,0,.38,.9);}
+.ctl button svg{width:15px;height:15px;fill:currentColor;}
+.ctl #rs svg{fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;}
+@media (hover:hover){.ctl button:hover{background:#F6F3EF;}}
+.ctl button:active{background:#D7D2CA;}
+.ctl button:focus-visible{outline:2px solid #043052;outline-offset:2px;}
+/* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){.ctl{right:4px;bottom:4px;}.ctl button{width:24px;height:24px;}.ctl button svg{width:13px;height:13px;}}
+/* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){display:none;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Two sensor records of one signal, the second 48 ms later, each buried in its own noise. The figure steps through the method by itself: it adds the noise, finds the delay at the peak of a coherence weighted cross-correlation, aligns the records, averages them, Wiener filters the average, and compares the estimate with the true signal. Chips choose the stage and the signal, a slider the SNR."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 708;
+const DATA = {"method":1,"n":2048,"fs":500.0,"tau":0.048,"dtrue":24,"maxlag":125,"lg":256,"kmax":20,"fn":11.0,"zeta":0.08,"impacts":[[0.15,1.0],[0.6,-0.7],[1.05,0.85],[1.45,0.6],[2.05,-1.0],[2.6,0.75],[3.05,-0.55],[3.55,0.9]],"kinds":["impacts","harmonic","both"],"snrs":[-30,-25,-20,-15,-10,-5,0,5,10,15,20],"shots":[1],"noise":[[["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",13],["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",13]]],"gcc":"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","spec":"+vz9+fv9+/r5+fwA/vr5/Pz6/Pr7gICAgIDv6YDmgNj514CA8YCAgIDd+vz9+fr9/Pv6+fwA/vr5/fz6/Pr7gICAgIDl7unngNb51ICA8YCAgIDd+/z9+fr9/f36+vwA/vr5/fz6/Pr7gICAgICA8fTpgND5wYCA8YCAgIDd9/f18vcA//n18/X59fD09fb19vPzgICAgOj9/vbsgNzygIDS2u3u4oCA8PHy8fcA//ju7u/x7ezq6unr7+/sgOTs7PP///bd5ejqgICAgICA5urj6+zt7/YA//fr6Ofo5OPg4ODi5uXh3ubq7fUA//bn5OPjgICAgIDU4OHR6enr7vcA//bq5eHg3NrY2NfZ3NvX5ufq7vYA//bp49/czoCAgIDM1tfI6Ojq7vcAAPbp497b19PR0c/Q09LO5+jq7vYA//bp4t3Y0cjGur3Hzs7B6Ojq7vcAAPbp4tzY1NDOzcrJy8rG5+jq7vcAAPbp4tzX0czKyMTEyMe+6Ojq7vcAAPbp4dzX08/My8jGxsTB6Ojq7vcAAPbp4dvW0s7LycbExMK96Ojq7vcAAPbp4dvW0s7MysfEw8G+6Ojq7vcAAPbp4dvW0s7LycbEw8C9+v3++vv9+/j5+fsA/vr5/Pz6/Pr7gICAgIDygIDlgNv52oCA8YCAgIDc+gAA+vv6/Pn6+Pv///77/fv6/Pn7gPD57+uA9+/zgOP69/Xx9buA64Dz+AAA9vT1+PXy9fj7+vr09Pj4+fXygPr96YCA8+WA6ezz8PKAgO/x6oCA9AAA9fDw8u/s8PL19fXu7vLy8+/sgP3+7oCA7eCA4+bu6uyAgOnr5ICA7/8A9O3s6ufl6Ort7e3m5urq6+fkgP7/8uHb5diA297m4uSAgOHj3ICA7P8A9e3p4t7a3uHl4uLd297h4+Ld5f8A9Ork3c2AzNnfxbqAgIDY3t2A6v8A9e3o2tTQ1Njb2NjT0dXX2tnU6P8A9ezm18SAw8/VvK+AgIDO1NOA6f8A9e3o1MrGys7Rzs7Jx8vN0M/K6P8A9e3n07yAucXLsqSAgIDEy8mA6f8A9e7o0sG8wMTHxMPAvsDCxsXB6f8A9e7o0bSAqrvBgICAgICzwMGx6f8A9e7o0biztrq9urm2tbW4vLu36f8A9e7o0a+AoLG3gICAgICptren6f8A9u7o0bKqrLCzsK+sq6uusrGt6P8A9u7o0a2AmKetgICAgICerayc+vz9+vv9+/n5+fwA/vr5/Pz6/Pr7gICAgIDw54DmgNn514CA8YCAgIDd+v3++vr9+/r6+fwA/vr5/fz6/Pr7gICAgIDt7eTngNb51YCA8YCAgIDd+/3++vv9/fz6+vwA/vr5/fz6/Pr7gICA4ICA8fHogND5z4CA8YCAgIDd+P8A9/gA//n19/n8+/v19fj5+fXygPn87ID7+++A7vD08fKAgPDy6oCA8vz99vYA//jv7/Hz8O/t7evt8fLvgPn88/D+//aA5ersgICAgICA6e3l6/r89PYA//fr6enq5uXj4+Hk6OjlgPn79PT///bl4+PkgICAgICA3+Pb5/n79PYA//bq5ePi3tza2tnb397a4fn79PYA//bo49/dy4CAgIDO2drK5fn79PcA//bp497b2NXS09HS1dTQ4/n79PYA//bp4t3Z0MXCgKvH0NDC5fj79PcA//bp4tzY1NDOzsvLzczI5Pj79PcA//bp4dzX0cvJxsPEyci+5Pj79PcA//bp4dvW0s7My8jGx8XC5Pj79PcA//bp4dvW0c3KyMXDxcO95Pj79PcA//bp4dvW0s7LysbExMG+5Pj79PcA//bp4dvW0s7LycXDw8C9","coh":"MQAaAA8JIgIbAwwsFA4PKgYPJyAbMQAZAAwDJgMaBA0sFA4QKQYPJyAbLwAXAAUGPA8VBQ4sFA4QKAcPJyAbJwAVBAY9b0AKChEsFA4QJgcQJyAcEAQkKEGVqZUFGRouEw4QIgkQJyAcAR9hfZvMzNEzQS80EgwPGg0SJyEcPmmvws3j3OiIhVxIFAgMDhQUKSQdnbTb397r4+7Cwpl2KAoQBycYMCsc09nq6OPu5u7c4cixZjtBLVUnRUIe5+ft6+Tv6O3m697WrJOUg5pccXI/7evt6+Tv6e3q7efl08zLxsykqLCLKwYjBQ8PLAccAgssFA4PKgYOJyAbJg8rDQ4PLAccAgssFA4PKgYOJyAbHSpCIgoOKwccAgssFA4PKgYOJyAbDmR0UAEJKwcbAgwsFA4PKgYOJyAbAKyukxEEKwcbAgwsFA4PKgYOJyAbFtzUxGMqLggbAgwsFA4PKgYOJyAbUPLm2q6IOgkbAgwsFA4PKgYOJyAbdvru4cvPaAwaAgwsFA4PKgYOJyAbfvzy49HtrxIZAgwsFA4PKgYOJyAbe/zz5NH43x8YAg0rFA0PKgYOJyAbePz05M/78zwVAw4rFQ0QKgYOJyAbLwIdAhALIwMcAwwsFA4PKgYPJyAbLgQfBA4FJAIbAwwsFA4QKQYPJyAbKwslCQgBMgkXBQ4sFA4QKAYPJyAbJCA7GwEkXSwOCBAsFA4QJwcPJyAcFVZvVih7mXsDExctEw4QIwkQJyAcAaCsp4G+w8MeMScyEw0QHQsSJyEcEdTS07jc2ORwb0xAEwkNEhEUKCMdRevk4cro4e21sodlHgcMBiAXLSgcZPPr487r5e7X2r2gUCYtG0QgPDkca/bu487t5+7k6dnOmnp8aYZIYmEwavfv487t6O3p7eXiy8C/t8GRmZ90","gidx":[0,7,14,21,28,37,51,66,81,101,125,156,163,168,175,182,190,201,213,225,235,246,258,265,272,279,286,295,305,319,334,352,376,405],"gk":"GyBAWnByfBsgQFpwcnwbIEBacHJ8BQYHIDo9dgIDBAUGBxNycwECAwQFBgcICQoLEhNLAAECAwQFBgcICQoLEhNLAAECAwQFBgcICQoLEhNLAAECAwQFBgcICQoLDA0ODxESE0sAAQIDBAUGBwgJCgsMDQ4PEBESExQVS0wAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHEtMGyBAWnByfAtnaHN8AQIGICtacAECBiArWnABAgMGICtacAECAwQFBhI9WmVmAAECAwQFBhI9WmVmAAECAwQFBhI9WmVmAAECAwQFBhITSwABAgMEBQYSE0tMAAECAwQFBgcSE0tMGyBAWnByfBsgQFpwcnwbIEBacHJ8AgUGICtacAECAwUGBxNycwECAwQFBgcTcnMBAgMEBQYHCAkKCxITSwABAgMEBQYHCAkKCxITSwABAgMEBQYHCAkKCwwNDhITSwABAgMEBQYHCAkKCwwNDg8QERITFBVLTAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZG0tM","gv":"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","d":[-51.0,-51.0,-51.0,69.0,25.0,24.0,24.0,24.0,24.0,24.0,24.0,-51.0,-22.0,20.0,20.0,20.0,23.0,23.0,23.0,24.0,24.0,24.0,-51.0,-51.0,-51.0,20.0,25.0,25.0,24.0,24.0,24.0,24.0,24.0],"di":[-51,-51,-51,69,25,24,24,24,24,24,24,-51,-22,20,20,20,23,23,23,24,24,24,-51,-51,-51,20,25,25,24,24,24,24,24],"rho":[[-0.0002,0.0001],[-0.0002,0.0002],[-0.0002,0.0002],[0.6932,0.677],[0.8553,0.8555],[0.9415,0.9411],[0.9786,0.9783],[0.9911,0.991],[0.9961,0.996],[0.9985,0.9984],[0.9993,0.9993],[0.0,0.0002],[-0.0001,-0.0],[0.5041,0.4838],[0.7839,0.761],[0.8997,0.8813],[0.9613,0.9543],[0.988,0.984],[0.9949,0.9918],[0.9972,0.9946],[0.9979,0.9954],[0.9981,0.9957],[-0.0001,0.0003],[-0.0001,0.0003],[-0.0001,0.0003],[0.518,0.5174],[0.8415,0.8436],[0.9396,0.9412],[0.9791,0.9791],[0.9915,0.9912],[0.9959,0.9956],[0.9981,0.9978],[0.9989,0.9986]],"rs":[[-30.11,-29.84],[-25.11,-24.84],[-20.11,-19.84],[-15.11,-14.84],[-10.11,-9.84],[-5.11,-4.84],[-0.11,0.16],[4.89,5.16],[9.89,10.16],[14.89,15.16],[19.89,20.16],[-30.11,-29.81],[-25.11,-24.81],[-20.11,-19.81],[-15.11,-14.81],[-10.11,-9.81],[-5.11,-4.81],[-0.11,0.19],[4.89,5.19],[9.89,10.19],[14.89,15.19],[19.89,20.19],[-30.11,-29.83],[-25.11,-24.83],[-20.11,-19.83],[-15.11,-14.83],[-10.11,-9.83],[-5.11,-4.83],[-0.11,0.17],[4.89,5.17],[9.89,10.17],[14.89,15.17],[19.89,20.17]],"so":[-74.41,-74.96,-76.06,-0.34,4.35,8.93,13.55,17.45,21.04,25.09,28.58,-87.38,-76.95,-4.68,2.03,6.28,10.85,16.12,19.84,22.43,23.74,24.29,-77.17,-77.79,-79.05,-4.36,3.85,8.78,13.64,17.64,20.84,24.26,26.63],"gain_th":[0.0],"def":{"snr":-10,"m":1},"params":"f_{\\rm{s}} = 500\\ \\rm{Hz, 2,048 samples;  }\\tau\\ = 48\\ \\rm{ms = 24 samples;  independent white noise;  Welch: Hann, 256 samples, 50% overlap;  amplitudes in signal RMS}"};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. In the guide's page the pause
+   and restart are the page's, in a row under the frame (HOSTED, below).
+   Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+/* In the guide's page the frame's own pause and restart give way to the
+   page's row of buttons under the frame (site/parts/docs.py), so no corner
+   of the figure is covered. The page drives the frame with postMessage:
+   {nf: 'toggle'}, {nf: 'restart'}, {nf: 'hello'}; the frame answers every
+   change with {nf: 'state', playing, quiet}. Only a page of this site that
+   holds such a row is listened to. */
+const HOSTED = (() => {
+  try {
+    return parent !== window && parent.location.origin === location.origin && !!frameElement &&
+      !!frameElement.parentElement.querySelector('.anim__bar');
+  } catch (e) { return false; }
+})();
+if (HOSTED) document.documentElement.classList.add('chrome-out');   // before the first frame: no flash
+function _tell() {
+  if (HOSTED) parent.postMessage({ nf: 'state', playing, quiet: _quiet() || STILL }, location.origin);
+}
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+  _tell();
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+addEventListener('message', e => {
+  const m = e.data;
+  if (!HOSTED || e.source !== parent || e.origin !== location.origin || !m || typeof m.nf !== 'string') return;
+  if (m.nf === 'hello') _tell();
+  else if (_quiet() || STILL) return;
+  else if (m.nf === 'toggle') setPlay(!playing);
+  else if (m.nf === 'restart') document.getElementById('rs').click();
+});
+/* a click in the frame takes the keyboard into it; Space still pages the guide */
+addEventListener('keydown', e => {
+  if (e.key !== ' ' || e.defaultPrevented || e.target !== document.body || !HOSTED) return;
+  e.preventDefault();
+  try { parent.scrollBy({ top: (e.shiftKey ? -.875 : .875) * parent.innerHeight, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (_) {}
+});
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- controls
+   uiChip(x, y, w, h, label, state, alpha): a control drawn in the figure, as
+   Figure 18b's chips are: white with a grey edge; the one chosen navy with
+   white type; under the pointer steel with a navy edge; pressed steel2; off
+   (unavailable) pale. Its edge is a line(), which the overlap check sees.
+   state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
+function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
+  const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
+  const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
+  text(label, x + w / 2, y + h / 2 + 5, { size: 15, align: 'center', alpha: a,
+    color: st.on ? '#fff' : st.off ? C.guide : st.hover ? C.ink : C.body });
+}
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+/* ---- one signal at two sensors, Figures 12 and 13 (tools/numfig/sp_delay_lib.py) ----
+   D.method 1: generalized cross-correlation, integer delay, Wiener filter (Figure 12);
+   D.method 2: the same after averaging M shots, delay refined below a sample (Figure 13). */
+const D = DATA, M2 = D.method === 2, N = D.n, FS = D.fs, NL = 2 * D.maxlag + 1, NB = D.kmax + 1;
+const NS = D.snrs.length, NM = D.shots.length;
+const sidx = (ki, si, mi) => (ki * NS + si) * NM + mi;
+const num = (v, d) => (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace('-', '−');
+const thou = v => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const arrive = t0 => settle(t0, .28);
+
+/* ================================================ the model's numbers, as the generator left them */
+function bytes64(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+const GCC = b64i8(D.gcc), SPEC = b64i8(D.spec), COH = bytes64(D.coh), GK = bytes64(D.gk), GV = b64f32(D.gv);
+/* the signal from its formulas (his), standardized over the record; the delayed copy is the same
+   function 48 ms later with the same mean and scale */
+const WN = 2 * Math.PI * D.fn, WD = WN * Math.sqrt(1 - D.zeta * D.zeta);
+const harmonic = t => (1 + .5 * Math.sin(2 * Math.PI * .4 * t)) *
+  (Math.sin(2 * Math.PI * 3 * t) + .45 * Math.sin(2 * Math.PI * 6 * t + .7) + .25 * Math.sin(2 * Math.PI * 9 * t + 1.3));
+function impactTrain(t) { let v = 0; for (const [t0, a] of D.impacts) { const u = t - t0; if (u >= 0) v += a * Math.exp(-D.zeta * WN * u) * Math.sin(WD * u); } return v; }
+const SRC = [t => impactTrain(t) / .27, harmonic, t => impactTrain(t) / .27 + .6 * harmonic(t)];
+const SIG = SRC.map(f => {
+  const s = new Float64Array(N), st = new Float64Array(N);
+  let m = 0, q = 0;
+  for (let n = 0; n < N; n++) { s[n] = f(n / FS); m += s[n]; }
+  m /= N;
+  for (let n = 0; n < N; n++) { s[n] -= m; q += s[n] * s[n]; }
+  const sd = Math.sqrt(q / N);
+  for (let n = 0; n < N; n++) { s[n] /= sd; st[n] = (f(n / FS - D.tau) - m) / sd; }
+  return { s, st };
+});
+/* the noise of each sensor averaged over the first M shots, int16 times 2^-k (exact) */
+const NU = D.noise.map(pair => pair.map(([code, k]) => {
+  const q = new Int16Array(bytes64(code).buffer), v = new Float64Array(N), sc = Math.pow(2, -k);
+  for (let n = 0; n < N; n++) v[n] = q[n] * sc;
+  return v;
+}));
+/* his FFT, shift and filter, line for line */
+function fft(re, im, inv) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b;
+    if (i < j) { let q = re[i]; re[i] = re[j]; re[j] = q; q = im[i]; im[i] = im[j]; im[j] = q; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = (inv ? 2 : -2) * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) { let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2, tr = re[b] * cr - im[b] * ci, ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+        const ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr; } } }
+  if (inv) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+function shift(x, d) {                         // x(t + d samples), circular
+  const M = x.length, r = Float64Array.from(x), im = new Float64Array(M);
+  fft(r, im);
+  for (let k = 0; k < M; k++) { const f = k <= M / 2 ? k : k - M, ph = 2 * Math.PI * f * d / M, c = Math.cos(ph), sn = Math.sin(ph);
+    const a = r[k] * c - im[k] * sn; im[k] = r[k] * sn + im[k] * c; r[k] = a; }
+  im[M / 2] = 0;
+  fft(r, im, true); return r;
+}
+function applyGain(x, G) {                     // a real gain on the Welch bins, linear between them
+  const M = x.length, L = D.lg, r = Float64Array.from(x), im = new Float64Array(M);
+  fft(r, im);
+  for (let k = 0; k < M; k++) { const kk = k <= M / 2 ? k : M - k, pos = kk * L / M, k0 = Math.floor(pos), k1 = Math.min(k0 + 1, L / 2);
+    const g = G[k0] + (G[k1] - G[k0]) * (pos - k0); r[k] *= g; im[k] *= g; }
+  fft(r, im, true); return r;
+}
+function standardize(a) {
+  let m = 0; for (const v of a) m += v; m /= a.length;
+  let q = 0; for (let i = 0; i < a.length; i++) { a[i] -= m; q += a[i] * a[i]; }
+  const sd = Math.sqrt(q / a.length) || 1; for (let i = 0; i < a.length; i++) a[i] /= sd;
+  return a;
+}
+/* one choice's records, aligned record, average, estimate and its delayed copy, from the stored
+   noise and the generator's delay and Wiener gain */
+const CACHE = new Map();
+function waves(i) {
+  let w = CACHE.get(i);
+  if (w) return w;
+  const ki = Math.floor(i / (NS * NM)), si = Math.floor(i / NM) % NS, mi = i % NM;
+  const S = SIG[ki], sig = Math.pow(10, -D.snrs[si] / 20), nu = NU[mi], d = D.d[i];
+  const m1 = new Float64Array(N), m2 = new Float64Array(N), av = new Float64Array(N), G = new Float64Array(D.lg / 2 + 1);
+  for (let n = 0; n < N; n++) { m1[n] = S.s[n] + sig * nu[0][n]; m2[n] = S.st[n] + sig * nu[1][n]; }
+  const ba = shift(m2, d);
+  for (let n = 0; n < N; n++) av[n] = .5 * (m1[n] + ba[n]);
+  for (let j = D.gidx[i]; j < D.gidx[i + 1]; j++) G[GK[j]] = GV[j];
+  const e = standardize(applyGain(av, G)), eT = shift(e, -d);
+  w = { i, ki, si, mi, sig, d, m1, m2, ba, av, e, eT, S, G };
+  if (CACHE.size >= 40) CACHE.delete(CACHE.keys().next().value);   // the oldest goes
+  CACHE.set(i, w);
+  return w;
+}
+
+/* ================================================ the reader's choices */
+let KI = 0, SI = D.snrs.indexOf(D.def.snr), MI = D.shots.indexOf(D.def.m);
+const QS = new URLSearchParams(location.search);
+{ const k = D.kinds.indexOf(QS.get('kind')); if (k >= 0) KI = k; }
+{ const k = D.snrs.indexOf(Number(QS.get('snr'))); if (QS.has('snr') && k >= 0) SI = k; }
+{ const k = D.shots.indexOf(Number(QS.get('shots'))); if (QS.has('shots') && k >= 0) MI = k; }
+const cur = () => sidx(KI, SI, MI);
+
+/* ================================================ the clock: his stages, one after another */
+const NAMES = M2 ? ['signal', 'noise', 'averaging', 'delay', 'align', 'Wiener filter', 'estimate']
+                 : ['signal', 'noise', 'delay', 'align', 'Wiener filter', 'estimate'];
+const KEY = NAMES.map(s => s.split(' ')[0]), K = NAMES.length, AT_ = k => KEY.indexOf(k);
+const TRD = { signal: 0, noise: 1.5, averaging: 1.8, delay: 2.2, align: 1.4, Wiener: 2.2, estimate: 1.6 };
+const S0 = 2.0, HOLD = 4.2, RET = 1.3;
+const START = [0];
+for (let k = 1; k < K; k++) START.push(START[k - 1] + (k === 1 ? S0 : TRD[KEY[k - 1]] + HOLD));
+const END = START[K - 1] + TRD[KEY[K - 1]] + HOLD, PERIOD = END + RET;
+const done = k => START[k] + (k ? TRD[KEY[k]] : 1.6);          // stage k complete (cycle 0)
+const QSTAGE = QS.has('stage') ? clamp(Math.round(Number(QS.get('stage'))) - 1, 0, K - 1) : -1;
+const POSTER_T = QSTAGE >= 0 ? done(QSTAGE) + .05 : done(K - 1) + 1.2;
+if (QSTAGE >= 0 && !STILL && !REDUCED) t = PERIOD + START[QSTAGE];
+/* where the clock is: the stage, its transition eased (e), the share of the stage gone (frac);
+   k = -1 is the return to the clean signal that closes a cycle */
+function phase() {
+  const u = t < PERIOD ? t : t % PERIOD;
+  if (u >= END) return { k: -1, e: easeInOut(clamp((u - END) / RET)), frac: 1, u };
+  let k = K - 1;
+  while (k > 0 && u < START[k]) k--;
+  const dur = TRD[KEY[k]], el = u - START[k], next = k < K - 1 ? START[k + 1] : END;
+  return { k, e: dur ? easeInOut(clamp(el / dur)) : 1, el, frac: el / (next - START[k]), u };
+}
+/* a step's progress: 0 before its stage, its transition while it runs, 1 after; a share of the
+   transition (a, b) gives a part of it its own moment */
+function P(ph, key, a = 0, b = 1) {
+  const j = AT_(key);
+  if (j < 0) return 0;
+  if (ph.k === -1) return 1;
+  if (ph.k < j) return 0;
+  if (ph.k > j) return 1;
+  const dur = TRD[key];
+  return easeInOut(clamp((ph.el / dur - a) / (b - a)));
+}
+
+/* ================================================ the layout (drawing units) */
+const LA = { x: 96, w: 876, y1: 86, h: 94, gap: 14 };          // the two lanes of (a)
+LA.y2 = LA.y1 + LA.h + LA.gap;
+const PB = { x: 96, w: 352, y: 392, h: 114 };                   // (b) the GCC
+const PC = { x: 590, w: 382, y: 392, h1: 64, gap: 16, h2: 34 }; // (c) the spectra over the gain
+PC.y2 = PC.y + PC.h1 + PC.gap;
+const BOT = PB.y + PB.h + 72;                                   // the controls and numbers
+const STG = { y: 14, h: 30, gap: 26 };
+const STX = [];                                                 // the stage chips, set once the type is in
+function stageChips() {
+  if (STX.length) return;
+  ctx.save(); ctx.font = font({ size: 15 });
+  const ws = NAMES.map((s, k) => ctx.measureText((k + 1) + '  ' + s).width + 26);
+  ctx.restore();
+  const tot = ws.reduce((a, b) => a + b, 0) + STG.gap * (K - 1);
+  let x = (W - tot) / 2;
+  ws.forEach(w => { STX.push({ x, w }); x += w + STG.gap; });
+}
+/* the controls: the SNR slider, the kind of signal, the shots (Figure 13) */
+const CX0 = 650;                                                // the controls' column
+const SL = { x0: CX0 + 12, x1: CX0 + 252, y: BOT + 28 };
+const KC = { x: CX0 + 62, y: BOT + 68, w: [84, 92, 64], h: 28, gap: 8 };
+const MC = { x: 262, y: BOT - 6, w: 60, h: 28, pitch: 72 };      // shots chips: the table's head
+const HOVER = { type: '', i: -1 }, DOWN = { type: '', i: -1 };
+let DRAG = false;
+
+/* ================================================ drawing helpers */
+function mix(c1, c2, s) {
+  const a = _hex(c1), b = _hex(c2);
+  return `rgb(${Math.round(lerp(a[0], b[0], s))},${Math.round(lerp(a[1], b[1], s))},${Math.round(lerp(a[2], b[2], s))})`;
+}
+function sub(letter, x, y, words, a) {
+  if (a <= 0) return;
+  panel(letter, x, y, { alpha: a });
+  text(words, x + 35, y, { size: 17, color: C.body, alpha: a });
+}
+/* math with an accent over a part: [['x', 'bar'], ['_1(t)']], [['s', 'hat'], ['(t)']] */
+function accent(kind, x0, w, size, color, alpha) {
+  const sl = size * .07;
+  if (kind === 'bar') line([[x0 + w * .14 + sl, -size * .63], [x0 + w * .96 + sl, -size * .63]], { color, width: Math.max(1, size * .06), alpha });
+  else line([[x0 + w * .12 + sl, -size * .6], [x0 + w * .45 + sl, -size * .78], [x0 + w * .78 + sl, -size * .6]],
+            { color, width: Math.max(1, size * .055), alpha });
+}
+function amath(parts, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', alpha = 1, rot = 0 } = o;
+  const ws = parts.map(p => math(p[0], 0, -1e4, { size, alpha: 0 }));
+  const tot = ws.reduce((a, b) => a + b, 0);
+  if (alpha <= 0) return tot;
+  let off = align === 'center' ? -tot / 2 : align === 'right' ? -tot : 0;
+  ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  parts.forEach((p, j) => {
+    math(p[0], off, 0, { size, color, alpha });
+    if (p[1]) accent(p[1], off, ws[j], size, color, alpha);
+    off += ws[j];
+  });
+  ctx.restore();
+  return tot;
+}
+const tw = (s, size) => { ctx.save(); ctx.font = font({ size }); const w = ctx.measureText(s).width; ctx.restore(); return w; };
+/* a nice tick step for a half range R: one of 1, 2, 2.5, 5 times a power of ten in [.45 R, .9 R] */
+function tick(R) {
+  const p = Math.pow(10, Math.floor(Math.log10(R * .9)));
+  for (const m of [5, 2.5, 2, 1]) if (m * p <= R * .9) return m * p;
+  return p / 2;
+}
+
+/* ================================================ (a) the lanes */
+const BUF = [new Float64Array(N), new Float64Array(N), new Float64Array(N), new Float64Array(N)];
+const PTS = Array.from({ length: N }, () => [0, 0]);
+const TX = n => LA.x + n / (N - 1) * LA.w;
+function shiftIdx(src, out, k) { for (let n = 0; n < N; n++) out[n] = src[((n + k) % N + N) % N]; return out; }
+function lerpArr(a, b, s, out) { for (let n = 0; n < N; n++) out[n] = a[n] + (b[n] - a[n]) * s; return out; }
+/* what each lane holds now: the trace, its colour, the clean signal under it (hidden: solid;
+   the truth an estimate is judged by: dashed), and the lane's name */
+const LAB = {
+  s1: [['s(t)']], s2: [['s(t - \\tau)']], x1: [['x_1(t)']], x2: [['x_2(t)']],
+  b1: [['x', 'bar'], ['_1(t)']], b2: [['x', 'bar'], ['_2(t)']], a2: [['x', 'bar'], ['_2(t + '], ['\\tau', 'hat'], [')']],
+  m1: [['x_1(t)']], m2a: [['x_2(t + '], ['\\tau', 'hat'], [')']],
+  av: [['\\rm{average}']], e1: [['s', 'hat'], ['(t)']], e2: [['s', 'hat'], ['(t - '], ['\\tau', 'hat'], [')']],
+};
+function laneState(w, ph) {
+  const S = w.S, s = S.s, st = S.st, A = BUF[0], B = BUF[1];
+  const key = ph.k === -1 ? 'return' : KEY[ph.k], e = ph.e;
+  const n1 = NU[0], sig = w.sig, bar = M2 ? 'b' : 'x';
+  const L = { A: s, B: st, ca: C.navy, cb: C.navy, wa: 2, wb: 2, ra: null, rb: null, rdash: false, ralpha: 0,
+              la: LAB.s1, lb: LAB.s2, info: '' };
+  const hidden = (ra, rb, al) => { L.ra = ra; L.rb = rb; L.ralpha = al; L.rdash = false; };
+  const rec = () => { L.ca = L.cb = C.sky; L.wa = L.wb = 1; };
+  if (key === 'signal') return L;
+  if (key === 'noise') {
+    for (let n = 0; n < N; n++) { A[n] = s[n] + e * sig * n1[0][n]; B[n] = st[n] + e * sig * n1[1][n]; }
+    Object.assign(L, { A, B, la: LAB.x1, lb: LAB.x2 }); rec(); hidden(s, st, e);
+    L.info = 'snr1'; return L;
+  }
+  if (key === 'averaging') {
+    const chain = w.mi, p = e * chain, j = Math.min(Math.floor(p), Math.max(chain - 1, 0)), f = chain ? p - j : 0;
+    const u0 = NU[j], u1 = NU[Math.min(j + 1, chain)];
+    for (let n = 0; n < N; n++) {
+      A[n] = s[n] + sig * (u0[0][n] + (u1[0][n] - u0[0][n]) * f);
+      B[n] = st[n] + sig * (u0[1][n] + (u1[1][n] - u0[1][n]) * f);
+    }
+    Object.assign(L, { A, B, la: e > .5 ? LAB.b1 : LAB.x1, lb: e > .5 ? LAB.b2 : LAB.x2 }); rec(); hidden(s, st, 1);
+    L.info = 'avg'; L.avgAt = chain ? D.shots[f < .5 ? j : Math.min(j + 1, chain)] : 1;
+    return L;
+  }
+  const la1 = M2 ? LAB.b1 : LAB.m1, la2 = M2 ? LAB.b2 : LAB.x2, laa = M2 ? LAB.a2 : LAB.m2a;
+  if (key === 'delay') {
+    Object.assign(L, { A: w.m1, B: w.m2, la: la1, lb: la2 }); rec(); hidden(s, st, 1);
+    L.info = 'rec'; return L;
+  }
+  if (key === 'align') {
+    const k = Math.round(e * w.d);
+    Object.assign(L, { A: w.m1, B: e >= 1 ? w.ba : shiftIdx(w.m2, B, k), la: la1, lb: e > .5 ? laa : la2 }); rec();
+    hidden(s, shiftIdx(st, BUF[2], e >= 1 ? Math.round(w.d) : k), 1);
+    L.info = 'rec'; return L;
+  }
+  if (key === 'Wiener') {
+    const g = P(ph, 'Wiener', .35, 1);
+    Object.assign(L, { A: lerpArr(w.m1, w.av, g, A), B: lerpArr(w.ba, w.e, g, B), la: g > .5 ? LAB.av : la1, lb: g > .5 ? LAB.e1 : laa });
+    rec(); L.cb = mix(C.sky, C.accent, g); L.wb = 1 + 1.2 * g; hidden(s, s, 1);
+    L.info = 'rec'; return L;
+  }
+  if (key === 'estimate') {
+    const k = Math.round(e * w.d);
+    Object.assign(L, { A: lerpArr(w.av, w.e, e, A), B: e >= 1 ? w.eT : shiftIdx(w.e, B, -k), la: e > .5 ? LAB.e1 : LAB.av,
+                       lb: e > .5 ? LAB.e2 : LAB.e1 });
+    L.ca = mix(C.sky, C.accent, e); L.wa = 1 + 1.2 * e; L.cb = C.accent; L.wb = 2.2;
+    L.ra = s; L.rb = st; L.rdash = true; L.ralpha = e; L.info = 'est';
+    return L;
+  }
+  // the return: the estimates become the clean signals again
+  Object.assign(L, { A: lerpArr(w.e, s, e, A), B: lerpArr(w.eT, st, e, B), la: e > .5 ? LAB.s1 : LAB.e1, lb: e > .5 ? LAB.s2 : LAB.e2 });
+  L.ca = L.cb = mix(C.accent, C.navy, e); L.wa = L.wb = 2.2 - .2 * e;
+  L.ra = s; L.rb = st; L.rdash = true; L.ralpha = 1 - e;
+  return L;
+}
+function laneScale(v, r, ra) {
+  let m = 1e-9;
+  for (let n = 0; n < N; n++) m = Math.max(m, Math.abs(v[n]));
+  if (r && ra > .05) for (let n = 0; n < N; n++) m = Math.max(m, Math.abs(r[n]));
+  return m * 1.1;
+}
+function drawLane(j, v, col, wd, r, ra, rdash, label, prog, axp, la) {
+  const y = j ? LA.y2 : LA.y1, R = laneScale(v, r, ra), st = tick(R), ticks = [];
+  for (let q = -2; q <= 2; q++) if (Math.abs(q * st) <= R * .9) ticks.push(q * st);
+  const A = axes({ x: LA.x, y, w: LA.w, h: LA.h, xlim: [0, (N - 1) / FS], ylim: [-R, R],
+                   xticks: [0, 1, 2, 3, 4], yticks: ticks, xfmt: j ? (v => fmt(v)) : () => '',
+                   xlabel: j ? '\\rm{time}\\ \\ t\\ \\ (\\rm{s})' : '', tickSize: 16, labelSize: 17, progress: axp });
+  const ga = clamp(axp * 1.4);
+  A.inside(() => {
+    line([[LA.x, A.Y(0)], [LA.x + LA.w, A.Y(0)]], { color: C.rule, width: 1, alpha: ga });
+    for (let n = 0; n < N; n++) { PTS[n][0] = TX(n); PTS[n][1] = A.Y(v[n]); }
+    line(PTS, { color: col, width: wd, progress: prog });
+    if (r && ra > 0) {
+      for (let n = 0; n < N; n++) { PTS[n][0] = TX(n); PTS[n][1] = A.Y(r[n]); }
+      line(PTS, { color: C.navy, width: rdash ? 1.5 : 1.6, dash: rdash ? [6, 4] : null, alpha: ra });
+    }
+  });
+  amath(label, LA.x - 58, y + LA.h / 2, { size: 17, align: 'center', rot: -Math.PI / 2, alpha: la });
+}
+function panelA(w, ph) {
+  const L = laneState(w, ph), a0 = arrive(0), axp = seg(.02, .35);
+  sub('a', 18, 70, 'sensor records', a0);
+  // the clean signals draw themselves in the intro
+  const pr = t < PERIOD ? seg(.15, .45) : 1, pr2 = t < PERIOD ? seg(.22, .45) : 1;
+  drawLane(0, L.A, L.ca, L.wa, L.ra, L.ralpha, L.rdash, L.la, pr, axp, arrive(.3));
+  drawLane(1, L.B, L.cb, L.wb, L.rb, L.ralpha, L.rdash, L.lb, pr2, seg(.06, .35), arrive(.34));
+  // which line is which
+  const ka = arrive(.4), ky = 70, items = [[C.sky, 1, null, 'record'], [C.navy, 1.6, null, 'clean signal, unseen'],
+    [C.accent, 2.2, null, 'estimate'], [C.navy, 1.5, [6, 4], 'true signal']];
+  let kx = LA.x + LA.w;
+  for (let q = items.length - 1; q >= 0; q--) {
+    const [col, wd, dash, words] = items[q];
+    kx -= tw(words, 15);
+    text(words, kx, ky, { size: 15, color: C.body, alpha: ka });
+    kx -= 34;
+    line([[kx, ky - 5], [kx + 26, ky - 5]], { color: col, width: wd, dash, alpha: ka });
+    kx -= 22;
+  }
+  // the records' SNR, as the stage leaves them (each sensor's own draw of noise)
+  const y = LA.y2 + LA.h + 16 + 17 + 16, two = r => `${num(r[0], 1)}\\ \\rm{and}\\ ${num(r[1], 1)}\\ \\rm{dB}`;
+  let words = '';
+  if (L.info === 'snr1') words = (M2 ? '\\rm{one shot: SNR}\\ ' : '\\rm{the records: SNR}\\ ') + two(D.rs[sidx(w.ki, w.si, 0)]);
+  else if (L.info === 'avg') words = L.avgAt > 1 ? `\\rm{the average of}\\ M = ${thou(L.avgAt)}\\ \\rm{shots}` : '\\rm{one shot: nothing to average}';
+  else if (L.info === 'rec' || L.info === 'est')
+    words = M2 && w.mi ? `\\rm{average of}\\ ${thou(D.shots[w.mi])}\\ \\rm{shots: SNR}\\ ` + two(D.rs[w.i])
+                       : (M2 ? '\\rm{one shot: SNR}\\ ' : '\\rm{the records: SNR}\\ ') + two(D.rs[w.i]);
+  if (words) math(words, LA.x + LA.w, y, { size: 15, color: C.body, align: 'right', alpha: arrive(.4) });
+  return L;
+}
+
+/* ================================================ (b) the GCC */
+function panelB(w, ph, V) {
+  const a0 = arrive(.04);
+  sub('b', 18, PB.y - 20, 'cross-correlation', a0);
+  const A = axes({ x: PB.x, y: PB.y, w: PB.w, h: PB.h, xlim: [-250, 250], ylim: [-1.15, 1.15],
+                   xticks: [-250, -125, 0, 125, 250], yticks: [-1, 0, 1], xlabel: '\\rm{lag\\ \\ (ms)}',
+                   ylabel: '\\rm{GCC}', ylabelGap: 44, tickSize: 16, labelSize: 17, progress: seg(.06, .35) });
+  const ga = clamp(seg(.06, .35) * 1.4), XT = A.X(D.tau * 1e3), fade = ph.k === -1 ? 1 - ph.e : 1;
+  A.inside(() => {
+    line([[PB.x, A.Y(0)], [PB.x + PB.w, A.Y(0)]], { color: C.rule, width: 1, alpha: ga });
+    line([[XT, PB.y], [XT, PB.y + PB.h]], { color: C.guide, width: 1, dash: [5, 4], alpha: ga });
+  });
+  const sweep = P(ph, 'delay', .3, 1), off = w.i * NL;
+  if (sweep > 0) {
+    const n = Math.max(2, Math.round(sweep * NL)), pts = [];
+    for (let q = 0; q < n; q++) pts.push([A.X((q - D.maxlag) * 1e3 / FS), A.Y(GCC[off + q] / 127)]);
+    A.inside(() => line(pts, { color: C.navy, width: 2.2, alpha: fade }));
+  }
+  // the estimate: once the sweep has passed the peak
+  const tq = D.di[w.i] + D.maxlag, ma = V.d;
+  const tauHat = D.d[w.i] * 1e3 / FS, xm = A.X(tauHat), ym = A.Y(GCC[off + tq] / 127);
+  if (ma > 0) {
+    A.inside(() => line([[xm, ym + 6], [xm, PB.y + PB.h]], { color: C.accent, width: 1.4, alpha: ma }));
+    dot(xm, ym, 4.5, { color: '#fff', fill: C.accent, width: 1.4, alpha: ma });
+  }
+  // the readout: estimate against the truth
+  const ra = ma * a0, rx = PB.x + PB.w;
+  const tt = `\\rm{true}\\ \\tau\\ = ${num(D.tau * 1e3, 0)}\\ \\rm{ms}`;
+  const wt = math(tt, rx, PB.y - 20, { size: 16, color: C.body, align: 'right', alpha: a0 });
+  if (ra > 0) amath([['\\tau', 'hat'], [` = ${num(tauHat, M2 ? 1 : 0)}\\ \\rm{ms,}\\ \\ `]], rx - wt - 4, PB.y - 20,
+                    { size: 16, color: C.accent, align: 'right', alpha: ra });
+}
+
+/* ================================================ (c) the spectra and the gain */
+function panelC(w, ph) {
+  const a0 = arrive(.08), XF = f => PC.x + f / 40 * PC.w;
+  sub('c', PC.x - 76, PC.y - 20, 'Wiener filter', a0);
+  const top = axes({ x: PC.x, y: PC.y, w: PC.w, h: PC.h1, xlim: [0, 40], ylim: [-40, 0], xticks: [0, 10, 20, 30, 40],
+                     yticks: [-40, -20, 0], xfmt: () => '', ylabel: '\\rm{dB}', ylabelGap: 40, tickSize: 16, labelSize: 17,
+                     progress: seg(.08, .35) });
+  const bot = axes({ x: PC.x, y: PC.y2, w: PC.w, h: PC.h2, xlim: [0, 40], ylim: [0, 1], xticks: [0, 10, 20, 30, 40],
+                     yticks: [0, 1], xlabel: '\\rm{frequency}\\ \\ f\\ \\ (\\rm{Hz})', ylabel: 'G,\\ \\gamma^2', ylabelGap: 40,
+                     tickSize: 16, labelSize: 17, progress: seg(.1, .35) });
+  const fade = ph.k === -1 ? 1 - ph.e : 1, fb = k => k * FS / D.lg, so = w.i * 2 * NB;
+  // the coherence of the two records: what weights the GCC (with the delay)
+  const pc = P(ph, 'delay', 0, .45);
+  if (pc > 0) {
+    const pts = []; for (let k = 0; k < NB; k++) pts.push([XF(fb(k)), bot.Y(COH[w.i * NB + k] / 255)]);
+    bot.inside(() => line(pts, { color: C.navy, width: 1.3, dash: [4, 3], progress: pc, alpha: fade }));
+  }
+  // after alignment: the average's spectrum, what both share, and the gain it gives
+  const p1 = P(ph, 'Wiener', 0, .4), p2 = P(ph, 'Wiener', .15, .55), p3 = P(ph, 'Wiener', .35, .8);
+  const curve = (o, col, wd, p) => {
+    if (p <= 0) return;
+    const pts = [];
+    for (let k = 1; k < NB; k++) { const q = SPEC[so + o + k]; pts.push([XF(fb(k)), top.Y(q === -128 ? -60 : q / 2)]); }
+    top.inside(() => line(pts, { color: col, width: wd, progress: p, alpha: fade }));
+  };
+  curve(0, C.guide, 1.6, p1);
+  curve(NB, C.navy, 2.2, p2);
+  if (p3 > 0) {
+    const pts = [[XF(0), bot.Y(0)]];
+    for (let k = 0; k < NB; k++) pts.push([XF(fb(k)), bot.Y(w.G[k])]);
+    pts.push([XF(fb(NB - 1)), bot.Y(0)]);
+    bot.inside(() => {
+      ctx.save(); ctx.globalAlpha *= p3 * fade * .85; ctx.fillStyle = C.steel2; ctx.beginPath();
+      pts.forEach((p, q) => q ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); ctx.restore();
+      line(pts.slice(1, -1), { color: C.blue, width: 1.6, alpha: p3 * fade });
+    });
+  }
+  // which line is which
+  const ka = arrive(.42), ky = PC.y - 20;
+  const items = [[x => line([[x, ky - 5], [x + 22, ky - 5]], { color: C.guide, width: 1.6, alpha: ka }), '\\rm{average}', 28],
+                 [x => line([[x, ky - 5], [x + 22, ky - 5]], { color: C.navy, width: 2.2, alpha: ka }), '\\rm{common}', 28],
+                 [x => line([[x, ky - 12], [x + 14, ky - 12], [x + 14, ky], [x, ky]], { color: C.blue, width: 1, fill: C.steel2, close: true, alpha: ka }), 'G', 20],
+                 [x => line([[x, ky - 5], [x + 22, ky - 5]], { color: C.navy, width: 1.3, dash: [4, 3], alpha: ka }), '\\gamma^2', 28]];
+  let kx = PC.x + PC.w;
+  for (let q = items.length - 1; q >= 0; q--) {
+    const [mark, words, mw] = items[q];
+    kx -= math(words, 0, -1e4, { size: 15, alpha: 0 });
+    math(words, kx, ky, { size: 15, color: C.body, alpha: ka });
+    kx -= mw;
+    mark(kx);
+    kx -= 14;
+  }
+}
+
+/* ================================================ the stages, the controls, the numbers */
+function stages(ph) {
+  stageChips();
+  const cur = ph.k === -1 ? 0 : ph.k;
+  STX.forEach((c, k) => {
+    const a = arrive(.02 * k);
+    uiChip(c.x, STG.y, c.w, STG.h, (k + 1) + '  ' + NAMES[k], { on: k === cur, hover: HOVER.type === 'stage' && HOVER.i === k,
+           down: DOWN.type === 'stage' && DOWN.i === k }, a);
+    if (k < K - 1) arrow(c.x + c.w + 5, STG.y + STG.h / 2, c.x + c.w + STG.gap - 5, STG.y + STG.h / 2,
+                         { color: C.guide, width: 1.1, head: 7, alpha: a });
+  });
+}
+/* how far the stage has run: a hairline under its chip (drawn over the frame kept in a hold) */
+function hairline(ph) {
+  if (STILL || ph.k < 0 || !STX.length) return;
+  const c = STX[ph.k], y = STG.y + STG.h + 5;
+  line([[c.x, y], [c.x + c.w * clamp(ph.frac), y]], { color: C.navy, width: 2, alpha: arrive(.2) });
+}
+function slider(a) {
+  const n = NS - 1, X = q => SL.x0 + q / n * (SL.x1 - SL.x0), hx = X(SI);
+  text(M2 ? 'SNR of one shot' : 'SNR of each record', CX0, SL.y - 20, { size: 16, color: C.body, alpha: a });
+  line([[SL.x0, SL.y], [SL.x1, SL.y]], { color: C.rule, width: 3, alpha: a });
+  line([[SL.x0, SL.y], [hx, SL.y]], { color: C.mist, width: 3, alpha: a });
+  for (let q = 0; q <= n; q++) line([[X(q), SL.y - 5], [X(q), SL.y + 5]], { color: C.rule, width: 1, alpha: a });
+  for (let q = 0; q <= n; q += 2) math(num(D.snrs[q], 0), X(q), SL.y + 25, { size: 15, color: C.muted, align: 'center', alpha: a });
+  dot(hx, SL.y, HOVER.type === 'slider' || DRAG ? 8.5 : 7.5, { color: C.navy, fill: '#fff', width: 2, alpha: a });
+  math(`${num(D.snrs[SI], 0)}\\ \\rm{dB}`, SL.x1 + 18, SL.y + 6, { size: 16, alpha: a });
+}
+function kinds(a) {
+  text('signal', CX0, KC.y + KC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
+  let x = KC.x;
+  D.kinds.forEach((s, k) => {
+    uiChip(x, KC.y, KC.w[k], KC.h, s, { on: k === KI, hover: HOVER.type === 'kind' && HOVER.i === k, down: DOWN.type === 'kind' && DOWN.i === k }, a);
+    x += KC.w[k] + KC.gap;
+  });
+}
+const kindX = k => KC.x + KC.w.slice(0, k).reduce((s, v) => s + v + KC.gap, 0);
+/* when the numbers a stage gives are on: the delay once the sweep has found the peak, the estimate's
+   with its stage; both leave with the return to the clean signal */
+function shown(ph, w) {
+  if (ph.k === -1) return { d: 1 - ph.e, e: 1 - ph.e };
+  const sweep = P(ph, 'delay', .3, 1), tq = D.di[w.i] + D.maxlag;
+  const d = P(ph, 'delay') >= 1 ? 1 : sweep * NL >= tq + 1 ? clamp((sweep * NL - tq) / 12) : 0;
+  return { d, e: P(ph, 'estimate') };
+}
+/* Figure 12: the numbers of the choice shown */
+function numbers1(w, V) {
+  const x = 18, y = BOT + 8, i = w.i, a = arrive(.45), x1 = 106, x2 = 262;
+  text('delay', x, y, { size: 16, color: C.body, alpha: a });
+  amath([['\\tau', 'hat'], [` = ${num(D.d[i] * 2, 0)}\\ \\rm{ms}`]], x1, y, { size: 16, color: C.accent, alpha: a * V.d });
+  math('\\rm{true}\\ \\tau\\ = 48\\ \\rm{ms;\\ one\\ sample}\\ = 2\\ \\rm{ms}', x2, y, { size: 15, color: C.muted, alpha: a });
+  text('estimate', x, y + 30, { size: 16, color: C.body, alpha: a });
+  math(`\\rho\\ = ${num(D.rho[i][0], 3)},\\ ${num(D.rho[i][1], 3)}`, x1, y + 30, { size: 16, alpha: a * V.e });
+  amath([['\\rm{correlation of}\\ '], ['s', 'hat'], ['(t)\\ \\rm{and}\\ '], ['s', 'hat'], ['(t - '], ['\\tau', 'hat'],
+         [')\\ \\rm{with the truth}']], x2, y + 30, { size: 15, color: C.muted, alpha: a * V.e });
+  text('SNR', x, y + 60, { size: 16, color: C.body, alpha: a });
+  // the gain as the two rounded numbers shown give it
+  const so = D.so[i], fin = so > -99, r1 = Math.round(D.rs[i][0] * 10) / 10, s1 = Math.round(so * 10) / 10;
+  // an estimate that does not follow the signal has no SNR or gain to speak of
+  const lost = !fin || Math.abs(D.rho[i][0]) < .1;
+  math(`${num(r1, 1)}\\ \\rm{dB}` + (lost ? '' : `\\ \\to\\ ${num(s1, 1)}\\ \\rm{dB}`), x1, y + 60, { size: 16, alpha: a * V.e });
+  math(lost ? '\\rm{the estimate does not follow the signal}' : `\\rm{sensor 1 to estimate: a gain of}\\ ${num(s1 - r1, 1)}\\ \\rm{dB}`,
+       x2, y + 60, { size: 15, color: C.muted, alpha: a * V.e });
+}
+/* Figure 13: what averaging buys, for every number of shots */
+function table2(w, V) {
+  const a = arrive(.45), x = 18, cx = q => MC.x + MC.w / 2 + q * MC.pitch, y0 = MC.y + MC.h + 25, dy = 23;
+  const at = q => sidx(w.ki, w.si, q), right = cx(NM - 1) + MC.pitch / 2;
+  text('shots', x, MC.y + MC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
+  math('M', x + 46, MC.y + MC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
+  D.shots.forEach((m, q) => uiChip(MC.x + q * MC.pitch, MC.y, MC.w, MC.h, thou(m),
+    { on: q === MI, hover: HOVER.type === 'shots' && HOVER.i === q, down: DOWN.type === 'shots' && DOWN.i === q }, a));
+  const gain = q => (D.rs[at(q)][0] + D.rs[at(q)][1] - D.rs[at(0)][0] - D.rs[at(0)][1]) / 2;
+  const rows = [
+    [[['10\\ \\rm{log}_{10}\\ M\\ \\ (\\rm{dB})']], q => num(D.gain_th[q], 1), 1, C.muted],
+    [[['\\rm{gain, measured\\ \\ (dB)}']], q => num(gain(q), 1), 1, C.ink],
+    [[['\\rm{delay}\\ '], ['\\tau', 'hat'], ['\\ \\ (\\rm{ms})']], q => num(D.d[at(q)] * 2, 1), V.d, C.ink],
+    [[['\\rm{correlation}\\ \\rho']], q => num(D.rho[at(q)][0], 2), V.e, C.ink]];
+  // the chosen column, behind its numbers
+  ctx.save(); ctx.globalAlpha *= a * .75; ctx.fillStyle = C.steel;
+  ctx.fillRect(cx(MI) - MC.pitch / 2 + 5, y0 - 18, MC.pitch - 10, dy * rows.length + 2); ctx.restore();
+  line([[x, y0 - 20], [right, y0 - 20]], { color: C.ink, width: 1.3, alpha: a });
+  rows.forEach(([lab, val, ra, col], r) => {
+    const y = y0 + r * dy;
+    amath(lab, x, y, { size: 15, color: C.body, alpha: a });
+    for (let q = 0; q < NM; q++) math(val(q), cx(q), y, { size: 15, align: 'center', color: col, alpha: a * ra });
+  });
+  line([[x, y0 + rows.length * dy - 14], [right, y0 + rows.length * dy - 14]], { color: C.ink, width: 1.3, alpha: a });
+  // from which number of shots on the delay stays within a sample of 48 ms
+  let from = NM;
+  for (let q = NM - 1; q >= 0; q--) { if (Math.abs(D.d[at(q)] - D.dtrue) < 1) from = q; else break; }
+  const note = from === 0 ? '\\rm{delay within one sample of 48 ms at every}\\ M'
+    : from === NM ? '\\rm{delay not within one sample of 48 ms at any}\\ M'
+    : `\\rm{delay within one sample of 48 ms from}\\ M = ${thou(D.shots[from])}\\ \\rm{on}`;
+  math(note, x, y0 + rows.length * dy + 8, { size: 15, color: C.body, alpha: a * V.d });
+}
+
+/* while a stage holds, nothing but its hairline moves: the frame is kept and drawn again from
+   memory (the dense noisy records are the costly strokes). Not for the still or the overlap check. */
+const OFF = document.createElement('canvas');
+let OFFKEY = '';
+function frameKey(ph) {
+  if (CHECK || STILL || ph.k < 0 || ph.e < 1 || t < 1.6 || (ph.k === 0 && t < PERIOD && t < 2)) return '';
+  return [cv.width, cv.height, ph.k, KI, SI, MI, HOVER.type, HOVER.i, DOWN.type, DOWN.i, DRAG].join(':');
+}
+function draw() {
+  const ph = phase(), key = frameKey(ph);
+  if (key && key === OFFKEY) {
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(OFF, 0, 0); ctx.restore();
+    hairline(ph); place();
+    return;
+  }
+  const w = waves(cur()), V = shown(ph, w);
+  stages(ph);
+  panelA(w, ph);
+  panelB(w, ph, V);
+  panelC(w, ph);
+  const ca = arrive(.5);
+  slider(ca);
+  kinds(ca);
+  if (M2) table2(w, V); else numbers1(w, V);
+  math(D.params, 18, H - 14, { size: 14, color: C.muted, alpha: arrive(.55) });
+  if (key) {
+    OFF.width = cv.width; OFF.height = cv.height;
+    OFF.getContext('2d').drawImage(cv, 0, 0); OFFKEY = key;
+  }
+  hairline(ph);
+  place();
+}
+
+/* ================================================ the reader's hand: pointer and keyboard */
+const FIG = document.querySelector('.fig'), KB = { st: [], kd: [], ms: [], sl: null, key: '' };
+function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+function redraw() { if (!playing) render(); }
+function hit(X, Y) {
+  if (STILL) return { type: '', i: -1 };
+  for (let k = 0; k < STX.length; k++) {
+    const c = STX[k];
+    if (X >= c.x - STG.gap / 2 && X <= c.x + c.w + STG.gap / 2 && Y >= 0 && Y <= STG.y + STG.h + 10) return { type: 'stage', i: k };
+  }
+  if (Math.abs(Y - SL.y) < 20 && X > SL.x0 - 14 && X < SL.x1 + 14) return { type: 'slider', i: -1 };
+  for (let k = 0; k < D.kinds.length; k++)
+    if (X >= kindX(k) - KC.gap / 2 && X <= kindX(k) + KC.w[k] + KC.gap / 2 && Y >= KC.y - 8 && Y <= KC.y + KC.h + 8) return { type: 'kind', i: k };
+  if (M2) for (let q = 0; q < NM; q++)
+    if (X >= MC.x + q * MC.pitch - 8 && X <= MC.x + q * MC.pitch + MC.w + 8 && Y >= MC.y - 10 && Y <= MC.y + MC.h + 10) return { type: 'shots', i: q };
+  return { type: '', i: -1 };
+}
+/* a new choice holds the stage shown for a whole hold, so it can be looked at; it never pauses */
+function hold() {
+  const ph = phase();
+  if (!playing || ph.k < 0) return;
+  const c = t < PERIOD ? 0 : Math.floor(t / PERIOD);
+  t = c * PERIOD + done(ph.k) + .01;
+  if (c === 0 && t < 1.6) t = 1.6;
+}
+function choose(type, i) {
+  if (type === 'kind') KI = i;
+  else if (type === 'shots') MI = i;
+  else if (type === 'snr') SI = clamp(i, 0, NS - 1);
+  else if (type === 'stage') { t = PERIOD + (playing ? START[i] + .01 : done(i) + .01); render(); return; }
+  hold(); render();
+}
+const snrAt = X => Math.round(clamp((X - SL.x0) / (SL.x1 - SL.x0)) * (NS - 1));
+let PRESS = '';
+if (!STILL) {
+  const css = document.createElement('style');
+  css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
+    'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
+  document.head.appendChild(css);
+  const ctl = FIG.querySelector('.ctl');
+  const add = (parent, role, label) => {
+    const el = document.createElement(role === 'slider' ? 'div' : 'button'); el.className = 'nfk';
+    if (role !== 'slider') el.type = 'button';
+    el.setAttribute('role', role); if (label) el.setAttribute('aria-label', label);
+    parent === FIG ? FIG.insertBefore(el, ctl) : parent.appendChild(el);
+    return el;
+  };
+  const group = label => { const g = document.createElement('div'); g.setAttribute('role', 'radiogroup'); g.setAttribute('aria-label', label); FIG.insertBefore(g, ctl); return g; };
+  const roving = (list, i, pick) => e => {
+    const dd = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = list.length;
+    const j = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : dd ? (i + dd + n) % n : (e.key === 'Enter' || e.key === ' ') ? i : -1;
+    if (j < 0) return;
+    e.preventDefault(); list[j].focus(); pick(j);
+  };
+  const gS = group('Stage of the method');
+  NAMES.forEach((s, k) => { const b = add(gS, 'radio', `Stage ${k + 1}: ${s}`); b.addEventListener('keydown', roving(KB.st, k, j => choose('stage', j))); KB.st.push(b); });
+  const gK = group('Signal');
+  D.kinds.forEach((s, k) => { const b = add(gK, 'radio', `Signal: ${s}`); b.addEventListener('keydown', roving(KB.kd, k, j => choose('kind', j))); KB.kd.push(b); });
+  if (M2) {
+    const gM = group('Number of shots averaged');
+    D.shots.forEach((m, q) => { const b = add(gM, 'radio', `${m} shot${m > 1 ? 's' : ''}`); b.addEventListener('keydown', roving(KB.ms, q, j => choose('shots', j))); KB.ms.push(b); });
+  }
+  KB.sl = add(FIG, 'slider', M2 ? 'SNR of one shot, dB' : 'SNR per record, dB');
+  KB.sl.tabIndex = 0;
+  KB.sl.setAttribute('aria-valuemin', String(D.snrs[0])); KB.sl.setAttribute('aria-valuemax', String(D.snrs[NS - 1]));
+  KB.sl.addEventListener('keydown', e => {
+    const dd = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 2, PageDown: -2 }[e.key];
+    const q = e.key === 'Home' ? 0 : e.key === 'End' ? NS - 1 : dd ? SI + dd : -1;
+    if (q < 0 || q === SI) { if (dd) e.preventDefault(); return; }
+    e.preventDefault(); choose('snr', q);
+  });
+  cv.style.touchAction = 'pan-y pinch-zoom';
+  cv.addEventListener('pointermove', e => {
+    const [X, Y] = toUnits(e);
+    if (DRAG) { const q = snrAt(X); if (q !== SI) choose('snr', q); return; }
+    if (e.pointerType !== 'mouse') return;
+    const h = hit(X, Y);
+    cv.style.cursor = h.type ? 'pointer' : '';
+    if (h.type !== HOVER.type || h.i !== HOVER.i) { HOVER.type = h.type; HOVER.i = h.i; redraw(); }
+  });
+  cv.addEventListener('pointerleave', () => { if (DRAG) return; HOVER.type = ''; HOVER.i = -1; DOWN.type = ''; cv.style.cursor = ''; redraw(); });
+  cv.addEventListener('pointerdown', e => {
+    const [X, Y] = toUnits(e), h = e.button === 0 ? hit(X, Y) : { type: '', i: -1 };
+    PRESS = h.type;
+    if (h.type === 'slider') { DRAG = true; cv.setPointerCapture(e.pointerId); const q = snrAt(X); if (q !== SI) choose('snr', q); else redraw(); }
+    else if (h.type) { DOWN.type = h.type; DOWN.i = h.i; redraw(); }
+  });
+  const drop = () => { if (DRAG || DOWN.type) { DRAG = false; DOWN.type = ''; DOWN.i = -1; redraw(); } };
+  cv.addEventListener('pointerup', drop);
+  cv.addEventListener('pointercancel', drop);
+  // a click on a control is a choice and never also pauses (the engine toggles on a click of the canvas)
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const pr = PRESS; PRESS = '';
+    const [X, Y] = toUnits(e), h = hit(X, Y);
+    if (pr === 'slider') { e.stopPropagation(); return; }
+    if (h.type && h.type !== 'slider') { if (pr === h.type) choose(h.type, h.i); e.stopPropagation(); return; }
+    if (h.type === 'slider') { e.stopPropagation(); return; }
+    // a near miss on the controls' own ground does nothing either
+    if (Y < STG.y + STG.h + 14 || (Y > BOT - 30 && (X > CX0 - 10 || (M2 && Y < MC.y + MC.h + 12)))) e.stopPropagation();
+  }, true);
+}
+/* the keyboard's stand-ins sit on what they choose, and say what is chosen */
+function place() {
+  if (STILL || !KB.sl || !STX.length) return;
+  const ph = phase(), k = ph.k === -1 ? 0 : ph.k;
+  const key = cv.clientWidth + ':' + k + ':' + KI + ':' + SI + ':' + MI;
+  if (key === KB.key) return;
+  KB.key = key;
+  const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
+  const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
+  KB.st.forEach((b, j) => { box(b, STX[j].x, STG.y, STX[j].x + STX[j].w, STG.y + STG.h); b.setAttribute('aria-checked', String(j === k)); b.tabIndex = j === k ? 0 : -1; });
+  KB.kd.forEach((b, j) => { box(b, kindX(j), KC.y, kindX(j) + KC.w[j], KC.y + KC.h); b.setAttribute('aria-checked', String(j === KI)); b.tabIndex = j === KI ? 0 : -1; });
+  KB.ms.forEach((b, j) => { box(b, MC.x + j * MC.pitch, MC.y, MC.x + j * MC.pitch + MC.w, MC.y + MC.h); b.setAttribute('aria-checked', String(j === MI)); b.tabIndex = j === MI ? 0 : -1; });
+  box(KB.sl, SL.x0 - 10, SL.y - 14, SL.x1 + 10, SL.y + 14);
+  const i = cur();
+  KB.sl.setAttribute('aria-valuenow', String(D.snrs[SI]));
+  KB.sl.setAttribute('aria-valuetext', `${D.snrs[SI]} dB: estimated delay ${num(D.d[i] * 2, M2 ? 1 : 0)} ms, correlation ${num(D.rho[i][0], 2)}`);
+}
+boot();
+</script>
+</body>
+</html>

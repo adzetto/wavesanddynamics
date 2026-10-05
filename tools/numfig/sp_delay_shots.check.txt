@@ -1,0 +1,69 @@
+Figure 13 (nf-sp-delay-shots): one signal at two sensors, recovered after averaging repeated shots
+check of tools/numfig/sp_delay_shots.py and sp_delay_lib.py (the model shared with Figure 12)
+
+MODEL (his page, 'Delayed signal recovery, method 2: shot averaging, GCC and Wiener filter')
+  As Figure 12 (sp_delay_gcc.check.txt): one signal, tau = 48 ms = 24 samples at fs = 500 Hz, N = 2048,
+  his three signals, his method line for line. His two additions:
+  - shots: the excitation fired M times, the signal repeated exactly, new white Gaussian noise in every
+    shot, the records averaged. His page scales one noise draw by 1/sqrt(M); here the shots are drawn:
+    each sensor's own generator (seed 25, numpy default_rng, SeedSequence spawned per sensor) gives
+    shot after shot, 1024 of them, and the record of M shots is the average of the first M (nested:
+    the 64-shot average holds the 16-shot one; M = 1 is Figure 12's record).
+  - the delay refined below one sample: d = i + (y0 - y2) / (2 (y0 - 2 y1 + y2)), at most half a sample,
+    through the GCC peak y1 at lag i and its neighbours; the record advanced by the fractional d.
+  Every choice is computed here: 3 signals x 11 SNRs of one shot x 5 numbers of shots.
+  The noise draw: seed 25, by the rule in sp_delay_gcc.check.txt (typical at both default settings).
+
+AT THE DEFAULT SETTING (impacts, -20 dB per shot, 64 shots)
+  record SNRs -1.95 and -1.85 dB; GCC peak at 24 samples, the parabola +0.0906: tau_hat = 48.181 ms
+  estimate: correlation 0.9668 (delayed copy 0.9665); SNR of the estimate 11.56 dB, 13.51 dB above the averaged record
+  and 31.56 dB above one shot.
+  Every number of shots (impacts, -20 dB):
+      M     gain sensor 1, 2 (dB)   10 log10 M   tau_hat (ms)   rho
+      1       0.00    0.00              0.00      -101.917     -0.0002
+     16      12.14   11.91             12.04        48.375     0.9017
+     64      18.16   17.99             18.06        48.181     0.9668
+    256      24.00   23.71             24.08        48.175     0.9890
+   1024      30.07   29.97             30.10        48.280     0.9956
+  impacts: from which M on the delay stays within one sample (2 ms) of 48 ms, per SNR of one shot:
+    -30: M >= 16, -25: M >= 16, -20: M >= 16, -15: M >= 16, -10: M >= 1, -5: M >= 1
+    +0: M >= 1, +5: M >= 1, +10: M >= 1, +15: M >= 1, +20: M >= 1
+  harmonic: from which M on the delay stays within one sample (2 ms) of 48 ms, per SNR of one shot:
+    -30: M >= 1024, -25: M >= 1024, -20: M >= 1024, -15: M >= 16, -10: M >= 16, -5: M >= 16
+    +0: M >= 1, +5: M >= 1, +10: M >= 1, +15: M >= 1, +20: M >= 1
+  both: from which M on the delay stays within one sample (2 ms) of 48 ms, per SNR of one shot:
+    -30: M >= 64, -25: M >= 16, -20: M >= 16, -15: M >= 16, -10: M >= 16, -5: M >= 1
+    +0: M >= 1, +5: M >= 1, +10: M >= 1, +15: M >= 1, +20: M >= 1
+
+VALIDATION
+  1. Averaging against 10 log10 M (closed form: M independent noise records averaged keep the signal and
+     divide the noise power by M). This draw, measured on the stored records, above.
+     Over 200 independent shot sequences (seeds 20,000 ..), both sensors, mean (standard deviation) in dB:
+     M = 16: 12.035 (0.185) vs 12.041; M = 64: 18.052 (0.188) vs 18.062; M = 256: 24.083 (0.188) vs 24.082; M = 1024: 30.109 (0.177) vs 30.103
+     (the scatter of one draw: a 2,048-sample noise power has a relative standard deviation sqrt(2/N) = 0.031).
+  2. The delay locks in: share of the 200 sequences within one sample of 48 ms (impacts):
+     -30 dB per shot: M = 1 0.01, M = 16 0.07, M = 64 0.47, M = 256 0.92, M = 1024 1.00
+     -25 dB per shot: M = 1 0.02, M = 16 0.32, M = 64 0.89, M = 256 1.00, M = 1024 1.00
+     -20 dB per shot: M = 1 0.04, M = 16 0.78, M = 64 1.00, M = 256 1.00, M = 1024 1.00
+     -15 dB per shot: M = 1 0.17, M = 16 0.99, M = 64 1.00, M = 256 1.00, M = 1024 1.00
+     -10 dB per shot: M = 1 0.62, M = 16 1.00, M = 64 1.00, M = 256 1.00, M = 1024 1.00
+  3. The refined delay against the Cramer-Rao bound (Knapp and Carter 1976, closed form, as in Figure 12;
+     the averaged noise has power sigma^2 / M), the same 200 sequences, RMS error of those within 5 samples:
+     -20 dB per shot: M = 16 1.732 vs 1.254 ms (1.38x); M = 64 0.637 vs 0.600 ms (1.06x); M = 256 0.287 vs 0.293 ms (0.98x); M = 1024 0.137 vs 0.145 ms (0.94x)
+     -10 dB per shot: M = 16 0.401 vs 0.373 ms (1.07x); M = 64 0.188 vs 0.184 ms (1.02x); M = 256 0.087 vs 0.091 ms (0.96x); M = 1024 0.043 vs 0.045 ms (0.94x)
+     (200 draws leave the RMS itself uncertain by about 5%: ratios near 1 mean the bound is reached.)
+  4. Wiener filter against the ideal one (true spectra, G = S / (S + N/2)): at the default, correlation 0.9668 against 0.9715.
+  5. his page reproduced: signals, noise, GCC, Wiener gain, aligned record, average, estimate and its delayed copy agree within 1.8e-12; the delays (23 samples at his default, -10 dB: 46 ms; 23.649964 samples at his method 2 default) and the correlations to all printed digits.
+  6. Welch cross spectrum against scipy.signal.csd: 4.7e-16 relative (K = 15).
+  7. The page rebuilds every record from the stored noise of each M and the signal formulas, and the aligned
+     record, average, estimate and delayed copy with his FFT steps (fractional shifts): against numpy at 5 states,
+     within 2.1e-11 (with the float32 gain the page holds; 7.0e-08 from the exact gain).
+
+DISPLAY
+  Stages (his), each a pure function of the clock: signal 0.0 s, noise 2.0 s, averaging 7.7 s, delay 13.7 s, align 20.1 s, Wiener filter 25.7 s, estimate 32.1 s;
+  the return to the clean signal at 37.9 s, period 39.2 s; poster at t = 34.9 s.
+  The averaging stage cross-fades through the nested averages (1, 16, 64, ... up to M); the label names only
+  an average that exists.
+  Overlap check (engine ?overlap): 2490 frames (every state at the middle and end of every stage and the return,
+  and every stage of the default state live): 0 with a collision.
+  Page size 244,504 bytes.

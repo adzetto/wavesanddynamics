@@ -163,13 +163,18 @@ function stepNow() {                                // current step k (0..NT-1) 
   const k = Math.min(NT - 1, Math.floor(c / STEP));
   return { k, p: clamp((c - k * STEP) / STEP), fade: 1 };
 }
-const vcol = v => v >= 0 ? mixHex('#FFFFFF', C.blue, clamp(v)) : mixHex('#FFFFFF', K.red, clamp(-v));
+const vcol = v => signed(v * 2 / 3);               // a value: blue positive, crimson negative
 
 /* ------------------------------------------------ top: the RNN, unrolled */
 const RX = k => 196 + 128 * k, RY = 150, RW = 72, RH = 44;
 function rnnPart(st) {
   const sa = lab(0);
   text('RNN, unrolled in time', 18, 34 + rise(sa), { size: 16, color: C.body, alpha: sa });
+  // what the colours of the hidden state mean (its right edge at 935, where the figure's type ends)
+  legend(781, 13, 154, [
+    [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(1), stroke: C.ink, width: .8, alpha: a }), 'positive value'],
+    [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(-1), stroke: C.ink, width: .8, alpha: a }), 'negative value'],
+  ], { alpha: lab(.12) });
   const la = lab(.1);
   text('output', 18, 104, { size: 15, color: C.muted, alpha: la });
   text('largest so far', 18, 122, { size: 14, color: C.muted, alpha: la });
@@ -288,13 +293,13 @@ function lstmPart(st) {
     math(`h = ${num(N.h)}`, 850, BY + 28, { size: 15, color: C.body, alpha: vis });
     math(`\\rm{output}\\ \\ ${N.y.toFixed(2)}`, 850, BY + 52, { size: 16, alpha: vis });
     math(`x = ${N.x.toFixed(2)}`, 222, 690, { size: 15, color: C.body, alpha: vis });
-    text(`step t = ${N === S ? k + 1 : k}`, 830, 346, { size: 15, align: 'right', color: C.muted, alpha: vis });
+    math(`\\rm{step}\\ t = ${N === S ? k + 1 : k}`, 830, 346, { size: 15, align: 'right', color: C.muted, alpha: vis });
   }
   // how well each remembers the peak
   const ea = lab(.5);
   text(`error, largest reading so far: RNN (3 units) ${D.rms[0].toFixed(2)}, LSTM (1 memory cell) ${D.rms[1].toFixed(2)}`,
        18, H - 32, { size: 14, color: C.muted, alpha: ea });
-  text('both trained here (PyTorch) on random sensor streams of 12 readings; errors are RMS over 2000 new streams',
+  text('both trained here (PyTorch) on random sensor streams of 12 readings; errors are RMS over 2,000 new streams',
        18, H - 12, { size: 14, color: C.muted, alpha: ea });
 }
 

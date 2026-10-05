@@ -175,7 +175,7 @@ function draw() {
   }
   box(GX0, GY0, 5 * CS, 5 * CS, { width: 1.3, progress: ga });
   lab('goal', GX0 + 4.5 * CS, GY0 - 8, .45, { size: 14, color: C.accent, align: 'center' });
-  lab('start', GX0 + .5 * CS, GY0 + 5 * CS + 17, .45, { size: 14, color: C.muted, align: 'center' });
+  lab('start', GX0 + .5 * CS, GY0 + 5 * CS + 17, .45, { size: 14, color: C.body, align: 'center' });
   const trail = [[gx(ST[0].s), gy(ST[0].s)]];
   for (let k = 0; k < i; k++) trail.push([gx(ST[k].s2), gy(ST[k].s2)]);
   let ax = gx(st.s), ay = gy(st.s);

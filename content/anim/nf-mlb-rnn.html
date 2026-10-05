@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -709,13 +712,18 @@ function stepNow() {                                // current step k (0..NT-1) 
   const k = Math.min(NT - 1, Math.floor(c / STEP));
   return { k, p: clamp((c - k * STEP) / STEP), fade: 1 };
 }
-const vcol = v => v >= 0 ? mixHex('#FFFFFF', C.blue, clamp(v)) : mixHex('#FFFFFF', K.red, clamp(-v));
+const vcol = v => signed(v * 2 / 3);               // a value: blue positive, crimson negative
 
 /* ------------------------------------------------ top: the RNN, unrolled */
 const RX = k => 196 + 128 * k, RY = 150, RW = 72, RH = 44;
 function rnnPart(st) {
   const sa = lab(0);
   text('RNN, unrolled in time', 18, 34 + rise(sa), { size: 16, color: C.body, alpha: sa });
+  // what the colours of the hidden state mean (its right edge at 935, where the figure's type ends)
+  legend(781, 13, 154, [
+    [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(1), stroke: C.ink, width: .8, alpha: a }), 'positive value'],
+    [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(-1), stroke: C.ink, width: .8, alpha: a }), 'negative value'],
+  ], { alpha: lab(.12) });
   const la = lab(.1);
   text('output', 18, 104, { size: 15, color: C.muted, alpha: la });
   text('largest so far', 18, 122, { size: 14, color: C.muted, alpha: la });
@@ -834,13 +842,13 @@ function lstmPart(st) {
     math(`h = ${num(N.h)}`, 850, BY + 28, { size: 15, color: C.body, alpha: vis });
     math(`\\rm{output}\\ \\ ${N.y.toFixed(2)}`, 850, BY + 52, { size: 16, alpha: vis });
     math(`x = ${N.x.toFixed(2)}`, 222, 690, { size: 15, color: C.body, alpha: vis });
-    text(`step t = ${N === S ? k + 1 : k}`, 830, 346, { size: 15, align: 'right', color: C.muted, alpha: vis });
+    math(`\\rm{step}\\ t = ${N === S ? k + 1 : k}`, 830, 346, { size: 15, align: 'right', color: C.muted, alpha: vis });
   }
   // how well each remembers the peak
   const ea = lab(.5);
   text(`error, largest reading so far: RNN (3 units) ${D.rms[0].toFixed(2)}, LSTM (1 memory cell) ${D.rms[1].toFixed(2)}`,
        18, H - 32, { size: 14, color: C.muted, alpha: ea });
-  text('both trained here (PyTorch) on random sensor streams of 12 readings; errors are RMS over 2000 new streams',
+  text('both trained here (PyTorch) on random sensor streams of 12 readings; errors are RMS over 2,000 new streams',
        18, H - 12, { size: 14, color: C.muted, alpha: ea });
 }
 

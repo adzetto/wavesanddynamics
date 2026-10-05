@@ -162,13 +162,13 @@ function draw() {
   /* (a) the sum of trees */
   sub('a', 18, 34, 'sum of trees so far', arrive(0));
   const g = axes({...PA, xlim: [0, 10], ylim: [-3.5, 2.5], xticks: [0, 2, 4, 6, 8, 10], yticks: [-3, -2, -1, 0, 1, 2],
-    xlabel: 'x', ylabel: 'y', ylabelGap: 38, progress: seg(0, .35)});
+    xlabel: '', ylabel: 'y', ylabelGap: 38, progress: seg(0, .35)});
   g.inside(() => {
     line(D.tx.map((v, i) => [g.X(v), g.Y(D.ty[i])]), {color: C.ink, width: 1.6, dash: [7, 5], progress: seg(.16, .4)});
     // earlier sums, left behind as the rounds go on
     for (const [m, lab] of [[1, '1'], [5, '5'], [15, '15']]) {
       const a = s > m ? .9 * clamp((s - m) * 3) : 0;
-      if (a > 0) line(sumPts(m, g.X, g.Y), {color: C.mist, width: 1.5, alpha: a});
+      if (a > 0) line(sumPts(m, g.X, g.Y), {color: C.guide, width: 1.2, alpha: a});
     }
     line(sumPts(s, g.X, g.Y), {color: C.navy, width: 2.5, progress: seg(.3, .36)});
     for (let i = 0; i < n; i++) mark(g.X(D.x[i]), g.Y(D.y[i]), 4, arrive(.04 + .26 * D.x[i] / 10), 3.9);
@@ -209,7 +209,7 @@ function draw() {
     [(x, y) => mark(x, y + 1, 4, 1, 3.9), 'data'],
     [(x, y) => line([[x - 13, y + 1], [x + 13, y + 1]], {width: 1.6, dash: [7, 5]}), 'true pattern'],
     [(x, y) => line([[x - 13, y + 1], [x + 13, y + 1]], {color: C.navy, width: 2.5}), 'sum of trees'],
-    [(x, y) => line([[x - 13, y + 1], [x + 13, y + 1]], {color: C.mist, width: 1.5}), 'after 1, 5, 15 trees'],
+    [(x, y) => line([[x - 13, y + 1], [x + 13, y + 1]], {color: C.guide, width: 1.2}), 'after 1, 5, 15 trees'],
     [(x, y) => line([[x, y - 8], [x, y + 9]], {color: C.sky, width: 1.4}), 'residual'],
     [(x, y) => line([[x - 13, y + 5], [x - 3, y + 5], [x - 3, y - 4], [x + 13, y - 4]], {color: C.accent, width: 2.4}), 'next tree'],
   ], arrive(.65), 238);

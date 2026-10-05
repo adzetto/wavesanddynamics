@@ -177,7 +177,7 @@ function diamond(x, y, r, alpha) {
 }
 function feat(k, y0, prog) {
   return axes({ x: px(k), y: y0, w: PW, h: PH, xlim: [0, 10], ylim: [0, 10], xticks: [0, 5, 10], yticks: [0, 5, 10],
-    xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 30, progress: prog, tickSize: 14, labelSize: 16 });
+    xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 30, progress: prog });
 }
 function fillRegions(g, polys, alpha, stroke = true) {
   polys.forEach((p, k) => { if (p.length < 3) return;
@@ -189,10 +189,58 @@ function fillRegions(g, polys, alpha, stroke = true) {
 /* the new point the trained models are shown: a closed path through all three classes */
 const query = u => [5.1 + 3.0 * Math.cos(2 * Math.PI * u + .6), 5.0 + 2.9 * Math.sin(2 * Math.PI * u + .6)];
 const QP = 7.5;                                       // seconds per round of the path
+/* each centroid's number, beside its mark: for every k-means step at rest, the first spot (nearest,
+   then least turned from straight out, away from the other two) 1.5 units clear of the points, the
+   marks, the cell edges, the frame, the numbers placed before it and, once converged, the path of
+   the new point; carried from one step's spot to the next as the centroid glides. Worked out once. */
+let NUMS = null;
+function numberSpots(g) {
+  if (NUMS) return NUMS;
+  const pts = DATA.X.map(p => [g.X(p[0]), g.Y(p[1])]), KM = DATA.km;
+  const path = Array.from({ length: 240 }, (_, i) => { const v = query(i / 240); return [g.X(v[0]), g.Y(v[1])]; });
+  const gap = (b, x, y) => Math.hypot(Math.max(b[0] - x, 0, x - b[2]), Math.max(b[1] - y, 0, y - b[3]));
+  const segGap = (b, p, q) => {              // segment pq to box b: 0 when it enters
+    let t0 = 0, t1 = 1; const dx = q[0] - p[0], dy = q[1] - p[1]; let hit = true;
+    for (const [pp, qq] of [[-dx, p[0] - b[0]], [dx, b[2] - p[0]], [-dy, p[1] - b[1]], [dy, b[3] - p[1]]]) {
+      if (pp === 0) { if (qq < 0) { hit = false; break; } continue; }
+      const r = qq / pp; if (pp < 0) { if (r > t1) { hit = false; break; } if (r > t0) t0 = r; } else { if (r < t0) { hit = false; break; } if (r < t1) t1 = r; } }
+    if (hit && t1 >= t0) return 0;
+    const ds = (x, y) => { const L = dx * dx + dy * dy, u = L ? clamp(((x - p[0]) * dx + (y - p[1]) * dy) / L) : 0; return Math.hypot(p[0] + u * dx - x, p[1] + u * dy - y); };
+    return Math.min(gap(b, p[0], p[1]), gap(b, q[0], q[1]), ds(b[0], b[1]), ds(b[2], b[1]), ds(b[0], b[3]), ds(b[2], b[3]));
+  };
+  const cand = [];
+  for (const r of [17, 19, 21, 23, 25, 28]) for (let d = -180; d < 180; d += 15) cand.push([r + Math.abs(d) / 10, r, d * Math.PI / 180]);
+  cand.sort((u, v) => u[0] - v[0]);
+  ctx.save(); ctx.font = font({ size: 15 }); ctx.textAlign = 'center';
+  const M = [1, 2, 3].map(n => ctx.measureText(String(n))); ctx.restore();
+  NUMS = KM.map((st, k) => {
+    const c = st.c.map(q => [g.X(q[0]), g.Y(q[1])]), edges = [], placed = [];
+    const side = (a, b) => [0, 1].some(i => Math.abs(a[i] - b[i]) < 1e-9 && (Math.abs(a[i]) < 1e-9 || Math.abs(a[i] - 10) < 1e-9));
+    regions(st.c.map(q => [2 * q[0], 2 * q[1], -(q[0] * q[0] + q[1] * q[1])])).forEach(poly => poly.forEach((v, i) => {
+      const w = poly[(i + 1) % poly.length]; if (!side(v, w)) edges.push([[g.X(v[0]), g.Y(v[1])], [g.X(w[0]), g.Y(w[1])]]); }));
+    for (const v of [0, 5, 10]) edges.push([[g.X(v), PY2], [g.X(v), PY2 + 5]], [[g.X(v), PY2 + PH], [g.X(v), PY2 + PH - 5]],   // the ticks
+      [[px(1), g.Y(v)], [px(1) + 5, g.Y(v)]], [[px(1) + PW, g.Y(v)], [px(1) + PW - 5, g.Y(v)]]);
+    const mX = c.reduce((s, q) => s + q[0], 0) / 3, mY = c.reduce((s, q) => s + q[1], 0) / 3;
+    return c.map(([cx, cy], j) => {
+      const dl = Math.hypot(cx - mX, cy - mY), a0 = dl > 1 ? Math.atan2(cy - mY, cx - mX) : Math.atan2(-.8, .6), m = M[j];
+      for (const [, r, d] of cand) {
+        const ox = r * Math.cos(a0 + d), oy = r * Math.sin(a0 + d), x = cx + ox, y = cy + oy + 5;
+        const b = [x - m.actualBoundingBoxLeft, y - m.actualBoundingBoxAscent, x + m.actualBoundingBoxRight, y + m.actualBoundingBoxDescent];
+        if (b[0] < px(1) + 1.5 || b[2] > px(1) + PW - 1.5 || b[1] < PY2 + 1.5 || b[3] > PY2 + PH - 1.5) continue;
+        if (pts.some(([x0, y0]) => gap(b, x0, y0) < 5.1) || c.some(([x0, y0]) => gap(b, x0, y0) < 10.7)) continue;
+        if (edges.some(([p, q]) => segGap(b, p, q) < 2.1) || placed.some(o => gap(o, (b[0] + b[2]) / 2, (b[1] + b[3]) / 2) < 3 + (b[2] - b[0]) / 2 + (b[3] - b[1]) / 2)) continue;
+        if (k === KM.length - 1 && path.some(([x0, y0]) => gap(b, x0, y0) < 8.5)) continue;
+        placed.push(b); return [ox, oy];
+      }
+      return [19 * Math.cos(a0), 19 * Math.sin(a0)];
+    });
+  });
+  return NUMS;
+}
 function title(s, k, y, t0) { lab(s, px(k) + PW / 2, y, t0, { size: 16, color: C.body, align: 'center' }); }
 function modelBox(k, word, t0) {
   const cx = px(k) + PW / 2, a = seg(t0, .35);
-  carrow([[cx, PY1 + PH + 56], [cx, MB - 2]], { width: 1.5, progress: seg(t0 + .05, .3) });
+  carrow([[cx, PY1 + PH + 60], [cx, MB - 2]], { width: 1.5, progress: seg(t0 + .05, .3) });
   box(cx - 50, MB, 100, 34, { fill: C.steel, width: 1.4, progress: a });
   lab(word, cx, MB + 23, t0 + .1, { size: 16, align: 'center' });
   carrow([[cx, MB + 34], [cx, PY2 - 30]], { width: 1.5, progress: seg(t0 + .12, .3) });
@@ -235,14 +283,15 @@ function draw() {
   const pb = seg(T0 - .1, .3);
   g.inside(() => { fillRegions(g, regions(vor), pb);
     DATA.X.forEach((p, i) => dot(g.X(p[0]), g.Y(p[1]), 3.2, { color: '#fff', fill: C.body, width: .8, alpha: .5 * pb }));
-    // each centroid's number sits outside the group, away from the other two (from their mean
-    // out through the centroid): clear of their marks while they start close together
-    const mX = cNow.reduce((s, c) => s + g.X(c[0]), 0) / 3, mY = cNow.reduce((s, c) => s + g.Y(c[1]), 0) / 3;
+    // each centroid's number: its step's spot, clear of the points (numberSpots), gliding with it
+    const NP = numberSpots(g), ke = Math.min(KM.length - 1, ki + 1), ge = easeInOut(clamp((kf - .35) / .55));
     cNow.forEach((c, j) => { const X = g.X(c[0]), Y = g.Y(c[1]);         // a centroid: pgfplots' otimes mark
       dot(X, Y, 8.5, { color: C.ink, fill: '#fff', width: 1.4, alpha: pb });
       line([[X - 4.6, Y - 4.6], [X + 4.6, Y + 4.6]], { width: 1.6, alpha: pb }); line([[X - 4.6, Y + 4.6], [X + 4.6, Y - 4.6]], { width: 1.6, alpha: pb });
-      const dx = X - mX, dy = Y - mY, dl = Math.hypot(dx, dy) || 1, ux = dl > 1 ? dx / dl : .6, uy = dl > 1 ? dy / dl : -.8;
-      text(String(j + 1), X + 19 * ux, Y + 19 * uy + 5, { size: 15, align: 'center', alpha: pb }); });
+      const p0 = NP[ki][j], p1 = NP[ke][j], a0 = Math.atan2(p0[1], p0[0]);   // round the mark, never across it
+      let da = Math.atan2(p1[1], p1[0]) - a0; da -= 2 * Math.PI * Math.round(da / (2 * Math.PI));
+      const rr = lerp(Math.hypot(p0[0], p0[1]), Math.hypot(p1[0], p1[1]), ge), aa = a0 + ge * da;
+      text(String(j + 1), X + rr * Math.cos(aa), Y + rr * Math.sin(aa) + 5, { size: 15, align: 'center', alpha: pb }); });
     if (use) diamond(g.X(q[0]), g.Y(q[1]), 7, qa); });
   box(px(1), PY2, PW, PH, { width: 1.3, alpha: seg(.3, .3) });
   const cF = KM[KM.length - 1].c, dq = cF.map(c => Math.hypot(c[0] - q[0], c[1] - q[1])), gq = dq.indexOf(Math.min(...dq));
@@ -253,7 +302,7 @@ function draw() {
   title('rewards from its own actions', 2, PY1 - 10, .3);
   const ep = Math.floor(u * 300 * 1.0001), R = DATA.ret;
   g = axes({ x: px(2), y: PY1, w: PW, h: PH, xlim: [0, 300], ylim: [-1.5, 1], xticks: [0, 100, 200, 300], yticks: [-1, 0, 1],
-    xlabel: '\\rm{episode}', ylabel: '\\rm{total\\ reward}', ylabelGap: 34, progress: seg(.15, .4), tickSize: 14, labelSize: 16 });
+    xlabel: '\\rm{episode}', ylabel: '\\rm{total\\ reward}', ylabelGap: 36, progress: seg(.15, .4) });
   g.inside(() => { line([[g.X(0), g.Y(0)], [g.X(300), g.Y(0)]], { color: C.rule, width: 1 });
     for (let i = 0; i < Math.min(ep, 300); i++) dot(g.X(i + .5), g.Y(R[i]), 1.7, { color: C.navy, fill: C.navy, width: .5 }); });
   modelBox(2, 'agent', .4);

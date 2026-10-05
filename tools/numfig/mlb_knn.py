@@ -237,7 +237,7 @@ function draw() {
     text(`vote: ${no} orange, ${3 - no} purple`, TX, 228 + rise(vv), { size: 16, color: C.body, alpha: vv });
     mark('star', TX + 8, 258 + rise(vv), 9, { fill: win ? K.purple : K.orange, stroke: C.ink, width: 1.2, alpha: vv });
     text('classified as', TX + 26, 264 + rise(vv), { size: 17, alpha: vv });
-    text(CLSN[win], TX + 124, 264 + rise(vv), { size: 17, bold: true, color: win ? K.purpleEdge : C.accent, alpha: vv });
+    text(CLSN[win], TX + 124, 264 + rise(vv), { size: 17, bold: true, color: win ? K.purpleEdge : K.orangeEdge, alpha: vv });
   }
   // legend
   const lg = lab(.45);
@@ -246,7 +246,7 @@ function draw() {
     [(x, y, a) => mark('square', x, y, 4.2, { fill: K.purple, stroke: K.purpleEdge, width: 1.1, alpha: a }), 'purple class'],
     [(x, y, a) => mark('star', x, y, 9, { fill: '#fff', stroke: C.ink, width: 1.3, alpha: a }), 'new patient'],
   ], { alpha: lg });
-  text(`${NP} synthetic patients with known labels, two standardized features; Euclidean distance; K = 3`,
+  math(`\\rm{${NP} synthetic patients with known labels, two standardized features; Euclidean distance;}\\ K = 3`,
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
 }
 boot();

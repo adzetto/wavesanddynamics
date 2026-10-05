@@ -231,7 +231,7 @@ function drawGrid(p) {
   ctx.restore();
   box(x0, GY, 5 * S, 5 * S, { width: 1.4, progress: pa });
   const n = Math.min(done, EPIS[p]);
-  sub('abc'[p], x0 - 2, 44, `after ${n} episode${n === 1 ? '' : 's'}`, seg(.1 + .05 * p, .3));
+  sub('abc'[p], x0 - 12, 36, `after ${n} episode${n === 1 ? '' : 's'}`, seg(.1 + .05 * p, .3));
   lab('start', x0 + S / 2, GY + 5 * S + 20, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
   // named above its square, as 'start' is below its own: the agent comes to rest inside it
   lab('goal', x0 + 4.5 * S, GY - 10, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
@@ -267,8 +267,8 @@ function draw() {
   for (let p = 0; p < 3; p++) drawGrid(p);
   drawWalker(false); drawGreedy();
   const fa = seg(.6, .5);
-  cbar(560, H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
-  text('reward +1 at the goal, −0.02 per step;  α = 0.5,  γ = 0.95,  ε from 0.5 to 0.2', 28, H - 16, { size: 14, color: C.muted, alpha: fa });
+  cbar(GX[2] + 5 * S - 150, H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
+  text('reward +1 at the goal, −0.02 per step;  α = 0.5,  γ = 0.95,  ε from 0.5 to 0.2', 18, H - 16, { size: 14, color: C.muted, alpha: fa });
 }
 boot();
 """)

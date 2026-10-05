@@ -112,7 +112,7 @@ function grown() {
   if (c < GROW + HOLD) return { u: DMAX, back: 0 };
   return { u: DMAX, back: easeInOut(clamp((c - GROW - HOLD) / BACK)) };
 }
-const AX = { y: 60, w: 262, h: 188 }, X0 = [68, 398, 728];
+const AX = { y: 60, w: 262, h: 188 }, X0 = [60, 390, 720];
 const NAMES = ['underfitting', 'good fit', 'overfitting'];
 const pts = new Array(NX);
 
@@ -124,7 +124,7 @@ function draw() {
     // straight blend from its own fit to the mean (degree 0)
     const u = Math.min(g.u, DEG[k]), d0 = Math.floor(u), s = u - d0, d1 = Math.min(d0 + 1, DEG[k]);
     const dn = g.back < .5 ? Math.round(u) : 0;
-    text(NAMES[k], x, 38 + rise(a), { size: 17, alpha: a });
+    text(NAMES[k], x, 38 + rise(a), { size: 17, color: C.body, alpha: a });
     math(`\\rm{degree}\\ ${dn}`, x + AX.w, 38 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [0, 1], ylim: [-2, 2], xticks: [0, .5, 1],
       yticks: [-2, -1, 0, 1, 2], xlabel: 'x', ylabel: k ? '' : 'y', ylabelGap: 34, progress: seg(t0, .35),
@@ -141,7 +141,7 @@ function draw() {
     });
     for (let i = 0; i < D.n; i++) {                 // the training points arrive left to right
       const p = settle(.1 + t0 + .008 * i, .24);
-      if (p > 0) mark('circle', A.X(D.x[i]), A.Y(D.y[i]), 3.6 * (.55 + .45 * p), { fill: C.ink, stroke: '#fff', width: 1, alpha: p });
+      if (p > 0) mark('circle', A.X(D.x[i]), A.Y(D.y[i]), 3.6 * (.55 + .45 * p), { fill: C.navy, stroke: '#fff', width: 1, alpha: p });
     }
     // the model's errors at the degree shown
     const ra = lab(.45 + t0), cx = x + AX.w / 2;
@@ -152,7 +152,7 @@ function draw() {
   }
   const la = lab(.55);
   text('real pattern', X0[0] + AX.w * .25, AX.y + AX.h * (2 - 1.32) / 4 + rise(la), { size: 14, color: C.muted, align: 'center', alpha: la });
-  text(`${D.n} training points, y = sin 2πx + noise (σ = ${D.sigma}); least squares polynomials; errors are RMS, new data ${D.nnew.toLocaleString('en').replace(',', ' ')} points`,
+  text(`${D.n} training points, y = sin 2πx + noise (σ = ${D.sigma}); least squares polynomials; errors are RMS, new data ${D.nnew.toLocaleString('en')} points`,
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.6) });
 }
 boot();

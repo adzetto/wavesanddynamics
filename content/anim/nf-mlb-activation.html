@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -720,7 +723,7 @@ function draw() {
   const z = zNow(), pa = lab(.55);
   PANELS.forEach((p, k) => {
     const x = X0[k], t0 = .05 * k;
-    text(p.name, x, 40 + rise(lab(t0)), { size: 17, alpha: lab(t0) });
+    text(p.name, x, 40 + rise(lab(t0)), { size: 17, color: C.body, alpha: lab(t0) });
     math(p.formula, x + AX.w, 40 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [-4.4, 4.4], ylim: p.ylim, xticks: [-4, -2, 0, 2, 4],
       yticks: p.yticks, yfmt: p.yfmt, grid: true, xlabel: 'z', progress: seg(t0, .35), ylabelGap: 40 });
@@ -748,7 +751,7 @@ function draw() {
       math(s2, x + 12, AX.y + 68, { size: 15, color: C.accent, alpha: pa });
     }
   });
-  text('one input z, swept from \u22123.6 to 3.6 and back, drives all three', 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  math('\\rm{one input}\\ z\\rm{, swept from \u22123.6 to 3.6 and back, drives all three}', 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
 }
 boot();
 </script>

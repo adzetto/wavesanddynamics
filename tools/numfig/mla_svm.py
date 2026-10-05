@@ -336,10 +336,12 @@ function drawA() {
   });
   const da = arrive(.7);
   if (da > 0) {
-    const along = 1.55, bx = S.ux * S.c - S.uy * along, by = S.uy * S.c + S.ux * along;
+    // the street is as wide everywhere: its dimension sits up its far end, where neither it nor
+    // its label meets a point at any angle of the swing (2.6 along the boundary from the centre)
+    const along = 2.6, bx = S.ux * S.c - S.uy * along, by = S.uy * S.c + S.ux * along;
     const h = S.w / 2, p0 = [g.X(bx - S.ux * h), g.Y(by - S.uy * h)], p1 = [g.X(bx + S.ux * h), g.Y(by + S.uy * h)];
     arrow(p0[0], p0[1], p1[0], p1[1], {width: 1.1, head: 7, both: true, color: C.accent, alpha: da});
-    text('margin ' + S.w.toFixed(2), p1[0] + 10, p1[1] + 4, {size: 16, color: C.accent, alpha: da});
+    text('margin ' + S.w.toFixed(2), p1[0] + 16, p1[1] + 4, {size: 16, color: C.accent, alpha: da});
   }
   const h = axes({...PC, xlim: [DA.th - 24, DA.th + 24], ylim: [0, 1.4],
     xticks: [-20, -10, 0, 10, 20].map(v => DA.th + v), yticks: [0, .4, .8, 1.2],
@@ -623,8 +625,9 @@ function drawB(sl) {
   prof(true);
   contour('p', 1, [6, 4], 1.2, la);
   pts(true);
-  // the plane's name, along its far left edge
-  const lb = clamp((lam - .8) / .15) * clamp((72 - CAM.az) / 10) * clamp((62 - CAM.el) / 10);
+  // the plane's name, along its far left edge; gone where the view is too turned or steep for it,
+  // and where the plane is seen nearly edge on and its name would sit among the points
+  const lb = clamp((lam - .8) / .15) * clamp((72 - CAM.az) / 10) * clamp((62 - CAM.el) / 10) * clamp((CAM.el - 10) / 4);
   if (lb > 0) {
     const p = P(-.62 * L, L, 0), q = P(-.3 * L, L, 0), an = Math.atan2(q[1] - p[1], q[0] - p[0]);
     math('f = 0', p[0] + Math.sin(an) * 7, p[1] - Math.cos(an) * 7, {size: 15, color: C.body, rot: an, alpha: lb});
@@ -750,7 +753,9 @@ function drawBp(sl) {
 
 /* ------------------------------------------------------------ the arrow from (a) to (b) */
 const AR = {x0: PA.x + SQ + 16, x1: PB.x - 60, y: PB.y + SQ / 2 + 4};
-const inArrow = (X, Y) => X > AR.x0 - 8 && X < AR.x1 + 8 && Y > AR.y - 34 && Y < AR.y + 14;
+/* the arrow's hit area: its label and the free space under it (70 units, 24 CSS px on a phone);
+   while the comparison shows, the numbers under it too, so the pointer can move down to read them */
+const inArrow = (X, Y) => X > AR.x0 - 8 && X < AR.x1 + 8 && Y > AR.y - 34 && Y < AR.y + (CMP.to ? 112 : 36);
 function drawArrow() {
   const a = seg(.55, .35), cmp = cmpAt(), col = cmp > .01 ? mixc(C.ink, C.accent, cmp) : C.ink;
   if (a > 0) {
@@ -792,14 +797,15 @@ function draw() {
     [(x, y) => line([[x - 13, y], [x + 13, y]], {width: 2.2}), '\\rm{decision boundary},\\ f = 0'],
     [(x, y) => line([[x - 13, y], [x + 13, y]], {width: 1.2, dash: [6, 4]}), '\\rm{margins},\\ f = \\pm 1'],
   ], arrive(.7));
-  // short of the controls in the corner (three buttons: 3-D, pause, restart)
+  // short of the controls in the corner (the 3-D button stays there in the guide's page)
   text('scaled features; (a) hard margin; (b) γ = 0.5, C = 10, b = ' + nfmt(B0, 2) +
        ': all ' + DB.n + ' separated; best straight line ' + DB.line.n + ' of ' + DB.n,
        18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
 }
+const TAP = matchMedia('(hover: none)').matches;      // a touch screen: tap, not click
 function hint() {
-  const to = target(), a = arrive(1.2);
-  const s = to > .5 ? 'drag to turn, click for 2D' : 'click for the 3D view';
+  const to = target(), a = arrive(1.2), w = TAP ? 'tap' : 'click';
+  const s = to > .5 ? 'drag to turn, ' + w + ' for 2D' : w + ' for the 3D view';
   text(s, PB.x + SQ, 34, {size: 14, color: C.muted, align: 'right', alpha: .9 * a});
 }
 
@@ -825,24 +831,25 @@ function cmpSet() {
 }
 let B3 = null, BA = null;
 function sync() {
-  if (B3) { const on = target() > .5; B3.setAttribute('aria-pressed', String(on));
-    B3.setAttribute('aria-label', on ? 'Show (b) from above, as a 2-D plot' : 'Show (b) in 3-D: the decision function f as a surface'); }
+  if (B3) B3.setAttribute('aria-pressed', String(target() > .5));
   if (BA) BA.setAttribute('aria-pressed', String(CMP.pin));
 }
 if (!STILL) {
   const FIG = document.querySelector('.fig'), ctl = FIG.querySelector('.ctl');
   const css = document.createElement('style');
   css.textContent = '#v3 svg{fill:none!important;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;width:50%!important;height:50%!important}' +
-    '#v3[aria-pressed=true]{background:#E3EBF2}' +
+    '#v3[aria-pressed=true]{background:#043052;color:#fff;border-color:#043052}' +
     '.nfa{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;outline:none;color:transparent}' +
     '.nfa:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
   document.head.appendChild(css);
   B3 = document.createElement('button'); B3.id = 'v3'; B3.type = 'button';
+  B3.setAttribute('aria-label', 'Show (b) in 3-D: the decision function f as a surface');
   B3.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l5.4 3v6.4L8 14.2l-5.4-3V4.8z"/><path d="M2.6 4.8L8 7.8l5.4-3M8 7.8v6.4"/></svg>';
   B3.addEventListener('click', e => { e.stopPropagation(); toggleView(); });
   ctl.insertBefore(B3, ctl.firstChild);
-  BA = document.createElement('button'); BA.type = 'button'; BA.className = 'nfa'; BA.textContent = 'why a kernel';
-  BA.setAttribute('aria-label', 'Why a kernel: the best straight line on the rings against the RBF boundary');
+  BA = document.createElement('button'); BA.type = 'button'; BA.className = 'nfa'; BA.textContent = 'add a kernel';
+  BA.setAttribute('aria-label', 'Add a kernel: the best straight line separates ' + Math.round(100 * DB.line.n / DB.n) +
+    '% of the rings, the RBF kernel 100%');
   BA.addEventListener('click', e => { e.stopPropagation(); CMP.pin = !CMP.pin; cmpSet(); });
   BA.addEventListener('focus', () => { CMP.focus = true; cmpSet(); });
   BA.addEventListener('blur', () => { CMP.focus = false; cmpSet(); });
@@ -852,7 +859,7 @@ if (!STILL) {
   new ResizeObserver(placeA).observe(cv); placeA();
   sync();
   const toU = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; };
-  const inB = (X, Y) => !inArrow(X, Y) && X > PB.x - 46 && X < W - 4 && Y > PB.y - 14 && Y < PB.y + SQ + 62;
+  const inB = (X, Y) => !inArrow(X, Y) && X > PB.x - 46 && X < W - 4 && Y > 14 && Y < PB.y + SQ + 62;
   let drag = null, dragged = false;
   cv.style.touchAction = 'pan-y';
   cv.addEventListener('pointerdown', e => {
@@ -878,12 +885,14 @@ if (!STILL) {
   cv.addEventListener('pointerup', drop);
   cv.addEventListener('pointercancel', drop);
   cv.addEventListener('pointerleave', () => { if (CMP.hover) { CMP.hover = false; cmpSet(); } });
-  // a click on (b) or on the arrow is theirs: it must not also pause (the engine toggles on a click)
+  // a click on (b), its hint or the arrow is theirs, and so is the end of a drag wherever it is let
+  // go: none of them also pauses (the engine toggles on a click; open ground still does)
   FIG.addEventListener('click', e => {
     if (e.target !== cv) return;
     const [X, Y] = toU(e);
+    if (dragged) { dragged = false; e.stopPropagation(); return; }
     if (inArrow(X, Y)) { e.stopPropagation(); CMP.pin = !CMP.pin; cmpSet(); return; }
-    if (inB(X, Y)) { e.stopPropagation(); if (!dragged) toggleView(); dragged = false; }
+    if (inB(X, Y)) { e.stopPropagation(); toggleView(); }
   }, true);
 }
 boot();

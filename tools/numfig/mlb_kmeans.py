@@ -156,6 +156,12 @@ function voronoi(P, alpha) {
   }
 }
 
+/* the three groups: a fill and a shape each, so no group is told by colour alone and
+   none is crimson (README, shared conventions); a center and its path take its group's colour.
+   The three marks weigh alike, as Figure 2(c) sizes them: a square of half side 3.4 and a
+   triangle of r 4.8 (mark()'s triangle covers 1.85 r^2) come close to the circle of r 3.9 */
+const GRP = [[C.navy, 'circle'], [C.blue, 'square'], [C.sky, 'triangle']];
+const MR = { circle: 3.9, square: 3.4, triangle: 4.8 };
 function draw() {
   const st = state(), CN = centersNow(st);
   const A = axes({ ...AX, xlim: [-XL, XL], ylim: [-XL, XL], xticks: [-2, -1, 0, 1, 2], yticks: [-2, -1, 0, 1, 2],
@@ -170,31 +176,33 @@ function draw() {
       const pts = [[SX(D.c[0][k][0]), SY(D.c[0][k][1])]];
       for (let i = 1; i < upto; i++) pts.push([SX(D.c[i][k][0]), SY(D.c[i][k][1])]);
       pts.push([SX(CN[k][0]), SY(CN[k][1])]);
-      line(pts, { color: CLS[k][1], width: 1.4, dash: [4, 3], alpha: .8 * (1 - st.reset) });
-      for (let i = 0; i < upto; i++) dot(SX(D.c[i][k][0]), SY(D.c[i][k][1]), 2.4, { color: CLS[k][1], fill: '#fff', width: 1.2, alpha: 1 - st.reset });
+      line(pts, { color: GRP[k][0], width: 1.4, dash: [4, 3], alpha: .8 * (1 - st.reset) });
+      for (let i = 0; i < upto; i++) dot(SX(D.c[i][k][0]), SY(D.c[i][k][1]), 2.4, { color: GRP[k][0], fill: '#fff', width: 1.2, alpha: 1 - st.reset });
     }
   });
-  // the customers: no colour until the first assignment, then their center's
+  // the customers: no colour until the first assignment, then their center's colour and shape
+  // (the shape turns halfway through the change of colour)
   for (let i = 0; i < NP; i++) {
     const p = settle(.05 + .002 * i, .24); if (p <= 0) continue;
-    let fill = '#FFFFFF', edge = C.guide;
+    let fill = '#FFFFFF', edge = C.guide, kind = 'circle';
     if (st.it > 0) {
       const now = D.lab[Math.min(st.it, NIT) - 1][i];
       const was = st.it === 1 ? -1 : D.lab[Math.min(st.it - 1, NIT) - 1][i];
-      const sNow = CLS[now];
-      if (was === now || st.it > NIT) { fill = sNow[0]; edge = sNow[1]; }
+      const sNow = GRP[now];
+      kind = was !== now && st.it <= NIT && st.a < .5 ? (was < 0 ? 'circle' : GRP[was][1]) : sNow[1];
+      if (was === now || st.it > NIT) { fill = sNow[0]; edge = '#FFFFFF'; }
       else {
-        const f0 = was < 0 ? '#FFFFFF' : CLS[was][0], e0 = was < 0 ? C.guide : CLS[was][1];
-        fill = mixHex(f0, sNow[0], st.a); edge = mixHex(e0, sNow[1], st.a);
+        const f0 = was < 0 ? '#FFFFFF' : GRP[was][0], e0 = was < 0 ? C.guide : '#FFFFFF';
+        fill = mixHex(f0, sNow[0], st.a); edge = mixHex(e0, '#FFFFFF', st.a);
       }
-      if (st.reset > 0) { fill = mixHex(sNow[0], '#FFFFFF', st.reset); edge = mixHex(sNow[1], C.guide, st.reset); }
+      if (st.reset > 0) { fill = mixHex(sNow[0], '#FFFFFF', st.reset); edge = mixHex('#FFFFFF', C.guide, st.reset); if (st.reset > .5) kind = 'circle'; }
     }
-    mark('circle', SX(D.x[i][0]), SY(D.x[i][1]), 3.9 * (.6 + .4 * p), { fill, stroke: edge, width: 1, alpha: p });
+    mark(kind, SX(D.x[i][0]), SY(D.x[i][1]), MR[kind] * (.6 + .4 * p), { fill, stroke: edge, width: 1, alpha: p });
   }
   // the centers
   for (let k = 0; k < 3; k++) {
     const a = settle(.3 + .05 * k, .28);
-    cross(SX(CN[k][0]), SY(CN[k][1]) + rise(a), 8, { color: CLS[k][1], width: 3.2, alpha: a });
+    cross(SX(CN[k][0]), SY(CN[k][1]) + rise(a), 8, { color: GRP[k][0], width: 3.2, alpha: a });
   }
 
   /* the side: what the algorithm is doing, and the sum of squares falling */
@@ -229,7 +237,7 @@ function draw() {
     [(x, y, a) => cross(x, y, 6, { color: C.ink, width: 2.6, alpha: a }), 'cluster center'],
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.ink, width: 1.4, dash: [4, 3], alpha: a }), 'path of a center'],
   ], { alpha: lab(.45) });
-  text('150 synthetic customers, two standardized features; K = 3; Euclidean distance', 18, H - 12,
+  math('\\rm{150 synthetic customers, two standardized features;}\\ K = 3\\rm{; Euclidean distance}', 18, H - 12,
        { size: 14, color: C.muted, alpha: lab(.5) });
 }
 boot();

@@ -21,5 +21,5 @@ RESULT
   at epoch 4000: training 0.1391, validation 1.1496 (2.07 x its minimum); accuracy 0.96 training, 0.68 validation
   after the minimum the validation loss rises in 3260 of 3260 epochs
   training points whose (flipped, wrong) label the final network reproduces: 11 of 12 (memorized noise)
-  model panel: p(purple) on a 44 x 44 grid over [-2.4, 2.4]^2 at epochs [0, 250, 500, 740, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000]
+  model panel: p(class 1) on a 44 x 44 grid over [-2.4, 2.4]^2 at epochs [0, 250, 500, 740, 750, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3250, 3500, 3750, 4000]
   curves drawn at 401 epochs (every 10, and epoch 740)

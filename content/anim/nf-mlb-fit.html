@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -712,7 +715,7 @@ function grown() {
   if (c < GROW + HOLD) return { u: DMAX, back: 0 };
   return { u: DMAX, back: easeInOut(clamp((c - GROW - HOLD) / BACK)) };
 }
-const AX = { y: 60, w: 262, h: 188 }, X0 = [68, 398, 728];
+const AX = { y: 60, w: 262, h: 188 }, X0 = [60, 390, 720];
 const NAMES = ['underfitting', 'good fit', 'overfitting'];
 const pts = new Array(NX);
 
@@ -724,7 +727,7 @@ function draw() {
     // straight blend from its own fit to the mean (degree 0)
     const u = Math.min(g.u, DEG[k]), d0 = Math.floor(u), s = u - d0, d1 = Math.min(d0 + 1, DEG[k]);
     const dn = g.back < .5 ? Math.round(u) : 0;
-    text(NAMES[k], x, 38 + rise(a), { size: 17, alpha: a });
+    text(NAMES[k], x, 38 + rise(a), { size: 17, color: C.body, alpha: a });
     math(`\\rm{degree}\\ ${dn}`, x + AX.w, 38 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [0, 1], ylim: [-2, 2], xticks: [0, .5, 1],
       yticks: [-2, -1, 0, 1, 2], xlabel: 'x', ylabel: k ? '' : 'y', ylabelGap: 34, progress: seg(t0, .35),
@@ -741,7 +744,7 @@ function draw() {
     });
     for (let i = 0; i < D.n; i++) {                 // the training points arrive left to right
       const p = settle(.1 + t0 + .008 * i, .24);
-      if (p > 0) mark('circle', A.X(D.x[i]), A.Y(D.y[i]), 3.6 * (.55 + .45 * p), { fill: C.ink, stroke: '#fff', width: 1, alpha: p });
+      if (p > 0) mark('circle', A.X(D.x[i]), A.Y(D.y[i]), 3.6 * (.55 + .45 * p), { fill: C.navy, stroke: '#fff', width: 1, alpha: p });
     }
     // the model's errors at the degree shown
     const ra = lab(.45 + t0), cx = x + AX.w / 2;
@@ -752,7 +755,7 @@ function draw() {
   }
   const la = lab(.55);
   text('real pattern', X0[0] + AX.w * .25, AX.y + AX.h * (2 - 1.32) / 4 + rise(la), { size: 14, color: C.muted, align: 'center', alpha: la });
-  text(`${D.n} training points, y = sin 2πx + noise (σ = ${D.sigma}); least squares polynomials; errors are RMS, new data ${D.nnew.toLocaleString('en').replace(',', ' ')} points`,
+  text(`${D.n} training points, y = sin 2πx + noise (σ = ${D.sigma}); least squares polynomials; errors are RMS, new data ${D.nnew.toLocaleString('en')} points`,
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.6) });
 }
 boot();

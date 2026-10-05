@@ -164,8 +164,9 @@ function weightsAt(e) {
   return WN;
 }
 const wAt = (m, i, j) => WN[OFF[m] + i * SZ[m + 1] + j];
-/* a value as a colour: blue positive, crimson negative, white zero */
-const vcol = v => v >= 0 ? mixHex('#FFFFFF', C.blue, clamp(v)) : mixHex('#FFFFFF', K.red, clamp(-v));
+/* a value as a colour: blue positive, crimson negative, white zero (signed(), ending at
+   its matched middle stops, so a full node is no darker than its lines) */
+const vcol = v => signed(v * 2 / 3);
 
 function draw() {
   const tt = loopT(), e = epochNow(tt);
@@ -186,9 +187,9 @@ function draw() {
       const w = wAt(m, i, j), a = Math.min(1, Math.abs(w) / wm);
       const p0 = [LX[m] + R, NY[m][i]], p1 = [LX[m + 1] - R, NY[m + 1][j]];
       const pr = seg(.1 + .07 * m, .4);
-      line([p0, p1], { color: w >= 0 ? C.blue : K.red, width: .5 + 3.2 * a, alpha: (.24 + .6 * a) * (F ? 1 - .2 * fade : 1), progress: pr });
+      line([p0, p1], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 3.2 * a, alpha: (.24 + .6 * a) * (F ? 1 - .2 * fade : 1), progress: pr });
       if (flow > 0 && flow < 1)
-        line([p0, p1], { color: w >= 0 ? C.blue : K.red, width: .5 + 3.2 * a, alpha: (.35 + .6 * a) * fade, progress: easeOut(flow) });
+        line([p0, p1], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 3.2 * a, alpha: (.35 + .6 * a) * fade, progress: easeOut(flow) });
     }
   }
   // neurons: filled with what they compute for the flower passing through
@@ -241,8 +242,8 @@ function draw() {
   text(sub, SX0, 506 + rise(sa), { size: 16, color: C.body, alpha: sa });
   if (F) text(`true species: ${D.names[F.sp]}`, SX0, 530, { size: 16, color: C.body, alpha: layerOn[3] * fade });
   legend(SX0 + 262, 460, 218, [
-    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.blue, width: 2.6, alpha: a }), 'positive weight'],
-    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: K.red, width: 2.6, alpha: a }), 'negative weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.6, alpha: a }), 'positive weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.6, alpha: a }), 'negative weight'],
     [(x, y, a) => { line([[x - 12, y - 4], [x + 12, y - 4]], { color: C.ink, width: .6, alpha: a }); line([[x - 12, y + 3], [x + 12, y + 3]], { color: C.ink, width: 3, alpha: a }); }, 'width: size of weight'],
   ], { alpha: lab(.4) });
   text(`iris flowers (Fisher); network 4-5-5-3, tanh, softmax; gradient descent; right: ${D.acc[0]}/120 train, ${D.acc[1]}/30 held out`,

@@ -152,7 +152,7 @@ function drawB() {
   const P = {x: 410, y: 124, w: 196, h: 196}, MH = 54, GAP = 7;
   const g = axes({...P, xlim: [0, 350], ylim: [.8, 2.66], xticks: [0, 100, 200, 300], yticks: [1, 1.5, 2, 2.5],
     yfmt: v => v === 1 ? '1' : v === 2 ? '2' : v.toFixed(1), xlabel: '\\rm{income (k$)}', ylabel: '\\rm{log}_{10}\\ \\rm{income}',
-    ylabelGap: 42, progress: seg(.04, .35), tickSize: 14, labelSize: 15});
+    ylabelGap: 42, progress: seg(.04, .35)});
   const mx = Math.max(...B.hx), my = Math.max(...B.hy);
   // the probe: an income carried down to the curve and across to its logarithm. Its window: it
   // fades in at 18 k$ (.3 s) and rests, glides (.8 s) to 45, 110 and 230 k$, a stop every 2 s,
@@ -193,7 +193,7 @@ function drawB() {
       line([[Math.max(px, lb[2]), py], [right, py]], pr);
     } else line([[px, py], [right, py]], pr);
     dot(px, py, 5, {color: '#fff', fill: C.accent, width: 1.4, alpha: pa});
-    math(probe.toFixed(0) + '\\ \\rm{k$}\\ \\to\\ ' + Math.log10(probe).toFixed(2), P.x + P.w - 6, P.y + P.h - 12,
+    math(probe.toFixed(0) + '\\ \\rm{k$}\\ \\to\\ ' + Math.log10(probe).toFixed(2), P.x + P.w - 12, P.y + P.h - 12,
       {size: 15, color: C.accent, align: 'right', alpha: pa});
   }
   const la = arrive(.45);

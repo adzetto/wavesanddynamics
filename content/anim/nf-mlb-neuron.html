@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -712,10 +715,10 @@ const bAt = (s, L, j) => PAR[s * 73 + OFFB[L - 1] + j];
 const zAt = (s, k) => ZZ[s * 13 + k - 4];                  // a computing neuron's pre-activation
 const valAt = (s, L, i) => AA[s * 17 + BASE[L] + i];     // layer 0: the standardized inputs
 const outAt = (s, k) => valAt(s, NEU[k].L, NEU[k].j);
-/* Figure 17's colours: a weight blue if positive, crimson if negative, its width its size;
-   a neuron filled with its value */
-const vcol = v => v >= 0 ? mixHex('#FFFFFF', C.blue, clamp(v)) : mixHex('#FFFFFF', K.red, clamp(-v));
-const wcol = w => w >= 0 ? C.blue : K.red;
+/* the guide's signed colours (mlb_common): a weight blue if positive, crimson if negative, its
+   width its size; a neuron filled with its value, the ends on SIGNED's lightness-matched stops */
+const vcol = v => signed(v * 2 / 3);
+const wcol = w => w >= 0 ? S_POS : S_NEG;
 const wfrac = w => Math.min(1, Math.abs(w) / D.wmax);
 const LAYER = ['input layer', 'hidden layer 1', 'hidden layer 2', 'output layer'];
 const nName = k => { const N = NEU[k]; return N.L === 0 ? `input layer, ${D.feat[N.j]}` : N.L === 3 ? `output layer, ${D.species[N.j]}` : `${LAYER[N.L]}, neuron ${N.j + 1}`; };
@@ -728,8 +731,10 @@ let EPI = FIN;        // the epoch shown, chosen with the slider (a carried epoc
 let HSC = -1;         // the epoch pointed at on the training plot; -1: none
 let REP = null;       // the training replayed: {t0}
 let HN = -1, HB = ''; // the neuron and the control under the pointer
-let DRAG = false;
-function reset() { SEL = null; HOV = -1; EPI = FIN; HSC = -1; REP = null; }
+let DRAG = false;     // the slider's handle held
+let DOWN = false;     // the replay chip held down
+function reset() { SEL = null; HOV = -1; EPI = FIN; HSC = -1; REP = null; DOWN = false; }
+const TAP = matchMedia('(hover: none)').matches;         // a touch screen: the hint says tap
 const REPLEN = 6;                                          // the 300 epochs, replayed in 6 s
 function nearest(e) { let best = 0; for (let q = 1; q < NSMP; q++) if (Math.abs(D.eps[q] - e) < Math.abs(D.eps[best] - e)) best = q; return best; }
 const replaying = () => REP && t >= REP.t0 && t < REP.t0 + REPLEN;
@@ -818,7 +823,7 @@ function network(st, s, T0, fo) {
     { size: 15, color: k === kOf(3, j) ? C.ink : C.body, alpha: lab(.2 + .03 * j) }));
   const fa = lab(.3);
   text('held out versicolor flower', 18, NY(1, 4) + NR(1) + 32, { size: 15, color: C.body, alpha: fa });
-  if (!STILL) text('click any neuron', NX[3] + 84, NY(1, 4) + NR(1) + 32, { size: 14, color: C.muted, align: 'right', alpha: fa });
+  if (!STILL) text(TAP ? 'tap any neuron' : 'click any neuron', NX[3] + 84, NY(1, 4) + NR(1) + 32, { size: 14, color: C.muted, align: 'right', alpha: fa });
 }
 
 /* ================================================ the chosen neuron, right */
@@ -832,7 +837,7 @@ function rim(x, y) { const dx = XS - x, dy = YM - y, d = Math.hypot(dx, dy); ret
 function neuronView(k, T0, s, fa) {
   const N = NEU[k], n = SZ[N.L - 1], T = simT(n), out = N.L === 3;
   const la = o => lab(T0 + o) * fa, sk = seg(T0 + .02, .35);
-  text(nName(k), XR, 84 + rise(la(0)), { size: 20, alpha: la(0) });
+  text(nName(k), XR, 84 + rise(la(0)), { size: 17, color: C.body, alpha: la(0) });
   text(`from ${LAYER[N.L - 1]}`, XI, rowY(0, n) - 30, { size: 15, color: C.body, align: 'center', alpha: la(.04) });
   for (let i = 0; i < n; i++) {
     const y = rowY(i, n), w = wAt(s, N.L, i, N.j), x = valAt(s, N.L - 1, i), t1 = T0 + T.f0 + T.fs * i;
@@ -913,7 +918,7 @@ const XRAW = 552, IB = { x: 604, y: YM - 23, w: 92, h: 46 }, XN = 744, RN = 16;
 const XA0 = 806, XA1 = 880, XAL = (XA0 + XA1) / 2, XPP = 910, XT = 964, RT = 12;
 function inputView(k, T0, s, fa) {
   const N = NEU[k], i = N.j, x = valAt(s, 0, i), la = o => lab(T0 + o) * fa, sk = seg(T0 + .02, .35);
-  text(nName(k), XR, 84 + rise(la(0)), { size: 20, alpha: la(0) });
+  text(nName(k), XR, 84 + rise(la(0)), { size: 17, color: C.body, alpha: la(0) });
   // the measurement, standardized: (x - mu) / sigma
   math(`${D.cm[i]}\\,\\rm{cm}`, XRAW, YM + 6, { size: 16, align: 'center', alpha: la(.05) });
   arrow(XRAW + 25, YM, IB.x - 3, YM, { color: C.ink, width: 1.3, head: 8, alpha: sk * fa });
@@ -951,7 +956,8 @@ const view = (k, T0, s, fa) => isIn(k) ? inputView(k, T0, s, fa) : neuronView(k,
 /* ================================================ its weights during training, with the epoch */
 const TP = { x: 92, y: 400, w: 330, h: 112 };
 const TX = e => TP.x + e / 300 * TP.w;
-const SL = { y: TP.y + TP.h + 64, x0: TX(0), x1: TX(300) }, PB = { x: TP.x - 46, y: TP.y + TP.h + 64, r: 12 };
+const SL = { y: TP.y + TP.h + 64, x0: TX(0), x1: TX(300) };
+const RP = { x: 18, y: SL.y - 14, w: 58, h: 28 };         // replay: a chip on the slider's left
 function trajOf(k, i, q) {
   const N = NEU[k];
   if (N.L === 0) return wAt(q, 1, N.j, i);
@@ -966,7 +972,7 @@ function trange(k) {                           // the neuron's weights over trai
   let lo = 0, hi = 0;
   for (let i = 0; i < nLines(k); i++) for (let q = 0; q < NSMP; q++) { const v = trajOf(k, i, q); lo = Math.min(lo, v); hi = Math.max(hi, v); }
   const pad = .1 * (hi - lo) + .06; lo -= pad; hi += pad;
-  const st = hi - lo > 1.6 ? 1 : .5, ticks = [];
+  const st = Math.floor(hi) - Math.ceil(lo) >= 2 ? 1 : .5, ticks = [];   // whole numbers only where three fit
   for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) ticks.push(+v.toFixed(2));
   return (TRG[k] = { lo, hi, ticks });
 }
@@ -1017,11 +1023,11 @@ function slider(s) {
   for (const e of [0, 100, 200, 300]) line([[TX(e), SL.y - 5], [TX(e), SL.y + 5]], { color: C.rule, width: 1, alpha: a });
   dot(hx, SL.y, HB === 'handle' || DRAG ? 8.5 : 7.5, { color: C.navy, fill: '#fff', width: 2, alpha: a });
   math(`\\rm{epoch}\\ ${D.eps[s]}`, SL.x1 + 20, SL.y + 5, { size: 16, color: s === FIN ? C.body : C.ink, alpha: a });
-  // replay the training: a round button with a triangle, a square while it plays
-  const on = HB === 'play', col = on ? C.navy : C.guide;
-  dot(PB.x, PB.y, PB.r, { color: col, fill: on ? C.steel : '#fff', width: 1.2, alpha: a });
-  if (replaying()) rect(PB.x - 4, PB.y - 4, 8, 8, { fill: col, stroke: null, alpha: a });
-  else line([[PB.x - 3.4, PB.y - 5.2], [PB.x + 5.4, PB.y], [PB.x - 3.4, PB.y + 5.2]], { color: col, width: 1, fill: col, close: true, alpha: a });
+  // replay the training: a chip in words, not the frame's play glyph; 'stop' while it plays, and
+  // pale with less motion, where the slider shows the epochs instead
+  const rp = replaying();
+  uiChip(RP.x, RP.y, RP.w, RP.h, rp ? 'stop' : 'replay',
+         { on: rp, hover: HB === 'play' && !REDUCED, down: DOWN && !REDUCED, off: REDUCED }, a);
 }
 
 function draw() {
@@ -1035,7 +1041,7 @@ function draw() {
   text(ep, 990, 36, { size: 15, color: s < FIN ? C.ink : C.muted, align: 'right', alpha: lab(.1) });
   trainPlot(st.k, T0, s);
   slider(s);
-  math('\\rm{training:}\\ \\ w ← w - \\eta\\,\\partial L/\\partial w,\\ \\ \\eta = 0.3', XR, EY + 134, { size: 16, color: C.body, alpha: lab(.3) });
+  math('\\rm{training:}\\ \\ w ← w - \\eta\\,\\partial L/\\partial w,\\ \\ \\eta\\ = 0.3', XR, EY + 134, { size: 16, color: C.body, alpha: lab(.3) });
   text('network of Figure 17 (iris, 4-5-5-3, tanh, softmax, 300 epochs of gradient descent); inputs standardized; values rounded',
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
   place();
@@ -1053,23 +1059,25 @@ function chooseNeuron(k) {
 }
 function holdA() { if (!SEL) SEL = aNow(); }    // exploring holds the tour where it is
 function replay() {
+  if (REDUCED) return;                          // a replay is motion: drawn off, the slider instead
   holdA();
   if (replaying()) { REP = null; EPI = FIN; redraw(); return; }
-  if (REDUCED) { EPI = FIN; redraw(); return; }
   REP = { t0: t }; EPI = FIN; HSC = -1;
   if (!playing) setPlay(true);
 }
 function chooseEpoch(q) { holdA(); REP = null; EPI = clamp(q, 0, FIN); redraw(); }
+/* hit areas as large as the layout allows: a neuron half the 46 unit spacing round it, the replay
+   chip and the slider 44 units tall (30 CSS px at 672), the handle 36 units wide */
 function hitNode(X, Y) {
-  for (let k = 0; k < NK; k++) if (Math.hypot(X - NX[NEU[k].L], Y - NY(NEU[k].L, NEU[k].j)) < 19) return k;
+  for (let k = 0; k < NK; k++) if (Math.hypot(X - NX[NEU[k].L], Y - NY(NEU[k].L, NEU[k].j)) < 23) return k;
   // an input's row of the table chooses it too
-  for (let i = 0; i < 4; i++) if (X > 12 && X < NX[0] && Math.abs(Y - NY(0, i)) < 14) return i;
+  for (let i = 0; i < 4; i++) if (X > 12 && X < NX[0] && Math.abs(Y - NY(0, i)) < 23) return i;
   return -1;
 }
 function hitControl(X, Y) {
   if (STILL) return '';
-  if (Math.hypot(X - PB.x, Y - PB.y) < PB.r + 4) return 'play';
-  if (Math.abs(Y - SL.y) < 12 && X > SL.x0 - 10 && X < SL.x1 + 10) return Math.abs(X - TX(D.eps[sNow()])) < 12 ? 'handle' : 'track';
+  if (X >= RP.x - 8 && X <= SL.x0 - 12 && Y >= RP.y - 8 && Y <= RP.y + RP.h + 8) return 'play';
+  if (Math.abs(Y - SL.y) < 22 && X > SL.x0 - 12 && X < SL.x1 + 12) return Math.abs(X - TX(D.eps[sNow()])) < 18 ? 'handle' : 'track';
   return '';
 }
 function hitWeight(X, Y) {
@@ -1080,6 +1088,10 @@ function hitWeight(X, Y) {
   return -1;
 }
 const inTrain = (X, Y) => X >= TP.x - 3 && X <= TP.x + TP.w + 3 && Y >= TP.y - 3 && Y <= TP.y + TP.h + 3;
+/* the controls' own ground: the whole left column, where the network, its table and hint, the
+   training plot and the slider's row (its label ends near x 512) lie. A click there that misses
+   does nothing; on open ground a click still pauses, as in every figure */
+const ground = (X, Y) => X < 520;
 const epochAt = X => nearest(clamp((X - TP.x) / TP.w) * 300);
 function nearLine(Y, q) {                       // the weight whose line passes nearest, within 9 units
   const k = aNow().k;
@@ -1087,12 +1099,12 @@ function nearLine(Y, q) {                       // the weight whose line passes 
   for (let i = 0; i < nLines(k); i++) { const d = Math.abs(TYv(k, trajOf(k, i, q)) - Y); if (d < bd) { bd = d; best = i; } }
   return best;
 }
-let LASTP = 'mouse';
+let LASTP = 'mouse', PRESS = '';   // the pointer's kind; the control a press began on, until its click
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
     'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}' +
-    '.nfk[hidden]{display:none}';
+    '.nfk[hidden]{display:none}.nfk.nfs:focus-visible{outline-offset:0}';
   document.head.appendChild(css);
   const ctl = FIG.querySelector('.ctl');
   const add = (parent, tag, role, label) => {
@@ -1104,8 +1116,8 @@ if (!STILL) {
     return el;
   };
   const group = label => { const g = document.createElement('div'); g.setAttribute('role', 'radiogroup'); g.setAttribute('aria-label', label); FIG.insertBefore(g, ctl); return g; };
-  const roving = (list, i, pick) => e => {
-    const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = list.length;
+  const roving = (list, i, pick, count = () => list.length) => e => {
+    const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = count();
     const j = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : d ? (i + d + n) % n : (e.key === 'Enter' || e.key === ' ') ? i : -1;
     if (j < 0) return;
     e.preventDefault(); list[j].focus(); pick(j);
@@ -1117,15 +1129,20 @@ if (!STILL) {
     b.addEventListener('keydown', roving(KB.nr, k, j => chooseNeuron(j)));
     KB.nr.push(b);
   });
+  // the chosen neuron's weights and bias: one stop, the arrow keys move the highlight along them
+  const gW = group('Weights of the chosen neuron'), showW = j => { holdA(); HOV = j; redraw(); };
   for (let i = 0; i < 6; i++) {
-    const b = add(FIG, 'button', null, '');
-    b.addEventListener('focus', () => { holdA(); HOV = i; redraw(); });
-    b.addEventListener('blur', () => { HOV = -1; redraw(); });
+    const b = add(gW, 'button', 'radio', '');
+    b.addEventListener('focus', () => showW(i));
+    b.addEventListener('blur', e => { if (!gW.contains(e.relatedTarget)) { HOV = -1; redraw(); } });
+    b.addEventListener('keydown', roving(KB.wb, i, showW, () => KB.wb.filter(x => !x.hidden).length));
     KB.wb.push(b);
   }
   KB.pb = add(FIG, 'button', null, 'Replay the training, epoch 0 to 300');
+  if (REDUCED) { KB.pb.setAttribute('aria-disabled', 'true'); KB.pb.setAttribute('aria-label', 'Replay needs motion; use the epoch slider'); }
   KB.pb.addEventListener('click', e => { e.stopPropagation(); replay(); });
   KB.sl = add(FIG, 'div', 'slider', 'Epoch of training shown');
+  KB.sl.classList.add('nfs');                    // its ring hugs the track, clear of the replay chip
   KB.sl.tabIndex = 0;
   KB.sl.setAttribute('aria-valuemin', '0'); KB.sl.setAttribute('aria-valuemax', '300');
   KB.sl.addEventListener('keydown', e => {
@@ -1134,7 +1151,7 @@ if (!STILL) {
     if (q < 0) return;
     e.preventDefault(); chooseEpoch(q);
   });
-  cv.style.touchAction = 'pan-y';
+  cv.style.touchAction = 'pan-y pinch-zoom';
   cv.addEventListener('pointermove', e => {
     const [X, Y] = toUnits(e);
     if (DRAG) { chooseEpoch(nearest(clamp((X - SL.x0) / (SL.x1 - SL.x0)) * 300)); return; }
@@ -1143,42 +1160,49 @@ if (!STILL) {
     let hw = -1, hs = -1;
     if (tr) { hs = epochAt(X); hw = nearLine(Y, hs); }
     else if (!hb && hn < 0) hw = hitWeight(X, Y);
-    cv.style.cursor = tr ? 'crosshair' : hn >= 0 || hb || hw >= 0 ? 'pointer' : '';
+    const acts = hn >= 0 || hw >= 0 || (hb !== '' && !(hb === 'play' && REDUCED));
+    cv.style.cursor = tr ? 'crosshair' : acts ? 'pointer' : ground(X, Y) ? 'default' : '';
     if (hw >= 0 || hs >= 0) holdA();
     if (hn !== HN || hb !== HB || hw !== HOV || hs !== HSC) { HN = hn; HB = hb; HOV = hw; HSC = hs; redraw(); }
   });
-  cv.addEventListener('pointerleave', () => { if (DRAG) return; HN = -1; HB = ''; HOV = -1; HSC = -1; cv.style.cursor = ''; redraw(); });
+  cv.addEventListener('pointerleave', () => { if (DRAG) return; HN = -1; HB = ''; HOV = -1; HSC = -1; DOWN = false; cv.style.cursor = ''; redraw(); });
   cv.addEventListener('pointerdown', e => {
     LASTP = e.pointerType;
-    const [X, Y] = toUnits(e), hb = hitControl(X, Y);
+    const [X, Y] = toUnits(e), hb = e.button === 0 ? hitControl(X, Y) : '';
+    PRESS = hb;
     if (hb === 'handle' || hb === 'track') {
       DRAG = true; cv.setPointerCapture(e.pointerId);
       chooseEpoch(nearest(clamp((X - SL.x0) / (SL.x1 - SL.x0)) * 300));
-    }
+    } else if (hb === 'play' && !REDUCED) { DOWN = true; redraw(); }
   });
-  const drop = () => { if (DRAG) { DRAG = false; redraw(); } };
+  const drop = () => { if (DRAG || DOWN) { DRAG = false; DOWN = false; redraw(); } };
   cv.addEventListener('pointerup', drop);
   cv.addEventListener('pointercancel', drop);
-  // a click on a neuron, a control, a weight or the plot is a choice: it must not also pause
-  // (the engine toggles on a click of the canvas), so it stops on the way down
+  // a click on a neuron, a control, a weight or the plot is a choice, and the click that ends a
+  // press on the slider or the replay chip is that press's: none of them may also pause (the engine
+  // toggles on a click of the canvas), so they stop on the way down; so does a near miss on the
+  // controls' own ground
   FIG.addEventListener('click', e => {
     if (e.target !== cv) return;
+    const pr = PRESS; PRESS = '';
+    if (pr === 'handle' || pr === 'track') { e.stopPropagation(); return; }   // the epoch is set on the way
     const [X, Y] = toUnits(e);
     const k = hitNode(X, Y), hb = hitControl(X, Y), w = hitWeight(X, Y);
-    if (k >= 0) chooseNeuron(k);
-    else if (hb === 'play') replay();
+    if (hb === 'play') { if (pr === 'play') replay(); }
+    else if (pr === 'play') { /* pressed on the chip, let go off it: nothing */ }
+    else if (k >= 0) chooseNeuron(k);
     else if (hb) { /* the slider: set on the way down */ }
     else if (inTrain(X, Y)) { if (LASTP !== 'mouse') chooseEpoch(epochAt(X)); else chooseEpoch(HSC >= 0 ? HSC : epochAt(X)); }
     else if (w >= 0) { holdA(); if (LASTP !== 'mouse') { HOV = HOV === w ? -1 : w; redraw(); } }
-    else return;
+    else if (!ground(X, Y)) return;
     e.stopPropagation();
   }, true);
 }
 /* the keyboard's stand-ins sit on what they choose, and say what is chosen */
 function place() {
   if (STILL || !KB.sl) return;
-  const st = aNow(), n = nRows(st.k), s = sNow();
-  const key = cv.clientWidth + ':' + st.k + ':' + s;
+  const st = aNow(), n = nRows(st.k), s = sNow(), rp = replaying();
+  const key = cv.clientWidth + ':' + st.k + ':' + s + ':' + HOV + ':' + rp;
   if (key === KB.key) return;
   KB.key = key;
   const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
@@ -1188,9 +1212,8 @@ function place() {
     box(b, x - r - 3, y - r - 3, x + r + 3, y + r + 3);
     b.setAttribute('aria-checked', String(k === st.k)); b.tabIndex = k === st.k ? 0 : -1;
   });
-  const bias = !isIn(st.k);
+  const bias = !isIn(st.k), last = bias ? n : n - 1, wt = HOV >= 0 && HOV <= last ? HOV : 0;
   KB.wb.forEach((b, i) => {
-    const last = bias ? n : n - 1;
     b.hidden = i > last;
     if (i > last) return;
     if (isIn(st.k)) box(b, XAL - 42, rowY(i, n) - 28, XAL + 42, rowY(i, n) + 5);
@@ -1199,9 +1222,11 @@ function place() {
     const w0 = trajOf(st.k, i, 0), w1 = trajOf(st.k, i, FIN);
     const what = isIn(st.k) ? `weight to hidden layer 1 neuron ${i + 1}` : i < n ? 'weight ' + (i + 1) : 'bias';
     b.setAttribute('aria-label', `${what} of ${nName(st.k)}: ${num(w0)} before training, ${num(w1)} after`);
+    b.setAttribute('aria-checked', String(i === HOV)); b.tabIndex = i === wt ? 0 : -1;
   });
-  box(KB.pb, PB.x - PB.r - 2, PB.y - PB.r - 2, PB.x + PB.r + 2, PB.y + PB.r + 2);
-  box(KB.sl, SL.x0 - 8, SL.y - 10, SL.x1 + 8, SL.y + 10);
+  box(KB.pb, RP.x, RP.y, RP.x + RP.w, RP.y + RP.h);
+  if (!REDUCED) KB.pb.setAttribute('aria-label', rp ? 'Stop the replay of the training' : 'Replay the training, epoch 0 to 300');
+  box(KB.sl, SL.x0 - 9, SL.y - 16, SL.x1 + 10, SL.y + 16);   // the ring only: the hit band is hitControl's
   KB.sl.setAttribute('aria-valuenow', String(D.eps[s]));
   const said = isIn(st.k) ? `x = ${num(outAt(s, st.k))}` : NEU[st.k].L === 3 ? outAt(s, st.k).toFixed(3) : num(outAt(s, st.k));
   KB.sl.setAttribute('aria-valuetext', `epoch ${D.eps[s]}: ${nName(st.k)} gives ${said}`);

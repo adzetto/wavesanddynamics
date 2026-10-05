@@ -217,7 +217,7 @@ function draw() {
   const ta = seg(.12, .4), x1 = TX + TW.reduce((a, b) => a + b, 0);
   line([[TX, TY - 18], [x1, TY - 18]], { width: 1.3, progress: ta });
   line([[TX, TY + 2], [x1, TY + 2]], { width: .8, progress: ta });
-  line([[TX, TY + 4 + 25 * RH], [x1, TY + 4 + 25 * RH]], { width: 1.3, progress: ta });
+  line([[TX, TY + 7 + 25 * RH], [x1, TY + 7 + 25 * RH]], { width: 1.3, progress: ta });
   math('s', TX + TW[0] / 2, TY - 3, { size: 15, align: 'center', alpha: ta });
   for (let k = 0; k < 4; k++) glyph(k, TX + TW[0] + TW[1] * (k + .5), TY - 8, { alpha: ta, L: 6 });
   for (let s = 0; s < 25; s++) {
@@ -227,7 +227,7 @@ function draw() {
     const best = argmax(Qt[s]);
     for (let k = 0; k < 4; k++) {
       const cx = TX + TW[0] + TW[1] * (k + .5);
-      text(nf(Qt[s][k], 2), cx, y, { size: 14, align: 'center', alpha: ra, color: s === 24 ? C.muted : k === best ? C.ink : C.muted });
+      text(nf(Qt[s][k], 2), cx, y, { size: 14, align: 'center', alpha: ra, color: s !== 24 && k === best ? C.ink : s === srow ? C.body : C.muted });
       if (s === srow && s !== 24 && k === best) box(cx - 19, TY + 4 + s * RH + 1, 38, RH - 2, { stroke: C.navy, width: 1.8, alpha: fadeLap });
     }
   }
@@ -247,7 +247,7 @@ function draw() {
   // the network's action everywhere in the plane: its largest output on a fine lattice
   for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) {
     const v = [(i + .5) / 2, (j + .5) / 2]; if (v[0] >= 4 && v[1] >= 4) continue;
-    const [X, Y] = P(v); glyph(argmax(FIELD[i * 10 + j]), X, Y, { color: C.mist, alpha: pa, L: 5, head: 6, width: 1.2 });
+    const [X, Y] = P(v); glyph(argmax(FIELD[i * 10 + j]), X, Y, { color: C.sky, alpha: pa, L: 5, head: 6, width: 1.2 });
   }
   box(PB.x, PB.y, PB.s, PB.s, { width: 1.4, progress: pa });
   for (let i = 0; i <= 5; i++) {
@@ -268,14 +268,14 @@ function draw() {
     for (let i = 0; i < w.length; i++) for (let j = 0; j < a.length; j++) m = Math.max(m, Math.abs(w[i][j] * a[j]));
     for (let i = 0; i < w.length; i++) for (let j = 0; j < a.length; j++) {
       const c = w[i][j] * a[j], al = ea * (.06 + .7 * Math.abs(c) / m);
-      line([[NX[l] + 8, layers[l][j]], [NX[l + 1] - 8, layers[l + 1][i]]], { color: c >= 0 ? C.blue : C.guide, width: 1.1, alpha: al });
+      line([[NX[l] + 8, layers[l][j]], [NX[l + 1] - 8, layers[l + 1][i]]], { color: c >= 0 ? S_POS : C.guide, width: 1.1, alpha: al });
     }
   }
-  // neurons: inputs and hidden units coloured by their value on the diverging scale
+  // neurons: inputs and hidden units coloured by their value, positive blue, negative crimson
   for (let l = 0; l < 4; l++) layers[l].forEach((y, i) => {
     const na = seg(.1 + .05 * l, .3), v = l < 3 ? A[l][i] : null;
     const isBest = l === 3 && i === best && !now.pre;
-    dot(NX[l], y, 8, { color: isBest ? C.navy : C.ink, fill: v === null ? '#fff' : diverging(v), width: isBest ? 2.6 : 1.2, alpha: na });
+    dot(NX[l], y, 8, { color: isBest ? C.navy : C.ink, fill: v === null ? '#fff' : signed(v), width: isBest ? 2.6 : 1.2, alpha: na });
   });
   mlab('x', NX[0] - 14, NY.in[0] + 5, .4, { size: 16, align: 'right' });
   mlab('y', NX[0] - 14, NY.in[1] + 5, .4, { size: 16, align: 'right' });
@@ -284,14 +284,14 @@ function draw() {
     glyph(k, NX[3] + 22, y, { alpha: seg(.4, .3), color: on ? C.navy : C.ink });
     text(nf(qo[k], 2), NX[3] + 36, y + 5, { size: 14, color: on ? C.ink : C.muted, alpha: seg(.4, .3) });
   }
-  cbar(NX[0] + 20, 530, 110, 8, DIVERGING, -1, 1, [-1, 0, 1], '\\rm{activation}', seg(.6, .4), v => v === 0 ? '0' : nf(v, 0));
+  cbar(NX[0] + 20, 518, 110, 8, SIGNED, -1, 1, [-1, 0, 1], '\\rm{activation}', seg(.6, .4), v => v === 0 ? '0' : nf(v, 0));
   if (!now.pre) {
     mlab(`(x,\\,y) = (${nf(pos[0], 2)},\\,${nf(pos[1], 2)})`, PB.x, 306, .5, { size: 16, alpha: fadeLap });
     const w = nw.i >= lp.net.length - 1 ? 'goal reached' : `largest output ${nf(qo[best], 2)}:  ${WORD[best]}`;
     text(w, PB.x, 330, { size: 16, color: nw.i >= lp.net.length - 1 ? C.accent : C.body, alpha: fadeLap });
   }
   lab(`${DATA.npar} learned parameters,`, PB.x, 362, .6, { size: 14, color: C.muted });
-  lab('for any real (x, y)', PB.x, 380, .6, { size: 14, color: C.muted });
+  mlab('\\rm{for any real}\\ (x,\\,y)', PB.x, 380, .6, { size: 14, color: C.muted });
 }
 const FIELD = []; for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) FIELD.push(forward([(i + .5) / 2, (j + .5) / 2])[3]);
 boot();

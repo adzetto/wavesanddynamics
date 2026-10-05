@@ -216,7 +216,7 @@ function draw() {
     const on = lf === i ? clamp((u - 1.55) / .2) * fade : 0;
     node(c[0], c[1] - 4, LW, LH, [{s: approve ? 'approve' : 'decline', bold: true, size: 17,
       color: on > .5 ? C.accent : C.ink},
-      {s: tot ? (approve ? cnt[1] : cnt[0]) + ' of ' + tot + (approve ? ' approved' : ' declined') : ' ', size: 14, color: C.muted}],
+      {s: tot ? (approve ? cnt[1] : cnt[0]) + ' of ' + tot + (approve ? ' approved' : ' declined') : ' ', size: 14, color: C.body}],
       {alpha: a, fill: C.steel, stroke: on > 0 ? C.accent : C.ink, width: on > 0 ? 2 : 1.3, gap: 21});
     mix(c[0], c[1] + LH / 2 - 12, LW - 60, cnt, a * clamp(tot));
   });

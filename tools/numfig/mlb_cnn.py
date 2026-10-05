@@ -220,7 +220,7 @@ const DY = i => YC + (i - 7.5) * DEN.gap, OY = j => YC + (j - 4.5) * OUT.gap;
 const FY = k => FLAT.y + (k + .5) * FLAT.h / 48;
 /* ------------------------------------------------ colours */
 const grey = v => mixHex('#FFFFFF', C.ink, clamp(v / 16));
-const wcol = w => w >= 0 ? mixHex('#FFFFFF', C.blue, clamp(w / .8)) : mixHex('#FFFFFF', K.red, clamp(-w / .8));
+const wcol = w => signed(w / .8 * 2 / 3);                 // a weight: blue positive, crimson negative
 let AMAX = 1;
 const act = v => mixHex('#FFFFFF', C.navy, clamp(v / AMAX));
 /* ------------------------------------------------ the clock: three digits in turn (CLOCK, in the Python) */

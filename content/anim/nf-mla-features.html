@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -743,7 +746,7 @@ function drawB() {
   const P = {x: 410, y: 124, w: 196, h: 196}, MH = 54, GAP = 7;
   const g = axes({...P, xlim: [0, 350], ylim: [.8, 2.66], xticks: [0, 100, 200, 300], yticks: [1, 1.5, 2, 2.5],
     yfmt: v => v === 1 ? '1' : v === 2 ? '2' : v.toFixed(1), xlabel: '\\rm{income (k$)}', ylabel: '\\rm{log}_{10}\\ \\rm{income}',
-    ylabelGap: 42, progress: seg(.04, .35), tickSize: 14, labelSize: 15});
+    ylabelGap: 42, progress: seg(.04, .35)});
   const mx = Math.max(...B.hx), my = Math.max(...B.hy);
   // the probe: an income carried down to the curve and across to its logarithm. Its window: it
   // fades in at 18 k$ (.3 s) and rests, glides (.8 s) to 45, 110 and 230 k$, a stop every 2 s,
@@ -784,7 +787,7 @@ function drawB() {
       line([[Math.max(px, lb[2]), py], [right, py]], pr);
     } else line([[px, py], [right, py]], pr);
     dot(px, py, 5, {color: '#fff', fill: C.accent, width: 1.4, alpha: pa});
-    math(probe.toFixed(0) + '\\ \\rm{k$}\\ \\to\\ ' + Math.log10(probe).toFixed(2), P.x + P.w - 6, P.y + P.h - 12,
+    math(probe.toFixed(0) + '\\ \\rm{k$}\\ \\to\\ ' + Math.log10(probe).toFixed(2), P.x + P.w - 12, P.y + P.h - 12,
       {size: 15, color: C.accent, align: 'right', alpha: pa});
   }
   const la = arrive(.45);

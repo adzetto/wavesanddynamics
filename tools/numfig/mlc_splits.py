@@ -99,8 +99,8 @@ function draw() {
   // ================= (a) one split
   sub('a', 18, 36, 'training, validation and test sets', seg(.05, .3));
   const sw = seg(T_SH + .1, .35);
-  text('all 100 labeled examples', SX, SY - 10, { size: 14, color: C.muted, alpha: seg(.1, .3) * (1 - sw) });
-  text('shuffled at random, then split', SX, SY - 10, { size: 14, color: C.muted, alpha: sw });
+  text('all 100 labeled examples', SX, SY - 10, { size: 14, color: C.muted, alpha: seg(.1, .3) * clamp(1 - 2 * sw) });   // gone before
+  text('shuffled at random, then split', SX, SY - 10, { size: 14, color: C.muted, alpha: clamp(2 * sw - 1) });       // the next shows
   for (let e = 0; e < N; e++) {
     const x0 = SX + e * CWs, x1 = slot(RANK[e]);
     const s = settle(T_SH + .006 * RANK[e], .5), x = lerp(x0, x1, s);
@@ -108,7 +108,7 @@ function draw() {
     ctx.save(); ctx.globalAlpha = seg(.03 + e * .003, .2); ctx.fillStyle = c; ctx.fillRect(x + .5, SY, CWs - 1, SH); ctx.restore();
   }
   const la = seg(T_SH + .7, .3);
-  [['training 60 %', 0, 60], ['validation 20 %', 60, 80], ['test 20 %', 80, 100]].forEach(([s, a, b], k) => {
+  [['training 60%', 0, 60], ['validation 20%', 60, 80], ['test 20%', 80, 100]].forEach(([s, a, b], k) => {
     const xa = slot(a), xb = slot(b - 1) + CWs, cx = (xa + xb) / 2;
     line([[xa, SY + SH + 8], [xa, SY + SH + 13], [xb, SY + SH + 13], [xb, SY + SH + 8]], { width: 1, alpha: la });
     text(s, cx, SY + SH + 32, { size: 15, align: 'center', color: k === 1 ? C.accent : C.ink, alpha: la });
@@ -118,7 +118,7 @@ function draw() {
   lab('used once, last', (slot(80) + slot(99) + CWs) / 2, SY + SH + 52, T_SH + .95, { size: 14, color: C.muted, align: 'center' });
   // the data, by role, and the model fitted on the training 60
   const g = axes({ x: 760, y: 58, w: 212, h: 150, xlim: [0, 10], ylim: [-3, 4], xticks: [0, 5, 10], yticks: [-2, 0, 2, 4],
-    xlabel: 'x', ylabel: 'y', ylabelGap: 30, progress: seg(.1, .4), tickSize: 14, labelSize: 15 });
+    xlabel: 'x', ylabel: 'y', ylabelGap: 30, progress: seg(.1, .4) });
   const pa = seg(T_SH + .5, .4);
   g.inside(() => {
     line(DATA.xs.map((v, i) => [g.X(v), g.Y(DATA.fit[i])]), { color: C.navy, width: 2, progress: seg(T_SH + .7, .45) });
@@ -128,7 +128,7 @@ function draw() {
   });
   mlab(`\\rm{validation\\ RMSE}\\ ${nf(DATA.single.val, 2)}`, 760, 284, T_SH + 1.0, { size: 15 });
   // ================= (b) five rounds
-  sub('b', 18, 318, '5-fold cross-validation on the 80 %', seg(.1, .3));
+  sub('b', 18, 318, '5-fold cross-validation on the 80%', seg(.1, .3));
   const RY = 350, RH = 24, RG = 10, TVX = SX;
   for (let k = 0; k < 5; k++) {
     const y = RY + k * (RH + RG), ra = seg(T_CV + DR * k - .25, .3), on = fr < 0 || fr === k;
@@ -140,7 +140,7 @@ function draw() {
       ctx.fillStyle = isVal ? mix('#A9C3DA', C.accent, flip) : C.mist; ctx.fillRect(x + .5, y, CWs - 1, RH); ctx.restore();
     }
     const tx = TVX + 80 * CWs + 4 * 3 + GAP;
-    ctx.save(); ctx.globalAlpha = ra * .22; ctx.fillStyle = C.navy; ctx.fillRect(tx, y, 20 * CWs, RH); ctx.restore();
+    ctx.save(); ctx.globalAlpha = ra; ctx.fillStyle = C.steel2; ctx.fillRect(tx, y, 20 * CWs, RH); ctx.restore();
     // this round's score, as it arrives
     const s = settle(T_CV + DR * k + .15, .3);
     if (s > 0) text(nf(DATA.cv[k], 2), tx + 20 * CWs + 16, y + RH / 2 + 5, { size: 15, color: on && fr === k ? C.accent : C.ink, alpha: s * (on ? 1 : .45) });
@@ -150,7 +150,7 @@ function draw() {
   lab('RMSE', tx + 20 * CWs + 16, RY - 8, T_CV, { size: 14, color: C.muted });
   // the five scores on one axis, their mean, and the test score at the end
   const h = axes({ x: 760, y: RY, w: 212, h: 5 * RH + 4 * RG, xlim: [.5, 5.5], ylim: [.2, .8], xticks: [1, 2, 3, 4, 5], yticks: [.2, .4, .6, .8],
-    xlabel: '\\rm{round}', ylabel: '\\rm{RMSE}', ylabelGap: 38, progress: seg(T_CV - .3, .4), tickSize: 14, labelSize: 15, yfmt: v => nf(v, 1) });
+    xlabel: '\\rm{round}', ylabel: '\\rm{RMSE}', ylabelGap: 35, progress: seg(T_CV - .3, .4), yfmt: v => nf(v, 1) });
   const ma = seg(T_CV + 5 * DR, .4);
   h.inside(() => {
     if (ma > 0) { ctx.save(); ctx.globalAlpha = .5 * ma; ctx.fillStyle = C.steel; const y0 = h.Y(DATA.mean + DATA.sd), y1 = h.Y(DATA.mean - DATA.sd);

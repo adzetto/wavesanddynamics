@@ -100,7 +100,7 @@ const Y = DATA.y, NT = Y.length, TEST = new Uint8Array(NT); DATA.test_r.forEach(
 const X0 = 150, XW = 700, X = d => X0 + d / NT * XW;
 const RH = 30, [YLO, YHI] = DATA.ylim, Yp = (v, y0) => y0 + RH - 2 - (v - YLO) / (YHI - YLO) * (RH - 4);
 const COL = { tr: C.blue, va: C.accent, te: C.navy, gap: C.guide, off: C.rule };
-const BAND = { tr: C.steel, va: C.wash, te: '#DCE5EE', gap: null, off: null };
+const BAND = { tr: C.steel, va: C.wash, te: C.steel2, gap: null, off: null };
 const T0 = .6, DR = .5, TLOOP = T0 + 4 * DR + .9, PER = 1.5;
 const POSTER_T = TLOOP - .2;
 function focus() { if (t < TLOOP) return -1; return Math.floor((t - TLOOP) / PER) % 4; }
@@ -133,7 +133,7 @@ function draw() {
   // (b) one cut
   const yb = 162, [c1, c2] = DATA.cuts;
   row(yb, [[0, c1, 'tr'], [c1, c2, 'va'], [c2, NT, 'te']], seg(.15, .6));
-  [['training 60 %', 0, c1, C.blue], ['validation', c1, c2, C.accent], ['test', c2, NT, C.navy]].forEach(([s, a, b, c], k) =>
+  [['training 60%', 0, c1, C.blue], ['validation', c1, c2, C.accent], ['test', c2, NT, C.navy]].forEach(([s, a, b, c], k) =>
     lab(s, (X(a) + X(b)) / 2, yb + RH + 17, .55 + .05 * k, { size: 14, align: 'center', color: c }));
   text(nf(DATA.mae.bt, 2), 900, yb + RH / 2 + 5, { size: 15, alpha: seg(.75, .3) });
   // (c), (d): four rounds each, arriving one after another, then taking turns
@@ -153,12 +153,12 @@ function draw() {
   lab('gap', X(DATA.exp[0].tr[1]) - 2, 254 - 6, T0 + .3, { size: 14, color: C.muted });
   // the moving present: where the focused round's validation starts
   if (fr >= 0) { const xv = X(DATA.exp[fr].va[0]), a = clamp(((t - TLOOP) % PER) / .25);
-    line([[xv, 246], [xv, 430 + 4 * (RH + 8) - 6]], { color: C.accent, width: 1, dash: [4, 3], alpha: .6 * a }); }
+    line([[xv, 254], [xv, 430 + 4 * (RH + 8) - 6]], { color: C.accent, width: 1, dash: [4, 3], alpha: .6 * a }); }
   // the time axis
   const ay = 622, axa = seg(.1, .4);
   line([[X0, ay], [X0 + XW, ay]], { width: 1.3, progress: axa });
-  for (let d = 0; d <= 700; d += 100) { line([[X(d), ay], [X(d), ay + 5]], { width: 1, alpha: axa }); text(String(d), X(d), ay + 21, { size: 14, align: 'center', alpha: axa }); }
-  math('\\rm{day}', X0 + XW + 24, ay + 5, { size: 15, alpha: axa });
+  for (let d = 0; d <= 700; d += 100) { line([[X(d), ay], [X(d), ay + 5]], { width: 1, alpha: axa }); text(String(d), X(d), ay + 21, { size: 15, align: 'center', alpha: axa }); }
+  math('\\rm{day}', X0 + XW + 24, ay + 5, { size: 17, alpha: axa });
   text('two years of daily values: yearly cycle, slow drift, correlated noise; model: trend + yearly cycle, least squares; score: mean absolute error',
        18, H - 12, { size: 14, color: C.muted, alpha: seg(.6, .4) });
 }

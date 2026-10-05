@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -659,9 +662,9 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 14, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
   }
-  if (label) math(label, x - 12, y + h - 1, { size: 15, align: 'right', alpha: a });
+  if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
 /* colour mixing between two #rrggbb */
 function mix(c1, c2, s) {
@@ -701,7 +704,7 @@ function vec(vals, cx, y, a, o = {}) {
   for (let k = 0; k < 8; k++) {
     const ck = clamp(a * 1.6 - k * .08);            // cells arrive left to right
     if (ck <= 0) continue;
-    ctx.save(); ctx.globalAlpha = ck; ctx.fillStyle = diverging(sq(vals[k])); ctx.fillRect(x0 + k * CW, y - CW / 2, CW, CW); ctx.restore();
+    ctx.save(); ctx.globalAlpha = ck; ctx.fillStyle = signed(sq(vals[k])); ctx.fillRect(x0 + k * CW, y - CW / 2, CW, CW); ctx.restore();
   }
   for (let k = 1; k < 8; k++) line([[x0 + k * CW, y - CW / 2], [x0 + k * CW, y + CW / 2]], { color: '#fff', width: 1, alpha: a });
   box(x0, y - CW / 2, VW, CW, { width: 1, alpha: a, stroke: o.stroke || C.ink });
@@ -820,7 +823,7 @@ function draw() {
   const MX = [640, 796], MY = 592, MC = 34;
   DATA.a[0].forEach((A, h) => {
     const x0 = MX[h], ma = seg(.4 + .08 * h, .35);
-    lab(`block 1, head ${h + 1}`, x0 + 1.5 * MC, MY - 30, .5 + .08 * h, { size: 14, color: C.body, align: 'center' });
+    lab(`block 1, head ${h + 1}`, x0 + 1.5 * MC, MY - 14, .5 + .08 * h, { size: 14, color: C.body, align: 'center' });
     for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
       const v = A[i][j], X = x0 + j * MC, Y = MY + i * MC, on = f && f.b === 0 && f.i === i;
       box(X, Y, MC, MC, { fill: lutc(SEQ, v), stroke: C.rule, width: 1, alpha: ma });
@@ -832,11 +835,11 @@ function draw() {
     TOK.forEach((w, j) => text(w, x0 + j * MC + MC / 2, MY + 3 * MC + 16, { size: 14, align: 'center', alpha: ma }));
   });
   { const ca = seg(.5, .4), x0 = 790, w = 150, y0 = 44;           // colour bar, on the same square root scale
-    if (ca > 0) { for (let i = 0; i < w; i++) { ctx.save(); ctx.globalAlpha = ca; ctx.fillStyle = lutc(DIVERGING, i / (w - 1)); ctx.fillRect(x0 + i, y0, 1.5, 9); ctx.restore(); }
+    if (ca > 0) { for (let i = 0; i < w; i++) { ctx.save(); ctx.globalAlpha = ca; ctx.fillStyle = lutc(SIGNED, i / (w - 1)); ctx.fillRect(x0 + i, y0, 1.5, 9); ctx.restore(); }
       box(x0, y0, w, 9, { width: 1, alpha: ca });
       for (const v of [-VM, -1, 0, 1, VM]) { const xx = x0 + (sq(v) + 1) / 2 * w;
-        line([[xx, y0 + 9], [xx, y0 + 13]], { width: 1, alpha: ca }); text(v === 0 ? '0' : nf(v, 0), xx, y0 + 28, { size: 14, align: 'center', alpha: ca }); }
-      text('vector entry', x0 - 12, y0 + 9, { size: 15, align: 'right', alpha: ca }); } }
+        line([[xx, y0 + 9], [xx, y0 + 13]], { width: 1, alpha: ca }); text(v === 0 ? '0' : nf(v, 0), xx, y0 + 28, { size: 15, align: 'center', alpha: ca }); }
+      text('vector entry', x0 - 12, y0 + 9, { size: 16, align: 'right', alpha: ca }); } }
   text('2 blocks, 2 heads, 8 numbers per token; trained on 88 short sentences to predict the next word',
        20, H - 12, { size: 14, color: C.muted, alpha: seg(.6, .4) });
 }

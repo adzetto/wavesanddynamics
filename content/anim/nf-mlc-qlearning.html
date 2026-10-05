@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -659,9 +662,9 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 14, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
   }
-  if (label) math(label, x - 12, y + h - 1, { size: 15, align: 'right', alpha: a });
+  if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
 /* colour mixing between two #rrggbb */
 function mix(c1, c2, s) {
@@ -777,7 +780,7 @@ function drawGrid(p) {
   ctx.restore();
   box(x0, GY, 5 * S, 5 * S, { width: 1.4, progress: pa });
   const n = Math.min(done, EPIS[p]);
-  sub('abc'[p], x0 - 2, 44, `after ${n} episode${n === 1 ? '' : 's'}`, seg(.1 + .05 * p, .3));
+  sub('abc'[p], x0 - 12, 36, `after ${n} episode${n === 1 ? '' : 's'}`, seg(.1 + .05 * p, .3));
   lab('start', x0 + S / 2, GY + 5 * S + 20, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
   // named above its square, as 'start' is below its own: the agent comes to rest inside it
   lab('goal', x0 + 4.5 * S, GY - 10, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
@@ -813,8 +816,8 @@ function draw() {
   for (let p = 0; p < 3; p++) drawGrid(p);
   drawWalker(false); drawGreedy();
   const fa = seg(.6, .5);
-  cbar(560, H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
-  text('reward +1 at the goal, −0.02 per step;  α = 0.5,  γ = 0.95,  ε from 0.5 to 0.2', 28, H - 16, { size: 14, color: C.muted, alpha: fa });
+  cbar(GX[2] + 5 * S - 150, H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
+  text('reward +1 at the goal, −0.02 per step;  α = 0.5,  γ = 0.95,  ε from 0.5 to 0.2', 18, H - 16, { size: 14, color: C.muted, alpha: fa });
 }
 boot();
 </script>

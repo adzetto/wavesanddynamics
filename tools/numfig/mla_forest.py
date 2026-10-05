@@ -128,7 +128,7 @@ DATA = {"trees": trees, "apps": [list(a) for a in APPS], "one": ONE, "big": BIG}
 
 JS = LIB + r"""
 const D = DATA, NTR = D.trees.length;
-const CX = k => 100 + 200 * k, RY = 128, KY = 210, LY = 272, VY = 318;
+const CX = k => 102 + 199 * k, RY = 128, KY = 210, LY = 272, VY = 318;
 const BX = 500, BY = 414, BW = 330, BH = 80;
 const AT0 = .55, AP = 3.6;
 const POSTER_T = AT0 + 2.5;
@@ -157,7 +157,7 @@ function draw() {
     const p1 = app ? clamp((u - .3 - .06 * k) / .32) * fade : 0, p2 = app ? clamp((u - .66 - .06 * k) / .32) * fade : 0;
     const ea = seg(.1 + .04 * k, .3);
     [0, 1].forEach(side => {
-      const kx = cx + (side ? 48 : -48);
+      const kx = cx + (side ? 47 : -47);
       line([[cx, RY + 23], [kx, KY - 23]], {width: 1.3, progress: ea});
       if (side === s1 && p1 > 0) line([[cx, RY + 23], [lerp(cx, kx, p1), lerp(RY + 23, KY - 23, p1)]], {color: C.accent, width: 2.2});
       const q = tr.kids[side];

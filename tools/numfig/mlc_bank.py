@@ -115,7 +115,7 @@ function draw() {
   // ================= (c) the new vector of bank, on the map of Figure 25
   sub('c', 612, 34, 'bank in context', seg(.15, .3));
   const g = axes({ x: 660, y: 64, w: 300, h: 300, xlim: [-1.1, 1.1], ylim: [-1.2, 1.0], xticks: [-1, 0, 1], yticks: [-1, 0, 1],
-    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 30, progress: seg(.05, .4), tickSize: 14, labelSize: 15 });
+    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 30, progress: seg(.05, .4) });
   const ma = seg(.2, .4), act = active(), bk = DATA.pos[SHOWN.indexOf('bank')];
   g.inside(() => {
     const OFF = { river: [-7, -5, 'right'], loan: [7, -8, 'left'], cat: [-7, -6, 'right'], dog: [7, 5, 'left'] };
@@ -133,7 +133,7 @@ function draw() {
       dot(g.X(x), g.Y(y), 5, { color: '#fff', fill: on ? C.accent : C.guide, width: 1.2 });
       // named beside its dot, off its own arrow ((a)'s climbs from the lower right, so its name sits above);
       // the name arrives with the dot, so it never passes over "bank alone" on the way
-      text(`bank in (${'ab'[k]})`, g.X(x) + 8, g.Y(y) + (k ? 20 : -10), { size: 15, color: on ? C.accent : C.muted,
+      text(`bank in (${'ab'[k]})`, g.X(x) + (k ? 12 : 8), g.Y(y) + (k ? 20 : -10), { size: 15, align: k ? 'right' : 'left', color: on ? C.accent : C.muted,
         alpha: clamp((s - .55) * 2.5) });
     });
   });

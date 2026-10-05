@@ -121,7 +121,7 @@ function vec(vals, cx, y, a, o = {}) {
   for (let k = 0; k < 8; k++) {
     const ck = clamp(a * 1.6 - k * .08);            // cells arrive left to right
     if (ck <= 0) continue;
-    ctx.save(); ctx.globalAlpha = ck; ctx.fillStyle = diverging(sq(vals[k])); ctx.fillRect(x0 + k * CW, y - CW / 2, CW, CW); ctx.restore();
+    ctx.save(); ctx.globalAlpha = ck; ctx.fillStyle = signed(sq(vals[k])); ctx.fillRect(x0 + k * CW, y - CW / 2, CW, CW); ctx.restore();
   }
   for (let k = 1; k < 8; k++) line([[x0 + k * CW, y - CW / 2], [x0 + k * CW, y + CW / 2]], { color: '#fff', width: 1, alpha: a });
   box(x0, y - CW / 2, VW, CW, { width: 1, alpha: a, stroke: o.stroke || C.ink });
@@ -240,7 +240,7 @@ function draw() {
   const MX = [640, 796], MY = 592, MC = 34;
   DATA.a[0].forEach((A, h) => {
     const x0 = MX[h], ma = seg(.4 + .08 * h, .35);
-    lab(`block 1, head ${h + 1}`, x0 + 1.5 * MC, MY - 30, .5 + .08 * h, { size: 14, color: C.body, align: 'center' });
+    lab(`block 1, head ${h + 1}`, x0 + 1.5 * MC, MY - 14, .5 + .08 * h, { size: 14, color: C.body, align: 'center' });
     for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
       const v = A[i][j], X = x0 + j * MC, Y = MY + i * MC, on = f && f.b === 0 && f.i === i;
       box(X, Y, MC, MC, { fill: lutc(SEQ, v), stroke: C.rule, width: 1, alpha: ma });
@@ -252,11 +252,11 @@ function draw() {
     TOK.forEach((w, j) => text(w, x0 + j * MC + MC / 2, MY + 3 * MC + 16, { size: 14, align: 'center', alpha: ma }));
   });
   { const ca = seg(.5, .4), x0 = 790, w = 150, y0 = 44;           // colour bar, on the same square root scale
-    if (ca > 0) { for (let i = 0; i < w; i++) { ctx.save(); ctx.globalAlpha = ca; ctx.fillStyle = lutc(DIVERGING, i / (w - 1)); ctx.fillRect(x0 + i, y0, 1.5, 9); ctx.restore(); }
+    if (ca > 0) { for (let i = 0; i < w; i++) { ctx.save(); ctx.globalAlpha = ca; ctx.fillStyle = lutc(SIGNED, i / (w - 1)); ctx.fillRect(x0 + i, y0, 1.5, 9); ctx.restore(); }
       box(x0, y0, w, 9, { width: 1, alpha: ca });
       for (const v of [-VM, -1, 0, 1, VM]) { const xx = x0 + (sq(v) + 1) / 2 * w;
-        line([[xx, y0 + 9], [xx, y0 + 13]], { width: 1, alpha: ca }); text(v === 0 ? '0' : nf(v, 0), xx, y0 + 28, { size: 14, align: 'center', alpha: ca }); }
-      text('vector entry', x0 - 12, y0 + 9, { size: 15, align: 'right', alpha: ca }); } }
+        line([[xx, y0 + 9], [xx, y0 + 13]], { width: 1, alpha: ca }); text(v === 0 ? '0' : nf(v, 0), xx, y0 + 28, { size: 15, align: 'center', alpha: ca }); }
+      text('vector entry', x0 - 12, y0 + 9, { size: 16, align: 'right', alpha: ca }); } }
   text('2 blocks, 2 heads, 8 numbers per token; trained on 88 short sentences to predict the next word',
        20, H - 12, { size: 14, color: C.muted, alpha: seg(.6, .4) });
 }

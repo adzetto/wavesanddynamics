@@ -156,8 +156,30 @@ function draw() {
   // classified positive: where the curve is above one half
   const za = arrive(.5);
   box(g.X(D.xs), A.y, A.x + A.w - g.X(D.xs), A.h, {fill: C.steel, alpha: .75 * za});
-  text('classified positive', g.X(D.xs) + 14, g.Y(.9), {size: 15, color: C.navy, alpha: za});
-  text('classified negative', g.X(D.xs) - 14, g.Y(.9), {size: 15, color: C.body, align: 'right', alpha: za});
+  // the probe glides from tumor to tumor along the computed curve. Its guides go first, under the
+  // type, the curve and the marks; the one across breaks where it would run through a region's
+  // name or the readout, 4 units clear each side, as dim() leaves its label room
+  const c = cycle(.6, D.stops.map((v, k) => [v, k === D.stops.length - 1 ? 1.2 : 1.2]), .75);
+  const xp = cyc(c), pp = P(xp), qa = arrive(.62), px = g.X(xp), py = g.Y(pp);
+  const rx = A.x + 16, ry = A.y + 140, LY = g.Y(.9), PX = g.X(D.xs) + 10, NX = g.X(D.xs) - 14;
+  const rs = 'x = ' + xp.toFixed(1) + '\\ \\rm{mm},\\ \\ p = ' + pp.toFixed(2);
+  const cs = pp > .5 ? 'classified positive' : 'classified negative';
+  if (qa > 0) {
+    const pr = {color: C.accent, width: 1.2, dash: [4, 3], alpha: qa}, wn = tw('classified negative', 15);
+    line([[px, A.y + A.h], [px, py]], pr);
+    const holes = [[rx, rx + Math.max(mw(rs, 16), tw(cs, 16)), ry - 13, ry + 27], [NX - wn, NX, LY - 12, LY + 4],
+                   [PX, PX + tw('classified positive', 15), LY - 12, LY + 4]].sort((a, b) => a[0] - b[0]);
+    let x = A.x;
+    for (const [x0, x1, y0, y1] of holes) {
+      if (x >= px) break;
+      if (py < y0 - 2 || py > y1 + 2 || x1 + 4 <= x) continue;
+      if (x0 - 4 > x) line([[x, py], [Math.min(px, x0 - 4), py]], pr);
+      x = Math.max(x, x1 + 4);
+    }
+    if (x < px) line([[x, py], [px, py]], pr);
+  }
+  text('classified positive', PX, LY, {size: 15, color: C.navy, alpha: za});
+  text('classified negative', NX, LY, {size: 15, color: C.body, align: 'right', alpha: za});
   // the threshold and where the curve crosses it
   const ta = seg(.42, .3);
   line([[A.x, g.Y(.5)], [A.x + A.w, g.Y(.5)]], {color: C.guide, width: 1, dash: [5, 4], progress: ta});
@@ -175,18 +197,11 @@ function draw() {
     mark(g.X(D.x[i]), yy, D.y[i] ? 1 : 0, arrive(.04 + .26 * D.x[i] / 45));
   }
 
-  // the probe: glides from tumor to tumor along the computed curve
-  const c = cycle(.6, D.stops.map((v, k) => [v, k === D.stops.length - 1 ? 1.2 : 1.2]), .75);
-  const xp = cyc(c), pp = P(xp), qa = arrive(.62);
+  // the probe on the curve, and its readout under the legend
   if (qa > 0) {
-    const px = g.X(xp), py = g.Y(pp);
-    line([[px, A.y + A.h], [px, py]], {color: C.accent, width: 1.2, dash: [4, 3], alpha: qa});
-    line([[A.x, py], [px, py]], {color: C.accent, width: 1.2, dash: [4, 3], alpha: qa});
     dot(px, py, 6, {color: '#fff', fill: C.accent, width: 1.6, alpha: qa});
-    // the readout, under the legend
-    const rx = A.x + 16, ry = A.y + 140;
-    math('x = ' + xp.toFixed(1) + '\\ \\rm{mm},\\ \\ p = ' + pp.toFixed(2), rx, ry, {size: 16, alpha: qa});
-    text(pp > .5 ? 'classified positive' : 'classified negative', rx, ry + 22, {size: 16, color: C.accent, alpha: qa});
+    math(rs, rx, ry, {size: 16, alpha: qa});
+    text(cs, rx, ry + 22, {size: 16, color: C.accent, alpha: qa});
   }
   legend(A.x + 14, A.y + 36, [
     [(x, y) => mark(x, y + 1, 1, 1), 'malignant (label 1)'],

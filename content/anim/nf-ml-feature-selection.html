@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -584,80 +587,133 @@ function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i
 function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
 
 const D = DATA, POSTER_T = 8, FIG = cv.closest('.fig');
-let manual = null, stepInput = null;
+let manual = null, stepInput = null, lastK = 0;
 function reset() { manual = null; }
-const subset = a => a.map(j => 'x' + (j + 1)).join(', ');
+/* the family's conventions: x_j in math, a true minus, subtitles 17 in C.body,
+   booktabs rules, labels that arrive on Motion's spring */
+const xv = j => 'x_{' + (j + 1) + '}';
+const subset = a => a.map(xv).join(',\\ ');
+const plain = a => a.map(j => 'x' + (j + 1)).join(', ');
+const n3 = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(3);
+const arrive = t0 => settle(t0, .28);
+function sub(l, x, y, words, a) { panel(l, x, y, {alpha: a}); text(words, x + 35, y, {size: 17, color: C.body, alpha: a}); }
+function rule(x0, x1, y, w, a) { line([[x0, y], [x1, y]], {color: C.ink, width: w, alpha: a}); }
+/* the right column; the step slider sits under (b), between its axis label and (c) */
+const RX = 682, TX = 910, SLY = 680;
 function draw() {
   const u = manual === null ? clamp((t - 1) / 5) : manual;
   const k = Math.min(3, 1 + Math.floor(u * 2.99)), step = D.steps[k - 1];
   if (manual === null && stepInput) stepInput.value = k;
+  if (stepInput && k !== lastK) {
+    lastK = k;
+    stepInput.setAttribute('aria-valuetext', 'step ' + k + ' of 3: ' + plain(step.selected) + ', CV RMSE ' + step.rmse.toFixed(3));
+  }
   const xs = 110, ww = 500;
-  panel('a', 22, 34); text('Filter: score before fitting', 58, 34, {size: 19});
+  sub('a', 18, 34, 'filter: score before fitting', arrive(0));
   const a = axes({x: xs, y: 76, w: ww, h: 200, xlim: [0, 1], ylim: [.5, 6.5],
-    xticks: [0, .25, .5, .75, 1], yticks: [1, 2, 3, 4, 5, 6], yfmt: v => 'x' + (7 - v),
+    xticks: [0, .25, .5, .75, 1], yticks: [1, 2, 3, 4, 5, 6], yfmt: v => 'x_{' + (7 - v) + '}',
     xlabel: '|r(x_j, y)|', ylabel: '\\rm{feature}', grid: true, progress: seg(0, .35)});
   for (let j = 0; j < 6; j++) {
-    const yy = a.Y(6 - j), selected = D.filter.includes(j), len = D.correlation[j] * seg(.15 + j * .04, .35);
-    ctx.fillStyle = selected ? C.blue : C.steel2; ctx.fillRect(a.X(0), yy - 8, len * ww, 16);
+    const yy = a.Y(6 - j), kept = D.filter.includes(j), len = D.correlation[j] * seg(.15 + j * .04, .35), x1 = a.X(0) + len * ww;
+    // the three kept: navy; the others: mist with a blue edge, as the family draws a bar
+    if (len > 0 && kept) { ctx.fillStyle = C.navy; ctx.fillRect(a.X(0), yy - 8, len * ww, 16); }
+    else if (len > 0) line([[a.X(0), yy - 8], [x1, yy - 8], [x1, yy + 8], [a.X(0), yy + 8]], {color: C.blue, width: 1, fill: C.mist, close: true});
     text(D.correlation[j].toFixed(3), a.X(len) + 8, yy + 5, {size: 14, alpha: lab()});
   }
-  text('Top three correlations', 682, 88, {size: 17});
-  text(subset(D.filter), 682, 117, {size: 18, color: C.blue});
-  text('x4 repeats much of x1', 682, 156, {size: 16, color: C.muted});
-  text('x3 carries extra information', 682, 179, {size: 16, color: C.muted});
-  text('Held-out RMSE: ' + D.rmse[0].toFixed(3), 682, 228, {size: 17});
-  panel('b', 22, 368); text('Wrapper: fit candidate subsets', 58, 368, {size: 19});
+  const aa = arrive(.3);
+  text('top three correlations', RX, 88, {size: 16, color: C.body, alpha: aa});
+  math(subset(D.filter), RX, 117, {size: 17, alpha: aa});
+  math('x_4\\ \\rm{repeats much of}\\ x_1', RX, 156, {size: 15, color: C.muted, alpha: aa});
+  math('x_3\\ \\rm{carries extra information}', RX, 179, {size: 15, color: C.muted, alpha: aa});
+  text('held-out RMSE ' + D.rmse[0].toFixed(3), RX, 228, {size: 16, alpha: aa});
+  sub('b', 18, 368, 'wrapper: fit candidate subsets', arrive(.04));
   const b = axes({x: xs, y: 410, w: ww, h: 190, xlim: [1, 6], ylim: [.4, 3],
     xticks: [1, 2, 3, 4, 5, 6], yticks: [.5, 1, 1.5, 2, 2.5, 3],
     xlabel: '\\rm{number of features}', ylabel: '\\rm{CV RMSE}', grid: true, progress: seg(.1, .35)});
   const pp = D.steps.map((s, i) => [b.X(i + 1), b.Y(s.rmse)]);
   b.inside(() => line(pp, {color: C.navy, width: 2.4, progress: seg(.3, .45)}));
-  pp.forEach((p, i) => dot(...p, 4, {color: C.navy, fill: '#fff'}));
-  dot(...pp[k - 1], 7, {color: C.accent, fill: C.accent});
-  text('Forward step ' + k + ' of 3', 682, 421, {size: 17});
-  text(subset(step.selected), 682, 450, {size: 18, color: C.blue});
-  text('Candidate     CV RMSE', 682, 489, {size: 16, color: C.muted});
+  const da = arrive(.3);     // the marks arrive with their line
+  pp.forEach((p, i) => dot(...p, 4, {color: C.navy, fill: '#fff', alpha: da}));
+  dot(...pp[k - 1], 7, {color: C.accent, fill: C.accent, alpha: da});
+  const ab = arrive(.4);
+  text('forward step ' + k + ' of 3', RX, 421, {size: 16, color: C.body, alpha: ab});
+  math(subset(step.selected), RX, 450, {size: 17, alpha: ab});
+  // the candidates of this step, as a booktabs table; the one added in crimson
+  rule(RX, TX, 470, 1.3, ab);
+  text('candidate', RX, 488, {size: 15, color: C.body, alpha: ab});
+  text('CV RMSE', TX, 488, {size: 15, color: C.body, align: 'right', alpha: ab});
+  rule(RX, TX, 496, .8, ab);
   step.candidates.forEach(([j, v], i) => {
-    const yy = 516 + i * 21, selected = step.selected[k - 1] === j;
-    text('add x' + (j + 1), 682, yy, {size: 15, color: selected ? C.accent : C.body});
-    text(v.toFixed(3), 910, yy, {size: 15, align: 'right', color: selected ? C.accent : C.body});
+    const yy = 515 + i * 21, col = step.selected[k - 1] === j ? C.accent : C.body;
+    math('\\rm{add}\\ ' + xv(j), RX, yy, {size: 15, color: col, alpha: ab});
+    text(v.toFixed(3), TX, yy, {size: 15, align: 'right', color: col, alpha: ab});
   });
-  text('Three-feature test RMSE: ' + D.rmse[1].toFixed(3), 682, 671, {size: 16});
-  panel('c', 22, 718); text('Embedded: L1 shrinks coefficients', 58, 718, {size: 19});
+  const foot = 515 + (step.candidates.length - 1) * 21 + 10;
+  rule(RX, TX, foot, 1.3, ab);
+  text('three-feature test RMSE ' + D.rmse[1].toFixed(3), RX, foot + 28, {size: 16, alpha: ab});
+  sub('c', 18, 724, 'embedded: L1 shrinks coefficients', arrive(.08));
   const c = axes({x: xs, y: 766, w: ww, h: 200, xlim: [-3, 1], ylim: [-2.5, 3.5],
     xticks: [-3, -2, -1, 0, 1], xfmt: v => String(10 ** v), yticks: [-2, -1, 0, 1, 2, 3],
     xlabel: '\\rm{penalty}\\ \\alpha\\ \\rm{(log scale)}', ylabel: '\\rm{coefficient}', grid: true, progress: seg(.15, .35)});
   const colors = [C.navy, C.blue, C.accent, C.sky, C.guide, C.muted];
+  const ga = clamp(seg(.15, .35) * 1.4);   // the guides come with the axes
   c.inside(() => {
-    line([[c.X(-3), c.Y(0)], [c.X(1), c.Y(0)]], {color: C.rule, width: 1});
+    line([[c.X(-3), c.Y(0)], [c.X(1), c.Y(0)]], {color: C.rule, width: 1, alpha: ga});
     for (let j = 0; j < 6; j++) line(D.alphas.map((a, i) => [c.X(Math.log10(a)), c.Y(D.coefs[i][j])]),
       {color: colors[j], width: j < 3 ? 2.4 : 1.4, dash: j > 2 ? [4, 3] : null, progress: seg(.3 + .04 * j, .4)});
-    line([[c.X(Math.log10(D.alpha)), c.Y(-2.5)], [c.X(Math.log10(D.alpha)), c.Y(3.5)]], {color: C.guide, width: 1, dash: [5, 4]});
+    line([[c.X(Math.log10(D.alpha)), c.Y(-2.5)], [c.X(Math.log10(D.alpha)), c.Y(3.5)]], {color: C.guide, width: 1, dash: [5, 4], alpha: ga});
   });
-  text('Lasso, alpha = ' + D.alpha, 682, 778, {size: 17});
+  const ac = arrive(.5);
+  math('\\rm{Lasso,}\\ \\alpha\\ = ' + D.alpha, RX, 778, {size: 16, color: C.body, alpha: ac});
+  // the key, as the family draws one: a thin box, white fill, serif 15
+  line([[RX - 6, 792], [TX + 6, 792], [TX + 6, 934], [RX - 6, 934]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: ac});
   D.embedded_coef.forEach((v, j) => {
-    const yy = 815 + j * 22;
-    line([[682, yy - 5], [704, yy - 5]], {color: colors[j], width: 2, dash: j > 2 ? [4, 3] : null});
-    text('x' + (j + 1) + ': ' + D.features[j], 714, yy, {size: 15});
-    text(v.toFixed(3), 972, yy, {size: 15, align: 'right'});
+    const yy = 813 + j * 22;
+    line([[RX + 4, yy - 5], [RX + 28, yy - 5]], {color: colors[j], width: 2, dash: j > 2 ? [4, 3] : null, alpha: ac});
+    math(xv(j) + '\\rm{: ' + D.features[j] + '}', RX + 38, yy, {size: 15, alpha: ac});
+    text(n3(v), TX, yy, {size: 15, align: 'right', alpha: ac});
   });
-  text('Selected: ' + subset(D.embedded), 682, 971, {size: 16, color: C.blue});
-  text('Held-out RMSE: ' + D.rmse[2].toFixed(3), 682, 998, {size: 16});
-  text('Synthetic sensor features, 360 train / 120 test; same Ridge predictor for all held-out comparisons', 22, 1051, {size: 14, color: C.muted});
+  math('\\rm{selected}\\ ' + subset(D.embedded), RX, 966, {size: 16, alpha: ac});
+  text('held-out RMSE ' + D.rmse[2].toFixed(3), RX, 994, {size: 16, alpha: ac});
+  text('synthetic sensor features, 360 train, 120 test; same Ridge predictor for all held-out comparisons', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.6)});
 }
 function lab() { return seg(.4, .3); }
 if (!STILL) {
+  /* the step slider in the figure's own terms: a 3 unit C.rule track and a 15 unit white
+     handle with a 2 unit navy ring, as Figure 18a draws its epoch slider (larger under the
+     pointer), and the focus ring every figure control has */
+  document.head.insertAdjacentHTML('beforeend', '<style>' +
+    '.nfr{-webkit-appearance:none;appearance:none;background:transparent;margin:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+    '.nfr::-webkit-slider-runnable-track{height:var(--tk);background:#D7D2CA;border:0}' +
+    '.nfr::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:var(--th);height:var(--th);' +
+    'margin-top:calc(var(--tk) / 2 - var(--th) / 2);border-radius:50%;background:#fff;border:var(--bw) solid #043052}' +
+    '.nfr:hover::-webkit-slider-thumb,.nfr:active::-webkit-slider-thumb{width:var(--th2);height:var(--th2);margin-top:calc(var(--tk) / 2 - var(--th2) / 2)}' +
+    '.nfr::-moz-range-track{height:var(--tk);background:#D7D2CA;border:0}' +
+    '.nfr::-moz-range-thumb{box-sizing:border-box;width:var(--th);height:var(--th);border-radius:50%;background:#fff;border:var(--bw) solid #043052}' +
+    '.nfr:hover::-moz-range-thumb,.nfr:active::-moz-range-thumb{width:var(--th2);height:var(--th2)}' +
+    '.nfr:focus{outline:none}.nfr:focus-visible{outline:2px solid #095A94;outline-offset:0}</style>');
   const ctl = document.createElement('label');
-  ctl.style.cssText = 'position:absolute;left:11%;top:62.5%;font:500 14px "CMU Serif";color:#544F48;display:flex;align-items:center;gap:8px;width:50%';
-  ctl.textContent = 'Forward-selection step';
+  ctl.style.cssText = 'position:absolute;left:11%;top:' + (SLY - 18) / H * 100 + '%;font:500 15px "CMU Serif";color:#544F48;' +
+    'display:flex;align-items:center;gap:14px;width:50%;white-space:nowrap';
+  ctl.textContent = 'forward-selection step';
   const input = document.createElement('input'); input.type = 'range'; input.min = 1; input.max = 3; input.step = 1; input.value = 3;
-  stepInput = input;
+  input.className = 'nfr'; stepInput = input;
   input.setAttribute('aria-label', 'Forward-selection step'); input.style.width = '35%';
-  new ResizeObserver(() => { const scale = cv.getBoundingClientRect().width / W;
-    ctl.style.fontSize = (14 * scale) + 'px'; input.style.height = (20 * scale) + 'px';
+  new ResizeObserver(() => {
+    const s = cv.getBoundingClientRect().width / W, px = v => v * s + 'px';
+    ctl.style.fontSize = px(15); ctl.style.gap = px(14); input.style.height = px(36);
+    input.style.setProperty('--th', px(15)); input.style.setProperty('--th2', px(17));
+    input.style.setProperty('--tk', Math.max(1, 3 * s) + 'px'); input.style.setProperty('--bw', Math.max(1, 2 * s) + 'px');
   }).observe(cv);
   input.addEventListener('input', () => { manual = (Number(input.value) - 1) / 2; render(); });
-  ctl.addEventListener('click', e => e.stopPropagation()); ctl.appendChild(input); FIG.appendChild(ctl);
+  ctl.addEventListener('click', e => e.stopPropagation()); ctl.appendChild(input);
+  FIG.insertBefore(ctl, FIG.querySelector('.ctl'));
+  // a click just beside the slider (12 units or 8 CSS px) is meant for it: it never pauses
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const r = cv.getBoundingClientRect(), u = W / r.width, X = (e.clientX - r.left) * u, Y = (e.clientY - r.top) * u, m = Math.max(12, 8 * u);
+    if (Math.abs(Y - SLY) < 18 + m && X > 110 - m && X < 610 + m) e.stopPropagation();
+  }, true);
 }
 boot();
 </script>

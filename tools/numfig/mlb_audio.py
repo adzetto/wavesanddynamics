@@ -204,7 +204,7 @@ const D = DATA, NB = D.nb, NFR = D.nf;
 /* ------------------------------------------------ layout */
 const LX = 88, LW = 440, WAV = { y: 46, h: 78 }, SPC = { y: 166, h: 150 }, MY = [352, 420, 488], MH = 58;
 const TX = s => LX + s * LW;                          // clip time (s) to x
-const KX = 546, KS = 6, DX = 800, OX = 872;
+const KX = 546, KS = 6, DX = 790, OX = 860;
 /* ------------------------------------------------ images: the spectrograms, and the maps the filters make of them */
 function unpack(b) { const v = b64i8(b), S = new Float64Array(v.length); for (let i = 0; i < v.length; i++) S[i] = (v[i] + 127) / 254; return S; }
 function correlate(S, K) {                         // same size, symmetric boundary, like scipy's correlate2d
@@ -280,14 +280,14 @@ function draw() {
     axes({ x: LX, y, w: LW, h: MH, xlim: [0, 1], ylim: [0, 4], xticks: [0, .2, .4, .6, .8, 1], yticks: [],
       xfmt: k === 2 ? (v => v === 0 ? '0' : v.toFixed(1)) : (() => ''), xlabel: k === 2 ? '\\rm{time}\\ \\ t\\ (\\rm{s})' : '', progress: a });
     // the kernel, as a picture of its weights (higher frequency up, as in the spectrogram)
-    cells(KX, y + 2, 9, 9, KS, (i, j) => { const w = D.kern[k][(8 - i) * 9 + j]; return w >= 0 ? mixHex('#FFFFFF', C.blue, clamp(w / .12)) : mixHex('#FFFFFF', K.red, clamp(-w / .12)); },
+    cells(KX, y + 2, 9, 9, KS, (i, j) => signed(D.kern[k][(8 - i) * 9 + j] / .12 * 2 / 3),
           { alpha: a, gridColor: null, frame: C.ink, frameWidth: 1 });
     text(D.kn[k], KX + 9 * KS + 12, y + 18 + rise(lab(.2 + .04 * k)), { size: 15, alpha: lab(.2 + .04 * k) });
     // global average pooling: each map becomes one number, its mean
     const pa = u < PL0 ? 0 : clamp((u - PL0) / .3) * fin;
     if (pa > 0) {
       rect(LX, y, LW, MH, { stroke: C.accent, width: 1.6, alpha: pa * (1 - clamp((u - PL0 - .5) / .4)) });
-      math(`\\rm{mean}\\ \\ ${C_.feat[k].toFixed(3)}`, KX + 9 * KS + 12, y + 42, { size: 15, color: C.accent, alpha: pa });
+      math(`\\rm{mean}\\ \\ ${C_.feat[k].toFixed(3)}`, KX + 9 * KS + 12, y + 42, { size: 15, color: mixHex(C.accent, C.body, clamp((u - PL0 - .5) / .4)), alpha: pa });
     }
   }
   if (sweeping) for (const [y, h] of [[SPC.y, SPC.h], [MY[0], MY[2] + MH - MY[0]]]) {
@@ -302,11 +302,11 @@ function draw() {
   const ea = seg(.3, .35);
   for (let k = 0; k < 3; k++) for (let i = 0; i < 4; i++) {
     const w = D.W1[k][i], a = Math.min(1, Math.abs(w) / 3);
-    line([[KX + 9 * KS + 118, MY[k] + 37], [DX - 9, HY(i)]], { color: w >= 0 ? C.blue : K.red, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
+    line([[KX + 9 * KS + 118, MY[k] + 37], [DX - 9, HY(i)]], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
   }
   for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
     const w = D.W2[i][j], a = Math.min(1, Math.abs(w) / 3);
-    line([[DX + 9, HY(i)], [OX - 11, OY(j)]], { color: w >= 0 ? C.blue : K.red, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
+    line([[DX + 9, HY(i)], [OX - 11, OY(j)]], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
   }
   for (let i = 0; i < 4; i++) node(DX, HY(i), 9, { fill: mixHex('#FFFFFF', C.blue, dn * fin * C_.h[i] / hm), width: 1.3, alpha: seg(.3 + .03 * i, .3) });
   const pred = C_.p[1] > C_.p[0] ? 1 : 0, names = ['normal', 'machine fault'];
@@ -318,6 +318,11 @@ function draw() {
     if (ot > 0) rect(OX + 18, y + 5, Math.max(.4, 60 * C_.p[j] * easeOut(ot)), 10, { fill: win ? C.accent : C.blue, stroke: null, alpha: fin });
     if (ot > 0) math(C_.p[j].toFixed(2), OX + 84, y + 14, { size: 14, color: win ? C.accent : C.body, alpha: ot * fin });
   }
+  // what the line colours mean: the weights' signs
+  legend(OX - 70, 436, 158, [
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.2, alpha: a }), 'positive weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.2, alpha: a }), 'negative weight'],
+  ], { alpha: lab(.4) });
   text(`synthetic gearbox sound, 8 kHz; STFT Hann 16 ms, hop 4 ms; dense 3-4-2 trained on 300 clips, ${D.acc[1]}/100 held out right`,
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
 }

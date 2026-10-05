@@ -237,7 +237,7 @@ const KIND = [1, 4, 0];
 function drawD() {
   const y0 = ROW[3], u = win(3), Dd = D.d;
   sub('d', 18, y0 + 30, 'normalization and standardization', arrive(.12));
-  const RX0 = 196, RX1 = 390, ZX0 = 560, ZX1 = 960, ys = [y0 + 64, y0 + 94, y0 + 124];
+  const RX0 = 196, RX1 = 380, ZX0 = 560, ZX1 = 960, ys = [y0 + 64, y0 + 94, y0 + 124];
   const ZX = z => ZX0 + (z + 2.5) / 5 * (ZX1 - ZX0);
   const aa = arrive(.16);
   Dd.names.forEach((nm, k) => {

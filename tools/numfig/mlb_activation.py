@@ -91,7 +91,7 @@ function draw() {
   const z = zNow(), pa = lab(.55);
   PANELS.forEach((p, k) => {
     const x = X0[k], t0 = .05 * k;
-    text(p.name, x, 40 + rise(lab(t0)), { size: 17, alpha: lab(t0) });
+    text(p.name, x, 40 + rise(lab(t0)), { size: 17, color: C.body, alpha: lab(t0) });
     math(p.formula, x + AX.w, 40 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [-4.4, 4.4], ylim: p.ylim, xticks: [-4, -2, 0, 2, 4],
       yticks: p.yticks, yfmt: p.yfmt, grid: true, xlabel: 'z', progress: seg(t0, .35), ylabelGap: 40 });
@@ -119,7 +119,7 @@ function draw() {
       math(s2, x + 12, AX.y + 68, { size: 15, color: C.accent, alpha: pa });
     }
   });
-  text('one input z, swept from \u22123.6 to 3.6 and back, drives all three', 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  math('\\rm{one input}\\ z\\rm{, swept from \u22123.6 to 3.6 and back, drives all three}', 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """

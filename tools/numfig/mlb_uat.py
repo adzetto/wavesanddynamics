@@ -12,7 +12,7 @@ N; the neurons switch on one at a time, left to right (a neuron off gives -1,
 so the piece it adds, v (1 + tanh(w (x - m))), rises from 0, and the sum starts
 at c - sum v: the same network, exactly), and the error plot beside it has
 every N's error. Untouched, the page tours 3, 7 and 14 neurons. Pointing at a
-piece names its neuron (v, w, m); a button builds the sum again.
+piece names its neuron (v, w, m); choosing the N shown again builds its sum again.
 
 Run: python tools/numfig/mlb_uat.py [--look] [--refit] [--verify]
   --refit   fit again instead of reading the cached fits (temp directory)
@@ -166,9 +166,10 @@ const LRMS = NETS.map(nt => Math.log10(nt.rms));
 /* ================================================ the reader's choices (explicit state) */
 let NSEL = null;      // a number of neurons chosen (or built again): {n, t0, prev}; null: the tour
 let HC = 0;           // the chip (or the error plot's marker) under the pointer
+let HD = 0;           // the chip pressed, until the press is let go
 let HP = -1;          // the piece pointed at in the plot
-let HR = false;       // the pointer is on the button that builds the sum again
-function reset() { NSEL = null; HC = 0; HP = -1; HR = false; }
+function reset() { NSEL = null; HC = 0; HD = 0; HP = -1; }
+const TAP = matchMedia('(hover: none)').matches;         // a touch screen: the hint says tap
 
 /* ================================================ the clock: 3, 7 and 14 neurons in turn */
 const TB = .35, TOURB = [3, 7, 14], BGAP = .45, BHOLD = 4.5;
@@ -187,9 +188,11 @@ function bNow() {
 function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
 
 /* ================================================ the layout */
-const YT = 36, CH = { x: 532, y: YT - 18, w: 26, h: 24, gap: 4 };
-const RB = { x: CH.x + NMAX * (CH.w + CH.gap) + 14, y: YT - 6, r: 12 };       // build again
 const FP = { x: 76, y: 96, w: 540, h: 296 }, EP = { x: 724, y: 96, w: 240, h: 296 };
+/* the chips: a 36 unit pitch (24 CSS px at 672), the row ending over the error plot's right edge */
+const YT = 36, CH = { w: 30, h: 28, gap: 6, y: YT - 19 };
+CH.x = EP.x + EP.w - NMAX * (CH.w + CH.gap) + CH.gap;
+const HINT = { y: FP.y + FP.h + 44, w: 118 };             // 'point at a piece', right under the plot
 const pts = Array.from({ length: NX }, () => [0, 0]);
 function builtB(st) {                          // pieces added so far, as a real number
   const u = t - st.t0 - BGAP, s = stepB(st.n);
@@ -219,20 +222,10 @@ function draw() {
   text('many neurons added together', 52, YT + rise(la), { size: 17, color: C.body, alpha: la });
   // the number of neurons: the reader's choice
   text('number of neurons', CH.x - 12, YT, { size: 15, color: C.body, align: 'right', alpha: la });
-  for (let q = 1; q <= NMAX; q++) {
-    const x = CH.x + (q - 1) * (CH.w + CH.gap), on = q === st.n, a = lab(.08 + .012 * q);
-    rect(x, CH.y, CH.w, CH.h, { fill: on ? C.navy : HC === q ? C.steel : '#fff', stroke: on ? C.navy : C.guide, width: 1, alpha: a });
-    text(String(q), x + CH.w / 2, CH.y + 17, { size: 15, color: on ? '#fff' : C.body, align: 'center', alpha: a });
-  }
-  // build the sum again: a round button with the restart arrow
-  if (!STILL) {
-    const a = lab(.3), col = HR ? C.navy : C.guide;
-    dot(RB.x, RB.y, RB.r, { color: col, fill: HR ? C.steel : '#fff', width: 1.2, alpha: a });
-    const arc = []; for (let q = 0; q <= 20; q++) { const an = -.5 + 4.6 * q / 20; arc.push([RB.x + 5.6 * Math.cos(an), RB.y + 5.6 * Math.sin(an)]); }
-    line(arc, { color: col, width: 1.5, alpha: a });
-    const e = arc[arc.length - 1];
-    line([[e[0] - 3.2, e[1] - 1.6], [e[0], e[1]], [e[0] + 1, e[1] - 3.4]], { color: col, width: 1.5, alpha: a });
-  }
+  // the chosen number again builds its sum again: no button of its own
+  for (let q = 1; q <= NMAX; q++)
+    uiChip(CH.x + (q - 1) * (CH.w + CH.gap), CH.y, CH.w, CH.h, String(q),
+           { on: q === st.n, hover: HC === q, down: HD === q }, lab(.08 + .012 * q));
   // the fit: the target, the pieces, their sum
   const A = axes({ ...FP, xlim: [0, 1], ylim: [-1.3, 1.3], xticks: [0, .25, .5, .75, 1], yticks: [-1, -.5, 0, .5, 1],
                    xfmt: v => v === .5 ? '0.5' : fmt(v), yfmt: v => v === .5 ? '0.5' : v === -.5 ? '−0.5' : fmt(v),
@@ -279,7 +272,7 @@ function draw() {
   architecture(st);
   text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
        18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
-  if (!STILL) text('point at a piece', FP.x + FP.w, FP.y + FP.h + 44, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  if (!STILL) text(TAP ? 'tap a piece' : 'point at a piece', FP.x + FP.w, HINT.y, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
   place();
 }
 
@@ -290,7 +283,7 @@ const AR = { y: 520, cy: 654, xi: 240, xh: 490, xo: 800, ri: 13, rh: 5, dy: 13 }
 function architecture(st) {
   const n = st.n, nt = NETS[n - 1], a = lab(.5), built = builtB(st);
   cv.dataset.architecture = `1-${n}-1`;
-  text(`Selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 18, alpha: a });
+  text(`selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 16, color: C.body, alpha: a });
   text('input', AR.xi, AR.y + 31, { size: 15, align: 'center', alpha: a });
   text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.y + 31, { size: 15, align: 'center', alpha: a });
   text('linear output', AR.xo, AR.y + 31, { size: 15, align: 'center', alpha: a });
@@ -304,43 +297,53 @@ function architecture(st) {
   dot(AR.xi, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
   dot(AR.xo, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
   math('x', AR.xi, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  text('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  text(`Output bias ${(nt.base + nt.v.reduce((s, v) => s + v, 0)).toFixed(3)}; ${3 * n + 1} fitted parameters`,
-       FP.x, AR.cy + 118, { size: 15, color: C.muted, alpha: a });
-  text('Every hidden neuron connects to the input and output; weights match the selected fit above.',
-       FP.x, AR.cy + 143, { size: 14, color: C.muted, alpha: a });
+  math('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
+  // one note over the parameter line, in math so the bias takes a true minus
+  const bias = nt.base + nt.v.reduce((s, v) => s + v, 0);
+  math(`\\rm{output bias}\\ ${bias.toFixed(3)}\\rm{; ${3 * n + 1} fitted parameters; every hidden neuron connects to the input and the output, with the weights of the fit above}`,
+       18, H - 34, { size: 14, color: C.muted, alpha: a });
 }
 
 /* ================================================ the reader's hand: pointer and keyboard */
-const FIG = document.querySelector('.fig'), KB = { cr: [], rb: null, key: '' };
+const FIG = document.querySelector('.fig'), KB = { cr: [], key: '' };
 function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
 function redraw() { if (!playing) render(); }
-const quick = () => REDUCED || STILL;                    // less motion: the sum at once
+const quick = () => REDUCED || STILL || !playing;         // paused, or less motion: the sum at once
 function chooseN(n, again) {
   const cur = bNow();
-  if (!playing && !quick()) setPlay(true);
+  if (again && !playing && !REDUCED && !STILL) setPlay(true);   // only building again plays
   NSEL = quick() ? { n, t0: t - 1e3, prev: null } : { n, t0: t, prev: again ? null : { n: cur.n, t0: cur.t0, sw: t } };
   HP = -1; redraw();
 }
-function hitChip(X, Y) {
-  if (Y >= CH.y - 4 && Y <= CH.y + CH.h + 4) {
-    const q = Math.floor((X - CH.x + CH.gap / 2) / (CH.w + CH.gap));
-    if (q >= 0 && q < NMAX) return q + 1;
-  }
+const choose = n => chooseN(n, n === bNow().n);           // the number shown, chosen again: built again
+/* the chip row's hit band runs from the top of the frame to under the chips, each chip as wide as
+   its pitch: 36 by 53 units (24 by 36 CSS px at 672) */
+const inRow = (X, Y) => Y >= 0 && Y <= CH.y + CH.h + 8 && X >= CH.x - 8 && X <= CH.x + NMAX * (CH.w + CH.gap) + 8;
+const rowChip = X => clamp(Math.floor((X - CH.x + CH.gap / 2) / (CH.w + CH.gap)), 0, NMAX - 1) + 1;
+/* a press on the row holds while it stays within 60 units of the chips' centres, along or across */
+const nearRow = (X, Y) => Math.abs(Y - (CH.y + CH.h / 2)) < 60 &&
+  X > CH.x + CH.w / 2 - 60 && X < CH.x + (NMAX - 1) * (CH.w + CH.gap) + CH.w / 2 + 60;
+function hitMark(X, Y) {                       // the error plot's marker in that column
   if (X >= EP.x && X <= EP.x + EP.w && Y >= EP.y - 6 && Y <= EP.y + EP.h + 6) {
     const q = Math.round((X - EP.x) / EP.w * NMAX + .5);
     if (q >= 1 && q <= NMAX && Math.abs(X - (EP.x + (q - .5) / NMAX * EP.w)) < 9) return q;
   }
   return 0;
 }
-const onRB = (X, Y) => !STILL && Math.hypot(X - RB.x, Y - RB.y) < RB.r + 4;
-function hitPiece(X, Y) {                      // the piece whose curve passes nearest, within 7 units
+const hitChip = (X, Y) => inRow(X, Y) ? rowChip(X) : hitMark(X, Y);
+function hitPiece(X, Y, tol) {                 // the piece whose curve passes nearest, within tol units
   const st = bNow();
   if (builtB(st) < st.n || X < FP.x || X > FP.x + FP.w || Y < FP.y || Y > FP.y + FP.h) return -1;
-  const i = Math.round((X - FP.x) / FP.w * (NX - 1)), P = PIE[st.n - 1], A = 1.3, best = { j: -1, d: 7 };
+  const i = Math.round((X - FP.x) / FP.w * (NX - 1)), P = PIE[st.n - 1], A = 1.3, best = { j: -1, d: tol };
   for (let j = 0; j < st.n; j++) { const y = FP.y + FP.h - (P[j][i] + A) / (2 * A) * FP.h, d = Math.abs(y - Y); if (d < best.d) { best.d = d; best.j = j; } }
   return best.j;
 }
+/* the controls' own ground: the strip of the chips, the two plots and the hint. A click there that
+   misses does nothing; on open ground a click still pauses, as in every figure */
+const ground = (X, Y) => Y < 76 || (X >= FP.x && X <= FP.x + FP.w && Y >= FP.y && Y <= FP.y + FP.h) ||
+  (X >= EP.x - 10 && X <= EP.x + EP.w + 10 && Y >= EP.y - 10 && Y <= EP.y + EP.h + 10) ||
+  (X >= FP.x + FP.w - HINT.w && X <= FP.x + FP.w + 6 && Y >= HINT.y - 16 && Y <= HINT.y + 8);
+let PRESS = false, ATE = false, LASTP = 'mouse';   // a press on the chips; the click after it, eaten
 if (!STILL) {
   const css = document.createElement('style');
   css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
@@ -356,7 +359,8 @@ if (!STILL) {
     return el;
   };
   const gB = document.createElement('div');
-  gB.setAttribute('role', 'radiogroup'); gB.setAttribute('aria-label', 'Number of neurons added together');
+  gB.setAttribute('role', 'radiogroup');
+  gB.setAttribute('aria-label', 'Number of neurons added together; the number shown, chosen again, is built again');
   FIG.insertBefore(gB, ctl);
   const roving = (list, i, pick) => e => {
     const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key], n = list.length;
@@ -365,34 +369,57 @@ if (!STILL) {
     e.preventDefault(); list[j].focus(); pick(j);
   };
   for (let q = 1; q <= NMAX; q++) {
-    const b = add(gB, 'button', 'radio', `${q} neuron${q > 1 ? 's' : ''}`);
-    b.addEventListener('keydown', roving(KB.cr, q - 1, j => chooseN(j + 1)));
+    const b = add(gB, 'button', 'radio', `${q} neuron${q > 1 ? 's' : ''}, error ${NETS[q - 1].rms.toFixed(3)}`);
+    b.addEventListener('keydown', roving(KB.cr, q - 1, j => choose(j + 1)));
     KB.cr.push(b);
   }
-  KB.rb = add(FIG, 'button', null, 'Add the neurons again, one at a time');
-  KB.rb.addEventListener('click', e => { e.stopPropagation(); chooseN(bNow().n, true); });
-  cv.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;
-    const [X, Y] = toUnits(e), hc = hitChip(X, Y), hr = onRB(X, Y), hp = hc || hr ? -1 : hitPiece(X, Y);
-    cv.style.cursor = hc || hr || hp >= 0 ? 'pointer' : '';
-    if (hc !== HC || hr !== HR || hp !== HP) { HC = hc; HR = hr; HP = hp; redraw(); }
+  // a finger (or the mouse) pressed on the chips can run along them: the chip under it when it is
+  // let go is chosen; drawn away from the row, the press chooses nothing
+  cv.style.touchAction = 'pan-y pinch-zoom';
+  cv.addEventListener('pointerdown', e => {
+    LASTP = e.pointerType; ATE = false;
+    const [X, Y] = toUnits(e);
+    if (e.button !== 0 || !inRow(X, Y)) return;
+    PRESS = true; HD = HC = rowChip(X);
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    redraw();
   });
-  cv.addEventListener('pointerleave', () => { HC = 0; HR = false; HP = -1; cv.style.cursor = ''; redraw(); });
-  // a click on a chip, a marker, the button or a piece is a choice: it must not also pause
-  // (the engine toggles on a click of the canvas), so it stops on the way down
+  cv.addEventListener('pointermove', e => {
+    const [X, Y] = toUnits(e);
+    if (PRESS) {
+      const c = nearRow(X, Y) ? rowChip(X) : 0;
+      if (c !== HD) { HD = HC = c; redraw(); }
+      return;
+    }
+    if (e.pointerType !== 'mouse') return;
+    const hc = hitChip(X, Y), hp = hc ? -1 : hitPiece(X, Y, 7);
+    cv.style.cursor = hc || hp >= 0 ? 'pointer' : ground(X, Y) ? 'default' : '';
+    if (hc !== HC || hp !== HP) { HC = hc; HP = hp; redraw(); }
+  });
+  const drop = chosen => e => {
+    if (!PRESS) return;
+    const c = HD; PRESS = false; HD = 0; ATE = true;   // the click that follows was this press
+    if (e.pointerType !== 'mouse') HC = 0;
+    if (chosen && c) choose(c); else redraw();
+  };
+  cv.addEventListener('pointerup', drop(true));
+  cv.addEventListener('pointercancel', drop(false));
+  cv.addEventListener('pointerleave', () => { if (PRESS) return; HC = 0; HP = -1; cv.style.cursor = ''; redraw(); });
+  // a press on the chips, a marker, a piece, or a near miss on their ground is the reader's:
+  // it must not also pause (the engine toggles on a click of the canvas), so it stops on the way down
   FIG.addEventListener('click', e => {
     if (e.target !== cv) return;
-    const [X, Y] = toUnits(e), c = hitChip(X, Y), p = hitPiece(X, Y);
-    if (c) chooseN(c);
-    else if (onRB(X, Y)) chooseN(bNow().n, true);
+    if (ATE) { ATE = false; e.stopPropagation(); return; }
+    const [X, Y] = toUnits(e), m = hitMark(X, Y), p = m ? -1 : hitPiece(X, Y, LASTP === 'mouse' ? 7 : 12);
+    if (m) choose(m);
     else if (p >= 0) { HP = HP === p ? -1 : p; redraw(); }
-    else return;
+    else if (!ground(X, Y)) return;
     e.stopPropagation();
   }, true);
 }
 /* the keyboard's stand-ins sit on what they choose, and say what is chosen */
 function place() {
-  if (STILL || !KB.rb) return;
+  if (STILL || !KB.cr.length) return;
   const bs = bNow(), key = cv.clientWidth + ':' + bs.n;
   if (key === KB.key) return;
   KB.key = key;
@@ -402,7 +429,6 @@ function place() {
     box(b, CH.x + q * (CH.w + CH.gap), CH.y, CH.x + q * (CH.w + CH.gap) + CH.w, CH.y + CH.h);
     b.setAttribute('aria-checked', String(q + 1 === bs.n)); b.tabIndex = q + 1 === bs.n ? 0 : -1;
   });
-  box(KB.rb, RB.x - RB.r - 2, RB.y - RB.r - 2, RB.x + RB.r + 2, RB.y + RB.r + 2);
 }
 boot();
 """
@@ -462,9 +488,9 @@ if __name__ == "__main__":
     say(f"  The page tours 3, 7 and 14 neurons, {sum(BD):g} s a round; a neuron switches on every")
     say("  min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.")
     say("  A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,")
-    say("  the page plays again to build it); the round button builds the same N again; pointing at a piece")
-    say("  of a finished sum (or tapping it) names its neuron: v, w and m. With less motion, the sum at once.")
-    say("  Keyboard: a radio group of 1 to 14 neurons and the button. Touch: a tap chooses.")
+    say("  the sum shows at once and stays paused); choosing the N shown again builds it again; pointing at a")
+    say("  piece of a finished sum (or tapping it) names its neuron: v, w and m. With less motion, the sum at once.")
+    say("  Keyboard: a radio group of 1 to 14 neurons. Touch: a tap, or a finger run along the chips, chooses.")
     say("  overlap check (engine.js ?overlap) at the poster and every 0.25 s up to it: clean (common.still)")
     if "--verify" in sys.argv:
         states = [(f"{n} neurons, {f:.0%} built, piece {hp}", f"NSEL = {{n: {n}, t0: 60, prev: null}}; HC = {n}; HP = {hp}; "

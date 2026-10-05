@@ -85,9 +85,10 @@ const FIVE = DATA.five, SHOWN = DATA.shown, COLS = DATA.cols, NW = SHOWN.length,
 const CUM = b64i8(DATA.cum), POS = b64f32(DATA.pos), VEC = b64f32(DATA.vec);
 const T0 = .55, DC = 1.4, T1 = T0 + DC + .1, DG = 2.4, TL = T1 + DG + .5, PER = 2.4;
 const POSTER_T = T1 + DG + .3;
-// labels that would sit on a neighbour; river's on its left, off the lines to its nearest (boat, water)
+// labels that would sit on a neighbour or on a dot; river's on its left, off the lines to its nearest (boat, water);
+// water's on its left, off the dot of stream; loan's level with its dot, off the line to its nearest above
 const LABEL_OFF = { kitten: [-7, -6, 'right'], puppy: [7, 15], boat: [7, 15], fish: [-7, 5, 'right'], account: [-7, 5, 'right'], credit: [7, 16],
-                    river: [-7, -6, 'right'] };
+                    river: [-7, -6, 'right'], dog: [10, 5], water: [-7, -6, 'right'], loan: [9, 5] };
 const XL = [-1.1, 1.1], YL = [-1.2, 1.0];                   // equal scales: distance on the map is honest
 /* the descent's clock: iteration number at time t, then the frame pair around it */
 function iterNow() { const u = clamp((t - T1) / DG); return u >= 1 ? 400 : 200 * (u * u * (3 - 2 * u)) * .5 + 200 * u * .5; }
@@ -96,9 +97,10 @@ function posOf(w, it) { const [k, s] = frameAt(it), a = (k * NW + w) * 2, b = ((
 function vecOf(r, it) { const [k, s] = frameAt(it); return [0, 1, 2, 3].map(c => lerp(VEC[(k * 5 + r) * 4 + c], VEC[((k + 1) * 5 + r) * 4 + c], s)); }
 function focusWord() { if (t < TL) return -1; return Math.floor((t - TL) / PER) % 5; }
 /* the map's words move while the descent runs. Each name shows from its own iteration on, the
-   first after which it never meets another name that is showing: worked out once, from the
-   trajectory and the names' ink as they are set. Where two would meet, a grey name gives way
-   to one of the five, and otherwise the name of the word still moving later waits. */
+   first after which it never comes within 2 units of another name, nor of another word's dot:
+   worked out once, from the trajectory and the names' ink as they are set. Where two names would
+   meet, a grey name gives way to one of the five, and otherwise the name of the word still moving
+   later waits; a name that would lie on a dot waits for the dot to pass. */
 const MX = v => 590 + (v - XL[0]) / (XL[1] - XL[0]) * 370, MY = v => 64 + 370 - (v - YL[0]) / (YL[1] - YL[0]) * 370;
 function labelBox(k, it) {
   const w = SHOWN[k], [x, y] = posOf(k, it), off = LABEL_OFF[w] || [7, -6], X = MX(x) + off[0], Y = MY(y) + off[1];
@@ -116,10 +118,17 @@ function arrivals() {
   for (let k = 0; k < NW; k++) for (let j = k + 1; j < NW; j++) {
     let L = -1;
     S.forEach((it, s) => { const a = B[s][k], b = B[s][j];
-      if (Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > .5 && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > .5) L = it; });
+      if (Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > -2 && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > -2) L = it; });
     if (L < 14) continue;
     const v = (k < 5) !== (j < 5) ? (k < 5 ? j : k) : still[k] > still[j] ? k : j;
     A[v] = Math.max(A[v], L + .25);
+  }
+  const D = S.map(it => SHOWN.map((w, j) => { const [x, y] = posOf(j, it); return [MX(x), MY(y), j < 5 ? 4.6 : 3]; }));
+  for (let k = 0; k < NW; k++) {                        // the dots: 4.6 for the five, 3 for the rest, 2 units clear
+    let L = -1;
+    S.forEach((it, s) => { const a = B[s][k];
+      D[s].forEach(([X, Y, r], j) => { if (j !== k && Math.hypot(Math.max(a[0] - X, 0, X - a[2]), Math.max(a[1] - Y, 0, Y - a[3])) < r + 2) L = it; }); });
+    if (L >= 14) A[k] = Math.max(A[k], L + .25);
   }
   return (ARR = A);
 }
@@ -155,8 +164,8 @@ function draw() {
     text(w, BX - 10, y + RB / 2 + 5, { size: 15, align: 'right', alpha: seg(.15 + .04 * r, .3) });
     for (let c = 0; c < 4; c++) {
       const X = BX + c * CB, u = clamp(v[c] / 1.6, -1, 1);
-      box(X, y, CB, RB, { fill: diverging(u), stroke: '#fff', width: 1, alpha: ba });
-      text(nf(v[c], 2), X + CB / 2, y + RB / 2 + 5, { size: 14, align: 'center', color: Math.abs(u) > .6 ? '#fff' : C.ink, alpha: ba });
+      box(X, y, CB, RB, { fill: signed(u), stroke: '#fff', width: 1, alpha: ba });
+      text(nf(v[c], 2), X + CB / 2, y + RB / 2 + 5, { size: 14, align: 'center', color: lutDark(SIGNED, (u + 1) / 2) ? '#fff' : C.ink, alpha: ba });
     }
     box(BX, y, 4 * CB, RB, { width: 1, alpha: ba });
   });
@@ -164,7 +173,7 @@ function draw() {
   // ================= (c) the map
   sub('c', 520, 34, 'embedding space', seg(.18, .3));
   const g = axes({ x: 590, y: 64, w: 370, h: 370, xlim: XL, ylim: YL, xticks: [-1, -.5, 0, .5, 1], yticks: [-1, -.5, 0, .5, 1],
-    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 36, progress: seg(.05, .4), tickSize: 14, labelSize: 16 });
+    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 36, progress: seg(.05, .4) });
   const P = SHOWN.map((w, k) => posOf(k, it)), pa = seg(T1 - .2, .3), ARV = arrivals();
   g.inside(() => {
     // the pairs the text names: cat and dog, bank and loan
@@ -180,7 +189,8 @@ function draw() {
       const mine = k < 5, [x, y] = P[k], X = g.X(x), Y = g.Y(y), on = mine && k === fw;
       dot(X, Y, mine ? 4.6 : 3, { color: '#fff', fill: on ? C.accent : mine ? C.navy : C.guide, width: 1, alpha: pa });
       const off = LABEL_OFF[w] || [7, -6];
-      text(w, X + off[0], Y + off[1], { align: off[2] || 'left', size: mine ? 16 : 14, color: on ? C.accent : mine ? C.ink : C.muted, alpha: pa * (mine ? 1 : .9) * clamp((it - ARV[k]) / 16) });
+      const fade = ARV[k] > 200 ? seg(T1 + DG, .3) : clamp((it - ARV[k]) / 16);   // a name free only at the end fades in then
+      text(w, X + off[0], Y + off[1], { align: off[2] || 'left', size: mine ? 16 : 14, color: on ? C.accent : mine ? C.ink : C.muted, alpha: pa * fade });
     });
   });
   // cosines: the pairs at rest, the focused word's nearest in the loop

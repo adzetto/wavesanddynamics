@@ -247,8 +247,7 @@ const visit = u => u < 0 ? 0 : sp(u - .5, 1.2) - sp(u - 3.5, 1.2);
 function drawA() {
   sub('a', PA.x - 44, 34, 'classification', arrive(0));
   const g = axes({...PA, xlim: [0, 12], ylim: [0, 40], xticks: [0, 4, 8, 12], yticks: [0, 20, 40],
-    xlabel: '\\rm{links per email}', ylabel: '\\rm{capital letters (%)}', ylabelGap: 38, progress: seg(0, .35),
-    tickSize: 14, labelSize: 15});
+    xlabel: '\\rm{links per email}', ylabel: '\\rm{capital letters (%)}', ylabelGap: 38, progress: seg(0, .35)});
   const A = D.a, [w1, w2] = A.w, b = A.b;
   const yAt = x => -(b + w1 * x) / w2;
   g.inside(() => {
@@ -260,7 +259,7 @@ function drawA() {
     for (let i = 0; i < A.x.length; i++) mark(g.X(A.x[i][0]), g.Y(A.x[i][1]), A.y[i] ? 1 : 0, arrive(.04 + .2 * A.x[i][0] / 12), 4);
   });
   text('spam', g.X(11.6), g.Y(2.5), {size: 15, color: C.navy, align: 'right', alpha: arrive(.4)});
-  text('not spam', g.X(.3), g.Y(24), {size: 15, color: C.body, alpha: arrive(.4)});
+  text('not spam', g.X(.3), g.Y(22), {size: 15, color: C.body, alpha: arrive(.4)});
   // a new email: rests where it is spam, visits a place where it is not, comes back
   const s = visit(win(0));
   const qx = lerp(A.q[0][0], A.q[1][0], s), qy = lerp(A.q[0][1], A.q[1][1], s);
@@ -275,8 +274,7 @@ function drawA() {
 function drawB() {
   sub('b', PB.x - 44, 34, 'regression', arrive(.04));
   const g = axes({...PB, xlim: [800, 3100], ylim: [100, 600], xticks: [1000, 2000, 3000], yticks: [200, 400, 600],
-    xlabel: '\\rm{floor area (ft}^{2}\\rm{)}', ylabel: '\\rm{price (k$)}', ylabelGap: 38, progress: seg(.03, .35),
-    tickSize: 14, labelSize: 15});
+    xlabel: '\\rm{floor area (ft}^{2}\\rm{)}', ylabel: '\\rm{price (k$)}', ylabelGap: 38, progress: seg(.03, .35)});
   const B = D.b, f = x => B.b0 + B.b1 * x;
   g.inside(() => {
     line([[g.X(800), g.Y(f(800))], [g.X(3100), g.Y(f(3100))]], {color: C.blue, width: 2.2, progress: seg(.22, .36)});
@@ -291,7 +289,19 @@ function drawB() {
 }
 
 /* (c) clustering: k-means, run again from its start in its window */
-const CK = [1, 4, 0];
+/* the groups as the family draws groups found in data (README): by k-means label a navy circle,
+   a sky triangle and a blue square, white edged, so they part by shape for every reader; grey
+   circles before they are labelled. It grows from 0.9 of its size as it arrives, as mark() does. */
+const GRP = [[C.navy, 'circle'], [C.sky, 'triangle'], [C.blue, 'square']];
+function gmark(x, y, k, a = 1, r = 4) {
+  if (a <= 0) return;
+  const [fill, kind] = GRP[k], rr = r * (.9 + .1 * Math.min(a, 1));
+  ctx.save(); ctx.globalAlpha *= clamp(a); ctx.beginPath();
+  if (kind === 'square') ctx.rect(x - rr * .88, y - rr * .88, rr * 1.76, rr * 1.76);
+  else if (kind === 'triangle') { const q = rr * 1.18; ctx.moveTo(x, y - q * 1.15); ctx.lineTo(x + q * 1.05, y + q * .75); ctx.lineTo(x - q * 1.05, y + q * .75); ctx.closePath(); }
+  else ctx.arc(x, y, rr, 0, 2 * Math.PI);
+  ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = .9; ctx.stroke(); ctx.restore();
+}
 function cross(x, y, a) {
   line([[x - 7, y - 7], [x + 7, y + 7]], {color: C.accent, width: 2.4, alpha: a});
   line([[x - 7, y + 7], [x + 7, y - 7]], {color: C.accent, width: 2.4, alpha: a});
@@ -299,8 +309,7 @@ function cross(x, y, a) {
 function drawC() {
   sub('c', PC.x - 44, 34, 'clustering', arrive(.08));
   const g = axes({...PC, xlim: [0, 12], ylim: [0, 120], xticks: [0, 4, 8, 12], yticks: [0, 60, 120],
-    xlabel: '\\rm{visits per month}', ylabel: '\\rm{spend per visit ($)}', ylabelGap: 38, progress: seg(.06, .35),
-    tickSize: 14, labelSize: 15});
+    xlabel: '\\rm{visits per month}', ylabel: '\\rm{spend per visit ($)}', ylabelGap: 38, progress: seg(.06, .35)});
   const Cd = D.c, n = Cd.x.length, NS = Cd.lab.length, u = win(2);
   // its window: grey, and the centres back to their start (.5 s), a rest, then a k-means step
   // every KS: each customer takes its nearest centre's colour, and .2 s later each centre
@@ -318,7 +327,7 @@ function drawC() {
     for (let i = 0; i < n; i++) {
       const a = arrive(.08 + .2 * Cd.x[i][0] / 12), x = g.X(Cd.x[i][0]), y = g.Y(Cd.x[i][1]);
       if (grey > 0) mark(x, y, 2, a * grey, 4);
-      if (grey < 1) mark(x, y, CK[Cd.lab[labIdx][i]], a * (1 - grey), 4);
+      if (grey < 1) gmark(x, y, Cd.lab[labIdx][i], a * (1 - grey), 4);
     }
     const ca = arrive(.45);
     if (back >= 0) {
@@ -333,8 +342,7 @@ function drawC() {
 function drawD() {
   sub('d', PD.x - 44, 334, 'anomaly detection', arrive(.12));
   const g = axes({...PD, xlim: [44, 78], ylim: [0, 7], xticks: [45, 60, 75], yticks: [0, 3, 6],
-    xlabel: '\\rm{temperature (°C)}', ylabel: '\\rm{vibration (mm/s)}', ylabelGap: 32, progress: seg(.09, .35),
-    tickSize: 14, labelSize: 15});
+    xlabel: '\\rm{temperature (°C)}', ylabel: '\\rm{vibration (mm/s)}', ylabelGap: 32, progress: seg(.09, .35)});
   const Dd = D.d, u = win(3);
   // its window: the new readings go (.4 s) and come back one by one, .76 s apart, each checked
   const seen = i => clamp(1 - u / .4) + sp(u - .7 - .76 * i, .5);
@@ -366,8 +374,7 @@ function drawE() {
   sub('e', PE.x - 44, 334, 'forecasting', arrive(.16));
   const E = D.e, NH = E.nh, NT = E.y.length, NFc = NT - NH;
   const g = axes({...PE, xlim: [0, 71], ylim: [70, 140], xticks: [0, 14, 28, 42, 56, 70], yticks: [80, 100, 120, 140],
-    xlabel: '\\rm{day}', ylabel: '\\rm{demand (units)}', ylabelGap: 36, progress: seg(.12, .35),
-    tickSize: 14, labelSize: 15});
+    xlabel: '\\rm{day}', ylabel: '\\rm{demand (units)}', ylabelGap: 36, progress: seg(.12, .35)});
   const u = win(4);
   // at rest: the forecast and the days that came; in its window they go (.5 s), the forecast is
   // drawn forward from today (1.8 s), and the days come in one by one, one every .2 s

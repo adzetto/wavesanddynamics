@@ -10,7 +10,7 @@ small (the first prediction is close to 1/2 for every point), trained on the
 cross-entropy by plain full batch gradient descent (one weight update per
 epoch, learning rate 0.05) for 4000 epochs. Training and validation loss are
 the cross-entropy over each set after every epoch. The model panel shows the
-network's probability of the purple class on a 44 x 44 grid, saved every 250
+network's probability of class 1 on a 44 x 44 grid, saved every 250
 epochs and at the validation minimum; the line is where it is 0.5.
 
 Run: python tools/numfig/mlb_loss.py [--look]
@@ -158,7 +158,7 @@ after = np.diff(va[K:])
 say(f"  after the minimum the validation loss rises in {int(np.sum(after > 0))} of {after.size} epochs")
 say(f"  training points whose (flipped, wrong) label the final network reproduces: {kept} of {int(flip[:NTR].sum())}"
     f" (memorized noise)")
-say(f"  model panel: p(purple) on a {GN} x {GN} grid over [-{GR}, {GR}]^2 at epochs {SNAPS}")
+say(f"  model panel: p(class 1) on a {GN} x {GN} grid over [-{GR}, {GR}]^2 at epochs {SNAPS}")
 say(f"  curves drawn at {EP.size} epochs (every 10, and epoch {K})")
 mc.check(NAME, L)
 
@@ -190,18 +190,20 @@ function cursorEpoch() {
 const POSTER_T = T_RUN + SWEEP + 1;
 
 /* ------------------------------------------------ the loss panel */
-const LA = { x: 76, y: 58, w: 520, h: 300 };
+const LA = { x: 76, y: 58, w: 520, h: 290 };
 let TRP = null, VAP = null;                      // the two curves in drawing units, made once
 function curvePts(A, arr) { const p = new Array(NE); for (let i = 0; i < NE; i++) p[i] = [A.X(EP[i]), A.Y(arr[i])]; return p; }
 function valAt(arr, e) { return interp(EP, arr, e); }
 
 /* ------------------------------------------------ the model panel */
-const MA = { x: 668, y: 58, w: 300, h: 300 };
+const MA = { x: 673, y: 58, w: 290, h: 290 };
 const off = document.createElement('canvas'); off.width = GN; off.height = GN;
 const og = off.getContext('2d'), img = og.createImageData(GN, GN);
-const ORA = _hex('#F8CDCD'), PUR = _hex('#D5CBE6'), WHITE = [255, 255, 255];
+/* the two classes as Figures 2(a), 9 and 13 draw them: class 0 open navy circles on white,
+   class 1 filled navy on steel; crimson is the validation loss's alone */
+const ORA = _hex('#FFFFFF'), PUR = _hex(C.steel2), WHITE = [255, 255, 255];
 const field = new Float32Array(GN * GN);
-function fieldAt(e) {                            // p(purple) at epoch e, between two saved epochs
+function fieldAt(e) {                            // p(class 1) at epoch e, between two saved epochs
   const S = D.snaps; let k = 0;
   while (k < NS - 2 && S[k + 1] <= e) k++;
   const s = clamp((e - S[k]) / (S[k + 1] - S[k]));
@@ -284,15 +286,15 @@ function draw() {
 
   /* the model at that epoch */
   const ma = seg(.1, .35);
-  text(`the model at epoch ${Math.round(e)}`, MA.x, 38 + rise(la), { size: 17, color: C.ink, alpha: la });
+  text(`the model at epoch ${Math.round(e)}`, MA.x, 38 + rise(la), { size: 17, color: C.body, alpha: la });
   paintField(fieldAt(e), ma);
   boundary(field, seg(.3, .3));
   const M = axes({ ...MA, xlim: [-GR, GR], ylim: [-GR, GR], xticks: [-2, 0, 2], yticks: [-2, 0, 2],
     xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 30, progress: seg(.04, .35) });
   M.inside(() => {
     for (let i = 0; i < D.yt.length; i++) {
-      const p = settle(.14 + .003 * i, .24), c = CLS[D.yt[i] ? 1 : 0];
-      if (p > 0) mark('circle', M.X(D.xt[i][0]), M.Y(D.xt[i][1]), 3.3 * (.55 + .45 * p), { fill: c[0], stroke: '#fff', width: .9, alpha: p });
+      const p = settle(.14 + .003 * i, .24), c = D.yt[i] ? [C.navy, '#fff'] : ['#fff', C.navy];
+      if (p > 0) mark('circle', M.X(D.xt[i][0]), M.Y(D.xt[i][1]), 3.3 * (.55 + .45 * p), { fill: c[0], stroke: c[1], width: D.yt[i] ? .9 : 1.2, alpha: p });
     }
   });
   text(D.params, 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });

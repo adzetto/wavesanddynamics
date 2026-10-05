@@ -33,9 +33,9 @@ THE PAGE
   The page tours 3, 7 and 14 neurons, 24.55 s a round; a neuron switches on every
   min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.
   A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,
-  the page plays again to build it); the round button builds the same N again; pointing at a piece
-  of a finished sum (or tapping it) names its neuron: v, w and m. With less motion, the sum at once.
-  Keyboard: a radio group of 1 to 14 neurons and the button. Touch: a tap chooses.
+  the sum shows at once and stays paused); choosing the N shown again builds it again; pointing at a
+  piece of a finished sum (or tapping it) names its neuron: v, w and m. With less motion, the sum at once.
+  Keyboard: a radio group of 1 to 14 neurons. Touch: a tap, or a finger run along the chips, chooses.
   overlap check (engine.js ?overlap) at the poster and every 0.25 s up to it: clean (common.still)
   --verify: 226 states: every number of neurons at 30, 70 and 120 per cent built (finished,
   with its first and last piece pointed at) and the tour every 0.25 s: 0 with collisions

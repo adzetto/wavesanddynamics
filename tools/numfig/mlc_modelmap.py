@@ -141,7 +141,7 @@ function panelDraw(p, letter, title) {
       ks.forEach((k, q) => markAt(k, x1 + q * sp, my + mh / 2, STY[k], ma)); }
   });
   const nNow = env ? Math.round(Math.pow(10, lx)) : 0;
-  lab(env ? `best model at n = ${nNow}` : 'best model', x0, my - 7, .95, { size: 14, color: env ? C.accent : C.muted });
+  mlab(env ? `\\rm{best model at}\\ n = ${nNow}` : '\\rm{best model}', x0, my - 7, .95, { size: 14, color: env ? C.accent : C.muted });
   // the cursor: n grows, the best model changes; then it eases back
   if (env) {
     const X = g.X(lx), Y = g.Y(env.v), a = clamp((t - TS) / .3);

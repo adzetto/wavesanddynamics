@@ -249,7 +249,7 @@ function draw() {
   bars(OUT, AY + 150, Array.from({length: 10}, (_, i) => val(s, D.pl, .45, i)), arrive(.28), first(.45));
 
   /* (b) feature learning */
-  const BY = 380, b0 = arrive(.06);
+  const BY = 352, b0 = arrive(.06);
   sub('b', 18, BY, 'feature learning', b0);
   text('the network learns its own features from the pixels', 53, BY + 22, {size: 15, color: C.muted, alpha: arrive(.1)});
   const IY = BY + 64;

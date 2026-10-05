@@ -109,7 +109,8 @@ document picture to its page; the controller (not you) adds your mapping.
     colour bar and a numeric scale.
   - Machine learning figures: weights, activations and vector entries are signed values:
     positive blue, negative crimson (`signed()`, `SIGNED`, `S_POS`, `S_NEG` in
-    `mlb_common.JS_LIB` and `mlc_lib.LIB`, `DIVERGING` read from its other end), with a key.
+    `mlb_common.JS_LIB` and `mlc_lib.LIB`, `DIVERGING` read from its other end), with a key or
+    with their values printed beside them.
   - No gradients on shapes, no shadows, no rounded card boxes, no emoji, no pastel
     rainbow legends.
 - **Shared conventions** (Figures 11, 12 and 13 must look like one family):

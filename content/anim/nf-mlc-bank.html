@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -659,9 +662,9 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 14, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
   }
-  if (label) math(label, x - 12, y + h - 1, { size: 15, align: 'right', alpha: a });
+  if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
 /* colour mixing between two #rrggbb */
 function mix(c1, c2, s) {
@@ -724,7 +727,7 @@ function draw() {
   // ================= (c) the new vector of bank, on the map of Figure 25
   sub('c', 612, 34, 'bank in context', seg(.15, .3));
   const g = axes({ x: 660, y: 64, w: 300, h: 300, xlim: [-1.1, 1.1], ylim: [-1.2, 1.0], xticks: [-1, 0, 1], yticks: [-1, 0, 1],
-    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 30, progress: seg(.05, .4), tickSize: 14, labelSize: 15 });
+    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 30, progress: seg(.05, .4) });
   const ma = seg(.2, .4), act = active(), bk = DATA.pos[SHOWN.indexOf('bank')];
   g.inside(() => {
     const OFF = { river: [-7, -5, 'right'], loan: [7, -8, 'left'], cat: [-7, -6, 'right'], dog: [7, 5, 'left'] };
@@ -742,7 +745,7 @@ function draw() {
       dot(g.X(x), g.Y(y), 5, { color: '#fff', fill: on ? C.accent : C.guide, width: 1.2 });
       // named beside its dot, off its own arrow ((a)'s climbs from the lower right, so its name sits above);
       // the name arrives with the dot, so it never passes over "bank alone" on the way
-      text(`bank in (${'ab'[k]})`, g.X(x) + 8, g.Y(y) + (k ? 20 : -10), { size: 15, color: on ? C.accent : C.muted,
+      text(`bank in (${'ab'[k]})`, g.X(x) + (k ? 12 : 8), g.Y(y) + (k ? 20 : -10), { size: 15, align: k ? 'right' : 'left', color: on ? C.accent : C.muted,
         alpha: clamp((s - .55) * 2.5) });
     });
   });

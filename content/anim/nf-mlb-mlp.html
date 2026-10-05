@@ -321,7 +321,7 @@ function _clashes() {
    italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
    superscript; \rm{..} an upright group (units, d in dx, words); the minus
    sign is U+2212. Returns the width drawn, in drawing units. */
-function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${SERIF}`; }
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
 function text(s, x, y, o = {}) {
   const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
@@ -387,7 +387,9 @@ function _mathDraw(runs, x, y, size, color, go) {
       const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
       const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
       const s = gk || r.s.replace(/-/g, '−');
-      ctx.font = font({ size, italic: it });
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
       if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
       w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
     } else if (r.kind === 'sqrt') {
@@ -571,6 +573,7 @@ const seq = v => _lutc(SEQ, v);
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
    state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
@@ -721,8 +724,9 @@ function weightsAt(e) {
   return WN;
 }
 const wAt = (m, i, j) => WN[OFF[m] + i * SZ[m + 1] + j];
-/* a value as a colour: blue positive, crimson negative, white zero */
-const vcol = v => v >= 0 ? mixHex('#FFFFFF', C.blue, clamp(v)) : mixHex('#FFFFFF', K.red, clamp(-v));
+/* a value as a colour: blue positive, crimson negative, white zero (signed(), ending at
+   its matched middle stops, so a full node is no darker than its lines) */
+const vcol = v => signed(v * 2 / 3);
 
 function draw() {
   const tt = loopT(), e = epochNow(tt);
@@ -743,9 +747,9 @@ function draw() {
       const w = wAt(m, i, j), a = Math.min(1, Math.abs(w) / wm);
       const p0 = [LX[m] + R, NY[m][i]], p1 = [LX[m + 1] - R, NY[m + 1][j]];
       const pr = seg(.1 + .07 * m, .4);
-      line([p0, p1], { color: w >= 0 ? C.blue : K.red, width: .5 + 3.2 * a, alpha: (.24 + .6 * a) * (F ? 1 - .2 * fade : 1), progress: pr });
+      line([p0, p1], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 3.2 * a, alpha: (.24 + .6 * a) * (F ? 1 - .2 * fade : 1), progress: pr });
       if (flow > 0 && flow < 1)
-        line([p0, p1], { color: w >= 0 ? C.blue : K.red, width: .5 + 3.2 * a, alpha: (.35 + .6 * a) * fade, progress: easeOut(flow) });
+        line([p0, p1], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 3.2 * a, alpha: (.35 + .6 * a) * fade, progress: easeOut(flow) });
     }
   }
   // neurons: filled with what they compute for the flower passing through
@@ -798,8 +802,8 @@ function draw() {
   text(sub, SX0, 506 + rise(sa), { size: 16, color: C.body, alpha: sa });
   if (F) text(`true species: ${D.names[F.sp]}`, SX0, 530, { size: 16, color: C.body, alpha: layerOn[3] * fade });
   legend(SX0 + 262, 460, 218, [
-    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.blue, width: 2.6, alpha: a }), 'positive weight'],
-    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: K.red, width: 2.6, alpha: a }), 'negative weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.6, alpha: a }), 'positive weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.6, alpha: a }), 'negative weight'],
     [(x, y, a) => { line([[x - 12, y - 4], [x + 12, y - 4]], { color: C.ink, width: .6, alpha: a }); line([[x - 12, y + 3], [x + 12, y + 3]], { color: C.ink, width: 3, alpha: a }); }, 'width: size of weight'],
   ], { alpha: lab(.4) });
   text(`iris flowers (Fisher); network 4-5-5-3, tanh, softmax; gradient descent; right: ${D.acc[0]}/120 train, ${D.acc[1]}/30 held out`,

@@ -475,8 +475,13 @@ def test_nothing_the_reader_does_holds_the_story():
         assert "ha__pause" not in text and "Pause animation" not in text
     js = ha.JS
     assert "held" not in js and "btn" not in js
-    # it runs whenever it is seen in a visible tab
-    assert "var run=seen&&!document.hidden;" in js
+    # it runs whenever it is seen in a visible tab, three loops at a time
+    # (5 Oct 2026: left open, the page never idled); a pointer over it, a key
+    # into it or coming back into view plays it again
+    assert "var run=seen&&!document.hidden&&!tired;" in js
+    assert f"BUDGET={round(3 * ha.T * 1000)}" in js
+    assert "fig.addEventListener('pointerenter',wake);" in js and "fig.addEventListener('focusin',wake);" in js
+    assert "if(on!==seen){seen=on;if(on&&tired){tired=false;spent=0}sync()}" in js
     # the stylesheet pauses it only when the script says it is not running
     assert ha.CSS.count("animation-play-state:paused") == 1
     assert ".ha:not([data-run]) *{animation-play-state:paused!important}" in ha.CSS

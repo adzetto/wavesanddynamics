@@ -32,12 +32,13 @@ def test_the_margin_holds_the_list_set_smaller_on_a_laptop():
         assert f"{p} .docpage .tocpanel{{position:relative;" in block
         assert f"{p}[data-toc] .docpage.has-toc .toc--body," in block
         assert f'{p}[data-toc="closed"] .docpage .tocpanel{{visibility:hidden;' in block
-        # smaller: 13.5px titles in a 148 to 211px list beside the text, two
-        # lines a title but the one being read
+        # smaller: 13.5px titles in a 148 to 211px list beside the text, three
+        # lines a title but the one being read (two cut "Case Study: Wave..."
+        # in two, and four of the ten titles of the signal guide)
         assert f"{p}[data-toc] .docpage.has-toc>.tocdock{{width:calc(100% - 20px);margin:-10px 12px 0 0}}" in block
         assert re.search(re.escape(p) + r" \.docpage \.toc--rail a\{padding:0 4px 0 [^;]+;\s*"
                          r"border-block:5px solid transparent;font-size:13\.5px;", block)
-        assert "-webkit-line-clamp:2" in block
+        assert "-webkit-line-clamp:3" in block
         assert f"{p} .docpage .toc--rail a[aria-current]{{-webkit-line-clamp:none}}" in block
     # the full size stays from 1424px (open) and 1240px (folded)
     assert ".docpage .toc--rail a{color:var(--muted);font-size:15px}" in wide

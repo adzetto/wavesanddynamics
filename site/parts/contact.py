@@ -572,7 +572,7 @@ def render(info=None):
    </div>"""))
 
     # his CV and his profiles, one list, as his first Contact page grouped them
-    links = [_link("cv", "Curriculum vitae", c["cv_href"])] if c["cv_href"] else []
+    links = [_link("cv", "Curriculum Vitae", c["cv_href"])] if c["cv_href"] else []
     links += [_link(k if k in _GLYPHS else "link", name, href, out=True)
               for k, name, href in _profiles(c["links"])]
     if links:

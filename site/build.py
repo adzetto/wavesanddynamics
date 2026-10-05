@@ -558,16 +558,20 @@ hr{border:0;border-top:1px solid var(--rule);margin:56px 0 0}
 .foot{position:sticky;top:100vh;max-width:1020px;margin:96px auto 0;
   padding:32px 48px 48px;font:400 14px/1.6 var(--serif);color:var(--muted);
   display:flex;gap:24px 32px;justify-content:space-between;flex-wrap:wrap;
-  align-items:flex-start}
+  align-items:flex-start;
+  /* off screen it is skipped: the credit's wave drifts for ever, and laid out
+     with the page it made every frame of any other motion lay out and paint
+     the page again (MotionScore, 5 Oct 2026) */
+  content-visibility:auto;contain-intrinsic-size:auto 160px}
 .foot::before{content:"";position:absolute;top:0;left:48px;right:48px;
   border-top:1px solid var(--rule)}
 .foot p{margin:0}
 .foot b{color:var(--ink);font-weight:600}
 .foot nav{display:flex;flex-wrap:wrap;gap:0 24px;margin-top:-11px}
-/* a short word keeps the 44px target but starts on the text's left edge, so a
-   wrapped row of links starts where the one above it does */
+/* a link is 44px tall and as wide as its word, so the gaps between the words
+   are the row's 24px (a 44px minimum width left a wider gap after "Blog"), and
+   a wrapped row of links starts where the one above it does */
 .foot a{display:inline-flex;align-items:center;justify-content:flex-start;min-height:44px;
-  min-width:44px;
   color:var(--muted);
   text-decoration-color:transparent;
   transition:color var(--t-fast) var(--ease-state),
@@ -582,7 +586,7 @@ hr{border:0;border-top:1px solid var(--rule);margin:56px 0 0}
   gap:2px 10px;font:400 12px/1.4 var(--sans);letter-spacing:.08em;color:var(--muted)}
 .credit__wave{flex:none;overflow:hidden;color:var(--accent)}
 .credit__wave path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
-.credit__what{text-transform:uppercase;font-size:11px}
+.credit__what{text-transform:uppercase;font-size:12px}
 .credit__sep,.credit__said{position:absolute;width:1px;height:1px;overflow:hidden;
   clip-path:inset(50%);white-space:nowrap}
 .credit__name{font:600 14px/1.4 var(--serif);letter-spacing:.01em;color:var(--ink)}
@@ -665,8 +669,8 @@ a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 }
 @media (max-width:560px){
   .row{gap:16px}
-  /* the four footer links are 205px of text: with 24px gaps they need 277px
-     and a 320px phone gives them 276, so Contact fell to a line of its own */
+  /* the footer's links wrap to two rows on a phone; 20px gaps keep each row
+     even (with 24px and the first four, Contact fell to a line of its own) */
   .foot nav{column-gap:20px}
 }
 @media (forced-colors:active){.burger i{background:CanvasText}}
@@ -917,6 +921,16 @@ def soon_desc(href):
             else f"{nav_title(href)}: {state[0].lower() + state[1:]}.")
 
 
+# The tab's icon (the audit of 5 Oct 2026: a blank page icon in every tab and
+# bookmark): the column's navy with a white wave, the site's mark, written
+# into the page so it costs no request.
+FAVICON = "data:image/svg+xml," + urllib.parse.quote(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+    "<rect width='32' height='32' rx='7' fill='#043052'/>"
+    "<path d='M4.5 16c2.9-6.2 5.1-6.2 8 0s5.1 6.2 8 0 4.4-6 7-1.2' fill='none' stroke='#fff' "
+    "stroke-width='2.6' stroke-linecap='round'/></svg>", safe=":/='.,-")
+
+
 def shell(current, title, body, depth=0, foot="", section="", head="", mast="", desc=""):
     """The page around `body`. `foot` adds a class to the footer: " foot--doc"
     on a document page, whose footer keeps to its column (parts/docs.py).
@@ -1000,7 +1014,7 @@ def shell(current, title, body, depth=0, foot="", section="", head="", mast="", 
 <title>{title}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script>{fold_js}</script>{bp_head}{head}
-<link rel="icon" href="data:,">
+<link rel="icon" href="{FAVICON}">
 <meta name="description" content="{html.escape(desc or DESCRIPTION)}">
 {fonts}<link rel="stylesheet" href="{up}style.css">
 <link rel="stylesheet" href="{up}parts.css">
@@ -1035,7 +1049,8 @@ def shell(current, title, body, depth=0, foot="", section="", head="", mast="", 
   <nav aria-label="Footer">
     <a href="{up}about.html">About</a><a href="{up}research.html">Research</a>
     <a href="{up}gallery.html">Gallery</a><a href="{up}big-picture.html">Big Picture</a>
-    <a href="{up}blog.html">Blog</a><a href="{up}contact.html">Contact</a>
+    <a href="{up}blog.html">Blog</a><a href="{up}communication.html">Communication</a>
+    <a href="{up}personal-advices.html">Personal Advices</a><a href="{up}contact.html">Contact</a>
   </nav>
   {CREDIT}
 </footer>
@@ -1280,6 +1295,20 @@ def _anchor(body, slug, spec, what):
     return matches[0].start(), matches[0].end(), "before_paragraph" in spec
 
 
+# A number and its unit stay on one line in the words we add (the audit of
+# 5 Oct 2026 found "4" at a line's end and "s" starting the next): the space
+# between them becomes a no-break space, outside the formulas.
+_UNIT = re.compile(r"(\d)[ ]((?:k|M)?Hz|dB|ms|µs|s|mm|cm|km|m|MN/m|MN|kN|GPa|MPa|kg|t"
+                   r"|degrees|deg|samples|shots|elements|iterations)(?![\w/])")
+
+
+def nbsp_units(text):
+    """`text` with each number's space before its unit made a no-break space,
+    leaving <tex> formulas and tags alone."""
+    parts = re.split(r"(<tex[^>]*>.*?</tex>|<[^>]+>)", text, flags=re.S)
+    return "".join(p if i % 2 else _UNIT.sub("\\1\u00a0\\2", p) for i, p in enumerate(parts))
+
+
 def _added_text(slug, name):
     """One block of new text for a guide, content/additions/<name>: paragraphs
     (and an h3 where a section's new part needs one) with <tex>TeX</tex>
@@ -1298,7 +1327,7 @@ def _added_text(slug, name):
     if tags:
         sys.exit(f"{where}: tags a passage of his does not use: {sorted(tags)}")
     import mathtex
-    return mathtex.typed(text.strip(), where)
+    return mathtex.typed(nbsp_units(text.strip()), where)
 
 
 def add_supplementary_figures(body, slug):
@@ -1335,7 +1364,7 @@ def add_supplementary_figures(body, slug):
         image = (f'src="{html.escape(still["src"])}" width="{still["w"]}" '
                  f'height="{still["h"]}" alt="{html.escape(anim["title"])}"')
         # a caption is plain text, but for a subscript or superscript (ACO<sub>R</sub>)
-        cap = re.sub(r"&lt;(/?)(sub|sup)&gt;", r"<\1\2>", html.escape(spec["caption"]))
+        cap = re.sub(r"&lt;(/?)(sub|sup)&gt;", r"<\1\2>", html.escape(nbsp_units(spec["caption"])))
         return preview._animated(anim, image, f'<figcaption>{preview._figno(cap)}</figcaption>')
 
     # a figure "in_text" stands where a block of new text marks it,
@@ -1399,6 +1428,17 @@ def numbered_in_turn(body, slug):
     return body
 
 
+def still_alt(body):
+    """A moving figure's still whose picture had no alt text in his Word file
+    (and none in ALT) takes the frame's title, so paper and a page without
+    script still say what it shows (the cover and Figures 1, 3 and 8 of the
+    signal guide had none). A table's cell keeps its empty alt, its label
+    standing beside it."""
+    return re.sub(r'(<figure class="fig--anim"><iframe class="anim" [^>]*?title="([^"]*)"'
+                  r'(?:(?!</figure>).)*?<img class="anim__still" [^>]*?)alt=""',
+                  lambda m: f'{m.group(1)}alt="{m.group(2)}"', body, flags=re.S)
+
+
 def doc_body(slug):
     with open(os.path.join(BUILD, slug, "part-01.json"), encoding="utf-8") as fh:
         doc = json.load(fh)
@@ -1417,6 +1457,7 @@ def doc_body(slug):
         if was not in body:
             sys.exit(f"doc/{slug}.html: no {stem} with empty alt text to describe")
         body = body.replace(was, f'/{stem}.webp" alt="{html.escape(text)}"')
+    body = still_alt(body)
     for cut in CUTS.get(slug, ()):
         if body.count(cut) != 1:
             sys.exit(f"doc/{slug}.html: the words to cut are not there once: {cut[:60]!r}")
@@ -1641,7 +1682,7 @@ HERO_FALLBACK = f""" <div class="hero">
    <h1>Korkut Kaynardag, PhD</h1>
    {PROF_INTRO}
    {PROF_BIO}
-   <p><a class="btn" href="about.html">About me</a></p>
+   <p><a class="btn" href="about.html">About Me</a></p>
   </div>
   <img src="portrait.webp" srcset="portrait-280.webp 280w, portrait.webp 520w" sizes="280px"
        alt="Korkut Kaynardag" width="520" height="650">

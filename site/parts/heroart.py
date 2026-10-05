@@ -1673,7 +1673,6 @@ CSS = """
 .ha__o{position:absolute;display:block}
 .ha__m{position:absolute;display:block;inset:0}
 .ha__o svg{position:absolute;display:block;width:100cqw;height:@SVGH@cqw;overflow:visible}
-.ha__far{will-change:transform}
 /* Paint. Bare class selectors on purpose: the reflection, the second train
    and the trace's repeats are <use> clones, and a rule that needs an ancestor
    (".ha .x") never reaches inside a clone, while a bare class does. The
@@ -1738,7 +1737,10 @@ CSS = """
 .ha__key{position:absolute;display:block;min-width:24px;min-height:24px;margin:0;padding:0;
   border:0;border-radius:var(--r-md);background:none;color:inherit;font:inherit;
   transform:translate(-50%,-50%);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.ha__key:focus,.ha__key:focus-visible{outline:none}
+/* a key under the keyboard takes the site's ring, as every control does (a
+   20 x 2px bar under it alone was easy to miss), and keeps the bar as a cue */
+.ha__key:focus{outline:none}
+.ha__key:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .ha__key:focus-visible::after{content:"";position:absolute;left:50%;top:100%;width:20px;height:2px;
   margin:6px 0 0 -10px;border-radius:1px;background:var(--focus)}
 .ha__key[data-key=car]{z-index:1}
@@ -1799,20 +1801,23 @@ var stage=fig.querySelector('.ha__stage'),bar=fig.querySelector('.ha__keys'),
   svg=fig.querySelector('.ha__svg'),vib=document.getElementById('ha_vib'),
   RM=matchMedia('(prefers-reduced-motion: reduce)'),
   FINE=matchMedia('(hover: hover) and (pointer: fine)'),
-  seen=false,live=false,lead=0,t0=-1,tq=0;
+  seen=false,live=false,lead=0,t0=-1,tq=0,spent=0,since=0,tired=false,tire=0,BUDGET=@B@;
 /* ---- the far hills drift against the pointer on a critically damped spring
    (response .6 s): a mouse only, motion allowed, while the figure runs. The
-   far layer is its own compositor layer, so a step moves it without a paint;
-   the drift is in drawing units, @W@ of them across the layer */
+   far layer is its own compositor layer while it drifts, so a step moves it
+   without a paint; the drift is in drawing units, @W@ of them across the layer */
 var px=0,pv=0,pt=0,raf=0,last=0;
 function step(t){
   var dt=Math.min(.05,last?(t-last)/1000:.016),w=10.47;last=t;
   pv+=(w*w*(pt-px)-2*w*pv)*dt;px+=pv*dt;
   if(Math.abs(pt-px)<.01&&Math.abs(pv)<.01){px=pt;pv=0;raf=0;last=0}
   far.style.transform=px?'translateX('+(px/@W@*100).toFixed(3)+'%)':'';
+  /* its own layer only while it drifts (a will-change set for good kept a
+     layer, MotionScore's "stale will-change", for the page's whole life) */
+  far.style.willChange=raf?'transform':'';
   if(raf)raf=requestAnimationFrame(step);
 }
-function aim(to){pt=to;if(!raf&&px!==pt){last=0;raf=requestAnimationFrame(step)}}
+function aim(to){pt=to;if(!raf&&px!==pt){last=0;far.style.willChange='transform';raf=requestAnimationFrame(step)}}
 function still(){if(raf)cancelAnimationFrame(raf);raf=0;px=pv=pt=0;far.style.transform=''}
 stage.addEventListener('pointermove',function(e){
   if(e.pointerType!=='mouse'||!FINE.matches||!fig.hasAttribute('data-run'))return;
@@ -1829,19 +1834,30 @@ stage.addEventListener('pointerleave',function(){aim(0)});
 function shake(){if(!vib)return;if(t0<0){vib.beginElement();t0=svg.getCurrentTime()}else svg.setCurrentTime(t0)}
 function rest(){if(t0>=0){svg.pauseAnimations();svg.setCurrentTime(t0)}}
 /* ---- running: seen, in a visible tab, motion allowed. Nothing the reader
-   does holds it: it pauses only where no one can see it, which spares the
-   phone the work. The story starts @L@ ms after the figure is first seen, all
-   at once, and loops for as long as it runs */
+   does holds it: it pauses where no one can see it, which spares the phone
+   the work. The story starts @L@ ms after the figure is first seen, all at
+   once, and loops three times while it is seen (@B@ ms); then it rests where
+   it stands, so a page left open lets the computer idle (the audit of 5 Oct
+   2026: the drawing kept the page laying out 110 times a second for as long
+   as it was on screen). A pointer over the drawing, a key into it, or the
+   drawing coming back into view after it was scrolled away plays it again */
+function wake(){if(tired){tired=false;spent=0;sync()}}
 function sync(){
   if(RM.matches){
-    live=false;still();clearTimeout(lead);lead=0;rest();
+    live=false;still();clearTimeout(lead);lead=0;rest();clearTimeout(tire);tire=0;
     fig.removeAttribute('data-live');fig.removeAttribute('data-run');return;
   }
-  var run=seen&&!document.hidden;
+  var run=seen&&!document.hidden&&!tired;
   if(run&&!live&&!lead)lead=setTimeout(function(){lead=0;live=true;fig.setAttribute('data-live','');shake();sync()},@L@);
-  if(run&&live){fig.setAttribute('data-run','');svg.unpauseAnimations()}
-  else{fig.removeAttribute('data-run');svg.pauseAnimations();aim(0)}
+  if(run&&live){
+    if(!tire){since=Date.now();tire=setTimeout(function(){tire=0;spent=BUDGET;tired=true;sync()},Math.max(0,BUDGET-spent))}
+    fig.setAttribute('data-run','');svg.unpauseAnimations()}
+  else{
+    if(tire){clearTimeout(tire);tire=0;spent+=Date.now()-since}
+    fig.removeAttribute('data-run');svg.pauseAnimations();aim(0)}
 }
+fig.addEventListener('pointerenter',wake);
+fig.addEventListener('focusin',wake);
 /* print shows the picture at rest, as the stylesheet does for the rest of the
    story, then the SMIL goes on from where it was (tq keeps where: tp below is
    the latest pin's turn) */
@@ -1915,7 +1931,7 @@ bar.hidden=false;
 var look=0;
 function check(){
   look=0;var r=fig.getBoundingClientRect(),on=r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth;
-  if(on!==seen){seen=on;sync()}
+  if(on!==seen){seen=on;if(on&&tired){tired=false;spent=0}sync()}
 }
 function soon(){if(!look)look=requestAnimationFrame(check)}
 addEventListener('scroll',soon,{passive:true});
@@ -1927,4 +1943,4 @@ soon();
 document.addEventListener('visibilitychange',sync);
 if(RM.addEventListener)RM.addEventListener('change',sync);else if(RM.addListener)RM.addListener(sync);
 sync();
-""".replace("@L@", str(round(LEAD * 1000))).replace("@W@", _n(FAR_BOX[2]))
+""".replace("@L@", str(round(LEAD * 1000))).replace("@W@", _n(FAR_BOX[2])).replace("@B@", str(round(3 * T * 1000)))

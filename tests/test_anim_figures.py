@@ -394,3 +394,21 @@ def test_every_redrawn_figure_is_set_in_computer_modern_and_drawn_without_orange
         if page != "nf-mlb-knn.html":
             for warm in ("#A5510B", "#D9822B", "#F2C39A", "#FBEBDD", "#7B3D0C"):
                 assert warm.lower() not in s.lower(), (page, warm)
+
+
+def test_a_still_without_words_takes_its_frames_title():
+    """The audit of 5 Oct 2026: the printed stills of the signal guide's cover
+    and his Figures 1, 3 and 8 had empty alt text (his Word pictures had none)."""
+    fig = ('<figure class="fig--anim"><iframe class="anim" src="../anim/nf-x.html" '
+           'title="A beam&#x27;s modes" loading="lazy"></iframe><div class="anim__bar"></div>'
+           '<img class="anim__still" src="../anim/nf-x.webp" alt="" width="1344" height="672">'
+           '<figcaption>Figure 4.</figcaption></figure>')
+    assert 'alt="A beam&#x27;s modes" width="1344"' in build.still_alt(fig)
+    # his own words stay, and a table's cell keeps its empty alt beside its label
+    worded = fig.replace('alt=""', 'alt="His words"')
+    assert build.still_alt(worded) == worded
+    cell = fig.replace('class="fig--anim"', 'class="fig--anim fig--cell"')
+    assert build.still_alt(cell) == cell
+    # one figure's title never reaches the next figure's still
+    two = fig.replace('alt=""', 'alt="His words"') + fig.replace("A beam&#x27;s modes", "A plate")
+    assert build.still_alt(two).count('alt="A plate"') == 1 and "A beam&#x27;s modes\" w" not in build.still_alt(two)

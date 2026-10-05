@@ -79,8 +79,8 @@ the button instead. Seen open once (opened, or shown open by a page), it is
 quiet for good.
 
 Hover, where a pointer can hover and aim: the pointer resting on the row for
-350ms opens the list, as the chevron would, and it stays open when the
-pointer leaves. Hovering the row dips the chevron 2px the way it will go,
+600ms opens the list, as the chevron would, and it stays open when the
+pointer leaves; only a click or a key is remembered from page to page. Hovering the row dips the chevron 2px the way it will go,
 and the row fills as every row does (parts/theme.py), under its button too,
 lighting the line's beads as the fill reaches them.
 Pointing at a topic lights its way in from the row: the trunk down to its
@@ -267,12 +267,20 @@ def _line(items):
     return f'<span class="nav__map" aria-hidden="true">{beads}{strokes}<i class="v"></i></span>'
 
 
+# The windows in which the open list fits under the identity (theme.py, the
+# rows' --pad): 900px tall and more, or 812 to 860px, where the identity is
+# shorter. In a shorter window no page opens the list by itself: it stays
+# folded, the warm bead on its line marking the topic, until the reader
+# opens it (5 Oct 2026: with the eighth row and the note, an open list hid
+# Personal Advices and Contact under a laptop's fold).
+OPEN_FITS = "(min-height:900px), (min-height:812px) and (max-height:860px)"
 # A page the list holds opens it before its first paint whatever the reader
-# chose on another page. head_js() cannot tell such a page from the rest (it
-# knows the Big Picture page alone), so the row carries the line itself, first
-# in its <li>: it runs before the parser reaches the chevron and the list, and
-# nothing above it in the page depends on it.
-HOLD = '<script>document.documentElement.setAttribute("data-bp","open")</script>'
+# chose on another page, where it fits. head_js() cannot tell such a page from
+# the rest (it knows the Big Picture page alone), so the row carries the line
+# itself, first in its <li>: it runs before the parser reaches the chevron and
+# the list, and nothing above it in the page depends on it.
+HOLD = ('<script>if(matchMedia("' + OPEN_FITS + '").matches)'
+        'document.documentElement.setAttribute("data-bp","open")</script>')
 
 
 def row(href, title, on, up, items, where=""):
@@ -318,9 +326,10 @@ def head_js(page_open):
 
     It puts data-bp="open" or "closed" on <html>: the reader's own choice when
     there is one (localStorage "wad:bp"), else the page's default: open on
-    the Big Picture page, closed elsewhere. (A page the list holds opens it
-    all the same, by a line of its own: HOLD.) Storage may refuse (a private
-    window): each call is in try/catch and the default applies.
+    the Big Picture page where the open list fits (OPEN_FITS), closed
+    elsewhere. (A page the list holds opens it all the same where it fits,
+    by a line of its own: HOLD.) Storage may refuse (a private window): each
+    call is in try/catch and the default applies.
 
     The arrival: a reader who has made no choice and comes to the Big
     Picture page from a page where the list was folded sees the first paint
@@ -345,12 +354,13 @@ def head_js(page_open):
     welcome. Once a visit: the column is the site's frame and every later
     page opens with it still. A browser whose storage refuses never gets it,
     since it could not remember that it had played."""
-    return ('(function(h,D){var s,n,l,a,t,f;'
+    return ('(function(h,D){var s,n,l,a,t,f,o=D;'
             'try{s=localStorage.getItem("wad:bp");n=localStorage.getItem("wad:bp-seen")}'
             'catch(e){n=1}'
             'try{l=sessionStorage.getItem("wad:bp-shown");a=sessionStorage.getItem("wad:bp-arrived")}'
             'catch(e){}'
-            't=s==="open"||s==="closed"?s:D;f=t;'
+            f'try{{if(D==="open"&&!matchMedia("{OPEN_FITS}").matches)o="closed"}}catch(e){{}}'
+            't=s==="open"||s==="closed"?s:o;f=t;'
             'if(t!==s&&t==="open"&&l==="closed"&&!a)f="closed";'
             'try{if(matchMedia("(prefers-reduced-motion: reduce)").matches)f=t}catch(e){}'
             'h.setAttribute("data-bp",f);if(f!==t)h.setAttribute("data-bp-go",t);'
@@ -1070,8 +1080,12 @@ function go(to,move){
 }
 
 /* Hover intent, where a pointer can hover and aim (a mouse, a trackpad): the
-   pointer resting on the row for 350ms (moving 5px or less) opens the list
-   as the chevron would, and it stays open when the pointer leaves. Closed
+   pointer resting on the row for 600ms (moving 5px or less) opens the list
+   as the chevron would, and it stays open when the pointer leaves. A pointer
+   passing down the column on its way to a row below rarely rests that long
+   (at 350ms the list opened under it and the row it aimed at moved), and an
+   opening by hover is not stored as the reader's choice: only a click or a
+   key is, so the next page opens as it would have. Closed
    with the pointer still on the row, it waits until the pointer has left
    the row and come back. A click that lands within 500ms of a hover's
    opening, the pointer still on the row, is the click the reader was
@@ -1081,17 +1095,17 @@ function go(to,move){
    row's motion again (THE ORBS). */
 var over=0,armed=1,timer=0,hx=0,hy=0,hovered=0;
 /* the reader's choice holds on every page after this one (the pages the
-   list holds open it all the same) */
-function choose(to){
+   list holds open it all the same); a hover's opening (by) is not a choice */
+function choose(to,by){
   clearTimeout(timer);timer=0;
   go(to,true);
   if(!to&&over)armed=0;
-  try{localStorage.setItem(K,to?'open':'closed')}catch(e){}
+  if(!by)try{localStorage.setItem(K,to?'open':'closed')}catch(e){}
 }
 function rest(){
   clearTimeout(timer);
   timer=setTimeout(function(){timer=0;
-    if(armed&&!goal){hovered=Date.now();choose(true)}else play(0)},350);
+    if(armed&&!goal){hovered=Date.now();choose(true,1)}else play(0)},600);
 }
 row.addEventListener('pointerenter',function(e){
   if(e.pointerType!=='mouse'||!fine.matches)return;

@@ -66,6 +66,7 @@ _PAGE_NOTES = {
     "big-picture.html": "Every document and slide deck on this site, by topic.",
     "blog.html": "Literature reviews, methods and experiments.",
     "research.html": "SHM, NDT and sound waves, with three documents.",
+    "communication.html": "Meetings, presentations, reports, papers",
 }
 
 # What a topic will hold, in a sentence of ours, where he wrote no sub-line.
@@ -285,7 +286,8 @@ _BOXES = (("Paper writing", _paper()), ("How to make presentations", _talk_slide
 def _boxes():
     return ('<ul class="soonpg__boxes" role="list">'
             + "".join(f'<li class="soonpg__bi" style="--k:{k}"><div class="soonpg__bart">{art}</div>'
-                      f'<h2 class="soonpg__bt">{html.escape(title, quote=False)}</h2>'
+                      # a line may break after a slash ("Talking/updating" is one long word)
+                      f'<h2 class="soonpg__bt">{html.escape(title, quote=False).replace("/", "/<wbr>")}</h2>'
                       f'<p class="soonpg__bs">In preparation</p></li>'
                       for k, (title, art) in enumerate(_BOXES))
             + '</ul>')
@@ -370,7 +372,7 @@ CSS = """
 .soonpg__typed{position:relative;display:inline-grid;align-items:center}
 .soonpg__typed>*{grid-area:1/1}
 .soonpg__win--tag{white-space:nowrap}
-.soonpg__hash{color:var(--line-strong)}
+.soonpg__hash{color:var(--muted)}
 /* the cursor waits after the comment, in the warm: what comes next */
 .soonpg__cur{display:flex;justify-content:flex-end;align-items:center;pointer-events:none}
 .soonpg__cur>i{flex:none;width:2px;height:20px;margin-right:-7px;border-radius:1px;
@@ -387,21 +389,26 @@ CSS = """
 .soonpg__state--sig .soonpg__tag{margin-top:14px}
 
 /* -- Communication: four boxes side by side, each its picture, its name and
-   its state; two to a row where four would be too narrow, one on a phone.
+   its state; two to a row where four would be too narrow, a phone's too.
    The drawings' strokes are the slides': hairline frames, grey lines for
    text, the page's blue for data, one warm mark for the work under way. */
 .soonpg__state--boxes{max-width:none}
 .soonpg__boxes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;
   margin:0;padding:0;list-style:none}
 @media (max-width:1180px){.soonpg__boxes{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:520px){.soonpg__boxes{grid-template-columns:minmax(0,1fr)}}
-.soonpg__bi{margin:0;padding:12px 12px 16px;border-radius:var(--r-md);background:var(--card)}
+/* a phone keeps two to a row (one to a row took 1250px of scrolling to see
+   the four), the boxes closer and their titles a step smaller */
+@media (max-width:520px){.soonpg__boxes{gap:12px}.soonpg__bi{padding:8px 8px 12px}
+  .soonpg__bt{font-size:16px}}
+/* a box's state stands at its foot, level along the row, however its title wraps */
+.soonpg__bi{display:flex;flex-direction:column;margin:0;padding:12px 12px 16px;
+  border-radius:var(--r-md);background:var(--card)}
 .soonpg__bart{border-radius:var(--r-sm);background:var(--page)}
 .soonpg__bpic{display:block;width:100%;height:auto;overflow:visible;fill:none;
   stroke-linecap:round;stroke-linejoin:round}
 .soonpg__bt{margin:14px 4px 0;font:600 18px/1.3 var(--serif);letter-spacing:-.004em;
   color:var(--ink);text-wrap:balance}
-.soonpg__bs{margin:4px 4px 0;font:400 14px/1.4 var(--sans);letter-spacing:.006em;
+.soonpg__bs{margin:auto 4px 0;padding-top:4px;font:400 14px/1.4 var(--sans);letter-spacing:.006em;
   color:var(--muted)}
 .soonpg__bsheet,.soonpg__bbubble{fill:var(--card);stroke:var(--line-strong);stroke-width:1}
 .soonpg__bback{fill:var(--page);stroke:var(--line);stroke-width:1}

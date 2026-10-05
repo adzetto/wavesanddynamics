@@ -292,8 +292,8 @@ def render(contact=None, intro=None, bio=None, art=None):
    <h1 class="hero2__h1" id="hero2-title">Korkut Kaynardag, PhD</h1>
    <div class="hero2__intro">{intro}</div>
    <div class="hero2__act">
-    <a class="hero2__btn" href="about.html">About me</a>
-    <a class="hero2__more" href="research.html">My research areas<span class="hero2__go">{_ARROW}</span></a>
+    <a class="hero2__btn" href="about.html">About Me</a>
+    <a class="hero2__more" href="research.html">My Research Areas<span class="hero2__go">{_ARROW}</span></a>
    </div>
   </div>{beside}
  </div>

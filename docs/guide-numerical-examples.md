@@ -13,7 +13,8 @@ phase-velocity window so the two figures compare the same branches.
 
 The machine-learning guide has two additional figures:
 
-- Figure 3a: seasonal ARIMA, additive Holt-Winters smoothing and recursive
+- Figure 2a (it follows Figure 2, whose panel (e) is forecasting; it was
+  3a until 5 Oct 2026, when the audit found it standing before Figure 3): seasonal ARIMA, additive Holt-Winters smoothing and recursive
   gradient boosted trees forecast the same synthetic monthly sensor signal.
   Three forecast origins each have a 24-month horizon. Future observations
   do not enter training or recursive lag features. RMSE and MAE are measured

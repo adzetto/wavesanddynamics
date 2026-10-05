@@ -354,7 +354,9 @@ def test_hover_intent_is_the_mouses_alone():
     js = bpnav.JS
     assert "fine=matchMedia('(hover: hover) and (pointer: fine)')" in js
     assert "if(e.pointerType!=='mouse'||!fine.matches)return;" in js
-    assert "},350);" in js
+    assert "},600);" in js
+    # an opening by hover is not stored as the reader's choice
+    assert "choose(true,1)" in js and "if(!by)try{localStorage.setItem(K," in js
 
 
 def test_the_part_draws_no_colour_of_its_own():
@@ -521,23 +523,23 @@ def test_the_portraits_file_is_the_size_the_column_draws_it():
 
 NODE = shutil.which("node")
 HARNESS = """
-const [code, page, store, session, reduce] = JSON.parse(process.argv[1]);
+const [code, page, store, session, reduce, short] = JSON.parse(process.argv[1]);
 const attrs = {};
 const doc = {documentElement: {setAttribute(k, v) { attrs[k] = v; }}};
 const local = {getItem(k) { if (store === null) throw new Error("refused"); return store[k] ?? null; }};
 const sess = {getItem(k) { return session[k] ?? null; }};
-new Function("document", "localStorage", "sessionStorage", "matchMedia", code)(
-  doc, local, sess, () => ({matches: reduce}));
-if (page === "in") new Function("document", %s)(doc);
+const mm = q => ({matches: q.includes("reduce") ? reduce : q.includes("min-height") ? !short : false});
+new Function("document", "localStorage", "sessionStorage", "matchMedia", code)(doc, local, sess, mm);
+if (page === "in") new Function("document", "matchMedia", %s)(doc, mm);
 console.log(JSON.stringify(attrs));
 """
 
 
-def _first_paint(page, store, session=None, reduce=False):
+def _first_paint(page, store, session=None, reduce=False, short=False):
     hold = re.search(r"<script>(.*)</script>", bpnav.HOLD).group(1)
     code = bpnav.head_js(page == "bp")
     out = subprocess.run([NODE, "-e", HARNESS % json.dumps(hold),
-                          json.dumps([code, page, store, session or {}, reduce])],
+                          json.dumps([code, page, store, session or {}, reduce, short])],
                          capture_output=True, text=True, check=True)
     return json.loads(out.stdout)
 
@@ -560,6 +562,27 @@ def test_the_state_before_the_first_paint():
     assert _first_paint("bp", {}, {"wad:bp-shown": "closed"}, reduce=True) == {"data-bp": "open"}
     # a page the list holds opens it whatever the reader chose
     assert _first_paint("in", {"wad:bp": "closed", "wad:bp-seen": "1"})["data-bp"] == "open"
+    # in a window too short for the open list (a laptop's 1440x789 or 1366x657)
+    # no page opens it by itself; the reader's own choice still holds
+    assert _first_paint("bp", {}, short=True) == {"data-bp": "closed"}
+    assert _first_paint("in", {"wad:bp-seen": "1"}, short=True) == {"data-bp": "closed"}
+    assert _first_paint("in", {"wad:bp": "open", "wad:bp-seen": "1"}, short=True) == {"data-bp": "open"}
+
+
+def test_the_open_list_is_held_only_where_it_fits():
+    # theme.py's rows end at 827 + 8 x pad (740 + 8 x pad under 860px tall) at
+    # the kink's low side, with 24px of air: 6px rows fit from 900px, and from
+    # 812px with the shorter identity
+    assert bpnav.OPEN_FITS == "(min-height:900px), (min-height:812px) and (max-height:860px)"
+    assert bpnav.OPEN_FITS in bpnav.HOLD and bpnav.OPEN_FITS in bpnav.head_js(True)
+    css = theme.CSS
+    assert "--pad:clamp(6px,min(calc((100vh - 851px) / 8),calc((100vh - 770px) / 16)),12px)" in css
+    assert "--pad:clamp(6px,min(calc((100vh - 764px) / 8),calc((100vh - 699px) / 16)),12px)" in css
+    for h, shorter in ((900, False), (1026, False), (1200, False), (812, True), (860, True)):
+        low, high = ((740, 675) if shorter else (827, 746))
+        pad = max(6, min((h - low - 24) / 8, (h - high - 24) / 16, 12))
+        # the last row's end: the line in force is the larger of the two
+        assert max(low + 8 * pad, high + 16 * pad) <= h - 24 + 1e-9, (h, pad)
 
 
 ARRIVAL = """
@@ -860,7 +883,7 @@ def test_the_thought_tells_the_rows_order():
     # is seen; again on the pointer's rest or a key, not within 2.5s
     assert "if(document.hidden){document.addEventListener('visibilitychange',intro);return}" in js
     assert "if(!first&&now-lastPlay<1600)return 0;" in js
-    assert "if(armed&&!goal){hovered=Date.now();choose(true)}else play(0)},350);" in js
+    assert "if(armed&&!goal){hovered=Date.now();choose(true,1)}else play(0)},600);" in js
     assert "e.target.matches(':focus-visible'))play(0);" in js
     # a topic under a key takes the lit path and its orb at once
     assert "if(mode===1){LT=LG;LV=0;LA=1;E[j]=ET[j]=1;EV[j]=0;EH[j]=0;bead(j,1)}" in js

@@ -73,7 +73,10 @@ CSS = """
    splits it, so a page downloads only the files its text touches: most
    pages need the two latin files alone, which shell() preloads; About
    ("Bogazici" with its g-breve) adds the serif's latin-ext, From Bridges to
-   Photons (a lambda) its Greek. Each file is variable: the serif carries its
+   Photons (a lambda) its Greek. The Turkish letters latin leaves out (G and
+   S with their marks, the dotted capital I) come from a 7 KB cut of the
+   serif's latin-ext of their own, for the footer's credit on every page
+   ("Yagcioglu"), which had every page fetch the 101 KB file for one g. Each file is variable: the serif carries its
    optical sizes and the weights 400 to 600, the sans its 400 and 600. */
 @font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 600;font-display:swap;
   src:url(fonts/source-serif-4-latin.woff2) format("woff2");
@@ -81,9 +84,12 @@ CSS = """
     U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 600;font-display:swap;
   src:url(fonts/source-serif-4-latin-ext.woff2) format("woff2");
-  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,
-    U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,
-    U+2C60-2C7F,U+A720-A7FF}
+  unicode-range:U+0100-011D,U+0120-012F,U+0132-015D,U+0160-02BA,U+02BD-02C5,U+02C7-02CC,
+    U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,
+    U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 600;font-display:swap;
+  src:url(fonts/source-serif-4-tr.woff2) format("woff2");
+  unicode-range:U+011E-011F,U+0130,U+015E-015F}
 @font-face{font-family:"Source Serif 4";font-style:normal;font-weight:400 600;font-display:swap;
   src:url(fonts/source-serif-4-greek.woff2) format("woff2");
   unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}
@@ -490,27 +496,30 @@ sup,sub{line-height:0}
    most two lines, 2px under its title. Every label starts on one hard edge
    at x=20.
 
-   The six rows and the Big Picture list, open (the column's longest state),
-   have to fit a laptop's window under the identity without scrolling, and
-   breathe on a taller one, so each row's padding (--pad) is what the
-   window's height leaves them once the identity has its share, from 6px up
-   to 12px. Where the last row ends is linear in --pad with a kink: a two-
-   or three-line row grows 2px a pixel of padding, while the one-line rows
+   The eight rows and the Big Picture list, open (the column's longest
+   state, with the note under Signal Processing), fit under the identity
+   without scrolling in a window tall enough for them, and breathe on a
+   taller one, so each row's padding (--pad) is what the window's height
+   leaves them once the identity has its share, from 6px up to 12px. Where
+   the last row ends is linear in --pad with a kink: the four rows of two
+   or three lines grow 2px a pixel of padding, while the one-line rows
    stand on their min-height until the padding outgrows it and then grow
-   too. Measured in Chromium on the Big Picture page, the list open and
-   --pad forced from 6 to 12px, the last row ends at 705px + 4 x --pad below
-   the kink and 624px + 12 x --pad above it with 40px one-line rows; in a
-   window 860px tall or less, where the identity is shorter and a one-line
-   row 36px, at 618px + 4 x --pad and 553px + 12 x --pad. Both lines are in
-   min(), which picks the one in force, with 24px of air left under the
-   last row: 12px in every window over 860px tall and in one 721 to 860px
-   tall (1366x768, 1280x800), 10.25px at 700, 8.2px at 675, 6px from 666
-   down. A row is never under 36px, or 44px under a finger. Below 643px the
-   open list scrolls inside the column, under the identity, which never
-   moves, and its foot fades while there is more below (.nav--more). */
+   too. Measured in Chromium on the Big Picture page (5 Oct 2026), the list
+   open and --pad forced from 6 to 12px, the last row ends at 827px + 8 x
+   --pad below the kink and 746px + 16 x --pad above it with 40px one-line
+   rows; in a window 860px tall or less, where the identity is shorter and
+   a one-line row 36px, at 740px + 8 x --pad and 675px + 16 x --pad. Both
+   lines are in min(), which picks the one in force, with 24px of air left
+   under the last row: the open list fits from 900px tall (12px from
+   1026px) and, with the shorter identity, from 812 to 860px. In a shorter
+   window a page no longer holds the list open (bpnav.py OPEN_FITS): it
+   shows the folded line with its warm bead, and opens on the reader's
+   click, when the list scrolls inside the column, under the identity,
+   which never moves, and its foot fades while there is more below
+   (.nav--more). A row is never under 36px, or 44px under a finger. */
 .nav li{margin:0}
 .nav a{position:relative;text-align:left;
-  --pad:clamp(6px,min(calc((100vh - 729px) / 4),calc((100vh - 648px) / 12)),12px);
+  --pad:clamp(6px,min(calc((100vh - 851px) / 8),calc((100vh - 770px) / 16)),12px);
   padding:var(--pad) 16px calc(var(--pad) + 1px) 20px;
   min-height:40px;display:flex;flex-direction:column;justify-content:center;
   align-items:flex-start;gap:2px;border-bottom:0;
@@ -573,7 +582,7 @@ sup,sub{line-height:0}
   .id__pic{margin-bottom:12px}
   .id__org{margin-top:8px}
   .nav a{min-height:36px;
-    --pad:clamp(6px,min(calc((100vh - 642px) / 4),calc((100vh - 577px) / 12)),12px)}
+    --pad:clamp(6px,min(calc((100vh - 764px) / 8),calc((100vh - 699px) / 16)),12px)}
 }
 @media (max-height:860px) and (pointer:coarse){ .nav a{min-height:44px} }
 /* When the list is longer than the column (a short window, or a list opened

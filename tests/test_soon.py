@@ -114,18 +114,22 @@ def test_communication_holds_his_four_boxes_side_by_side_each_with_its_picture()
     boxes = re.search(r'<ul class="soonpg__boxes" role="list">(.*?)</ul>', page, re.S).group(1)
     items = re.findall(r'<li class="soonpg__bi" style="--k:(\d)">(.*?)</li>', boxes, re.S)
     assert [k for k, _ in items] == ["0", "1", "2", "3"]
-    assert [re.search(r'<h2 class="soonpg__bt">(.*?)</h2>', b).group(1) for _, b in items] == [
+    assert [re.sub(r"<wbr>", "", re.search(r'<h2 class="soonpg__bt">(.*?)</h2>', b).group(1))
+            for _, b in items] == [
         "Paper writing", "How to make presentations", "Technical reports writing",
         "Talking/updating to your professor"]
     for _, b in items:
         assert b.count('<svg class="soonpg__bpic" viewBox="0 0 240 160" aria-hidden="true"') == 1
         assert '<p class="soonpg__bs">In preparation</p>' in b
         assert re.search(r"soonpg__b(?:warm|warmline|now)\b", b)   # a warm mark: the work under way
-    # four across where there is room, two, then one on a phone
+    # four across where there is room, else two, on a phone too
     css = soon.CSS
     assert ".soonpg__boxes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))" in css
     assert "@media (max-width:1180px){.soonpg__boxes{grid-template-columns:repeat(2,minmax(0,1fr))}}" in css
-    assert "@media (max-width:520px){.soonpg__boxes{grid-template-columns:minmax(0,1fr)}}" in css
+    # a phone keeps two to a row, and each box's state stands level at its foot
+    assert "@media (max-width:520px){.soonpg__boxes{gap:12px}" in css
+    assert "grid-template-columns:minmax(0,1fr)}" not in css.split(".soonpg__boxes{display:grid", 1)[1][:400]
+    assert ".soonpg__bi{display:flex;flex-direction:column;" in css and ".soonpg__bs{margin:auto 4px 0;" in css
 
 
 def test_his_advice_section_says_under_construction():

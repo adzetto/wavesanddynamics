@@ -195,7 +195,10 @@ CSS = """
    its cards) are the table's rows, so the cards start level. Narrower, the
    topics stand one under another on a spine, each followed by its cards. */
 .bpm{container:bpm/inline-size;position:relative;max-width:none;margin:clamp(16px,2.4vw,28px) 0 0}
-.bpm__stage{--bpm-mode:wide;--band:106px;position:relative;display:grid;
+/* --band is the room over the line for the arcs and their words; with no
+   arcs (_BRIDGES is empty since round 15) it keeps only the nodes' air and
+   the orbs' (5 Oct 2026: 106px left 95px of bare paper under the lede) */
+.bpm__stage{--bpm-mode:wide;--band:%(band)s;position:relative;display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto auto 1fr;
   padding-top:var(--band)}
 .bpm__stage::before{content:"";position:absolute;left:0;right:0;top:var(--band);height:1px;
@@ -519,7 +522,7 @@ CSS = """
   .bpm__docs,.bpr__docs{grid-template-columns:repeat(3,minmax(0,1fr));width:auto;gap:14px}
   .bpm__docs>li,.bpr__docs>li{padding:0;break-inside:avoid}
 }
-""" % {}
+""" % {"band": "106px" if _BRIDGES else "52px"}
 
 JS = r"""
 var fig=document.querySelector('.bpm');
@@ -972,52 +975,75 @@ if(!st||os.length<2)return;
 var NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg'),
   wv=document.createElementNS(NS,'path'),dt=document.createElementNS(NS,'circle'),
   reduce=matchMedia('(prefers-reduced-motion: reduce)'),forced=matchMedia('(forced-colors: active)'),
-  P=[],raf=0,t0=0,seen=0,lit=-1,size='',
-  MOVE=1300,STAY=700,FADE=450,K=os.length-1,CYC=FADE+K*(MOVE+STAY)+STAY+FADE,
+  P=[],M=[],T=[],CYC=0,raf=0,t0=0,seen=0,lit=-1,shown='',on=[],
+  MOVE=1300,STAY=700,FADE=450,K=os.length-1,PACE=.168,NEAR=11,
   AMP=4.5,LAM=15,TAIL=64,HZ=2.6;
 sv.setAttribute('class','bpm__go');sv.setAttribute('aria-hidden','true');sv.setAttribute('focusable','false');
 wv.setAttribute('class','bpm__go-w');dt.setAttribute('class','bpm__go-d');dt.setAttribute('r','4.5');
 sv.appendChild(wv);sv.appendChild(dt);st.appendChild(sv);
-/* the nodes' centres in the stage, read once per size */
-function where(){var s=st.getBoundingClientRect(),k=s.width/st.clientWidth||1;
+/* the nodes' centres in the stage, read once per size (a ResizeObserver and
+   the window's resize clear them; nothing is read while it moves), and each
+   hop's time: MOVE, or longer for a long hop, so the dot keeps the line's
+   pace (PACE px/ms on average, 250px/s at its fastest) on the upright spine,
+   where the hops are 320 to 600px long */
+function where(){var s=st.getBoundingClientRect(),w=st.clientWidth,h=st.clientHeight,k=s.width/w||1,t=FADE,i,L;
   P=os.map(function(o){var r=o.getBoundingClientRect();
     return [(r.left+r.width/2-s.left)/k,(r.top+r.height/2-s.top)/k]});
-  size=st.clientWidth+'x'+st.clientHeight;sv.setAttribute('viewBox','0 0 '+st.clientWidth+' '+st.clientHeight)}
+  M=[];T=[];
+  for(i=0;i<K;i++){L=Math.hypot(P[i+1][0]-P[i][0],P[i+1][1]-P[i][1]);M.push(Math.max(MOVE,L/PACE));T.push(t);t+=M[i]+STAY}
+  T.push(t);CYC=t+STAY+FADE;
+  sv.setAttribute('viewBox','0 0 '+w+' '+h)}
 function ease(u){return u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2}
 function rate(u){return u<.5?12*u*u:3*Math.pow(-2*u+2,2)}      /* ease's slope, 1.5 at most */
 function ring(k){if(k===lit)return;if(lit>=0)os[lit].classList.remove('is-go');lit=k;
   if(k>=0)os[k].classList.add('is-go')}
-function off(){sv.style.opacity='0';wv.removeAttribute('d');ring(-1)}
+/* its opacity is written only when it changes */
+function op(v){if(v!==shown){sv.style.opacity=v;shown=v}}
+function off(){op('0');wv.removeAttribute('d');ring(-1)}
 function f1(v){return Math.round(v*10)/10}
 function frame(ts){
   raf=0;
   if(!seen||document.hidden||reduce.matches||forced.matches){off();t0=0;return}
+  /* the table still arriving, or a topic in hand: look again in 200ms, not every frame */
   if(fig.classList.contains('is-intro')||!fig.classList.contains('is-ready')||fig.hasAttribute('data-focus')){
-    off();t0=0;raf=requestAnimationFrame(frame);return}
+    off();t0=0;raf=-1;setTimeout(function(){raf=0;go()},200);return}
   if(!t0)t0=ts;
-  if(!P.length||size!==st.clientWidth+'x'+st.clientHeight)where();
+  if(!P.length)where();
   var tt=(ts-t0)%CYC,a=1,x,y,i,u,e,A=0,ux=0,uy=0,gone=0,d='';
   if(tt<FADE){a=tt/FADE;x=P[0][0];y=P[0][1];ring(0)}
-  else{tt-=FADE;i=Math.floor(tt/(MOVE+STAY));
-    if(i>=K){x=P[K][0];y=P[K][1];a=1-Math.max(0,tt-K*(MOVE+STAY)-STAY)/FADE;ring(K)}
-    else{u=tt-i*(MOVE+STAY);
-      if(u<MOVE){var p=P[i],q=P[i+1],L=Math.hypot(q[0]-p[0],q[1]-p[1])||1;
-        e=ease(u/MOVE);x=p[0]+(q[0]-p[0])*e;y=p[1]+(q[1]-p[1])*e;ux=(q[0]-p[0])/L;uy=(q[1]-p[1])/L;
-        A=AMP*rate(u/MOVE)/1.5;gone=e*L;ring(-1)}
-      else{x=P[i+1][0];y=P[i+1][1];ring(i+1)}}}
-  if(A>.05){var n=Math.min(TAIL,gone),ph=2*Math.PI*HZ*ts/1000;
+  else if(tt>=T[K]){x=P[K][0];y=P[K][1];a=1-Math.max(0,tt-T[K]-STAY)/FADE;ring(K)}
+  else{for(i=0;i<K-1&&tt>=T[i+1];i++);
+    u=tt-T[i];
+    if(u<M[i]){var p=P[i],q=P[i+1],L=Math.hypot(q[0]-p[0],q[1]-p[1])||1;
+      e=ease(u/M[i]);x=p[0]+(q[0]-p[0])*e;y=p[1]+(q[1]-p[1])*e;ux=(q[0]-p[0])/L;uy=(q[1]-p[1])/L;
+      A=AMP*rate(u/M[i])/1.5;gone=e*L;
+      /* the ring answers as the dot reaches it, not once it has stopped under it */
+      ring(L-gone<NEAR?i+1:-1)}
+    else{x=P[i+1][0];y=P[i+1][1];ring(i+1)}}
+  /* the wave behind it is as long as its speed: it shortens to nothing as the
+     dot slows into a node, so no straight stroke is left lying on the line */
+  if(A>.05){var n=Math.min(TAIL,gone)*Math.min(1,A/(.6*AMP)),ph=2*Math.PI*HZ*ts/1000;
     for(var s0=0;s0<=n;s0+=2){var env=Math.exp(-s0/22)*(1-Math.exp(-s0/5))*Math.min(1,(n-s0)/10),
         w=A*env*Math.sin(2*Math.PI*s0/LAM-ph);
       d+=(s0?'L':'M')+f1(x-ux*s0-uy*w)+' '+f1(y-uy*s0+ux*w)}}
   if(d)wv.setAttribute('d',d);else wv.removeAttribute('d');
-  dt.setAttribute('cx',f1(x));dt.setAttribute('cy',f1(y));sv.style.opacity=String(Math.max(0,Math.min(1,a)));
+  /* moved by its transform, not its cx and cy */
+  dt.setAttribute('transform','translate('+f1(x)+' '+f1(y)+')');op(String(Math.max(0,Math.min(1,a))));
   raf=requestAnimationFrame(frame)}
 function go(){if(!raf&&seen)raf=requestAnimationFrame(frame)}
-if(window.IntersectionObserver)new IntersectionObserver(function(es){seen=es[0].isIntersecting?1:0;
-  if(seen)go();else off()}).observe(fig);else{seen=1;go()}
-document.addEventListener('visibilitychange',function(){if(!document.hidden)go()});
+/* on screen means a node on screen: the line it travels, not the cards under
+   it; coming back into view, or back from a hidden tab, it sets out again
+   from the first topic */
+if(window.IntersectionObserver){var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){var k=on.indexOf(e.target);
+      if(e.isIntersecting){if(k<0)on.push(e.target)}else if(k>=0)on.splice(k,1)});
+    var was=seen;seen=on.length?1:0;
+    if(seen&&!was){t0=0;go()}else if(!seen)off()});
+  os.forEach(function(o){io.observe(o)})}else{seen=1;go()}
+document.addEventListener('visibilitychange',function(){if(!document.hidden){t0=0;go()}});
 if(reduce.addEventListener)reduce.addEventListener('change',go);
 addEventListener('resize',function(){P=[]});
+if(window.ResizeObserver)new ResizeObserver(function(){P=[]}).observe(st);
 })();
 """
 

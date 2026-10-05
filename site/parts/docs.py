@@ -104,15 +104,16 @@ _MARGIN = """
 # side that follows the sections", on a laptop where the margin had only the
 # button): the same list, laid in the margin the same way (_MARGIN), in a
 # smaller size that fits 148 to 211px, from 1280px with the site's column
-# open and from 1100px with it folded. A title takes two lines at most, but
-# the one being read, which shows whole; the rows' air is a clear border, so
+# open and from 1100px with it folded. A title takes three lines at most, but
+# the one being read, which shows whole (two cut both case studies of the
+# waves guide to "Case Study: Wave..."); the rows' air is a clear border, so
 # the lines cut off stay out of it.
 _COMPACT = """
   %P%[data-toc] .docpage.has-toc>.tocdock{width:calc(100% - 20px);margin:-10px 12px 0 0}
   %P% .docpage .toc--rail{--tl:6px;--tg:22px}
   %P% .docpage .toc--rail a{padding:0 4px 0 calc(var(--tl) + var(--tg));
     border-block:5px solid transparent;font-size:13.5px;line-height:1.3;
-    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
   %P% .docpage .toc--rail a[aria-current]{-webkit-line-clamp:none}
   %P% .docpage .toc--rail ol ol a{border-block-width:4px;font-size:12.5px}
   %P% .docpage .toc__list>li>a>.hn:first-child,
@@ -649,7 +650,7 @@ math{font-family:"Site Math",math}
 .js .docpage .fig--anim>.anim__bar{display:flex;gap:8px;float:right;margin:10px 0 4px 16px}
 /* the float stays in its figure: a cover, a one-line caption, a part */
 .js .docpage .fig--anim:not(.fig--cell,:fullscreen,.is-full){display:flow-root}
-.js .docpage .tbl .fig--cell>.anim__bar{grid-area:2/1;float:none;justify-self:end;margin:6px 0 0}
+.js .docpage .tbl .fig--cell>.anim__bar{grid-area:2/1;float:none;justify-self:end;width:auto;margin:6px 0 0}
 .anim__bar>button{position:relative;display:grid;place-items:center;box-sizing:border-box;width:32px;height:32px;
   margin:0;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--page);color:var(--muted);
   cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -780,6 +781,17 @@ math{font-family:"Site Math",math}
   .js .docpage .tbl .fig--cell .anim{opacity:1;visibility:visible;transform:none;transition:none}
   .js .docpage .tbl .fig--cell .anim__still{display:none}
 }
+/* a table's figure full screen is the figure's full screen (above): the cell's
+   rules, which park the frame off the page and show its still, come later
+   and as strong, so these, one class stronger, take them back */
+.js .docpage .tbl .fig--cell:is(:fullscreen,.is-full){display:flex}
+.js .docpage .tbl .fig--cell:is(:fullscreen,.is-full) .anim{opacity:1;visibility:visible;transform:none;
+  transition:none;width:min(100%,calc((100vh - 2 * var(--pad) - 42px) * var(--ar,1.6)));
+  width:min(100%,calc((100dvh - 2 * var(--pad) - 42px) * var(--ar,1.6)))}
+.js .docpage .tbl .fig--cell:is(:fullscreen,.is-full) .anim__still{display:none}
+.js .docpage .tbl .fig--cell:is(:fullscreen,.is-full)>.anim__bar{margin:10px 0 0;
+  width:min(100%,calc((100vh - 2 * var(--pad) - 42px) * var(--ar,1.6)));
+  width:min(100%,calc((100dvh - 2 * var(--pad) - 42px) * var(--ar,1.6)))}
 .docpage .tbl .tr-span td{padding-top:16px;padding-bottom:16px}
 /* more of a group (preview.py tr-same): no rule inside it, and the name it
    repeats in the quieter ink */
@@ -1050,9 +1062,18 @@ math{font-family:"Site Math",math}
 # while the reader goes back up the page.
 JS = """
 /* his animated figures: the picture each redraws is printed in its place, so
-   it loads before the page goes to paper, not only as it nears the screen */
+   it loads before the page goes to paper, not only as it nears the screen.
+   Chrome takes the print before an image asked for at beforeprint arrives, so
+   every lazy picture of the document (the stills, hidden on screen, and his
+   pictures) loads once the page has, in idle time and at low priority, unless
+   the reader asked to save data; beforeprint stays as the last resort */
 addEventListener('beforeprint',function(){
   [].forEach.call(document.querySelectorAll('.docpage .anim__still'),function(i){i.loading='eager';});});
+addEventListener('load',function(){
+  if(navigator.connection&&navigator.connection.saveData)return;
+  function all(){[].forEach.call(document.querySelectorAll('.docpage img[loading=lazy]'),function(i){
+    i.fetchPriority='low';i.loading='eager';});}
+  if(window.requestIdleCallback)requestIdleCallback(all,{timeout:4000});else setTimeout(all,2000);});
 /* a table's moving figures (preview.py _in_cell): only the row being read
    plays. A row is read while it crosses a line two fifths down the screen.
    Its frames load as it comes within a screen of the view, fade in over their
@@ -1102,7 +1123,13 @@ if(fold&&fold.animate)fold.querySelector('summary').addEventListener('click',fun
   var real=!!(document.fullscreenEnabled&&Element.prototype.requestFullscreen),over=null;
   function said(f,on){var b=f.querySelector('.anim__full');
     if(b)b.setAttribute('aria-label',on?'Leave full screen':'Show this figure full screen');}
-  function shut(){if(!over)return;var f=over;over=null;f.classList.remove('is-full');
+  /* a table's frame goes back to sleep unless its row is the one being read */
+  function rest(f){var tr=f.closest('tr');
+    if(f.classList.contains('fig--cell')&&tr&&!tr.classList.contains('is-live')){
+      var fr=f.querySelector('iframe.anim');if(fr)fr.inert=true;}}
+  document.addEventListener('fullscreenchange',function(){
+    figs.forEach(function(f){if(document.fullscreenElement!==f)rest(f);});});
+  function shut(){if(!over)return;var f=over;over=null;f.classList.remove('is-full');rest(f);
     document.documentElement.classList.remove('fig-open');said(f,false);
     var b=f.querySelector('.anim__full');if(b)b.focus({preventScroll:true});}
   figs.forEach(function(f){
@@ -1113,6 +1140,7 @@ if(fold&&fold.animate)fold.querySelector('summary').addEventListener('click',fun
       if(document.fullscreenElement===f){document.exitFullscreen();return}
       if(over===f){shut();return}
       if(fr.loading==='lazy')fr.loading='eager';
+      if(f.classList.contains('fig--cell'))fr.inert=false;
       /* a phone held upright turns the figure on its side where it may, so it
          takes the long side of the screen; leaving full screen lets it go */
       /* the page stops scrolling first, so its scrollbar is gone before the

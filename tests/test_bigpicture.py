@@ -201,7 +201,9 @@ def test_the_topics_stand_side_by_side_under_the_line():
     their rows are the table's, so the cards start level. Upright below 920px,
     cards upright on a phone."""
     css, js = documents.CSS, documents.JS
-    assert "grid-template-columns:repeat(5,minmax(0,1fr))" in css and "--band:106px" in css
+    assert "grid-template-columns:repeat(5,minmax(0,1fr))" in css
+    # the room over the line is the arcs': with none, only the nodes' air
+    assert ("--band:106px" if documents._BRIDGES else "--band:52px") in css
     assert "grid-template-rows:subgrid" in css
     assert "@container bpm (width < 920px)" in css and "@container bpm (width < 560px)" in css
     assert ".wrap.bp{max-width:1240px}" in css
@@ -349,11 +351,11 @@ def test_the_arrival_is_quick_and_then_rests():
     assert "function kick(){if(!raf)raf=requestAnimationFrame(frame)}" in js
     arrival, messenger = js.split("THE MESSENGER", 1)
     assert arrival.count("requestAnimationFrame(") == 4
-    # the messenger (5 Oct 2026) moves while the table is in view, and only
+    # the messenger (5 Oct 2026) moves while its line is in view, and only
     # then: off screen, in a hidden tab, in forced colours or where less
     # motion is asked for it asks for no frame
     assert "if(!seen||document.hidden||reduce.matches||forced.matches){off();t0=0;return}" in messenger
-    assert "seen=es[0].isIntersecting?1:0" in messenger
+    assert "var was=seen;seen=on.length?1:0;" in messenger
     # nothing moves where it cannot be seen, or once less motion is asked for
     assert "document.addEventListener('visibilitychange',function(){if(document.hidden)hush()});" in js
     assert "addEventListener('pagehide',hush);" in js
@@ -419,8 +421,27 @@ def test_a_warm_dot_travels_between_the_topics():
     assert "MOVE=1300,STAY=700,FADE=450,K=os.length-1" in block
     assert "os[k].classList.add('is-go')" in block
     assert re.search(r"\.bpm__o\.is-go:not\(\.is-on\):not\(\.o\)\{border-color:var\(--accent\)", css)
-    # the wave's height is the dot's speed: none while it rests
-    assert "A=AMP*rate(u/MOVE)/1.5" in block and "if(A>.05)" in block
+    # the wave's height is the dot's speed: none while it rests; its length
+    # shortens with the speed, so it never lies on the line as a straight stroke
+    assert "A=AMP*rate(u/M[i])/1.5" in block and "if(A>.05)" in block
+    assert "var n=Math.min(TAIL,gone)*Math.min(1,A/(.6*AMP))" in block
+    # a long hop (the phone's upright spine) keeps the line's pace
+    assert "M.push(Math.max(MOVE,L/PACE))" in block and "PACE=.168" in block
+    # nothing is read from the layout while it moves (MotionScore's frame
+    # thrashing): the nodes are measured once per size, the dot moves by its
+    # transform, and its opacity is written only when it changes
+    frame = block[block.index("function frame(ts){"):block.index("function go(){")]
+    assert "clientWidth" not in frame and "getBoundingClientRect" not in frame
+    assert "setAttribute('cx'" not in block and "dt.setAttribute('transform','translate('" in frame
+    assert "if(window.ResizeObserver)new ResizeObserver(function(){P=[]}).observe(st);" in block
+    assert "function op(v){if(v!==shown){sv.style.opacity=v;shown=v}}" in block
+    # waiting, it looks again in 200ms rather than asking for every frame
+    assert "raf=-1;setTimeout(function(){raf=0;go()},200);return}" in frame
+    # on screen means a node on screen, and the round starts again from the
+    # first topic when it comes back into view or back from a hidden tab
+    assert "os.forEach(function(o){io.observe(o)})" in block and ".observe(fig)" not in block
+    assert "if(seen&&!was){t0=0;go()}" in block
+    assert "document.addEventListener('visibilitychange',function(){if(!document.hidden){t0=0;go()}});" in block
     # nothing moves off screen, in a hidden tab, in forced colours or where
     # less motion is asked for, nor while a topic is in hand or the table arrives
     for guard in ("IntersectionObserver", "document.hidden", "reduce.matches", "forced.matches",

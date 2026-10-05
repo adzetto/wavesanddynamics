@@ -164,3 +164,16 @@ def test_a_caption_may_carry_a_subscript_and_nothing_else(monkeypatch, tmp_path)
         encoding="utf-8")
     out = build.add_supplementary_figures("<p>His words.</p>", "doc")
     assert "ACO<sub>R</sub>, x<sup>2</sup> &lt;b&gt;no&lt;/b&gt;." in out
+
+
+def test_a_number_keeps_its_unit_on_its_line_in_the_words_we_add():
+    """The audit of 5 Oct 2026: "4" ended a line and "s" began the next."""
+    t = ('<p>At 0 dB and 4 s, 64 shots and 48 ms; <tex>10 \\log_{10} 64 = 18.1</tex> dB;'
+         ' 2 sensors, 10 more, 3 the; 2.5 MN/m.</p>')
+    out = build.nbsp_units(t)
+    assert "0 dB" in out and "4 s," in out and "64 shots" in out and "48 ms" in out
+    assert "2.5 MN/m" in out
+    # words that only start like a unit, formulas and tags are left alone
+    assert "2 sensors" in out and "10 more" in out and "3 the" in out
+    assert "<tex>10 \\log_{10} 64 = 18.1</tex> dB" in out
+    assert build.nbsp_units("<sub>2 s</sub>") == "<sub>2 s</sub>"

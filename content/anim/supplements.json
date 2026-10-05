@@ -10,7 +10,7 @@
   {
    "key": "supplement-forecasting",
    "after_paragraph": "Forecasting is supervised learning too:",
-   "caption": "Figure 3a. Three forecasting methods fitted to the same synthetic monthly sensor signal: (a) seasonal ARIMA, (b) additive Holt-Winters exponential smoothing and (c) gradient boosted trees with lagged inputs. Each method forecasts 24 months using only the history before the selected origin. Withheld observations appear after the forecasts, with RMSE and MAE measured over all 24 months. Tree forecasts recursively use their own predictions as future lag inputs. The shaded interval in (a) is the ARIMA model's 95% prediction interval. Choose month 120, 156 or 192 to compare different histories; the relative performance changes with the origin."
+   "caption": "Figure 2a. Three forecasting methods fitted to the same synthetic monthly sensor signal: (a) seasonal ARIMA, (b) additive Holt-Winters exponential smoothing and (c) gradient boosted trees with lagged inputs. Each method forecasts 24 months using only the history before the selected origin. Withheld observations appear after the forecasts, with RMSE and MAE measured over all 24 months. Tree forecasts recursively use their own predictions as future lag inputs. The shaded interval in (a) is the ARIMA model's 95% prediction interval. Choose month 120, 156 or 192 to compare different histories; the relative performance changes with the origin."
   },
   {
    "key": "supplement-feature-selection",

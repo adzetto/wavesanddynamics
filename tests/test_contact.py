@@ -358,7 +358,7 @@ def test_elsewhere_is_his_cv_then_his_known_services_and_nothing_else():
     page = contact.render(INFO)
     names = re.findall(r'<a class="contact__link" href="[^"]+"(?: rel="me")?>'
                        r'<svg[^>]*>.*?</svg><span>([^<]+)</span>', page, re.S)
-    assert names == ["Curriculum vitae", "Google Scholar", "LinkedIn", "ResearchGate"]
+    assert names == ["Curriculum Vitae", "Google Scholar", "LinkedIn", "ResearchGate"]
     assert page.count('rel="me"') == 3 and "wavesanddata.com" not in page
     assert "example.com" not in page and "Download CV" not in page
 

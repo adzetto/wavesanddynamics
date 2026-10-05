@@ -34,7 +34,10 @@ NUMFIG = {"image12": "nf-building.html", "image13": "nf-resonance.html",
           "image25": "nf-coverage.html"}
 EXPECTED = {
     WAVES: {**NUMFIG},
-    SHM: {"image2": "nf-shm-sensors.html", "image4": "nf-shm-ndt.html",
+    # the article's Figure 1 is the waves guide's Figure 1 since 5 Oct 2026
+    # (his notes: "Figure (animation) 1 in Waves and Dynamics => Fig 1 of this
+    # section also"); the brochure keeps the building with sensors
+    SHM: {"image2": "nf-building.html", "image4": "nf-shm-ndt.html",
           "image5": "nf-standing.html"},
     BROCHURE: {"image5": "nf-shm-sensors.html"},
 }
@@ -98,7 +101,9 @@ def test_the_frame_takes_the_canvas_ratio_and_the_title_without_its_number():
             assert not re.match(r"Fig", a["title"]) and a["title"]
     # the waves guide's Figure 3 is ours now, named as his caption names it
     assert got[WAVES]["image14"]["title"] == "Flexural waves in a supported beam"
-    assert got[SHM]["image2"]["title"] == "Example of a building's dynamic response"
+    # the article's Figure 1 is the waves guide's (5 Oct 2026), its frame named as there
+    assert got[SHM]["image2"]["title"] == got[WAVES]["image12"]["title"]
+    assert got[SHM]["image2"]["title"].startswith("Lateral natural dynamic response of a building")
 
 
 def test_a_file_without_a_size_stops_the_build(tmp_path):

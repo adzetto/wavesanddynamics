@@ -300,9 +300,13 @@ def test_the_animations_keep_to_the_blues_and_inks():
     """The client disliked orange in the animations (ROUND15): the lit
     topic, its rule, its node, its bridges, their words, the points, the
     cards' cue and the marks of the icons that draw on it are the page's
-    link blue, and the orbs are its ink. Nothing here is the accent."""
+    link blue, and the orbs are its ink. The one warm thing is the messenger
+    the professor asked for on 5 Oct 2026 ("Add orange dot or wave moving
+    between topics"): its dot, its wave and the ring of the node it rests on."""
     css, js = documents.CSS, documents.JS
-    assert "--accent" not in css and ".bpm__ic .i-accent{stroke:var(--link)}" in css
+    warm = re.findall(r"([^{}]*)\{[^}]*var\(--accent\)", css)
+    assert [w.strip() for w in warm] == [".bpm__go-d", ".bpm__go-w", ".bpm__o.is-go:not(.is-on):not(.o)"]
+    assert ".bpm__ic .i-accent{stroke:var(--link)}" in css
     for rule in ('.bpm__rail::after{content:"";position:absolute;inset:0;background:var(--link);',
                  ".bpm__o.is-on{background:var(--link);", ".bpm__o.is-near{border-color:var(--link);",
                  ".bpm__w.is-hot{color:var(--link)}", ".bpm__lit{fill:none;stroke:var(--link);",
@@ -343,7 +347,13 @@ def test_the_arrival_is_quick_and_then_rests():
     # start the arrival and to lay the table out again
     assert "if(busy)raf=requestAnimationFrame(frame);else last=0}" in js
     assert "function kick(){if(!raf)raf=requestAnimationFrame(frame)}" in js
-    assert js.count("requestAnimationFrame(") == 4
+    arrival, messenger = js.split("THE MESSENGER", 1)
+    assert arrival.count("requestAnimationFrame(") == 4
+    # the messenger (5 Oct 2026) moves while the table is in view, and only
+    # then: off screen, in a hidden tab, in forced colours or where less
+    # motion is asked for it asks for no frame
+    assert "if(!seen||document.hidden||reduce.matches||forced.matches){off();t0=0;return}" in messenger
+    assert "seen=es[0].isIntersecting?1:0" in messenger
     # nothing moves where it cannot be seen, or once less motion is asked for
     assert "document.addEventListener('visibilitychange',function(){if(document.hidden)hush()});" in js
     assert "addEventListener('pagehide',hush);" in js
@@ -390,7 +400,32 @@ def test_a_card_answers_in_reading_order_and_never_moves():
 def test_forced_colours_and_print_leave_the_plain_drawing():
     css = documents.CSS
     forced = "".join(blocks(css, "@media (forced-colors:active)"))
-    assert ".bpm__orb,.bpm__pt,.bpm__lit,.bpr__pts,.bpc__art::before{display:none}" in forced
+    assert ".bpm__orb,.bpm__pt,.bpm__lit,.bpr__pts,.bpc__art::before,.bpm__go{display:none}" in forced
     assert "forced=matchMedia('(forced-colors: active)')" in documents.JS
     # its own classes never meet another's: the lit way is not the heading
     assert "mk('path','bpm__h')" not in documents.JS
+
+
+def test_a_warm_dot_travels_between_the_topics():
+    """The professor's notes, 5 Oct 2026: "Add orange dot or wave moving
+    between topics in 'Big Picture' section"."""
+    js, css = documents.JS, documents.CSS
+    block = js[js.index("THE MESSENGER"):]
+    # one dot and the wave behind it, in an svg of their own over the line
+    assert "sv.setAttribute('class','bpm__go')" in block and "dt.setAttribute('r','4.5')" in block
+    assert ".bpm__go{position:absolute;inset:0;z-index:1;" in css
+    assert ".bpm__go-d{fill:var(--accent)}" in css and "stroke:var(--accent)" in css
+    # from node to node in his order, resting on each, which answers in the warm
+    assert "MOVE=1300,STAY=700,FADE=450,K=os.length-1" in block
+    assert "os[k].classList.add('is-go')" in block
+    assert re.search(r"\.bpm__o\.is-go:not\(\.is-on\):not\(\.o\)\{border-color:var\(--accent\)", css)
+    # the wave's height is the dot's speed: none while it rests
+    assert "A=AMP*rate(u/MOVE)/1.5" in block and "if(A>.05)" in block
+    # nothing moves off screen, in a hidden tab, in forced colours or where
+    # less motion is asked for, nor while a topic is in hand or the table arrives
+    for guard in ("IntersectionObserver", "document.hidden", "reduce.matches", "forced.matches",
+                  "fig.hasAttribute('data-focus')", "fig.classList.contains('is-intro')"):
+        assert guard in block, guard
+    assert ".bpr__pts,.bpc__art::before,.bpm__go{display:none}" in css      # forced colours
+    assert ".bpm__edges,.bpm__words,.bpm__o,.bpr__brace,.bpm__go{display:none}" in css  # print
+    assert "Math.random" not in block

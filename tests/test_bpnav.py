@@ -71,9 +71,10 @@ def order():
             if p in ([c["soon"]] if c.get("soon") else []) + [f"doc/{d}.html" for d in c["docs"]]
             + list(c.get("decks") or ())}
     return [page[c["id"]] for c in documents.CATEGORIES if c["id"] in page]
-# Communication keeps a row of its own after Blog (26 Sep 2026)
+# Communication keeps a row of its own after Blog (26 Sep 2026), and his
+# advice section in preparation follows it (5 Oct 2026)
 ROWS = ["about.html", "research.html", "gallery.html", BP, "blog.html", "communication.html",
-        "contact.html"]
+        "personal-advices.html", "contact.html"]
 
 
 @pytest.fixture
@@ -94,8 +95,10 @@ def topics(markup):
     its words' span (.nav__w), which the words' light is laid over."""
     sub = re.search(r'<ul class="nav__sub"[^>]*>(.*?)</ul>', markup, re.S).group(1)
     return [(h, html.unescape(label).replace("\u00a0", " "), cur or None) for h, cur, label in
-            re.findall(r'<li><a href="([^"]+)"(?: aria-current="([^"]+)")?>'
-                       r'<span class="nav__w"[^>]*>([^<]*)</span></a></li>', sub)]
+            re.findall(r'<li(?: class="nav__two")?><a href="([^"]+)"(?: aria-current="([^"]+)")?>'
+                       r'<span class="nav__w"[^>]*>([^<]*)</span>'
+                       r'(?:<span class="nav__sep"> </span><span class="nav__n">[^<]*</span>)?</a></li>',
+                       sub)]
 
 
 def marked(markup):
@@ -120,6 +123,33 @@ def test_the_list_holds_each_category_under_its_short_name(column):
     assert [label for _, label, _ in items] == [
         c.get("short") or c["label"] for c in documents.CATEGORIES]
     assert "Signal Processing & System ID" in [label for _, label, _ in items]
+
+
+def test_the_signal_processing_topic_carries_his_note_in_smaller_type(column):
+    """His notes, 5 Oct 2026: "(with connections to estimation, optimization,
+    ML, inverse probs, BSS)": add this with smaller font under its name on the
+    left tab (menu)."""
+    note = "(with connections to estimation, optimization, ML, inverse problems, BSS)"
+    assert bpnav.notes() == {"Signal Processing & System ID": note}
+    for page, up in (("about.html", ""), (f"doc/{build.SIGNAL}.html", "../")):
+        markup = column(page, up)
+        lis = re.findall(r'<li[^>]*><a href="[^"]+"[^>]*><span class="nav__w".*?</a></li>', markup)
+        two = [li for li in lis if "nav__n" in li]
+        assert len(two) == 1 and two[0].startswith('<li class="nav__two">')
+        # under the words, inside the link: its name is everything it shows
+        assert (f'Signal Processing &amp; System ID</span><span class="nav__sep"> </span>'
+                f'<span class="nav__n">{html.escape(note)}</span></a>') in two[0]
+    css = bpnav.CSS
+    # a set height (three lines) and the bead and branch on the words' line
+    assert re.search(r"\.nav \.nav__sub \.nav__n\{[^}]*height:3\.9em", css)
+    assert ".nav .nav__sub li.nav__two>a::before" in css
+    assert "top:calc(var(--u) * .5px)" in css
+    # the trunk reaches that much further for the topics below it, on a finger
+    assert ".nav__sub:has(>li.nav__two ~ li>a:is(:focus-visible,:active,.p)){--x:48}" in css
+    assert "  .nav__sub:has(>li.nav__two ~ li>a:hover){--x:48}" in css     # in the hover block
+    assert "+ var(--x, 0)) / (var(--u) * 12))" in css
+    # the orbs aim at the words' line, not the link's middle
+    assert "items[i].firstElementChild.offsetTop+items[i].firstElementChild.offsetHeight/2" in bpnav.JS
 
 
 def test_each_topic_opens_the_page_its_row_opened(column):
@@ -648,7 +678,8 @@ def test_the_trunk_lights_down_to_the_topic():
     # a row, a row per topic above it, over a line twelve rows long
     assert "padding:2px 0 12px;\n  pointer-events:auto;--u:32}" in css
     assert ".nav .nav__sub a{min-height:32px;" in css and "--u:44}" in css
-    assert "--reach:calc((var(--k) * var(--u) - var(--u) / 2 + 2) / (var(--u) * 12))" in css
+    # (--x: a topic's note above it makes its row that much taller, 48px)
+    assert "--reach:calc((var(--k) * var(--u) - var(--u) / 2 + 2 + var(--x, 0)) / (var(--u) * 12))" in css
     assert "height:calc(var(--u) * 12px)" in css
     for u in (32, 44):
         for k in range(1, 6):

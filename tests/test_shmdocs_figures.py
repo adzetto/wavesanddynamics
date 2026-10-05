@@ -145,7 +145,7 @@ def test_the_fragment_maps_his_five_pictures():
             assert a["title"] == re.sub(r"^Figure \d+: ", "", title)
             assert a["still"]["src"] == f"../anim/{name[:-5]}.webp" and a["still"]["w"] == 1344
     # the pictures redrawn before stay as they are
-    assert got[SHM]["image2"]["src"].endswith("nf-shm-sensors.html")
+    assert got[SHM]["image2"]["src"].endswith("nf-building.html")      # since 5 Oct 2026
     assert got[SHM]["image4"]["src"].endswith("nf-shm-ndt.html")
     assert got[SHM]["image5"]["src"].endswith("nf-standing.html")
     assert got[BROCHURE]["image5"]["src"].endswith("nf-shm-sensors.html")

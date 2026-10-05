@@ -1,7 +1,7 @@
 """Soon: the page of a topic whose document is in preparation.
 
-Two rows of the column open a page before their documents exist: Python /
-Programming and Communication. The page is his label as the <h1>, his
+Three rows of the column open a page before their documents exist: Python /
+Programming, Communication, and Personal Advices on Working on a Project. The page is his label as the <h1>, his
 sub-line under it, or where he wrote none one sentence of ours saying what
 the topic will hold; then the state, drawn and said; then the pages already
 on the site that the topic draws on.
@@ -14,10 +14,16 @@ with "In preparation" standing where the next step will go:
       one stem a sample, each rising from zero to its value as a hairline,
       the loop, passes it; at the second prompt a comment is typed, "# In
       preparation", and the cursor waits after it.
-  Communication  a result being presented. A slide draws its title and a
-      measured resonance curve, and a pointer runs along the curve and rings
-      its peak; beside it the next slide stands empty, dashed, and says "In
-      preparation".
+  Communication  four boxes side by side, as the professor asked (5 Oct
+      2026): paper writing, how to make presentations, technical reports
+      writing, talking/updating to your professor, each with its picture
+      drawn at work (the pen writing the last line, the pointer ringing the
+      bar the talk is about, the report ticked, the task in progress growing
+      and the reply ticked) and "In preparation" under its name.
+  Personal Advices on Working on a Project  his section in preparation
+      (5 Oct 2026): a project's plan, its tasks laid down one after another,
+      the last an outline, today's line moving to where the work stands, and
+      "Under construction", his words.
   anything else  a wave running into a sensor and on as samples that fade.
 
 Each plays once as the page opens (the session in about 2.5 s, then the
@@ -149,47 +155,6 @@ def _session():
         '</div>')
 
 
-# ------------------------------------------------ Communication: the next slide
-_SW, _SH, _GAP = 200, 112, 24           # one slide, and the gap to the next
-_Z = 0.06                               # the curve's damping ratio
-
-
-def _frf(r):
-    return 1 / math.sqrt((1 - r * r) ** 2 + (2 * _Z * r) ** 2)
-
-
-def _slides():
-    x0, x1, yb, top = 24, 184, 94, 48  # the plot's box: its axes at x0 and yb
-    rmax = 1.9
-    peak = _frf(1.0)
-    pts = [(round(x0 + (x1 - x0) * i / 480, 2), round(yb - (yb - top) * _frf(rmax * i / 480) / peak, 2))
-           for i in range(481)]
-    curve = _pts(_thin(pts, .05))
-    px, py = x0 + (x1 - x0) / rmax, top            # the peak
-    # the pointer: along the curve to the peak, then once round it, and
-    # down onto it
-    run = _thin([p for p in pts if p[0] <= px], .05)
-    loop = [(round(px + 11 * math.sin(2 * math.pi * t / 48), 2),
-             round(py - 1 - 8 * math.cos(2 * math.pi * t / 48), 2)) for t in range(49)]
-    pointer = _pts(run + [(px, py - 9)] + loop + [(px, py)])
-    b = _SW + _GAP
-    return (
-        '<div class="soonpg__deck">'
-        f'<svg class="soonpg__slides" viewBox="-1 -1 {2 * _SW + _GAP + 2} {_SH + 2}" '
-        f'width="{2 * _SW + _GAP + 2}" height="{_SH + 2}" aria-hidden="true" focusable="false">'
-        f'<rect class="soonpg__frame" x=".5" y=".5" width="{_SW - 1}" height="{_SH - 1}" rx="8"/>'
-        '<path class="soonpg__title" d="M16 18.5h76"/>'
-        '<path class="soonpg__title2" d="M16 28.5h44"/>'
-        f'<path class="soonpg__axes" d="M{x0} {top - 8}V{yb}H{x1 + 4}"/>'
-        f'<path class="soonpg__curve" pathLength="1" d="{curve}"/>'
-        f'<path class="soonpg__halo" pathLength="1" d="{pointer}"/>'
-        f'<path class="soonpg__ptr" pathLength="1" d="{pointer}"/>'
-        f'<rect class="soonpg__next" x="{b + .5}" y=".5" width="{_SW - 1}" height="{_SH - 1}" rx="8"/>'
-        '</svg>'
-        '<p class="soonpg__tag soonpg__slot">In preparation</p>'
-        '</div>')
-
-
 # ------------------------------------------------ anything else: a signal
 _BASE, _AMP2, _HALF = 24, 12, 32
 
@@ -219,8 +184,138 @@ def _signal():
             f'{samples}</svg><p class="soonpg__tag">In preparation</p>')
 
 
+# ------------------------------------------------ Communication: four boxes
+# The professor's notes (5 Oct 2026): "Inside communication put 4 boxes ...
+# make these 4 boxes next to each other": paper writing, how to make
+# presentations, technical reports writing, talking/updating to your
+# professor, each with a picture. Each picture is drawn here as the pages'
+# drawings are (hairline frames, grey lines for text, the page's blue for
+# data, one warm mark for what is being done now) and draws itself once as
+# the page opens, box after box. The boxes say their state in words.
+_PIC = 'viewBox="0 0 240 160" aria-hidden="true" focusable="false"'
+
+
+def _lines(x, ys, widths, cls="soonpg__btxt", j0=0):
+    return "".join(f'<path class="{cls}" style="--j:{j0 + k}" d="M{x:g} {y:g}h{w:g}"/>'
+                   for k, (y, w) in enumerate(zip(ys, widths)))
+
+
+def _paper():
+    """A paper being written: a title, two columns, a plot with its decaying
+    response, and the last line written as the pen moves along it."""
+    left = _lines(76, [44, 50, 56, 62, 68, 74, 80, 86], [39, 37, 39, 35, 39, 38, 39, 30])
+    left += '<path class="soonpg__btxt soonpg__beq" style="--j:8" d="M84 97h22"/>'
+    left += _lines(76, [108, 114, 120, 126, 132], [39, 36, 39, 39, 33], j0=9)
+    right = _lines(125, [44, 50, 56], [39, 39, 34], j0=2)
+    curve = _pts([(round(128 + 35 * i / 60, 2),
+                   round(79 - 11 * math.exp(-2.2 * i / 60) * math.sin(2 * math.pi * 3 * i / 60), 2))
+                  for i in range(61)])
+    right += ('<path class="soonpg__bframe" d="M127 65V92H164"/>'
+              f'<path class="soonpg__bdata soonpg__bdraw" pathLength="1" d="{curve}"/>')
+    right += _lines(125, [102, 108, 114, 120, 126], [39, 38, 39, 35, 39], j0=5)
+    return (f'<svg class="soonpg__bpic" {_PIC}>'
+            '<rect class="soonpg__bsheet" x="64.5" y="8.5" width="111" height="143" rx="3"/>'
+            '<path class="soonpg__bhead" d="M76 23.5h87"/><path class="soonpg__bsub" d="M92 32h55"/>'
+            f'{left}{right}'
+            '<path class="soonpg__bink soonpg__bwrite" pathLength="1" d="M125 132h26"/>'
+            '<g class="soonpg__bpen"><path class="soonpg__bnib" d="M151 132l17-17 4.5 4.5-17 17z"/>'
+            '<circle class="soonpg__bwarm" cx="151" cy="132" r="2.2"/></g></svg>')
+
+
+def _talk_slide():
+    """A presentation: a slide on its stand, a bar chart, and the pointer
+    going to the bar the talk is about."""
+    heights = [17, 27, 22, 40, 31]
+    bars = "".join(f'<rect class="soonpg__bbar" style="--j:{k}" x="{66 + 26 * k}" y="{98 - h}" '
+                   f'width="16" height="{h}"/>' for k, h in enumerate(heights))
+    return (f'<svg class="soonpg__bpic" {_PIC}>'
+            '<path class="soonpg__bink" d="M28 10.5h184"/>'
+            '<rect class="soonpg__bsheet" x="36.5" y="10.5" width="167" height="100" rx="3"/>'
+            '<path class="soonpg__bstand" d="M120 111v39M120 117l-22 33M120 117l22 33"/>'
+            '<path class="soonpg__bhead" d="M52 26h66"/><path class="soonpg__bsub" d="M52 34.5h40"/>'
+            f'<path class="soonpg__bframe" d="M56 44V98.5H192"/>{bars}'
+            '<g class="soonpg__blaser"><circle class="soonpg__bhalo" cx="152" cy="54" r="7"/>'
+            '<circle class="soonpg__bwarm" cx="152" cy="54" r="2.6"/></g></svg>')
+
+
+def _report():
+    """A technical report: bound pages, numbered sections, a table and a
+    measured trend, and its approval ticked."""
+    rings = "".join(f'<circle class="soonpg__bring" cx="64.5" cy="{y}" r="2.6"/>' for y in range(20, 140, 13))
+    grid = ('<rect class="soonpg__bcell" x="78" y="53" width="78" height="8"/>'
+            '<path class="soonpg__bframe" d="M78 53h78v32H78zM78 61h78M78 69h78M78 77h78M104 53v32M130 53v32"/>')
+    pts = [(82, 126), (94, 121), (106, 123), (118, 114), (130, 111), (142, 104), (154, 101)]
+    trend = _pts(pts)
+    marks = "".join(f'<circle class="soonpg__bpt" style="--j:{k}" cx="{x}" cy="{y}" r="1.8"/>'
+                    for k, (x, y) in enumerate(pts))
+    return (f'<svg class="soonpg__bpic" {_PIC}>'
+            '<rect class="soonpg__bback" x="74.5" y="14.5" width="104" height="136" rx="2"/>'
+            '<rect class="soonpg__bsheet" x="64.5" y="8.5" width="104" height="136" rx="2"/>'
+            f'{rings}'
+            '<path class="soonpg__bhead" d="M78 24h7M90 24h50"/>'
+            + _lines(78, [33, 39, 45], [74, 68, 58]) + grid +
+            '<path class="soonpg__bhead" d="M78 95h7M90 95h40"/>'
+            '<path class="soonpg__bframe" d="M80 101V131.5H158"/>'
+            f'<path class="soonpg__bdata soonpg__bdraw" pathLength="1" d="{trend}"/>{marks}'
+            '<path class="soonpg__btick soonpg__bwarmline" pathLength="1" d="M141 137l4.5 4.5 9.5-10"/></svg>')
+
+
+def _update():
+    """Updating your professor: the week's progress in one bubble, the
+    task under way still growing, and the reply that answers it."""
+    rows = [(32, 78), (50, 54), (68, 26)]
+    prog = "".join(f'<path class="soonpg__btxt" style="--j:{k}" d="M28 {y}h22"/>'
+                   f'<path class="soonpg__btrack" d="M58 {y}h78"/>'
+                   f'<path class="soonpg__bfill{" soonpg__bnow" if k == 2 else ""}" style="--j:{k}" '
+                   f'd="M58 {y}h{w}"/>' for k, (y, w) in enumerate(rows))
+    return (f'<svg class="soonpg__bpic" {_PIC}>'
+            '<path class="soonpg__bbubble" d="M24 12.5h114a10 10 0 0 1 10 10v56a10 10 0 0 1-10 10H48'
+            'l-16 14 4-14H24a10 10 0 0 1-10-10v-56a10 10 0 0 1 10-10z"/>'
+            f'{prog}'
+            '<path class="soonpg__bbubble soonpg__breply" d="M128 98.5h86a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10'
+            'h-6l4 12-16-12h-68a10 10 0 0 1-10-10v-26a10 10 0 0 1 10-10z"/>'
+            '<path class="soonpg__btick soonpg__bink" pathLength="1" d="M136 121.5l6 6 12-13"/>'
+            + _lines(164, [115.5, 125.5], [46, 30], j0=3) + '</svg>')
+
+
+_BOXES = (("Paper writing", _paper()), ("How to make presentations", _talk_slide()),
+          ("Technical reports writing", _report()), ("Talking/updating to your professor", _update()))
+
+
+def _boxes():
+    return ('<ul class="soonpg__boxes" role="list">'
+            + "".join(f'<li class="soonpg__bi" style="--k:{k}"><div class="soonpg__bart">{art}</div>'
+                      f'<h2 class="soonpg__bt">{html.escape(title, quote=False)}</h2>'
+                      f'<p class="soonpg__bs">In preparation</p></li>'
+                      for k, (title, art) in enumerate(_BOXES))
+            + '</ul>')
+
+
+# ------------------------------------------------ Personal advices: a project plan
+# His new section (5 Oct 2026: "Make a section called 'Personal Advices on
+# Working on a Project' and say under construction"): a project's plan, its
+# tasks laid down one after another, the last still an outline, and today's
+# line moving up to where the work stands. It says "Under construction".
+def _plan():
+    bars = [(70, 120), (150, 150), (262, 118), (356, 112)]
+    ys = (18, 44, 70, 96)
+    rows = "".join(
+        f'<path class="soonpg__plab" d="M0 {y}h46"/>'
+        f'<rect class="soonpg__pbar{" soonpg__pbar--todo" if k == 3 else ""}" style="--j:{k}" '
+        f'x="{x}" y="{y - 7}" width="{w}" height="14" rx="2"/>'
+        for k, ((x, w), y) in enumerate(zip(bars, ys)))
+    return ('<div class="soonpg__plan">'
+            '<svg class="soonpg__gantt" viewBox="0 0 480 116" width="480" height="116" '
+            'aria-hidden="true" focusable="false">'
+            '<path class="soonpg__pgrid" d="M60 4V112M180 4V112M300 4V112M420 4V112"/>'
+            f'{rows}'
+            '<g class="soonpg__today"><path d="M330 2V112"/><path class="soonpg__tip" d="M325 2h10l-5 6z"/></g>'
+            '</svg><p class="soonpg__tag">Under construction</p></div>')
+
+
 _STATES = {"python-programming": ("soonpg__state--py", _session()),
-           "communication": ("soonpg__state--talk", _slides())}
+           "communication": ("soonpg__state--boxes", _boxes()),
+           "personal-advices-on-working-on-a-project": ("soonpg__state--plan", _plan())}
 _DEFAULT = ("soonpg__state--sig", _signal())
 
 # The site's arrow (DESIGN_BRIEF 4.1): two paths, so the shaft can draw while
@@ -281,23 +376,6 @@ CSS = """
 .soonpg__cur>i{flex:none;width:2px;height:20px;margin-right:-7px;border-radius:1px;
   background:var(--accent)}
 
-/* -- Communication: the slide that is done and the one to come. */
-.soonpg__deck{position:relative;width:min(100%,504px)}
-.soonpg__slides{display:block;width:100%;height:auto;overflow:visible;fill:none;
-  stroke-linecap:round;stroke-linejoin:round}
-.soonpg__frame{stroke:var(--line-strong);stroke-width:1}
-.soonpg__title{stroke:var(--body);stroke-width:3}
-.soonpg__title2{stroke:var(--line);stroke-width:2.5}
-.soonpg__axes{stroke:var(--line);stroke-width:1}
-.soonpg__curve{stroke:var(--link);stroke-width:1.5}
-/* the pointer: a dot riding its path, a dash of no length at the end */
-.soonpg__ptr,.soonpg__halo{stroke:var(--accent);stroke-dasharray:.001 2;stroke-dashoffset:-.999}
-.soonpg__ptr{stroke-width:5}
-.soonpg__halo{stroke-width:14;stroke-opacity:.18}
-.soonpg__next{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:4 5}
-.soonpg__slot{position:absolute;top:0;right:0;display:grid;place-items:center;
-  width:calc(100% * 200 / 426);height:100%;padding:0 12px;text-align:center}
-
 /* -- anything else: the signal */
 .soonpg__state--sig{color:color-mix(in oklab,var(--nav) 50%,var(--page))}
 .soonpg__art{display:block;width:480px;max-width:100%;height:auto;overflow:visible}
@@ -307,6 +385,60 @@ CSS = """
 .soonpg__ring circle:first-child{fill:var(--page);stroke:currentColor;stroke-width:1.4}
 .soonpg__ring circle+circle{fill:currentColor}
 .soonpg__state--sig .soonpg__tag{margin-top:14px}
+
+/* -- Communication: four boxes side by side, each its picture, its name and
+   its state; two to a row where four would be too narrow, one on a phone.
+   The drawings' strokes are the slides': hairline frames, grey lines for
+   text, the page's blue for data, one warm mark for the work under way. */
+.soonpg__state--boxes{max-width:none}
+.soonpg__boxes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;
+  margin:0;padding:0;list-style:none}
+@media (max-width:1180px){.soonpg__boxes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.soonpg__boxes{grid-template-columns:minmax(0,1fr)}}
+.soonpg__bi{margin:0;padding:12px 12px 16px;border-radius:var(--r-md);background:var(--card)}
+.soonpg__bart{border-radius:var(--r-sm);background:var(--page)}
+.soonpg__bpic{display:block;width:100%;height:auto;overflow:visible;fill:none;
+  stroke-linecap:round;stroke-linejoin:round}
+.soonpg__bt{margin:14px 4px 0;font:600 18px/1.3 var(--serif);letter-spacing:-.004em;
+  color:var(--ink);text-wrap:balance}
+.soonpg__bs{margin:4px 4px 0;font:400 14px/1.4 var(--sans);letter-spacing:.006em;
+  color:var(--muted)}
+.soonpg__bsheet,.soonpg__bbubble{fill:var(--card);stroke:var(--line-strong);stroke-width:1}
+.soonpg__bback{fill:var(--page);stroke:var(--line);stroke-width:1}
+.soonpg__bframe{stroke:var(--line);stroke-width:1}
+.soonpg__bhead{stroke:var(--body);stroke-width:3}
+.soonpg__bsub,.soonpg__btxt,.soonpg__bwrite{stroke:var(--line);stroke-width:2}
+.soonpg__bsub{stroke-width:2.5}
+.soonpg__beq{stroke:var(--body);stroke-width:2}
+.soonpg__bdata{stroke:var(--link);stroke-width:1.5}
+.soonpg__bink{stroke:var(--body);stroke-width:1.5}
+.soonpg__bnib{fill:var(--card);stroke:var(--body);stroke-width:1.2}
+.soonpg__bwarm{fill:var(--accent)}
+.soonpg__bhalo{fill:var(--accent);fill-opacity:.16}
+.soonpg__bstand{stroke:var(--line-strong);stroke-width:1.5}
+.soonpg__bbar{fill:color-mix(in oklab,var(--link) 22%,var(--page));stroke:var(--link);
+  stroke-width:1.2}
+.soonpg__bring{fill:var(--page);stroke:var(--body);stroke-width:1.2}
+.soonpg__bcell{fill:color-mix(in oklab,var(--link) 12%,var(--card))}
+.soonpg__bpt{fill:var(--link)}
+.soonpg__btick{stroke-width:2.2}
+.soonpg__bwarmline{stroke:var(--accent)}
+.soonpg__btrack{stroke:var(--rule);stroke-width:5}
+.soonpg__bfill{stroke:var(--link);stroke-width:5}
+.soonpg__bfill.soonpg__bnow{stroke:var(--accent)}
+
+/* -- Personal advices: the plan, its last task an outline, today's line */
+.soonpg__plan{width:min(100%,480px)}
+.soonpg__gantt{display:block;width:100%;height:auto;overflow:visible;fill:none;
+  stroke-linecap:round;stroke-linejoin:round}
+.soonpg__pgrid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 4}
+.soonpg__plab{stroke:var(--line);stroke-width:2.5}
+.soonpg__pbar{fill:color-mix(in oklab,var(--link) 18%,var(--page));stroke:var(--link);
+  stroke-width:1.2}
+.soonpg__pbar--todo{fill:none;stroke:var(--line-strong);stroke-dasharray:4 4}
+.soonpg__today path{stroke:var(--accent);stroke-width:1.5}
+.soonpg__today .soonpg__tip{fill:var(--accent);stroke:none}
+.soonpg__plan .soonpg__tag{margin-top:12px}
 
 /* where the topic is already written about */
 .soonpg__h{margin:56px 0 12px;font:600 16px/1.3 var(--sans);letter-spacing:.006em;
@@ -396,16 +528,6 @@ CSS = """
   .soonpg__cur>i{animation:soonpg-key 1ms linear 1860ms backwards,
     soonpg-blink 1.1s steps(1,end) 2640ms 3}
 
-  /* the slide, once: its title and axes are laid down, the curve is drawn
-     in 640ms, then the pointer runs along it to the peak and rings it,
-     1.3s, and stays there. The next slide is there from the start. */
-  .soonpg__title,.soonpg__title2,.soonpg__axes{animation:soonpg-show 240ms var(--ease-state) backwards}
-  .soonpg__title{animation-delay:120ms}
-  .soonpg__title2{animation-delay:200ms}
-  .soonpg__axes{animation-delay:280ms}
-  .soonpg__curve{stroke-dasharray:1 1;animation:soonpg-draw 640ms var(--ease) 380ms backwards}
-  .soonpg__ptr,.soonpg__halo{animation:soonpg-point 1300ms cubic-bezier(.45,0,.25,1) 1080ms backwards,
-    soonpg-show 160ms linear 1080ms backwards}
 
   /* the signal draws itself once */
   .soonpg__wave{stroke-dasharray:1 1;animation:soonpg-draw 640ms var(--ease) 120ms both}
@@ -413,6 +535,47 @@ CSS = """
   .soonpg__smp{animation:soonpg-show 320ms var(--ease) both;
     animation-delay:calc(560ms + var(--i) * 28ms)}
 }
+/* The four boxes draw themselves once, box after box (--k, 180ms apart):
+   the page or slide is laid down, its lines appear a few at a time, the
+   data draw along their length, and then the work under way: the pen
+   writes the last line, the pointer goes to the bar the talk is about and
+   rings it, the report is ticked, the task in progress grows and the reply
+   is ticked. The plan lays its tasks down one after another, the last an
+   outline, and today's line moves to where the work stands. Nothing loops. */
+@media (prefers-reduced-motion:no-preference){
+  .soonpg__bi{--bd:calc(var(--k) * 180ms)}
+  .soonpg__btxt,.soonpg__bhead,.soonpg__bsub,.soonpg__beq{
+    animation:soonpg-show 260ms var(--ease-state) backwards;
+    animation-delay:calc(var(--bd) + 160ms + var(--j,0) * 35ms)}
+  .soonpg__bdraw{stroke-dasharray:1 1;
+    animation:soonpg-draw 700ms var(--ease) calc(var(--bd) + 420ms) backwards}
+  .soonpg__bpt{animation:soonpg-show 200ms var(--ease) backwards;
+    animation-delay:calc(var(--bd) + 520ms + var(--j) * 60ms)}
+  .soonpg__bbar{transform-box:fill-box;transform-origin:50% 100%;
+    animation:soonpg-rise var(--spring-fast) backwards;
+    animation-delay:calc(var(--bd) + 300ms + var(--j) * 70ms)}
+  .soonpg__blaser{animation:soonpg-laser 900ms cubic-bezier(.45,0,.25,1) calc(var(--bd) + 760ms) backwards}
+  .soonpg__bhalo{transform-box:fill-box;transform-origin:center;
+    animation:soonpg-ring 700ms var(--ease) calc(var(--bd) + 1660ms) backwards}
+  .soonpg__bwrite{stroke-dasharray:1 1;
+    animation:soonpg-draw 900ms linear calc(var(--bd) + 900ms) backwards}
+  .soonpg__bpen{animation:soonpg-pen 900ms linear calc(var(--bd) + 900ms) backwards}
+  .soonpg__bfill{transform-box:fill-box;transform-origin:0 50%;
+    animation:soonpg-grow 640ms var(--ease) backwards;
+    animation-delay:calc(var(--bd) + 300ms + var(--j) * 160ms)}
+  .soonpg__bfill.soonpg__bnow{animation-duration:1400ms}
+  .soonpg__btick{stroke-dasharray:1 1;
+    animation:soonpg-draw 420ms var(--ease) calc(var(--bd) + 1300ms) backwards}
+  .soonpg__pbar{transform-box:fill-box;transform-origin:0 50%;
+    animation:soonpg-grow 520ms var(--ease) backwards;animation-delay:calc(200ms + var(--j) * 260ms)}
+  .soonpg__pbar--todo{animation-name:soonpg-show}
+  .soonpg__today{animation:soonpg-today 1400ms cubic-bezier(.45,0,.25,1) 260ms backwards}
+}
+@keyframes soonpg-laser{from{transform:translate(-78px,27px);opacity:0}15%{opacity:1}}
+@keyframes soonpg-ring{from{transform:scale(.3);opacity:0}}
+@keyframes soonpg-pen{from{transform:translateX(-26px)}}
+@keyframes soonpg-grow{from{transform:scaleX(0)}}
+@keyframes soonpg-today{from{transform:translateX(-260px)}}
 @keyframes soonpg-key{from{opacity:0}}
 @keyframes soonpg-show{from{opacity:0}}
 @keyframes soonpg-open{from{transform:translateX(-100%)}}
@@ -426,7 +589,6 @@ CSS = """
 }
 @keyframes soonpg-blink{50%{opacity:0}}
 @keyframes soonpg-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@keyframes soonpg-point{from{stroke-dashoffset:0}}
 
 @media (forced-colors:active){
   .soonpg__cur>i{background:CanvasText}

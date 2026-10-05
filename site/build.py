@@ -98,9 +98,13 @@ NAV = [
     ("python-programming.html", "Python / Programming", "", ""),
     ("blog.html", "Blog", "", "group"),
     ("communication.html", "Communication", "Meetings, presentations, reports, papers", ""),
+    ("personal-advices.html", "Personal Advices on Working on a Project", "", ""),
     ("contact.html", "Contact", "", ""),
 ]
-NAV_OURS = frozenset(("big-picture.html",))    # rows whose words are not on his slide
+# rows whose words are not on his slide: the Big Picture, our name for his
+# map, and the section his notes of 5 Oct 2026 asked for ("Make a section
+# called 'Personal Advices on Working on a Project' and say under construction")
+NAV_OURS = frozenset(("big-picture.html", "personal-advices.html"))
 # Of his topics, the one that keeps a row of its own in the column, after Blog:
 # the professor took Communication out of the Big Picture on 26 Sep 2026
 # ("Communication da orada olmayacak, solda menüde olacak"). The others are
@@ -213,7 +217,12 @@ PAGE_SECTION = {"cv.html": "about.html"}
 SOON = {
     "python-programming.html": (f"doc/{ML}.html", f"doc/{SIGNAL}.html"),
     "communication.html": ("blog.html", "research.html"),
+    "personal-advices.html": ("communication.html", "blog.html"),
 }
+# A page in preparation says so in his words where he chose them: "under
+# construction" for his advice section (5 Oct 2026); the others are in
+# preparation (parts/soon.py draws the state).
+SOON_STATE = {"personal-advices.html": "Under construction"}
 
 # The CV (parts/cv.py): content/cv/cv.json, which tools/cv_extract.py writes
 # from his Word CV. The Word file itself never ships (private_report()): it
@@ -564,6 +573,32 @@ hr{border:0;border-top:1px solid var(--rule);margin:56px 0 0}
   transition:color var(--t-fast) var(--ease-state),
     text-decoration-color var(--t-fast) var(--ease-state)}
 
+/* the credit: its own line at the foot's right (left on a phone), quiet
+   until pointed at. The wave drifts a wavelength every 2.4s in the warm, two
+   wavelengths a second under the pointer, and the name's letters rise 2px
+   one after another, 40ms apart; asked for less motion, nothing moves. */
+.foot__credit{flex:1 0 100%;margin:-8px 0 0!important;text-align:right}
+.credit{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+  gap:2px 10px;font:400 12px/1.4 var(--sans);letter-spacing:.08em;color:var(--muted)}
+.credit__wave{flex:none;overflow:hidden;color:var(--accent)}
+.credit__wave path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.credit__what{text-transform:uppercase;font-size:11px}
+.credit__sep,.credit__said{position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap}
+.credit__name{font:600 14px/1.4 var(--serif);letter-spacing:.01em;color:var(--ink)}
+.credit__shown i{display:inline-block;font-style:normal}
+@media (max-width:640px){.foot__credit{text-align:left}.credit{justify-content:flex-start}}
+@media (prefers-reduced-motion:no-preference){
+  .credit__wave path{animation:credit-drift 2.4s linear infinite}
+  .credit__shown i{transition:transform var(--spring-fast),color var(--t-quick) var(--ease-state);
+    transition-delay:calc(var(--i) * 40ms)}
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){
+  .credit:hover .credit__wave path{animation-duration:.5s}
+  .credit:hover .credit__shown i{transform:translateY(-2px);color:var(--accent)}
+}
+@keyframes credit-drift{to{transform:translateX(18px)}}
+
 /* ---------- states: hover only where a pointer can hover ---------- */
 @media (hover:hover){
   a:hover{text-decoration-color:currentColor}
@@ -740,11 +775,12 @@ def nav_html(current, up, section=""):
     A colon no one sees joins the two, so the name reads "My Research Areas:
     Sound Waves, NDT, SHM" rather than running on."""
     items = []
+    notes = BPNAV.notes() if BPNAV is not None and hasattr(BPNAV, "notes") else {}
     for _, label, pages in BPNAV.categories() if BPNAV is not None else ():
         page = next((h for h in TOPIC_ICONS if h in pages), pages[0])
         items.append((label, page, "page" if page == current else
-                      "true" if current in pages else ""))
-    held = (current in TOPIC_ICONS and current not in OWN_ROW) or any(mark for _, _, mark in items)
+                      "true" if current in pages else "", notes.get(label, "")))
+    held = (current in TOPIC_ICONS and current not in OWN_ROW) or any(it[2] for it in items)
     section = "big-picture.html" if held else section
     out = []
     for href, title, sub, kind in NAV:
@@ -853,11 +889,32 @@ DOC_DESC = {
 }
 
 
+# Who built the site and drew its animations, at the foot of every page, at
+# the professor's request (5 Oct 2026, his notes: 'Add "Site building and
+# Animation creator" Muhammet ... somewhere you think will look cool'): a
+# small wave, the site's own mark, drifting in the warm before the words, and
+# the name's letters rising one after another, a wave passing through them,
+# under the pointer. The name is said once, as text; the letters that move
+# are a copy no screen reader reads.
+CREDIT_WHAT, CREDIT_NAME = "Site building and animation creator", "Muhammet Yağcıoğlu"
+CREDIT = (
+    '<p class="foot__credit"><span class="credit">'
+    '<svg class="credit__wave" viewBox="0 0 36 12" width="30" height="10" aria-hidden="true" '
+    'focusable="false"><path d="M-24 6c3-5 6-5 9 0s6 5 9 0 6-5 9 0 6 5 9 0 6-5 9 0 6 5 9 0 6-5 9 0 6 5 9 0"/>'
+    '</svg>'
+    f'<span class="credit__what">{CREDIT_WHAT}</span><span class="credit__sep">: </span>'
+    f'<span class="credit__name"><span class="credit__said">{CREDIT_NAME}</span>'
+    '<span class="credit__shown" aria-hidden="true">'
+    + "".join(f'<i style="--i:{k}">{"&nbsp;" if c == " " else c}</i>' for k, c in enumerate(CREDIT_NAME))
+    + '</span></span></span></p>')
+
+
 def soon_desc(href):
     """A page in preparation's line: his label and sub-line."""
     sub = next(s for h, _, s, _ in NAV if h == href)
-    return (f"{nav_title(href)}: {sub}. In preparation." if sub
-            else f"{nav_title(href)}: in preparation.")
+    state = SOON_STATE.get(href, "In preparation")
+    return (f"{nav_title(href)}: {sub}. {state}." if sub
+            else f"{nav_title(href)}: {state[0].lower() + state[1:]}.")
 
 
 def shell(current, title, body, depth=0, foot="", section="", head="", mast="", desc=""):
@@ -980,6 +1037,7 @@ def shell(current, title, body, depth=0, foot="", section="", head="", mast="", 
     <a href="{up}gallery.html">Gallery</a><a href="{up}big-picture.html">Big Picture</a>
     <a href="{up}blog.html">Blog</a><a href="{up}contact.html">Contact</a>
   </nav>
+  {CREDIT}
 </footer>
 </div>
 <script src="{up}parts.js" defer></script>
@@ -1189,42 +1247,152 @@ def link_words(body, slug):
     return body
 
 
-def add_supplementary_figures(body, slug):
-    """Numerical examples added to the guides without changing their Word source.
+ADDITIONS = os.path.join(ROOT, "content", "additions")
 
-    Anchors must match once. Assets use the ordinary animation manifest, so
-    full screen, no-script, print, lazy loading and publishing stay shared.
+
+def _anchor(body, slug, spec, what):
+    """Where an addition goes: (start, end) of the one element its anchor
+    names, and whether it goes before that element rather than after it.
+
+    after_caption: the figure whose caption starts with the words;
+    after_paragraph / before_paragraph: the paragraph that starts with them;
+    after_list_containing: the list that holds them; after_heading: the h2 or
+    h3 whose words are exactly these (the addition opens the section). An
+    anchor found other than once stops the build."""
+    if "after_caption" in spec:
+        matches = [m for m in re.finditer(r"<figure\b.*?</figure>", body, re.S)
+                   if (cap := re.search(r"<figcaption>(.*?)</figcaption>", m.group(0), re.S))
+                   and _words_of(cap.group(1)).startswith(spec["after_caption"])]
+    elif "after_paragraph" in spec or "before_paragraph" in spec:
+        words = spec.get("after_paragraph") or spec["before_paragraph"]
+        matches = [m for m in re.finditer(r"<p\b[^>]*>.*?</p>", body, re.S)
+                   if _words_of(m.group(0)).startswith(words)]
+    elif "after_heading" in spec:
+        matches = [m for m in re.finditer(r"<h([23])\b[^>]*>(.*?)</h\1>", body, re.S)
+                   if _words_of(m.group(2)) == spec["after_heading"]]
+    else:
+        matches = [m for m in re.finditer(r"<ul\b[^>]*>.*?</ul>", body, re.S)
+                   if spec["after_list_containing"] in _words_of(m.group(0))]
+    if len(matches) != 1:
+        sys.exit(f"doc/{slug}.html: supplement {what} finds {len(matches)} anchors")
+    return matches[0].start(), matches[0].end(), "before_paragraph" in spec
+
+
+def _added_text(slug, name):
+    """One block of new text for a guide, content/additions/<name>: paragraphs
+    (and an h3 where a section's new part needs one) with <tex>TeX</tex>
+    formulas set as the documents' formulas are (mathtex.typed()). The words
+    are ours, written for him, so the build holds them to the site's own
+    rules: no em dash and no spaced en dash, and only the tags a passage of
+    his document uses."""
+    path = os.path.join(ADDITIONS, name)
+    with open(path, encoding="utf-8") as fh:
+        text = fh.read()
+    where = os.path.relpath(path, ROOT).replace(os.sep, "/")
+    if DASH.search(text) or SPACED_EN.search(text):
+        sys.exit(f"{where}: an em dash or a spaced en dash")
+    tags = set(re.findall(r"</?([a-zA-Z][\w-]*)", text)) - {"p", "h3", "em", "i", "b", "strong",
+                                                             "a", "tex", "sub", "sup", "ul", "li"}
+    if tags:
+        sys.exit(f"{where}: tags a passage of his does not use: {sorted(tags)}")
+    import mathtex
+    return mathtex.typed(text.strip(), where)
+
+
+def add_supplementary_figures(body, slug):
+    """Numerical examples, and the words that go with them, added to the guides
+    without changing their Word source (content/anim/supplements.json).
+
+    Each entry is a figure (`key`, from the animation manifest, with its
+    `caption`) or a block of new text (`html`, a file in content/additions/),
+    put in place by its anchor (_anchor()) in the order listed; a figure
+    marked `in_text` has no anchor and stands where a block of text marks it
+    (<!--figure:key-->), each such figure marked exactly once. Anchors must
+    match once. Assets use the ordinary animation manifest, so full screen,
+    no-script, print, lazy loading and publishing stay shared.
     """
     path = os.path.join(ROOT, "content", "anim", "supplements.json")
     if not os.path.isfile(path):
         return body
     with open(path, encoding="utf-8") as fh:
         supplements = json.load(fh).get(slug, [])
+    numbers = {}
+    if isinstance(supplements, dict):   # {"renumber": {his: page's}, "add": [entries]}
+        numbers, supplements = supplements.get("renumber", {}), supplements["add"]
     import preview
-    for spec in supplements:
+
+    def figure(spec):
+        """A figure entry drawn, or "" where the page is drawn without its
+        animations (page_doc also renders the original without them)."""
         anim = ANIM.get(slug, {}).get(spec["key"])
-        if anim is None:  # page_doc also renders the original without animations
-            continue
-        if "after_caption" in spec:
-            matches = [m for m in re.finditer(r"<figure\b.*?</figure>", body, re.S)
-                       if (cap := re.search(r"<figcaption>(.*?)</figcaption>", m.group(0), re.S))
-                       and _words_of(cap.group(1)).startswith(spec["after_caption"])]
-        elif "after_paragraph" in spec:
-            matches = [m for m in re.finditer(r"<p\b[^>]*>.*?</p>", body, re.S)
-                       if _words_of(m.group(0)).startswith(spec["after_paragraph"])]
-        else:
-            matches = [m for m in re.finditer(r"<ul\b[^>]*>.*?</ul>", body, re.S)
-                       if spec["after_list_containing"] in _words_of(m.group(0))]
-        if len(matches) != 1:
-            sys.exit(f"doc/{slug}.html: supplement {spec['key']} finds {len(matches)} anchors")
+        if anim is None:
+            return ""
         still = anim.get("still")
         if not still:
             sys.exit(f"doc/{slug}.html: supplement {spec['key']} has no printed frame")
-        image = (f'src="{html.escape(still["src"])}" width="{still["w"]}" height="{still["h"]}" '
-                 f'alt="{html.escape(anim["title"])}"')
-        fig = preview._animated(anim, image, f'<figcaption>{html.escape(spec["caption"])}</figcaption>')
-        end = matches[0].end()
-        body = body[:end] + fig + body[end:]
+        image = (f'src="{html.escape(still["src"])}" width="{still["w"]}" '
+                 f'height="{still["h"]}" alt="{html.escape(anim["title"])}"')
+        return preview._animated(
+            anim, image, f'<figcaption>{preview._figno(html.escape(spec["caption"]))}</figcaption>')
+
+    # a figure "in_text" stands where a block of new text marks it,
+    # <!--figure:key-->, so a new passage reads as one: its paragraphs, its
+    # figures among them, in the order written
+    held = {spec["key"]: figure(spec) for spec in supplements if spec.get("in_text")}
+    body = renumber(body, numbers)
+    for spec in supplements:
+        if spec.get("in_text"):
+            continue
+        if "html" in spec:
+            what = spec["html"]
+            piece = _added_text(slug, what)
+
+            def place(m):
+                if m.group(1) not in held:
+                    sys.exit(f"doc/{slug}.html: {what} marks a figure no entry holds: {m.group(1)}")
+                return held.pop(m.group(1))
+
+            piece = re.sub(r"<!--figure:([\w-]+)-->", place, piece)
+        else:
+            what = spec["key"]
+            piece = figure(spec)
+            if not piece:
+                continue
+        start, end, before = _anchor(body, slug, spec, what)
+        at = start if before else end
+        body = body[:at] + piece + body[at:]
+    if held:
+        sys.exit(f"doc/{slug}.html: figures no text marks: {sorted(held)}")
+    return numbered_in_turn(body, slug) if numbers else body
+
+
+def renumber(body, numbers):
+    """A document whose figures are numbered again because figures were added
+    among his own (supplements.json, "renumber": his number -> the page's;
+    the signal processing guide, 5 Oct 2026: his Figure 2 is the page's 3,
+    his Figure 3 its 8). Before the additions go in, each "Figure N" of his,
+    in a caption or in his text, takes the page's number, all in one pass,
+    so 2 becoming 3 never meets 3 becoming 8. The added figures' captions and
+    words carry the page's numbers already."""
+    if not numbers:
+        return body
+    return re.sub(r"(\bFigures? )(\d+)(?![\w])",
+                  lambda m: m.group(1) + numbers.get(m.group(2), m.group(2)), body)
+
+
+def numbered_in_turn(body, slug):
+    """After the additions, a renumbered document's captions must read 1, 2,
+    3... down the page, and every "Figure N" in it must name one of them;
+    anything else stops the build. A page drawn without the animations (no
+    ANIM for it, as some tests draw one) has no added figures to count."""
+    if not ANIM.get(slug):
+        return body
+    caps = re.findall(r'<figcaption><span class="fign">Figure (\d+[a-z]?)\.</span>', body)
+    if caps != [str(k) for k in range(1, len(caps) + 1)]:
+        sys.exit(f"doc/{slug}.html: the figures do not read 1, 2, 3... in turn: {caps}")
+    named = set(re.findall(r"\bFigures? (\d+[a-z]?)(?![\w])", body)) - set(caps)
+    if named:
+        sys.exit(f"doc/{slug}.html: the text names figures the page does not have: {sorted(named)}")
     return body
 
 
@@ -1691,7 +1859,7 @@ def page_soon(href, part_html=None):
     rows = "".join(row(r["href"], r["title"], "") for r in soon_related(href))
     return f"""<div class="wrap">
  <h1>{title}</h1>
- <div class="col"><div class="pending"><span class="pending__tag">In preparation</span>
+ <div class="col"><div class="pending"><span class="pending__tag">{SOON_STATE.get(href, "In preparation")}</span>
  {sub}</div></div>
  <h2>Related</h2>
  <div class="rows">{rows}</div>

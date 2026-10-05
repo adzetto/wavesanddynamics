@@ -14,6 +14,7 @@ types the documents never used (VIDEO and FILE); and what may go to Wix's
 static host.
 """
 
+import html
 import io
 import json
 import os
@@ -56,10 +57,11 @@ def marked(markup):
 
 def test_the_column_has_its_rows_in_his_order():
     # his topics left the column on 25 Sep: the Big Picture's list holds them,
-    # but Communication, which came back as a row of its own after Blog on 26 Sep
+    # but Communication, which came back as a row of its own after Blog on 26 Sep;
+    # his advice section in preparation follows it (5 Oct 2026)
     assert [t for _, t, _, _ in rows(build.nav_html("about.html", ""))] == [
         "About Me", "My Research Areas", "Gallery", "Big Picture of Waves and Data Analytics",
-        "Blog", "Communication", "Contact"]
+        "Blog", "Communication", "Personal Advices on Working on a Project", "Contact"]
 
 
 def test_his_sub_lines_sit_under_their_rows():
@@ -84,7 +86,7 @@ def test_the_rows_open_the_right_pages():
     hrefs = [h for h, _, _, _ in rows(build.nav_html("about.html", ""))]
     assert hrefs == [
         "about.html", "research.html", "gallery.html", "big-picture.html",
-        "blog.html", "communication.html", "contact.html"]
+        "blog.html", "communication.html", "personal-advices.html", "contact.html"]
     # from a document page every row climbs out of doc/ first
     assert all(h.startswith("../") for h, _, _, _ in rows(build.nav_html("doc/x.html", "../")))
 
@@ -98,7 +100,7 @@ def test_the_groups_open_at_the_big_picture_and_at_blog():
 def test_without_its_part_the_big_picture_row_is_a_plain_link():
     markup = build.nav_html("big-picture.html", "")
     assert "<ul" not in markup and "nav__more" not in markup and "nav__fold" not in markup
-    assert len(rows(markup)) == 7
+    assert len(rows(markup)) == 8
 
 
 def test_a_page_marks_its_own_row_and_nothing_else():
@@ -168,6 +170,30 @@ def test_no_link_to_a_removed_page_in_the_shell():
             assert f'href="{"../" * depth}{gone}"' not in html
     footer = build.shell("about.html", "t", "<p>x</p>").split('<footer', 1)[1]
     assert '<a href="big-picture.html">Big Picture</a>' in footer
+
+
+def test_every_page_ends_with_who_built_the_site_and_drew_its_animations():
+    """The professor's notes, 5 Oct 2026: 'Add "Site building and Animation
+    creator" Muhammet ... somewhere you think will look cool': the foot of
+    every page, a drifting wave and the name, said once."""
+    for page, depth in (("index.html", 0), (f"doc/{build.SIGNAL}.html", 1), ("communication.html", 0)):
+        footer = build.shell(page, "t", "<p>x</p>", depth=depth).split("<footer", 1)[1]
+        credit = re.search(r'<p class="foot__credit">(.*?)</p>', footer, re.S).group(1)
+        said = re.sub(r'<span class="credit__shown" aria-hidden="true">.*?</span></span>', "", credit,
+                      flags=re.S)
+        words = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", said)).split())
+        assert words == "Site building and animation creator : Muhammet Yağcıoğlu"
+        shown = re.search(r'<span class="credit__shown" aria-hidden="true">(.*?)</span></span>',
+                          credit, re.S).group(1)
+        letters = [html.unescape(c) for c in re.findall(r'<i style="--i:\d+">(.*?)</i>', shown)]
+        assert "".join(letters).replace("\u00a0", " ") == "Muhammet Yağcıoğlu"
+        assert '<svg class="credit__wave" viewBox="0 0 36 12"' in credit and 'aria-hidden="true"' in credit
+    css = build.CSS
+    # it moves only where motion is welcome, and its letters only under a pointer
+    assert "credit-drift 2.4s linear infinite" in css
+    assert re.search(r"@media \(prefers-reduced-motion:no-preference\)\{\s*\.credit__wave path\{animation:", css)
+    assert "@media (hover:hover) and (prefers-reduced-motion:no-preference){\n  .credit:hover" in css
+    assert not build.DASH.search(build.CREDIT) and not build.SPACED_EN.search(build.CREDIT)
 
 
 def test_the_column_needs_no_script_of_its_own():

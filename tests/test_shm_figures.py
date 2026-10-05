@@ -80,12 +80,14 @@ def test_each_prints_its_own_frame_at_its_ratio(name):
 def test_the_article_draws_the_redraws_where_his_animations_stood():
     got = preview.animations("../anim")
     shm = got[SHM]
-    assert shm["image2"]["src"] == "../anim/nf-shm-sensors.html"
+    # his Figure 1 is the waves guide's Figure 1 since 5 Oct 2026 (his notes:
+    # "Figure (animation) 1 in Waves and Dynamics => Fig 1 of this section also")
+    assert shm["image2"]["src"] == "../anim/nf-building.html"
     assert shm["image4"]["src"] == "../anim/nf-shm-ndt.html"
     assert shm["image5"]["src"] == "../anim/nf-standing.html"
-    assert shm["image2"]["title"] == "Example of a building's dynamic response"
+    assert shm["image2"]["title"].startswith("Lateral natural dynamic response of a building")
     assert shm["image4"]["title"] == "NDT techniques"
-    for stem, name in (("image2", "nf-shm-sensors"), ("image4", "nf-shm-ndt")):
+    for stem, name in (("image4", "nf-shm-ndt"),):
         assert (shm[stem]["w"], shm[stem]["h"]) == PAGES[name + ".html"][1:]
         assert shm[stem]["still"]["src"] == f"../anim/{name}.webp"
 

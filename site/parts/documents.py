@@ -85,12 +85,15 @@ _FB = "from-bridges-to-photons"
 # it), or the page in preparation that stands for it, and `line`, his own line
 # for the topic from the column of his slide 1. The column's Big Picture list
 # is built from this too (parts/bpnav.py): it names each by `short` where
-# there is one. The ids are the places the home page's list links to.
+# there is one, with `note` in smaller type under it where he asked for one
+# (5 Oct 2026, his notes: "add this with smaller font under its name on left
+# tab (menu)"). The ids are the places the home page's list links to.
 CATEGORIES = [
     dict(id="probability-statistics", label="Probability & Statistics", docs=[], soon=None,
          decks=["probability-statistics.html"], line="Stochastic Process, Estimation"),
     dict(id="signal-processing", label="Signal Processing, System Identification, Estimation Theory, Optimization",
          short="Signal Processing & System ID",
+         note="(with connections to estimation, optimization, ML, inverse problems, BSS)",
          docs=[_SP], soon=None,
          line="Estimation, Inverse Problems, Optimization, Machine Learning"),
     dict(id="machine-learning", label="Machine Learning", docs=[_ML], soon=None,
@@ -227,6 +230,21 @@ CSS = """
     color var(--t-fast) var(--ease-state),transform var(--spring-fast)}
 .bpm__o.is-on{background:var(--link);border-color:var(--link);color:var(--page);transform:scale(1.14)}
 .bpm__o.is-near{border-color:var(--link);color:var(--link)}
+/* THE MESSENGER (the script's): a warm dot and the wave behind it, over the
+   line and under the nodes, and the ring of the node it rests on, answering
+   in the warm (the professor, 5 Oct 2026: an orange dot or wave moving
+   between the topics; the one warm thing that moves here) */
+.bpm__go{position:absolute;inset:0;z-index:1;width:100%%;height:100%%;overflow:visible;
+  pointer-events:none;opacity:0}
+.bpm__go-d{fill:var(--accent)}
+.bpm__go-w{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+  opacity:.75}
+.bpm__o.is-go:not(.is-on):not(.o){border-color:var(--accent);color:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 16%%,transparent)}
+@media (prefers-reduced-motion:no-preference){
+  .bpm__o{transition:background-color var(--t-fast) var(--ease-state),border-color var(--t-quick) var(--ease-state),
+    color var(--t-fast) var(--ease-state),transform var(--spring-fast),box-shadow var(--t-mid) var(--ease)}
+}
 /* THE ORBS (round 15). While a node thinks, its ring gives way to a sphere
    of dots the script draws on a canvas inside it (.bpm__orb), under its
    number: the canvas is the node's own negative layer, over its paper and
@@ -470,7 +488,7 @@ CSS = """
   .bpm__o{border-color:CanvasText}
   .bpm__o.is-on{forced-color-adjust:none;background:Highlight;border-color:Highlight;color:HighlightText}
   .bpm__n::before{background:Canvas}
-  .bpm__orb,.bpm__pt,.bpm__lit,.bpr__pts,.bpc__art::before{display:none}
+  .bpm__orb,.bpm__pt,.bpm__lit,.bpr__pts,.bpc__art::before,.bpm__go{display:none}
 }
 
 /* the icons draw while their topic is lit, as on the home page */
@@ -494,7 +512,7 @@ CSS = """
 }
 
 @media print{
-  .bpm__edges,.bpm__words,.bpm__o,.bpr__brace{display:none}
+  .bpm__edges,.bpm__words,.bpm__o,.bpr__brace,.bpm__go{display:none}
   .bpm__stage{display:block;padding:0}
   .bpm__stage::before{display:none}
   .bpm__n{display:block;border:0;padding:0;margin:0 0 18px;break-inside:avoid}
@@ -936,6 +954,71 @@ if(reduce.addEventListener)reduce.addEventListener('change',function(){if(!reduc
   hush();if(br)br.classList.remove('is-armed')});
 (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
   redo();if(location.hash)hashed=1;intro()})}
+
+/* ---------------------------------------------------------------------------
+   THE MESSENGER (the professor's notes, 5 Oct 2026: "Add orange dot or wave
+   moving between topics in 'Big Picture' section"). Once the table has
+   arrived, a warm dot travels the line from topic to topic in his order, a
+   short wave rippling behind it while it moves, its height the dot's speed;
+   it rests on each node a moment, and the node's ring answers in the warm
+   (.is-go); after the fifth it fades and sets out again from the first.
+   Upright, it travels the spine the same way. It stands aside while a topic
+   is in hand, and nothing moves off screen, in a hidden tab, in forced
+   colours or where less motion is asked for. */
+(function(){
+var fig=document.querySelector('.bpm');if(!fig||!window.requestAnimationFrame)return;
+var st=fig.querySelector('.bpm__stage'),os=[].slice.call(fig.querySelectorAll('.bpm__o'));
+if(!st||os.length<2)return;
+var NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg'),
+  wv=document.createElementNS(NS,'path'),dt=document.createElementNS(NS,'circle'),
+  reduce=matchMedia('(prefers-reduced-motion: reduce)'),forced=matchMedia('(forced-colors: active)'),
+  P=[],raf=0,t0=0,seen=0,lit=-1,size='',
+  MOVE=1300,STAY=700,FADE=450,K=os.length-1,CYC=FADE+K*(MOVE+STAY)+STAY+FADE,
+  AMP=4.5,LAM=15,TAIL=64,HZ=2.6;
+sv.setAttribute('class','bpm__go');sv.setAttribute('aria-hidden','true');sv.setAttribute('focusable','false');
+wv.setAttribute('class','bpm__go-w');dt.setAttribute('class','bpm__go-d');dt.setAttribute('r','4.5');
+sv.appendChild(wv);sv.appendChild(dt);st.appendChild(sv);
+/* the nodes' centres in the stage, read once per size */
+function where(){var s=st.getBoundingClientRect(),k=s.width/st.clientWidth||1;
+  P=os.map(function(o){var r=o.getBoundingClientRect();
+    return [(r.left+r.width/2-s.left)/k,(r.top+r.height/2-s.top)/k]});
+  size=st.clientWidth+'x'+st.clientHeight;sv.setAttribute('viewBox','0 0 '+st.clientWidth+' '+st.clientHeight)}
+function ease(u){return u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2}
+function rate(u){return u<.5?12*u*u:3*Math.pow(-2*u+2,2)}      /* ease's slope, 1.5 at most */
+function ring(k){if(k===lit)return;if(lit>=0)os[lit].classList.remove('is-go');lit=k;
+  if(k>=0)os[k].classList.add('is-go')}
+function off(){sv.style.opacity='0';wv.removeAttribute('d');ring(-1)}
+function f1(v){return Math.round(v*10)/10}
+function frame(ts){
+  raf=0;
+  if(!seen||document.hidden||reduce.matches||forced.matches){off();t0=0;return}
+  if(fig.classList.contains('is-intro')||!fig.classList.contains('is-ready')||fig.hasAttribute('data-focus')){
+    off();t0=0;raf=requestAnimationFrame(frame);return}
+  if(!t0)t0=ts;
+  if(!P.length||size!==st.clientWidth+'x'+st.clientHeight)where();
+  var tt=(ts-t0)%CYC,a=1,x,y,i,u,e,A=0,ux=0,uy=0,gone=0,d='';
+  if(tt<FADE){a=tt/FADE;x=P[0][0];y=P[0][1];ring(0)}
+  else{tt-=FADE;i=Math.floor(tt/(MOVE+STAY));
+    if(i>=K){x=P[K][0];y=P[K][1];a=1-Math.max(0,tt-K*(MOVE+STAY)-STAY)/FADE;ring(K)}
+    else{u=tt-i*(MOVE+STAY);
+      if(u<MOVE){var p=P[i],q=P[i+1],L=Math.hypot(q[0]-p[0],q[1]-p[1])||1;
+        e=ease(u/MOVE);x=p[0]+(q[0]-p[0])*e;y=p[1]+(q[1]-p[1])*e;ux=(q[0]-p[0])/L;uy=(q[1]-p[1])/L;
+        A=AMP*rate(u/MOVE)/1.5;gone=e*L;ring(-1)}
+      else{x=P[i+1][0];y=P[i+1][1];ring(i+1)}}}
+  if(A>.05){var n=Math.min(TAIL,gone),ph=2*Math.PI*HZ*ts/1000;
+    for(var s0=0;s0<=n;s0+=2){var env=Math.exp(-s0/22)*(1-Math.exp(-s0/5))*Math.min(1,(n-s0)/10),
+        w=A*env*Math.sin(2*Math.PI*s0/LAM-ph);
+      d+=(s0?'L':'M')+f1(x-ux*s0-uy*w)+' '+f1(y-uy*s0+ux*w)}}
+  if(d)wv.setAttribute('d',d);else wv.removeAttribute('d');
+  dt.setAttribute('cx',f1(x));dt.setAttribute('cy',f1(y));sv.style.opacity=String(Math.max(0,Math.min(1,a)));
+  raf=requestAnimationFrame(frame)}
+function go(){if(!raf&&seen)raf=requestAnimationFrame(frame)}
+if(window.IntersectionObserver)new IntersectionObserver(function(es){seen=es[0].isIntersecting?1:0;
+  if(seen)go();else off()}).observe(fig);else{seen=1;go()}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)go()});
+if(reduce.addEventListener)reduce.addEventListener('change',go);
+addEventListener('resize',function(){P=[]});
+})();
 """
 
 

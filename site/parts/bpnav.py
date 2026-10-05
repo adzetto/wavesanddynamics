@@ -180,7 +180,7 @@ import math
 
 from .springs import SPRINGS
 
-__all__ = ["CSS", "JS", "row", "head_js", "categories"]
+__all__ = ["CSS", "JS", "row", "head_js", "categories", "notes"]
 
 # His five topics, in the Big Picture page's order (the professor, 27 Sep
 # 2026: the page sets them on one line in this order), as categories() gives
@@ -223,6 +223,18 @@ def categories():
     return out if out and all(pages for _, _, pages in out) else list(FALLBACK)
 
 
+def notes():
+    """{short label: note} for the topics that carry a line in smaller type
+    under their name in the list (parts/documents.py, `note`): the signal
+    processing guide's "(with connections to estimation, optimization, ML,
+    inverse problems, BSS)", the professor's words (5 Oct 2026)."""
+    try:
+        from parts.documents import CATEGORIES
+        return {c.get("short") or c["label"]: c["note"] for c in CATEGORIES if c.get("note")}
+    except (ImportError, AttributeError, KeyError, TypeError):
+        return {}
+
+
 def _label(text, attr=False):
     # "Python / Programming" keeps "Python /" on one line, as the Big Picture
     # page sets it; the words' white copy (data-w) breaks where they do
@@ -249,8 +261,8 @@ CHEVRON = ('<span class="nav__cv"><svg class="nav__chev" viewBox="0 0 24 24" wid
 # each one's place on the line. The bead of the topic the page is filed
 # under is marked (h), warm where the list would be.
 def _line(items):
-    beads = "".join(f'<i class="b{" h" if current else ""}" style="--i:{k}"></i>'
-                    for k, (_, _, current) in enumerate(items))
+    beads = "".join(f'<i class="b{" h" if it[2] else ""}" style="--i:{k}"></i>'
+                    for k, it in enumerate(items))
     strokes = "".join(f'<i class="s" style="--i:{k}"></i>' for k in range(len(items) - 1))
     return f'<span class="nav__map" aria-hidden="true">{beads}{strokes}<i class="v"></i></span>'
 
@@ -269,18 +281,28 @@ def row(href, title, on, up, items, where=""):
     `on` is the attribute string nav_html() computes for the row's link
     (' class="on" aria-current="page"' on the Big Picture page, "true" on a
     page the list holds). `items` are the list's topics in their order,
-    (label, href, current) each: `current` is "page" on the topic's own page,
-    "true" on a document filed under it, else "". The line under the title
+    (label, href, current) each, or (label, href, current, note) for a topic
+    with a line in smaller type under its name (notes()): `current` is
+    "page" on the topic's own page, "true" on a document filed under it,
+    else "". The line under the title
     draws a bead for each, in the same order. `where` is "here" on the
     Big Picture page and "in" on a page the list holds, the pages that show
     the list open when they load. The button's name is its title, the site's
     convention for an icon button (a matching aria-label made Chrome read it
     twice); the list carries the same name, so a screen reader that enters it
     hears where it is."""
-    topics = "".join(f'<li><a href="{up}{page}"'
-                     + (f' aria-current="{current}"' if current else "")
-                     + f'><span class="nav__w" data-w="{_label(label, True)}">{_label(label)}</span></a></li>'
-                     for label, page, current in items)
+    def topic(label, page, current, note=""):
+        # a note goes under the words, inside the link, so the link's name
+        # is everything it shows (WCAG 2.5.3); its row grows by the note and
+        # keeps its bead and branch on the words' line (.nav__two)
+        return (f'<li{" class=\"nav__two\"" if note else ""}><a href="{up}{page}"'
+                + (f' aria-current="{current}"' if current else "")
+                + f'><span class="nav__w" data-w="{_label(label, True)}">{_label(label)}</span>'
+                + (f'<span class="nav__sep"> </span><span class="nav__n">{html.escape(note)}</span>'
+                   if note else "")
+                + '</a></li>')
+
+    topics = "".join(topic(*it) for it in items)
     return (f'<li class="grp nav__bp{f" nav__bp--{where}" if where else ""}">'
             f'{HOLD if where == "in" else ""}'
             f'<div class="nav__row"><a href="{up}{href}"{on}><span class="nav__t">{title}</span>'
@@ -546,6 +568,21 @@ CSS = """
   .nav .nav__sub a{min-height:44px}
   .nav__sub::before{bottom:34px}
 }
+/* A topic's note (notes()): under its words, in the sans at 12px in the
+   topics' grey, three lines kept (the signal processing guide's runs to
+   three in the column's 188px), so the row is one row and a set height
+   taller wherever it is drawn. Its bead and branch stay on the words' line,
+   half a row down, and the trunk lights that much further for the topics
+   below it (--x, in px as --u is). */
+.nav .nav__sub .nav__n{display:block;max-width:100%;height:3.9em;margin-top:1px;overflow:hidden;
+  font:400 12px/1.3 var(--sans);letter-spacing:.01em;color:var(--nav-mute);opacity:.88;
+  text-wrap:pretty}
+.nav .nav__sub a[aria-current] .nav__n{color:var(--nav-ink);opacity:.8}
+.nav .nav__sub li.nav__two>a{justify-content:flex-start}
+.nav .nav__sub li.nav__two>a::before,
+.nav .nav__sub li.nav__two::after,
+.nav .nav__sub li.nav__two::before{top:calc(var(--u) * .5px)}
+.nav__sub:has(>li.nav__two ~ li>a:is(:focus-visible,:active,.p)){--x:48}
 
 /* Pointing at a topic lights its way in from the Big Picture row, a path
    through the tree drawn in one gesture of about 0.3s, with no block of
@@ -580,7 +617,7 @@ CSS = """
   height:calc(var(--u) * 12px);background:var(--nav-mute);pointer-events:none;
   opacity:0;transform:scaleY(0);transform-origin:50% 0;
   transition:opacity var(--t-quick) var(--ease-state),transform 0s var(--t-quick);
-  --reach:calc((var(--k) * var(--u) - var(--u) / 2 + 2) / (var(--u) * 12))}
+  --reach:calc((var(--k) * var(--u) - var(--u) / 2 + 2 + var(--x, 0)) / (var(--u) * 12))}
 .nav .nav__sub li:has(>a[aria-current])::before{content:none}   /* alone: :has() is unforgiving */
 /* THE WORDS. A topic's words are their own grey, and a white copy of them
    (the span's data-w, drawn and not said: its alternative text is empty)
@@ -608,6 +645,7 @@ CSS = """
   .nav .nav__sub a:not([aria-current]):hover .nav__w::after{opacity:1;transform:none;
     transition:transform var(--spring-mid) 90ms}
 /*K:hover*/
+  .nav__sub:has(>li.nav__two ~ li>a:hover){--x:48}
 }
 /* a finger, from the press */
 .nav .nav__sub a:not([aria-current]):is(:active,.p)::before{border-color:var(--nav-mute);
@@ -1215,7 +1253,10 @@ function place(){
     BY=my+map.offsetHeight/2;
   }
   CX=btn.offsetLeft+btn.offsetWidth/2;CY=btn.offsetTop+btn.offsetHeight/2;
-  if(list.offsetHeight)for(i=0;i<ni;i++)IY[i]=items[i].parentNode.offsetTop+items[i].offsetHeight/2;
+  /* a topic's bead is on its words' line, which is the link's middle
+     unless a note under the words makes the link taller */
+  if(list.offsetHeight)for(i=0;i<ni;i++)IY[i]=items[i].parentNode.offsetTop+
+    items[i].firstElementChild.offsetTop+items[i].firstElementChild.offsetHeight/2;
   dpr=Math.min(2,window.devicePixelRatio||1);
   w=Math.round(w*dpr);hh=Math.round(hh*dpr);
   if(cv.width!==w||cv.height!==hh){cv.width=w;cv.height=hh}

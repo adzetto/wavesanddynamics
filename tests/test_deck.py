@@ -355,7 +355,8 @@ def test_the_viewer_keeps_to_the_sites_colours_and_its_quiet():
 
 def test_probability_statistics_is_no_longer_in_preparation():
     assert "probability-statistics.html" not in build.SOON
-    assert set(build.SOON) == {"python-programming.html", "communication.html"}
+    assert set(build.SOON) == {"python-programming.html", "communication.html",
+                               "personal-advices.html"}
     card = next(i for i in build.topic_items() if i["href"] == "probability-statistics.html")
     assert card["soon"] is False
     line = build.PAGE_DESC["probability-statistics.html"]

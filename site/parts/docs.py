@@ -33,8 +33,11 @@ and the list it opens, numbered the same way. The rule that decides where
 the list opens is the margin: at 1424px and up with the site's column open,
 and 1240px and up with it folded, the space left of the column holds a
 200px list with 32px to spare, so the list opens there, in the margin,
-and the text never moves. Narrower, a list in the margin would have to push
-the text or sit on it, so it opens over the text instead, from the left
+and the text never moves. From 1280px with the column open and 1100px with
+it folded the margin still holds it, set smaller (13.5px, 148 to 211px
+wide, two lines a title but the one being read): the professor asked for the sections to be followed from the side
+on a laptop too (5 Oct 2026). Narrower, a list in the margin would have to
+push the text or sit on it, so it opens over the text instead, from the left
 edge of the page, with a soft scrim; Escape, a click outside and choosing a
 section all close it, and choosing a section jumps to it. On a phone or a
 tablet (1000px and less) there is no margin at all: the list stays in the
@@ -95,6 +98,25 @@ _MARGIN = """
   %P% .docpage .toc--rail{--tl:10px;--tg:30px}
   %P% .docpage .toc--rail a{color:var(--muted);font-size:15px}
   %P% .docpage .toc--rail ol ol a{font-size:14px}
+"""
+
+# The contents in a narrower margin (the professor, 5 Oct 2026: "a bar on the
+# side that follows the sections", on a laptop where the margin had only the
+# button): the same list, laid in the margin the same way (_MARGIN), in a
+# smaller size that fits 148 to 211px, from 1280px with the site's column
+# open and from 1100px with it folded. A title takes two lines at most, but
+# the one being read, which shows whole; the rows' air is a clear border, so
+# the lines cut off stay out of it.
+_COMPACT = """
+  %P%[data-toc] .docpage.has-toc>.tocdock{width:calc(100% - 20px);margin:-10px 12px 0 0}
+  %P% .docpage .toc--rail{--tl:6px;--tg:22px}
+  %P% .docpage .toc--rail a{padding:0 4px 0 calc(var(--tl) + var(--tg));
+    border-block:5px solid transparent;font-size:13.5px;line-height:1.3;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  %P% .docpage .toc--rail a[aria-current]{-webkit-line-clamp:none}
+  %P% .docpage .toc--rail ol ol a{border-block-width:4px;font-size:12.5px}
+  %P% .docpage .toc__list>li>a>.hn:first-child,
+  %P% .docpage .toc__list>li>a:not(:has(>.hn))::before{top:0}
 """
 
 # A restacked table, on a phone and wherever a table cannot fit: one row to a
@@ -455,17 +477,23 @@ math{font-family:"Site Math",math}
     box-shadow:none;font:inherit;letter-spacing:inherit}
 }
 /* over the text, the button waits while the card in the text is on screen */
-@media (width > 1000px) and (max-width:1423px){
+@media (width > 1000px) and (max-width:1279px){
   :root:not([data-side="closed"]):not([data-tocpanel]) .docpage .tocbtn:not(.is-on){
     opacity:0;visibility:hidden}
 }
-@media (width > 1000px) and (max-width:1239px){
+@media (width > 1000px) and (max-width:1099px){
   [data-side="closed"]:not([data-tocpanel]) .docpage .tocbtn:not(.is-on){opacity:0;visibility:hidden}
 }
 /* in the margin: from 1424px with the site's column open, from 1240px with
    it folded, the margin holds a 200px list with 32px between it and the text */
 @media (min-width:1424px){""" + _MARGIN.replace("%P%", "") + """}
 @media (min-width:1240px){""" + _MARGIN.replace("%P%", '[data-side="closed"]') + """}
+/* and, smaller, in a narrower margin (_COMPACT): from 1280px with the column
+   open, from 1100px with it folded */
+@media (min-width:1280px) and (max-width:1423px){""" + (_MARGIN + _COMPACT).replace(
+    "%P%", ':root:not([data-side="closed"])') + """}
+@media (min-width:1100px) and (max-width:1239px){""" + (_MARGIN + _COMPACT).replace(
+    "%P%", '[data-side="closed"]') + """}
 
 /* a phone or a tablet: the list stays in the text, and the pill brings it
    back as a sheet from the foot of the screen, but only while the reader is

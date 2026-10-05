@@ -1,0 +1,144 @@
+Figure 11, blind source separation, method 2, SOBI family and Wiener: check of tools/numfig/sp_bss_sobi.py
+
+MODEL (sp_bss_lib, shared with Figure 10; at 4 s the same record)
+   4 s: N =  2000,   8 impacts, noise mulberry32(11); corr(s1, s2) -0.0830; kurt s1 -0.263, s2 +1.484; Welch 256 samples, K = 14 segments, 1.953 Hz bins
+  16 s: N =  8000,  30 impacts, noise mulberry32(23); corr(s1, s2) -0.0066; kurt s1 -0.072, s2 +2.047; Welch 1024 samples, K = 14 segments, 0.488 Hz bins
+  64 s: N = 32000, 119 impacts, noise mulberry32(71); corr(s1, s2) +0.0015; kurt s1 -0.037, s2 +2.074; Welch 2048 samples, K = 30 segments, 0.244 Hz bins
+  Method (his): Welch auto and cross spectra (periodic Hann, 50% overlap, no scaling: S_ij = mean conj(X_i) X_j);
+  floor f_i = his median of S_ii over bins 1..L/2 (element floor(n/2) of the sorted values); a bin is a band if
+  (S_11 - f_1)/(f_1/sqrt K) + (S_22 - f_2)/(f_2/sqrt K) > 4 (at least the best 4); M = sum over the bands of
+  [[S_11 - f_1, Re S_12], [Re S_12, S_22 - f_2]]; W0 M W0' = I (his PCA convention), then W = W0 scaled so that
+  W x has unit RMS (the scale is free); D_k = W0 M_k W0'; the rotation theta minimizing J = sum (R D_k R')_12^2,
+  in closed form (h_k = ((D_k)_12, ((D_k)_22 - (D_k)_11)/2), J = v' G v, v = (cos 2 theta, sin 2 theta), v the
+  eigenvector of G = sum h_k h_k' of the smaller eigenvalue), taken in [0, 90) deg (a quarter turn is the
+  permutation); y = R W x; Wiener gain per output max(0, P - o N)/P, N = B_i1^2 f_1 + B_i2^2 f_2, o = 1 + 2/sqrt(K),
+  smoothed [1 2 1]/4 over bins, applied through a zero-padded FFT with linear interpolation (his applyGain).
+  Order and sign matched as in Figure 10; SIR per source from G = R W A; rho: Pearson correlation.
+  Kurtosis ICA (the table's first row) is Figure 10's method, exact, on the same sensors.
+
+RESULTS (the figure's table: SIR s1, s2 in dB; rho s1, s2)
+    T   SNR | kurtosis ICA               | SOBI family                | + Wiener      | bands  theta*
+    4   -30 |    4.4    5.6  0.028  0.002 |    7.4    8.2  0.029  0.002 |  0.000  0.000 |     4   61.40
+    4   -25 |    4.0    5.9  0.048  0.021 |    7.4    8.2  0.046  0.018 |  0.035  0.000 |     4   60.67
+    4   -20 |    3.3    6.8  0.085  0.058 |    7.5    8.2  0.077  0.054 |  0.302  0.000 |     4   61.04
+    4   -15 |    2.1    9.7  0.153  0.111 |   22.0   10.1  0.107  0.109 |  0.541  0.132 |     4   73.34
+    4   -10 |    0.3   20.4  0.261  0.145 |   23.2   12.7  0.179  0.195 |  0.734  0.727 |     6   48.22
+    4    -5 |   -0.9    0.9  0.176  0.423 |   33.1   16.3  0.292  0.327 |  0.858  0.848 |     8   45.06
+    4     0 |   -0.4    3.2  0.532  0.313 |   32.4   19.0  0.471  0.520 |  0.940  0.923 |     9   44.06
+    4     5 |    2.6   11.1  0.705  0.613 |   30.2   20.8  0.687  0.733 |  0.978  0.964 |    11   43.53
+    4    10 |    6.7   15.3  0.841  0.830 |   29.1   21.9  0.858  0.885 |  0.992  0.984 |    13   43.21
+    4    15 |    9.6   15.5  0.918  0.929 |   29.0   22.7  0.947  0.958 |  0.997  0.992 |    17   42.99
+    4    20 |   10.9   15.1  0.950  0.966 |   28.8   23.1  0.982  0.985 |  0.999  0.995 |    23   42.89
+    4    25 |   11.4   15.0  0.961  0.978 |   28.7   23.4  0.994  0.994 |  0.999  0.997 |    27   42.83
+    4    30 |   11.6   14.9  0.965  0.983 |   28.6   23.5  0.998  0.997 |  0.999  0.997 |    35   42.80
+    4    35 |   11.7   14.9  0.966  0.984 |   28.6   23.6  0.999  0.997 |  0.999  0.998 |    46   42.78
+    4    40 |   11.7   14.9  0.967  0.985 |   28.5   23.7  0.999  0.998 |  0.999  0.998 |    57   42.77
+   16   -30 |    2.3    8.5  0.025  0.014 |    0.6   12.5  0.029  0.011 |  0.088  0.001 |    13   60.86
+   16   -25 |    2.3    8.4  0.048  0.035 |    0.2   18.0  0.054  0.024 |  0.280  0.001 |    13   62.08
+   16   -20 |    2.4    8.2  0.088  0.072 |   -0.5   12.5  0.097  0.036 |  0.587  0.002 |    12    9.73
+   16   -15 |    2.8    7.7  0.155  0.141 |    0.2    7.0  0.170  0.060 |  0.689  0.016 |    18   84.08
+   16   -10 |    4.5    6.1  0.247  0.273 |   10.7   21.9  0.192  0.154 |  0.850  0.489 |    25   50.70
+   16    -5 |   12.8    4.0  0.318  0.479 |   22.1   33.1  0.284  0.289 |  0.917  0.814 |    36   42.77
+   16     0 |   36.5    4.1  0.444  0.656 |   34.9   33.9  0.453  0.479 |  0.967  0.908 |    45   41.03
+   16     5 |   27.1    6.8  0.655  0.790 |   46.7   36.5  0.669  0.701 |  0.987  0.963 |    52   40.84
+   16    10 |   31.0   12.4  0.843  0.894 |   49.7   39.4  0.849  0.870 |  0.994  0.985 |    62   40.93
+   16    15 |   35.1   19.8  0.942  0.957 |   51.2   41.5  0.944  0.953 |  0.997  0.994 |    75   40.97
+   16    20 |   39.2   27.3  0.981  0.985 |   50.5   43.2  0.981  0.985 |  0.998  0.997 |    93   41.01
+   16    25 |   43.5   33.6  0.994  0.995 |   49.3   44.4  0.994  0.995 |  0.999  0.999 |   106   41.03
+   16    30 |   48.0   38.0  0.998  0.998 |   48.6   45.2  0.998  0.998 |  0.999  1.000 |   144   41.04
+   16    35 |   52.7   40.6  0.999  0.999 |   48.2   45.6  0.999  0.999 |  0.999  1.000 |   180   41.05
+   16    40 |   57.4   42.0  1.000  1.000 |   48.0   45.9  1.000  1.000 |  1.000  1.000 |   205   41.05
+   64   -30 |    1.6   10.8  0.035  0.042 |    0.3    2.5  0.035  0.028 |  0.059  0.005 |     4   72.19
+   64   -25 |    1.5   11.3  0.059  0.060 |    2.4   16.8  0.058  0.046 |  0.525  0.021 |     4   74.89
+   64   -20 |    1.5   11.9  0.102  0.091 |    6.1   21.2  0.083  0.071 |  0.759  0.167 |    13   56.15
+   64   -15 |    1.5   12.5  0.174  0.145 |   11.5   35.6  0.117  0.117 |  0.847  0.527 |    28   47.46
+   64   -10 |    2.1   11.0  0.287  0.250 |   18.3   38.6  0.180  0.192 |  0.910  0.705 |    44   43.57
+   64    -5 |    5.5    7.0  0.407  0.458 |   23.5   40.5  0.294  0.318 |  0.955  0.834 |    63   42.26
+   64     0 |   12.6    6.2  0.526  0.659 |   27.7   41.0  0.470  0.503 |  0.981  0.917 |    77   41.87
+   64     5 |   20.0    9.0  0.702  0.797 |   32.0   40.2  0.681  0.714 |  0.992  0.963 |    95   41.68
+   64    10 |   26.5   15.0  0.859  0.897 |   34.7   39.9  0.854  0.874 |  0.997  0.985 |   120   41.67
+   64    15 |   32.4   23.8  0.946  0.958 |   36.8   39.6  0.946  0.954 |  0.999  0.994 |   150   41.65
+   64    20 |   37.9   34.9  0.982  0.985 |   38.2   39.4  0.982  0.985 |  0.999  0.997 |   197   41.64
+   64    25 |   43.2   50.5  0.994  0.995 |   39.1   39.3  0.994  0.995 |  1.000  0.999 |   253   41.64
+   64    30 |   48.1   57.8  0.998  0.998 |   39.6   39.3  0.998  0.998 |  1.000  0.999 |   317   41.64
+   64    35 |   52.4   52.9  0.999  1.000 |   39.9   39.2  0.999  0.999 |  1.000  1.000 |   375   41.64
+   64    40 |   56.2   52.6  1.000  1.000 |   40.1   39.2  1.000  1.000 |  1.000  1.000 |   439   41.64
+
+VALIDATION
+  1. The Welch cross spectra against scipy.signal.csd (same window, overlap, density scaling): largest
+     difference 1.3e-15 of the largest value, all records and channel pairs at 0 dB.
+  2. The floor against the closed form: white noise of variance sigma^2 has E S_ii = sigma^2 sum w^2 =
+     sigma^2 3L/8 (periodic Hann); a Welch value is that times chi^2_nu / nu, nu = 2K / (1 + 2 c^2 (K - 1)/K),
+     c = 0.1667 the overlap correlation of Hann at 50% (Welch 1967), so the median sits at chi^2_nu median / nu.
+     Where the noise fills every bin (-30 and -20 dB):
+      4 s,  -30 dB: floor / sigma^2 3L/8 = 0.993, 0.996; chi^2 median / nu = 0.975 (nu = 26.6)
+      4 s,  -20 dB: floor / sigma^2 3L/8 = 0.998, 0.996; chi^2 median / nu = 0.975 (nu = 26.6)
+     16 s,  -30 dB: floor / sigma^2 3L/8 = 0.966, 0.988; chi^2 median / nu = 0.975 (nu = 26.6)
+     16 s,  -20 dB: floor / sigma^2 3L/8 = 0.969, 0.997; chi^2 median / nu = 0.975 (nu = 26.6)
+     64 s,  -30 dB: floor / sigma^2 3L/8 = 0.996, 0.993; chi^2 median / nu = 0.988 (nu = 56.9)
+     64 s,  -20 dB: floor / sigma^2 3L/8 = 0.999, 1.002; chi^2 median / nu = 0.988 (nu = 56.9)
+  3. Noise-corrected whitening: |W0 M W0' - I| <= 1.2e-15 over all 45 states. Off-diagonal energy left
+     after the rotation, J_min / J_max: 6.4e-03 (median of the 45 states), 4.7e-03 at 4 s, 0 dB.
+  4. Joint diagonalization, the closed form:
+     a. 20 sets of nine matrices Q diag(l_k) Q', Q a random rotation, exactly diagonalizable: the rotation
+        found is Q' to 1.3e-14 deg, the off-diagonal left 4.4e-30.
+     b. For a pair, the generalized eigenvectors of (D_1, D_2) give the same rotation: 6.4e-15 deg.
+     c. On the figure's own band matrices (5 states), a brute-force minimization of J (matrix products,
+        0.01 deg grid then Brent): within 9.4e-12 deg of the closed form.
+  5. Wiener, linear for its fixed gains: filtering each part of an output (its source, the other source, its
+     noise) and adding them gives the filtered output to 4.4e-16. At 4 s, 0 dB the output SNR rises from
+     -5.6 to 9.9 dB for s1;
+     -3.9 to 10.7 dB for s2;
+     the noise level each gain assumes, B_i1^2 f_1 + B_i2^2 f_2, against the exact sigma^2 |B_i|^2 3L/8: 1.014, 1.016.
+  6. His page (method 2) run headless, against this port of his whole pipeline (his 1 deg kurtosis
+     baseline, his 0.5 deg rotation grid, his pairing and his SIR, the mean of the two outputs' dB):
+      4 s  -10 dB: same: Separation (SIR): 18 dB here, 10 dB with kurtosis ICA. Correlation with the true sources: 0.73 and 0.73 (kurtosis ICA: 0.26 and 0.15).
+      4 s    0 dB: same: Separation (SIR): 26 dB here, 2 dB with kurtosis ICA. Correlation with the true sources: 0.92 and 0.94 (kurtosis ICA: 0.55 and 0.32).
+      4 s   10 dB: same: Separation (SIR): 26 dB here, 11 dB with kurtosis ICA. Correlation with the true sources: 0.98 and 0.99 (kurtosis ICA: 0.84 and 0.83).
+     16 s    0 dB: same: Separation (SIR): 35 dB here, 20 dB with kurtosis ICA. Correlation with the true sources: 0.91 and 0.97 (kurtosis ICA: 0.66 and 0.44).
+     16 s  -10 dB: same: Separation (SIR): 17 dB here, 5 dB with kurtosis ICA. Correlation with the true sources: 0.85 and 0.49 (kurtosis ICA: 0.27 and 0.25).
+     64 s    0 dB: same: Separation (SIR): 33 dB here, 10 dB with kurtosis ICA. Correlation with the true sources: 0.92 and 0.98 (kurtosis ICA: 0.66 and 0.52).
+     64 s  -15 dB: same: Separation (SIR): 23 dB here, 7 dB with kurtosis ICA. Correlation with the true sources: 0.85 and 0.53 (kurtosis ICA: 0.17 and 0.15).
+     7 of 7 readouts identical character for character.
+     His 0.5 deg grid against the closed form on these cases: within 0.222 deg (at most 0.25).
+  7. Why kurtosis ICA breaks at low SNR whatever the record: it whitens with the noisy covariance
+     C = A A' + sigma^2 I, after which the two source directions are no longer at 90 deg, and no rotation can
+     separate both (the best leaves 20 log10 cot((90 - a)/2) dB in each output, a the angle between them):
+      -10 dB: a =  33.4 deg, at most   5.4 dB
+       -5 dB: a =  38.2 deg, at most   6.3 dB
+        0 dB: a =  48.4 deg, at most   8.4 dB
+        5 dB: a =  63.5 deg, at most  12.6 dB
+       10 dB: a =  77.3 deg, at most  19.1 dB
+       20 dB: a =  88.4 deg, at most  36.9 dB
+       30 dB: a =  89.8 deg, at most  56.7 dB
+     Noise-corrected whitening takes the floors off before whitening, so the directions stay at 90 deg as
+     long as the floors and the bands are right.
+  8. Fifty other noise records (mulberry32(1000 + i)), 4 s: median and 10 to 90% range of the worse
+     output's SIR and of the mean correlation, and where the record shown falls (percentile, worse SIR):
+      -10 dB: SOBI  10.8 dB (  3.9 to  17.3), Wiener rho 0.685 (0.373 to 0.760); kurtosis ICA   3.0 dB (  0.1 to   5.0), rho 0.248; shown at percentile 66
+       -5 dB: SOBI  17.5 dB ( 14.5 to  23.6), Wiener rho 0.853 (0.815 to 0.872); kurtosis ICA   3.9 dB ( -0.4 to   5.8), rho 0.395; shown at percentile 30
+        0 dB: SOBI  22.3 dB ( 18.0 to  31.2), Wiener rho 0.932 (0.923 to 0.940); kurtosis ICA   3.5 dB (  0.3 to   7.1), rho 0.561; shown at percentile 14
+       10 dB: SOBI  24.0 dB ( 22.2 to  26.1), Wiener rho 0.988 (0.987 to 0.989); kurtosis ICA   9.2 dB (  7.7 to  10.5), rho 0.862; shown at percentile 8
+  9. The page: u decoded within 0.0039 of each channel's largest value (int8); J(theta) from its three
+     numbers within 5.2e-06 of numpy; the Wiener outputs it draws within 0.012 (int8, RMS 1).
+
+DISPLAY
+  As Figure 10: every stage but Wiener is a 2 x 4 matrix on u; between stages the matrices are interpolated,
+  the diagonalizing rotation is a true rotation. Each stage in units of its RMS (sensors x kappa, Wiener x its
+  own RMS, both printed at the axes). (c) one-sided PSD 2 S / (fs sum w^2) in dB re 1 per Hz (the signals in
+  units of the sources' standard deviation), one scale (-70 to 20 dB) for every state so that the floor visibly
+  rises with the noise; bins 1 to 40 Hz; the bands up to 40 Hz shaded; the gains under them on the same
+  frequency axis (channel 1 = output 1). (d) J(theta) / J_max over one period, 0 to 90 deg. The spectra are
+  int8 in half decibels, the gains int8 in 1/127.
+  No 'new noise' control: his page draws one seeded record per length (mulberry32(7 + T)); item 8 shows the
+  spread over other records.
+
+CHECKS OF THE PAGE
+  Overlap (engine ?overlap): the poster and every 0.25 s up to it (common.still), and 45 states
+  (?snr= x ?len=) x 39 moments across the seven stages and the loop back: 1755 frames, 0 faults.
+  Through the glides a reader starts (a stage chosen, an SNR or record chosen, while playing, at
+  moments across the tour, each glide drawn at 11 moments over 1.2 s): 1232 frames, 0 faults.
+  In a browser: 8 of 8 interactions as intended (stage, SNR and record chips
+  never pause the figure, arrow keys move the choice, a click on open ground pauses, a paused choice
+  shows the stage complete); console errors: 0.
+  Page 255 KB, poster 103 KB.

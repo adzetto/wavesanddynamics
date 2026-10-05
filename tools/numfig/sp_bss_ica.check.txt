@@ -1,0 +1,99 @@
+Figure 10, blind source separation, method 1, kurtosis ICA: check of tools/numfig/sp_bss_ica.py
+
+MODEL (sp_bss_lib, shared with Figure 11)
+  fs = 500 Hz, record T = 4 s, N = 2000 samples; drawn: the first 4 s, every second sample (1000).
+  s1: (1 + 0.5 sin 2 pi 0.4 t)(sin 2 pi 3t + 0.45 sin(2 pi 6t + 0.7) + 0.25 sin(2 pi 9t + 1.3)).
+  s2: impacts ringing an 11 Hz mode, zeta = 0.08, his seeded train (mulberry32(21)), here 8 impacts:
+      (0.100 s, -0.724), (0.520 s, -0.738), (1.305 s, +0.673), (1.821 s, +0.594), (2.275 s, +0.670), (2.583 s, +0.603), (3.166 s, +0.526), (3.709 s, -0.775)
+  both standardized; A = [[1, 0.7], [0.45, 1]]; noise: two standardized white Gaussian channels, his
+  Box-Muller on mulberry32(7 + T) = mulberry32(11); sigma^2 = 1.2025 10^(-SNR/10) (the weaker sensor's SNR).
+  In this record: corr(s1, s2) = -0.0830; excess kurtosis s1 -0.263 (sub-Gaussian), s2 +1.484.
+  Method: centre; W from the sample covariance (W C W' = I, rows the principal axes over root
+  eigenvalues); z = W x; y = R(theta) z, R = [[cos, sin], [-sin, cos]], theta in [-45, 45) deg maximizing
+  K = |kurt y1| + |kurt y2|. K(theta) = |k(theta)| + |k(theta + 90 deg)|, k a quartic in (cos, sin) through the
+  fourth moments m40, m31, m22, m13, m04 of z: maximized on a 0.01 deg grid, refined (bounded Brent, 1e-13 rad).
+  Order and sign cannot be known by any blind method: outputs are paired with sources by the larger of
+  |G11 G22| and |G12 G21|, G = R W A, and signs taken from G. SIR of a source: G_ij^2 / G_ik^2 in the output
+  that carries it (unit-variance sources); rho: Pearson correlation of that output with the source.
+
+RESULTS (the figure's table; theta* in deg)
+   SNR   theta*      K*   SIR s1   SIR s2   rho s1   rho s2   estimates (s1, s2)
+   -30    41.69   0.323      4.4      5.6    0.028    0.002   -y2, y1
+   -25   -43.29   0.304      4.0      5.9    0.048    0.021   y1, y2
+   -20   -36.74   0.273      3.3      6.8    0.085    0.058   y1, y2
+   -15   -27.95   0.233      2.1      9.7    0.153    0.111   y1, y2
+   -10   -12.05   0.227      0.3     20.4    0.261    0.145   y1, y2
+    -5    -0.05   0.303     -0.9      0.9    0.176    0.423   -y2, y1
+     0    -4.67   0.403     -0.4      3.2    0.532    0.313   y1, y2
+     5   -19.91   0.622      2.6     11.1    0.705    0.613   y1, y2
+    10   -30.53   1.051      6.7     15.3    0.841    0.830   y1, y2
+    15   -34.52   1.473      9.6     15.5    0.918    0.929   y1, y2
+    20   -35.75   1.715     10.9     15.1    0.950    0.966   y1, y2
+    25   -36.18   1.824     11.4     15.0    0.961    0.978   y1, y2
+    30   -36.36   1.869     11.6     14.9    0.965    0.983   y1, y2
+    35   -36.45   1.889     11.7     14.9    0.966    0.984   y1, y2
+    40   -36.50   1.898     11.7     14.9    0.967    0.985   y1, y2
+
+VALIDATION
+  1. Whitening: |cov(z) - I| <= 2.0e-15 over all 15 SNRs (the target 1e-12).
+  2. K(theta) from the five moments against the kurtosis of the rotated samples themselves (7 angles,
+     10 dB): largest difference 1.3e-14.
+  3. The optimum: against a 0.0005 deg grid, within 2.1e-04 deg at every SNR. Turning the white data
+     by 17.3 deg moves it by -17.3 deg (modulo 90): error 8.6e-08 deg.
+     His page searches a 0.5 deg grid: its angle is within 0.248 deg of the exact one (at most 0.25),
+     and its correlations within 0.0017.
+  4. Against scikit-learn 1.9.1 FastICA (fun = cube, the kurtosis fixed point; symmetric
+     decorrelation; unit-variance whitening; tol 1e-12; 8 starts, the one with the largest K kept); its
+     fixed points are the stationary points of |kurt y1| + |kurt y2| (signs free). Angle between the
+     unmixing rows (matched in order and sign):
+       0 dB: 0.0e+00 deg (K: FastICA 0.403084, here 0.403084; 4 iterations)
+      10 dB: 8.5e-07 deg (K: FastICA 1.051446, here 1.051446; 5 iterations)
+      20 dB: 0.0e+00 deg (K: FastICA 1.715322, here 1.715322; 4 iterations)
+      40 dB: 0.0e+00 deg (K: FastICA 1.898002, here 1.898002; 5 iterations)
+  5. His page (method 1, its own record: 3 s, seven fixed impacts, noise mulberry32(7)) run headless,
+     against this port of his model and his 0.5 deg search: the correlations it prints at stage 5
+      -10 dB: his page '0.272 and 0.236', the port 0.272 and 0.236
+        0 dB: his page '0.640 and 0.518', the port 0.640 and 0.518
+        6 dB: his page '0.804 and 0.747', the port 0.804 and 0.747
+       12 dB: his page '0.922 and 0.903', the port 0.922 and 0.903
+       20 dB: his page '0.984 and 0.980', the port 0.984 and 0.980
+       40 dB: his page '0.995 and 0.997', the port 0.995 and 0.997
+     6 of 6 identical to the printed digits: the generator, the sources, the noise and the
+     method are his, number for number.
+  6. Why the separation stops near 12 to 15 dB even without noise: in 4 s the two sources are not
+     independent in the sample. Fourth-order cross-cumulants and noise-free kurtosis ICA per record:
+      4 s (  8 impacts): corr -0.0830, cum(s1,s2,s2,s2) -0.3026, cum(s1,s1,s2,s2) -0.1106; SIR 11.8 and 14.9 dB
+     16 s ( 30 impacts): corr -0.0066, cum(s1,s2,s2,s2) +0.0010, cum(s1,s1,s2,s2) +0.0092; SIR 85.8 and 43.5 dB
+     64 s (119 impacts): corr +0.0015, cum(s1,s2,s2,s2) +0.0091, cum(s1,s1,s2,s2) -0.0568; SIR 65.7 and 54.1 dB
+  7. One noise record is shown (his seed); 50 other records (mulberry32(1000 + i)) at the same settings,
+     median and 10 to 90 % range, and where the record shown falls:
+       0 dB: rho s1 0.568 (0.537 to 0.595), rho s2 0.541 (0.370 to 0.615), worse SIR 3.5 dB (0.3 to 7.1); the record shown at percentile 6 (rho s1)
+      10 dB: rho s1 0.859 (0.848 to 0.866), rho s2 0.864 (0.844 to 0.874), worse SIR 9.2 dB (7.7 to 10.5); the record shown at percentile 4 (rho s1)
+      20 dB: rho s1 0.953 (0.948 to 0.957), rho s2 0.968 (0.965 to 0.971), worse SIR 11.4 dB (10.7 to 12.0); the record shown at percentile 20 (rho s1)
+      40 dB: rho s1 0.967 (0.966 to 0.967), rho s2 0.985 (0.984 to 0.985), worse SIR 11.7 dB (11.7 to 11.8); the record shown at percentile 32 (rho s1)
+  8. The page: u decoded from int8 within 0.0039 of each channel's largest value (1/254 = 0.0039);
+     its K(theta) at 5 angles within 1.3e-05 of numpy (it evaluates the same polynomial in double);
+     the estimates it draws, F u, within 0.019 of numpy's (rounding of u; RMS 1).
+
+DISPLAY
+  Every stage is a 2 x 4 matrix on u = [s1, s2, n1, n2] (his device); the page draws M u: sources [I 0],
+  sensors Aug = [A, sigma I], whitened W Aug, rotated R(theta) W Aug (theta turning from 0 to theta*),
+  estimates. Between stages the matrices are interpolated (his device); the rotation is a true rotation.
+  Each stage is drawn in units of its RMS: 1 for s, z and y; the sensors carry the factor printed at the
+  axes (x 1.16 at 10 dB, x 34.67 at -30 dB). The arrows in (b) are the images of the
+  two source axes, the first two columns of the stage's matrix (2.6 units long per unit); they fade out
+  where their length falls under 0.55 (the signal sinks under the noise). (c) one scale for every SNR
+  (0 to 2), so that noise visibly flattens K(theta). The cursor plays the 4 s in real time.
+  The dashed source over each estimate is that source times the estimate's least-squares share of it.
+  No 'new noise' control: his two pages draw one seeded record (mulberry32(7) and (7 + T)) and so does
+  this figure; item 7 shows how other records scatter.
+
+CHECKS OF THE PAGE
+  Overlap (engine ?overlap): the poster and every 0.25 s up to it (common.still), and 15 SNR
+  states (?snr=) x 40 moments across the five stages and the loop back: 600 frames, 0 faults.
+  Through the glides a reader starts (a stage chosen, an SNR chosen, while playing, at
+  moments across the tour, each glide drawn at 11 moments over 1.2 s): 594 frames, 0 faults.
+  In a browser: 8 of 8 interactions as intended (stage and SNR chips never
+  pause the figure, arrow keys move the choice, a click on open ground pauses, a paused choice shows
+  the stage complete); console errors: 0.
+  Page 73 KB, poster 96 KB.

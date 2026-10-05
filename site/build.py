@@ -1257,8 +1257,9 @@ def _anchor(body, slug, spec, what):
     after_caption: the figure whose caption starts with the words;
     after_paragraph / before_paragraph: the paragraph that starts with them;
     after_list_containing: the list that holds them; after_heading: the h2 or
-    h3 whose words are exactly these (the addition opens the section). An
-    anchor found other than once stops the build."""
+    h3 whose words are exactly these (the addition opens the section), of
+    `level` 2 or 3 where the words head both. An anchor found other than once
+    stops the build."""
     if "after_caption" in spec:
         matches = [m for m in re.finditer(r"<figure\b.*?</figure>", body, re.S)
                    if (cap := re.search(r"<figcaption>(.*?)</figcaption>", m.group(0), re.S))
@@ -1269,7 +1270,8 @@ def _anchor(body, slug, spec, what):
                    if _words_of(m.group(0)).startswith(words)]
     elif "after_heading" in spec:
         matches = [m for m in re.finditer(r"<h([23])\b[^>]*>(.*?)</h\1>", body, re.S)
-                   if _words_of(m.group(2)) == spec["after_heading"]]
+                   if _words_of(m.group(2)) == spec["after_heading"]
+                   and str(spec.get("level", m.group(1))) == m.group(1)]
     else:
         matches = [m for m in re.finditer(r"<ul\b[^>]*>.*?</ul>", body, re.S)
                    if spec["after_list_containing"] in _words_of(m.group(0))]

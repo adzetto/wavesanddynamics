@@ -14,6 +14,8 @@
   "supplement-inv-iter": "nf-sp-inv-iter.html",
   "supplement-inv-update": "nf-sp-inv-update.html",
   "supplement-delay-gcc": "nf-sp-delay-gcc.html",
-  "supplement-delay-shots": "nf-sp-delay-shots.html"
+  "supplement-delay-shots": "nf-sp-delay-shots.html",
+  "supplement-bss-ica": "nf-sp-bss-ica.html",
+  "supplement-bss-sobi": "nf-sp-bss-sobi.html"
  }
 }

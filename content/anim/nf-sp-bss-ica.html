@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 10: Blind source separation, method 1: kurtosis ICA</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.6;transition:opacity .16s cubic-bezier(.2,0,.38,.9);}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+@media (hover:none){.ctl{opacity:.85;}}
+/* the site's tokens (site/parts/theme.py), written out: the frame is a document of its own.
+   ring --line-strong, glyph --ink, hover --surface, pressed --line, focus --focus */
+.ctl button{position:relative;box-sizing:border-box;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid #8A857C;
+  background:#fff;color:#27221C;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+  transition:background-color .12s cubic-bezier(.2,0,.38,.9);}
+.ctl button svg{width:15px;height:15px;fill:currentColor;}
+.ctl #rs svg{fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;}
+@media (hover:hover){.ctl button:hover{background:#F6F3EF;}}
+.ctl button:active{background:#D7D2CA;}
+.ctl button:focus-visible{outline:2px solid #043052;outline-offset:2px;}
+/* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){.ctl{right:4px;bottom:4px;}.ctl button{width:24px;height:24px;}.ctl button svg{width:13px;height:13px;}}
+/* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){display:none;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="Two sensors record mixtures of a harmonic excitation and a train of impact responses, plus noise. The figure steps through kurtosis ICA: the sources, their mixing at the sensors, whitening, and the rotation that maximizes the absolute kurtosis, shown as time histories, as a joint point cloud that turns from a parallelogram into a symmetric cloud and onto the axes, and as the kurtosis curve. A table gives each estimate's correlation with its source and its SIR; choose a stage or the sensor SNR."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 720;
+const DATA = {"recs":[{"u":["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"],"sc":[48.77021,37.02088,44.87055,39.51828]}],"dt":0.004,"show":4.0,"A":[[1.0,0.7],[0.45,1.0]],"snrs":[-30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30,35,40],"snr0":8,"st":[{"sg":34.67708,"kx":34.66953,"WA":[[0.03017,0.03406,0.75138,0.65511],[-0.0092,0.0085,-0.65953,0.75646]],"F":[[0.01641,0.03109,0.12246,0.99232],[-0.02694,-0.0163,-0.99225,0.12919]],"th":0.72761,"m":[3.03674,0.09887,0.98229,0.06132,2.99955],"perm":[1,0],"c":[-0.00179,-0.02772],"est":["-y_2","y_1"],"sirs":["4.4","5.6"],"rhos":["0.028","0.002"],"thd":"41.7","Ks":"0.32"},{"sg":19.50036,"kx":19.50684,"WA":[[0.05437,0.05965,0.78366,0.61469],[-0.01354,0.01826,-0.61928,0.7895]],"F":[[0.04886,0.0309,0.99504,-0.09399],[0.02743,0.05419,0.08665,0.99615]],"th":-0.75563,"m":[3.00033,0.09531,0.98509,0.0562,3.0184],"perm":[0,1],"c":[0.04766,0.02084],"est":["y_1","y_2"],"sirs":["4.0","5.9"],"rhos":["0.048","0.021"],"thd":"\u221243.3","Ks":"0.30"},{"sg":10.96586,"kx":10.99726,"WA":[[0.09714,0.10423,0.80426,0.57994],[-0.02011,0.03674,-0.58655,0.81342]],"F":[[0.08988,0.06155,0.99536,-0.02176],[0.04199,0.09178,0.01099,0.99875]],"th":-0.64116,"m":[2.96029,0.08225,0.9851,0.04842,3.03785],"perm":[0,1],"c":[0.08456,0.0583],"est":["y_1","y_2"],"sirs":["3.3","6.8"],"rhos":["0.085","0.058"],"thd":"\u221236.7","Ks":"0.27"},{"sg":6.16655,"kx":6.24193,"WA":[[0.16952,0.18303,0.78463,0.5794],[-0.03766,0.06308,-0.59461,0.80523]],"F":[[0.1674,0.13212,0.97179,0.13448],[0.04617,0.1415,-0.15758,0.98286]],"th":-0.48774,"m":[2.92401,0.0565,0.97889,0.03988,3.05457],"perm":[0,1],"c":[0.15283,0.11074],"est":["y_1","y_2"],"sirs":["2.1","9.7"],"rhos":["0.153","0.111"],"thd":"\u221227.9","Ks":"0.23"},{"sg":3.46771,"kx":3.61917,"WA":[[0.28374,0.31189,0.7259,0.57341],[-0.07655,0.10066,-0.61681,0.78084]],"F":[[0.29347,0.28401,0.83863,0.39783],[-0.01565,0.16353,-0.45175,0.88331]],"th":-0.21023,"m":[2.87645,0.01847,0.97081,0.02788,3.08377],"perm":[0,1],"c":[0.26062,0.14541],"est":["y_1","y_2"],"sirs":["0.3","20.4"],"rhos":["0.261","0.145"],"thd":"\u221212.0","Ks":"0.23"},{"sg":1.95004,"kx":2.22569,"WA":[[0.43412,0.48371,0.61617,0.51194],[-0.1468,0.16128,-0.6245,0.75165]],"F":[[0.43424,0.48358,0.61668,0.51133],[-0.14645,0.16167,-0.624,0.75206]],"th":-0.000812577,"m":[2.83642,-0.0079,0.96416,0.00814,3.13934],"perm":[1,0],"c":[0.42278,-0.17587],"est":["-y_2","y_1"],"sirs":["\u22120.9","0.9"],"rhos":["0.176","0.423"],"thd":"\u22120.0","Ks":"0.30"},{"sg":1.09659,"kx":1.54829,"WA":[[0.57113,0.64154,0.45214,0.38701],[-0.26069,0.25741,-0.60276,0.70421]],"F":[[0.59048,0.61843,0.49976,0.32833],[-0.21328,0.30884,-0.56391,0.73341]],"th":-0.08159,"m":[2.82078,0.04085,0.96847,-0.00811,3.21851],"perm":[0,1],"c":[0.53163,0.31333],"est":["y_1","y_2"],"sirs":["\u22120.4","3.2"],"rhos":["0.532","0.313"],"thd":"\u22124.7","Ks":"0.40"},{"sg":0.61666,"kx":1.26472,"WA":[[0.64892,0.73224,0.28754,0.25026],[-0.41555,0.38634,-0.5306,0.60966]],"F":[[0.75164,0.55692,0.45104,0.0277],[-0.16975,0.6126,-0.40098,0.65845]],"th":-0.34747,"m":[2.8036,0.17352,1.01524,0.02576,3.28167],"perm":[0,1],"c":[0.70451,0.6132],"est":["y_1","y_2"],"sirs":["2.6","11.1"],"rhos":["0.705","0.613"],"thd":"\u221219.9","Ks":"0.62"},{"sg":0.34677,"kx":1.16332,"WA":[[0.67902,0.76814,0.16876,0.14824],[-0.56614,0.50891,-0.40253,0.45825]],"F":[[0.87248,0.40307,0.34986,-0.10513],[-0.14267,0.82859,-0.26098,0.47001]],"th":-0.53291,"m":[2.79,0.31198,1.11976,0.14812,3.29867],"perm":[0,1],"c":[0.84109,0.83041],"est":["y_1","y_2"],"sirs":["6.7","15.3"],"rhos":["0.841","0.830"],"thd":"\u221230.5","Ks":"1.05"},{"sg":0.195,"kx":1.13087,"WA":[[0.68819,0.77962,0.09604,0.0848],[-0.66095,0.58304,-0.26285,0.29769]],"F":[[0.94158,0.31194,0.22808,-0.09883],[-0.15458,0.92219,-0.16214,0.29333]],"th":-0.60249,"m":[2.78546,0.39916,1.22843,0.28846,3.31226],"perm":[0,1],"c":[0.91769,0.92875],"est":["y_1","y_2"],"sirs":["9.6","15.5"],"rhos":["0.918","0.929"],"thd":"\u221234.5","Ks":"1.47"},{"sg":0.10966,"kx":1.12126,"WA":[[0.69045,0.78279,0.05414,0.04794],[-0.70315,0.61374,-0.15678,0.17705]],"F":[[0.97116,0.27675,0.13553,-0.06452],[-0.1673,0.95543,-0.09561,0.1717]],"th":-0.62391,"m":[2.78538,0.43918,1.29756,0.37413,3.32979],"perm":[0,1],"c":[0.94951,0.96566],"est":["y_1","y_2"],"sirs":["10.9","15.1"],"rhos":["0.950","0.966"],"thd":"\u221235.7","Ks":"1.72"},{"sg":0.06167,"kx":1.11868,"WA":[[0.69076,0.78349,0.03044,0.027],[-0.71902,0.62389,-0.09,0.10147]],"F":[[0.982,0.26418,0.0777,-0.0381],[-0.17267,0.96608,-0.05468,0.09785]],"th":-0.63138,"m":[2.78639,0.45535,1.33313,0.4135,3.33925],"perm":[0,1],"c":[0.96085,0.97833],"est":["y_1","y_2"],"sirs":["11.4","15.0"],"rhos":["0.961","0.978"],"thd":"\u221236.2","Ks":"1.82"},{"sg":0.03468,"kx":1.11814,"WA":[[0.69063,0.78353,0.01711,0.01519],[-0.72476,0.62679,-0.05097,0.05741]],"F":[[0.98585,0.25937,0.044,-0.0218],[-0.1742,0.96928,-0.0309,0.05524]],"th":-0.63462,"m":[2.78734,0.46188,1.35069,0.43047,3.34246],"perm":[0,1],"c":[0.96477,0.98257],"est":["y_1","y_2"],"sirs":["11.6","14.9"],"rhos":["0.965","0.983"],"thd":"\u221236.4","Ks":"1.87"},{"sg":0.0195,"kx":1.11812,"WA":[[0.69046,0.78345,0.00962,0.00854],[-0.7269,0.62746,-0.02873,0.03235]],"F":[[0.98727,0.25733,0.02481,-0.01235],[-0.17442,0.97019,-0.01739,0.03109]],"th":-0.63624,"m":[2.788,0.46467,1.35956,0.43804,3.34314],"perm":[0,1],"c":[0.96616,0.98401],"est":["y_1","y_2"],"sirs":["11.7","14.9"],"rhos":["0.966","0.984"],"thd":"\u221236.5","Ks":"1.89"},{"sg":0.01097,"kx":1.1182,"WA":[[0.69033,0.78337,0.00541,0.0048],[-0.72775,0.62753,-0.01617,0.0182]],"F":[[0.98782,0.25638,0.01397,-0.00697],[-0.17432,0.97043,-0.00978,0.01749]],"th":-0.63711,"m":[2.78841,0.46595,1.36419,0.44162,3.34309],"perm":[0,1],"c":[0.96668,0.98452],"est":["y_1","y_2"],"sirs":["11.7","14.9"],"rhos":["0.967","0.985"],"thd":"\u221236.5","Ks":"1.90"}],"kmax":2.0,"kticks":[0.0,0.5,1.0,1.5,2.0],"ks":["\u22120.26","1.48"],"params":[["m","A = [1,\\ 0.7;\\ 0.45,\\ 1]"],["t",";   4 s at 500 Hz;   white Gaussian noise, the SNR of the weaker sensor;   each stage drawn in units of its RMS"]]};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. In the guide's page the pause
+   and restart are the page's, in a row under the frame (HOSTED, below).
+   Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+/* In the guide's page the frame's own pause and restart give way to the
+   page's row of buttons under the frame (site/parts/docs.py), so no corner
+   of the figure is covered. The page drives the frame with postMessage:
+   {nf: 'toggle'}, {nf: 'restart'}, {nf: 'hello'}; the frame answers every
+   change with {nf: 'state', playing, quiet}. Only a page of this site that
+   holds such a row is listened to. */
+const HOSTED = (() => {
+  try {
+    return parent !== window && parent.location.origin === location.origin && !!frameElement &&
+      !!frameElement.parentElement.querySelector('.anim__bar');
+  } catch (e) { return false; }
+})();
+if (HOSTED) document.documentElement.classList.add('chrome-out');   // before the first frame: no flash
+function _tell() {
+  if (HOSTED) parent.postMessage({ nf: 'state', playing, quiet: _quiet() || STILL }, location.origin);
+}
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+  _tell();
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+addEventListener('message', e => {
+  const m = e.data;
+  if (!HOSTED || e.source !== parent || e.origin !== location.origin || !m || typeof m.nf !== 'string') return;
+  if (m.nf === 'hello') _tell();
+  else if (_quiet() || STILL) return;
+  else if (m.nf === 'toggle') setPlay(!playing);
+  else if (m.nf === 'restart') document.getElementById('rs').click();
+});
+/* a click in the frame takes the keyboard into it; Space still pages the guide */
+addEventListener('keydown', e => {
+  if (e.key !== ' ' || e.defaultPrevented || e.target !== document.body || !HOSTED) return;
+  e.preventDefault();
+  try { parent.scrollBy({ top: (e.shiftKey ? -.875 : .875) * parent.innerHeight, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (_) {}
+});
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- controls
+   uiChip(x, y, w, h, label, state, alpha): a control drawn in the figure, as
+   Figure 18b's chips are: white with a grey edge; the one chosen navy with
+   white type; under the pointer steel with a navy edge; pressed steel2; off
+   (unavailable) pale. Its edge is a line(), which the overlap check sees.
+   state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
+function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
+  const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
+  const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
+  text(label, x + w / 2, y + h / 2 + 5, { size: 15, align: 'center', alpha: a,
+    color: st.on ? '#fff' : st.off ? C.guide : st.hover ? C.ink : C.body });
+}
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+/* ---- sp_bss shared: data, the stage clock, chips, lanes, scatter, table,
+   controls (tools/numfig/sp_bss_lib.py); the figure's own script follows ---- */
+const D = DATA, MINUS = '−';
+const num = (v, d) => (Math.abs(v) < .5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace('-', MINUS);
+const arrive = t0 => settle(t0, .28), rise = s => 5 * (1 - s);
+function tw(s, size) { ctx.save(); ctx.font = font({size}); const w = ctx.measureText(s).width; ctx.restore(); return w; }
+const mw = (s, size) => math(s, 0, -1e4, {size, alpha: 0});
+function sub(l, x, y, words, a) { panel(l, x, y, {alpha: a}); if (words) text(words, x + 35, y, {size: 17, color: C.body, alpha: a}); }
+function mix(c1, c2, s) {
+  const a = _hex(c1), b = _hex(c2), q = i => Math.round(lerp(a[i], b[i], clamp(s)));
+  return '#' + [0, 1, 2].map(i => q(i).toString(16).padStart(2, '0')).join('');
+}
+/* u = [s1, s2, n1, n2] of each record: the first 4 s, every second sample */
+const i8f = (s, sc) => Float64Array.from(b64i8(s), v => v / sc);
+const RECS = D.recs.map(r => r.u.map((s, c) => i8f(s, r.sc[c])));
+const NP = RECS[0][0].length, DT = D.dt;               // samples shown, their spacing (s)
+function applyM(M, U) {                                 // a 2 x 4 matrix on u
+  return [0, 1].map(i => { const m = M[i], o = new Float64Array(NP);
+    for (let n = 0; n < NP; n++) o[n] = m[0] * U[0][n] + m[1] * U[1][n] + m[2] * U[2][n] + m[3] * U[3][n];
+    return o; });
+}
+const rotM = th => [[Math.cos(th), Math.sin(th)], [-Math.sin(th), Math.cos(th)]];
+const mul24 = (R, M) => [0, 1].map(i => M[0].map((_, j) => R[i][0] * M[0][j] + R[i][1] * M[1][j]));
+function rotSig(th, Z) {                                // R(theta) z, sample by sample
+  const c = Math.cos(th), s = Math.sin(th), a = new Float64Array(NP), b = new Float64Array(NP);
+  for (let n = 0; n < NP; n++) { a[n] = c * Z[0][n] + s * Z[1][n]; b[n] = -s * Z[0][n] + c * Z[1][n]; }
+  return [a, b];
+}
+function lerpSig(P, Q, e) {
+  if (e >= 1) return Q; if (e <= 0) return P;
+  return [0, 1].map(i => { const o = new Float64Array(NP); for (let n = 0; n < NP; n++) o[n] = P[i][n] + (Q[i][n] - P[i][n]) * e; return o; });
+}
+
+/* ------------------------------------------------------------ the stage clock
+   Stage k of the tour holds [TOUR0 + k PER, TOUR0 + (k+1) PER); it arrives
+   with its own motion in its first MORPH seconds (a rotation where the stage
+   turns the cloud, otherwise a glide from the stage before). A stage the
+   reader chooses starts at once: TOUR0 moves, and what was on the screen
+   glides into it (JUMP). A new SNR or record glides the same way (CHG).
+   Both are explicit state; draw() stays a function of the clock. */
+const PER = 5.2, MORPH = 1.0, TOUR_START = 0;
+let TOUR0 = TOUR_START, JUMP = null, CHG = null;
+function clock() {
+  const u = t - TOUR0;
+  if (u < 0) return {k: 0, ph: 0, cyc: -1};
+  const c = Math.floor(u / PER);
+  return {k: c % NS, ph: u - c * PER, cyc: c};
+}
+/* the stage on screen: k, its phase, the stage it comes from, the progress
+   of its own motion e and of a chosen stage's glide tr */
+function where() {
+  const c = clock();
+  let from = (c.k + NS - 1) % NS, e = settle(TOUR0 + Math.max(c.cyc, 0) * PER, MORPH), tr = 1;
+  if (c.cyc <= 0 && c.k === 0 && TOUR0 === TOUR_START) e = 1;            // the first stage: nothing before it
+  if (JUMP && c.cyc === JUMP.cyc && c.k === JUMP.k) {
+    from = JUMP.from; tr = settle(JUMP.t, .7);
+    if (!TURNS[c.k]) e = 1;                                              // the glide is its motion
+  }
+  return {k: c.k, ph: c.ph, cyc: c.cyc, from, e, tr};
+}
+/* the cursor: the record shown plays once per stage, in real time */
+const CUR0 = .6;
+function cursor(w) {
+  const tau = w.ph - CUR0, a = clamp(tau / .25) * clamp((D.show + .35 - tau) / .25);
+  return {n: clamp(Math.floor(tau / DT), 0, NP - 1), tau: clamp(tau, 0, D.show), a: STILL ? 0 : a};
+}
+
+/* ------------------------------------------------------------ chips
+   chip(): engine uiChip's look (white, grey edge; chosen navy with white
+   type; hover steel; pressed steel2), with a word and a symbol in math */
+function chip(x, y, w, h, words, sym, st = {}, a = 1) {
+  const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
+  const edge = st.on || st.hover || st.down ? C.navy : C.guide;
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], {color: edge, width: 1, fill, close: true, alpha: a});
+  const col = st.on ? '#fff' : st.hover ? C.ink : C.body, size = 15;
+  const w1 = words ? tw(words, size) : 0, w2 = sym ? mw(sym, size) : 0, gap = words && sym ? 4 : 0;
+  const x0 = x + (w - w1 - gap - w2) / 2, yb = y + h / 2 + 5;
+  if (words) text(words, x0, yb, {size, color: col, alpha: a});
+  if (sym) math(sym, x0 + w1 + gap, yb, {size, color: col, alpha: a});
+}
+function chipW(words, sym) { return (words ? tw(words, 15) : 0) + (sym ? mw(sym, 15) + 4 : 0) + 22; }
+
+/* ------------------------------------------------------------ lanes
+   two stacked axes over the 4 s shown; y in units of the stage's RMS */
+const YL = 5.4;
+function lanes(L, sig, o) {
+  const xt = [0, 1, 2, 3, 4];
+  const out = [];
+  for (let i = 0; i < 2; i++) {
+    const y0 = L.y + i * (L.h + L.gap);
+    const ax = axes({x: L.x, y: y0, w: L.w, h: L.h, xlim: [0, D.show], ylim: [-YL, YL], xticks: xt, yticks: [-4, 0, 4],
+      xfmt: i ? fmt : () => '', tickSize: 16, labelSize: 17, progress: o.p});
+    out.push(ax);
+    ax.inside(() => {
+      line([[L.x, ax.Y(0)], [L.x + L.w, ax.Y(0)]], {color: C.rule, width: 1, alpha: o.p});
+      const pts = new Array(NP);
+      for (let n = 0; n < NP; n++) pts[n] = [ax.X(n * DT), ax.Y(sig[i][n])];
+      line(pts, {color: o.color, width: 1.35, progress: o.draw});
+      if (o.ov && o.ov.a > .01) {
+        const q = o.ov.sig[i], ov = new Array(NP);
+        for (let n = 0; n < NP; n++) ov[n] = [ax.X(n * DT), ax.Y(q[n])];
+        line(ov, {color: C.navy, width: 1.3, dash: [5, 3.5], alpha: o.ov.a});
+      }
+      if (o.cur && o.cur.a > 0) line([[ax.X(o.cur.tau), y0], [ax.X(o.cur.tau), y0 + L.h]], {color: C.ink, width: 1, alpha: .45 * o.cur.a});
+    });
+  }
+  return out;
+}
+/* a symbol that changes with the stage: the old one leaves before the new one comes */
+function swap(e) { return [clamp(1 - 2.2 * e), clamp(2.2 * e - 1.2)]; }
+function ylab(s, x, y, a) { if (a > .01) math(s, x, y, {size: 18, align: 'center', rot: -Math.PI / 2, alpha: a}); }
+
+/* ------------------------------------------------------------ scatter
+   the joint scatter of the two channels, drawn as the point cloud itself,
+   with the images of the two source axes (the signal columns of the stage's
+   matrix) as arrows */
+function scatter(S, sig, o) {
+  const ax = axes({x: S.x, y: S.y, w: S.s, h: S.s, xlim: [-YL, YL], ylim: [-YL, YL], xticks: [-4, 0, 4], yticks: [-4, 0, 4],
+    tickSize: 16, progress: o.p});
+  ax.inside(() => {
+    line([[S.x, ax.Y(0)], [S.x + S.s, ax.Y(0)]], {color: C.rule, width: 1, alpha: o.p});
+    line([[ax.X(0), S.y], [ax.X(0), S.y + S.s]], {color: C.rule, width: 1, alpha: o.p});
+    ctx.save(); ctx.globalAlpha *= .42 * o.pts; ctx.fillStyle = C.blue;
+    for (let n = 0; n < NP; n++) ctx.fillRect(ax.X(sig[0][n]) - 1.3, ax.Y(sig[1][n]) - 1.3, 2.6, 2.6);
+    ctx.restore();
+  });
+  return ax;
+}
+function sourceArrows(ax, cols, a, len) {
+  if (a <= .01) return;
+  for (let j = 0; j < 2; j++) {
+    const vx = cols[j][0] * len, vy = cols[j][1] * len, L = Math.hypot(vx, vy);
+    if (L < 1e-6) continue;
+    arrow(ax.X(0), ax.Y(0), ax.X(vx), ax.Y(vy), {color: C.ink, width: 1.6, head: 10, alpha: a});
+  }
+  for (let j = 0; j < 2; j++) {                         // their labels after both strokes, on a knockout
+    const vx = cols[j][0] * len, vy = cols[j][1] * len, L = Math.hypot(vx, vy);
+    if (L < 1e-6) continue;
+    const s = 's_' + (j + 1), X = ax.X(vx + vx / L * .62), Y = ax.Y(vy + vy / L * .62) + 6, wd = mw(s, 17);
+    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(X - wd / 2 - 3, Y - 15, wd + 6, 20); ctx.restore();
+    math(s, X, Y, {size: 17, align: 'center', alpha: a});
+  }
+}
+
+/* ------------------------------------------------------------ table
+   booktabs: a 1.3 rule above and below, 0.8 under the head */
+function rule(x0, x1, y, w, a) { line([[x0, y], [x1, y]], {color: C.ink, width: w, alpha: a}); }
+/* a line of words and maths: [['t', words], ['m', maths], ...] (maths turns '-' into a minus sign, words keep it) */
+function mixed(parts, x, y, o) { let w = 0; for (const [k, s] of parts) w += k === 'm' ? math(s, x + w, y, o) : text(s, x + w, y, o); return w; }
+
+/* ------------------------------------------------------------ the reader's hand
+   chips are drawn on the canvas; each has a transparent button over it for
+   the keyboard and the pointer (a radio in its group). A click on a chip or
+   just beside it never pauses the figure. */
+const FIG = cv.closest('.fig'), HOV = {}, DOWN = {}, GROUPS = [];
+function redraw() { if (!playing) render(); }
+function group(name, label, items, get, set) {
+  const g = {name, items, get, set, buttons: []};
+  GROUPS.push(g);
+  if (STILL) return g;
+  const box = document.createElement('div');
+  box.setAttribute('role', 'radiogroup'); box.setAttribute('aria-label', label);
+  box.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  items.forEach((it, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'nfb'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', it.aria);
+    b.addEventListener('click', ev => { ev.stopPropagation(); set(i); sync(); });
+    b.addEventListener('keydown', ev => {
+      const n = items.length, d = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[ev.key];
+      const j = ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : d ? (get() + d + n) % n : -1;
+      if (j < 0) return;
+      ev.preventDefault(); set(j); sync(); g.buttons[j].focus();
+    });
+    b.addEventListener('pointerenter', () => { HOV[name] = i; redraw(); });
+    b.addEventListener('pointerleave', () => { if (HOV[name] === i) HOV[name] = -1; DOWN[name] = -1; redraw(); });
+    b.addEventListener('pointerdown', () => { DOWN[name] = i; redraw(); });
+    b.addEventListener('pointerup', () => { DOWN[name] = -1; redraw(); });
+    b.addEventListener('pointercancel', () => { HOV[name] = -1; DOWN[name] = -1; redraw(); });
+    box.appendChild(b); g.buttons.push(b);
+  });
+  FIG.insertBefore(box, FIG.querySelector('.ctl'));
+  return g;
+}
+function place(g, rects) {                              // each button over its chip, its hit area padded
+  if (STILL) return;
+  rects.forEach((r, i) => {
+    const b = g.buttons[i]; if (!b) return;
+    b.style.left = r[0] / W * 100 + '%'; b.style.top = r[1] / H * 100 + '%';
+    b.style.width = r[2] / W * 100 + '%'; b.style.height = r[3] / H * 100 + '%';
+  });
+}
+let said = null;
+function sync() {
+  for (const g of GROUPS) g.buttons.forEach((b, i) => { b.setAttribute('aria-checked', String(i === g.get())); b.tabIndex = i === g.get() ? 0 : -1; });
+  if (said && typeof status === 'function') said.textContent = status();
+}
+const BANDS = [];                                       // [x0, y0, x1, y1]: clicks there are the controls'
+if (!STILL) {
+  document.head.insertAdjacentHTML('beforeend', '<style>.nfb{position:absolute;pointer-events:auto;box-sizing:border-box;margin:0;padding:0;' +
+    'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+    '.nfb:focus{outline:none}.nfb:focus-visible{outline:2px solid #095A94;outline-offset:-3px}</style>');
+  said = document.createElement('div'); said.setAttribute('role', 'status');
+  said.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none';
+  FIG.appendChild(said);
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const r = cv.getBoundingClientRect(), X = (e.clientX - r.left) * W / r.width, Y = (e.clientY - r.top) * H / r.height;
+    if (BANDS.some(b => X >= b[0] && X <= b[2] && Y >= b[1] && Y <= b[3])) e.stopPropagation();
+  }, true);
+}
+/* a chosen stage: it starts now and what is on the screen glides into it;
+   paused (or less motion), the stage is shown complete */
+function chooseStage(j) {
+  const w = where();
+  if (playing && !REDUCED) {
+    const snap = snapNow();                              // the figure's view on the screen now
+    TOUR0 = t - j * PER;
+    JUMP = {k: j, cyc: clock().cyc, from: w.k, t, snap};
+  } else { TOUR0 = t - j * PER - 2.6; JUMP = null; }
+  CHG = null; render();
+}
+/* a new SNR or record: the cloud and the traces glide to the new numbers */
+function chooseData(f) {
+  const snap = playing && !REDUCED ? snapNow() : null;
+  f(); ENDS = null;
+  CHG = snap ? {t, snap} : null;
+  render();
+}
+let ENDS = null;
+/* query: ?snr=<dB>&len=<s>&stage=<1..> preselect a state (for the checks);
+   nothing happens without them */
+const Q = new URLSearchParams(location.search);
+
+/* ================================================ Figure 10: kurtosis ICA */
+const NS = 5, TURNS = [0, 0, 0, 1, 0], SYM = ['s', 'x', 'z', 'y', 'y'];
+const STAGES = [['sources', 's'], ['mixing', 'A'], ['whitening', 'W'], ['rotation', 'R'], ['estimates', 'y']];
+const OVS = [0, 0, 0, 0, 1];             // the true sources drawn over the estimates
+const KON = [.45, .45, 1, 1, 1];          // (c) in full once the data are white
+let SEL = D.snr0;
+{ const q = Q.get('snr'); if (q !== null) { const i = D.snrs.indexOf(+q); if (i >= 0) SEL = i; } }
+const KP = Q.get('stage') !== null ? clamp(Math.round(+Q.get('stage')), 1, NS) - 1 : NS - 1;
+const POSTER_T = TOUR_START + KP * PER + 2.6;
+const U = RECS[0], S0 = [[1, 0, 0, 0], [0, 1, 0, 0]];
+const st = () => D.st[SEL];
+function mats() {
+  const s = st(), A = D.A;
+  const Aug = [[A[0][0], A[0][1], s.sg, 0], [A[1][0], A[1][1], 0, s.sg]].map(r => r.map(v => v / s.kx));
+  return [S0, Aug, s.WA, s.F, s.F];
+}
+function ends() { if (!ENDS) ENDS = mats().map(M => applyM(M, U)); return ENDS; }
+const colsOf = M => [[M[0][0], M[1][0]], [M[0][1], M[1][1]]];
+const lerpCols = (P, Q, e) => P.map((c, j) => [lerp(c[0], Q[j][0], e), lerp(c[1], Q[j][1], e)]);
+const angOf = k => k >= 3 ? st().th : 0;
+const kapOf = k => k === 1 ? st().kx : 1;
+function viewRaw(w) {
+  const E = ends(), M = mats(), s = st(), v = {};
+  if (TURNS[w.k]) { const a = s.th * w.e; v.sig = rotSig(a, E[w.k - 1]); v.cols = colsOf(mul24(rotM(a), M[w.k - 1])); v.ang = a; }
+  else { v.sig = lerpSig(E[w.from], E[w.k], w.e); v.cols = lerpCols(colsOf(M[w.from]), colsOf(M[w.k]), w.e); v.ang = lerp(angOf(w.from), angOf(w.k), w.e); }
+  v.labA = SYM[w.from]; v.labB = SYM[w.k]; v.ls = w.e; v.kA = kapOf(w.from); v.kB = kapOf(w.k);
+  v.ov = lerp(OVS[w.from], OVS[w.k], w.e); v.kon = lerp(KON[w.from], KON[w.k], w.e);
+  return v;
+}
+function blend(P, V, s) {
+  if (s >= 1) return V;
+  const dom = P.ls < .5 ? P.labA : P.labB, same = dom === V.labB;
+  return {sig: lerpSig(P.sig, V.sig, s), cols: lerpCols(P.cols, V.cols, s), ang: lerp(P.ang, V.ang, s),
+    labA: same ? V.labA : dom, labB: V.labB, ls: same ? V.ls : s,
+    kA: same ? V.kA : (P.ls < .5 ? P.kA : P.kB), kB: V.kB, ov: lerp(P.ov, V.ov, s), kon: lerp(P.kon, V.kon, s)};
+}
+function view() {
+  const w = where();
+  let v = viewRaw(w);
+  if (JUMP && w.tr < 1 && w.k === JUMP.k && w.cyc === JUMP.cyc) v = blend(JUMP.snap, v, w.tr);
+  if (CHG) { const c = settle(CHG.t, .35); if (c < 1) v = blend(CHG.snap, v, c); }
+  return {w, v};
+}
+const snapNow = () => view().v;
+
+/* ------------------------------------------------------------ layout */
+const SR = {y: 12, h: 30, gap: 30};                      // the stages, as his flow of boxes
+const LN = {x: 98, y: 108, w: 484, h: 92, gap: 18};       // (a)
+const SC = {x: 706, y: 108, s: 236};                      // (b)
+const KB = {x: 98, y: 446, w: 484, h: 116};               // (c)
+const TB = {x0: 640, x1: 980, y: 432};                    // the table
+const SN = {x: 92, y: 650, w: 36, h: 28, pitch: 38};      // the SNR chips (as Figure 11's)
+let SRX = null;
+
+function stageRow(k, ph) {
+  if (!SRX) {
+    const ws = STAGES.map(s => chipW(s[0], s[1])), tot = ws.reduce((p, q) => p + q, 0) + SR.gap * (NS - 1);
+    let x = (W - tot) / 2;
+    SRX = ws.map(w => { const r = [x, w]; x += w + SR.gap; return r; });
+    place(GS, SRX.map(([x, w]) => [x - 4, 0, w + 8, SR.y + SR.h + 8]));
+    BANDS.push([SRX[0][0] - 12, 0, SRX[NS - 1][0] + SRX[NS - 1][1] + 12, SR.y + SR.h + 14]);
+  }
+  for (let i = 0; i < NS; i++) {
+    const [x, w] = SRX[i], a = arrive(.02 + .03 * i);
+    chip(x, SR.y + rise(a), w, SR.h, STAGES[i][0], STAGES[i][1], {on: i === k, hover: HOV.stage === i, down: DOWN.stage === i}, a);
+    if (i < NS - 1) arrow(x + w + 6, SR.y + SR.h / 2, x + w + SR.gap - 6, SR.y + SR.h / 2, {width: 1.2, head: 7, color: C.guide, alpha: a});
+  }
+  if (!STILL && playing) {                                 // the stage's time, under its chip
+    const [x, w] = SRX[k];
+    line([[x, SR.y + SR.h + 4], [x + w * clamp(ph / PER), SR.y + SR.h + 4]], {color: C.navy, width: 2, alpha: .8});
+  }
+}
+function kapLabel(v, x, y) {                               // pgfplots' scaled ticks: the factor the ticks carry
+  const one = k => Math.abs(k - 1) < .005;
+  if (!one(v.kA) && !one(v.kB)) { math('\\times\\ ' + lerp(v.kA, v.kB, v.ls).toFixed(2), x, y, {size: 15, color: C.body}); return; }
+  const [a0, a1] = swap(v.ls);
+  if (!one(v.kA) && a0 > .01) math('\\times\\ ' + v.kA.toFixed(2), x, y, {size: 15, color: C.body, alpha: a0});
+  if (!one(v.kB) && a1 > .01) math('\\times\\ ' + v.kB.toFixed(2), x, y, {size: 15, color: C.body, alpha: a1});
+}
+function panelA(v, cur, intro) {
+  sub('a', 18, 84, 'signals over time', arrive(.04));
+  const col = mix(C.navy, C.blue, v.ov);
+  const ov = {a: v.ov, sig: [0, 1].map(i => { const s = st(), j = s.perm[i], c = s.c[i], o = new Float64Array(NP); for (let n = 0; n < NP; n++) o[n] = c * U[j][n]; return o; })};
+  lanes(LN, v.sig, {p: seg(0, .35), draw: seg(.12, .45), color: col, ov, cur});
+  const [a0, a1] = swap(v.ls), la = arrive(.2);
+  for (let i = 0; i < 2; i++) {
+    const yc = LN.y + i * (LN.h + LN.gap) + LN.h / 2;
+    ylab(v.labA + '_' + (i + 1) + '(t)', LN.x - 52, yc, la * a0);
+    ylab(v.labB + '_' + (i + 1) + '(t)', LN.x - 52, yc, la * a1);
+  }
+  math('t\\ (\\rm{s})', LN.x + LN.w / 2, LN.y + 2 * LN.h + LN.gap + 52, {size: 17, align: 'center', alpha: la});
+  text('real time', LN.x + LN.w, LN.y + 2 * LN.h + LN.gap + 52, {size: 14, color: C.muted, align: 'right', alpha: seg(.5, .3)});
+  kapLabel(v, LN.x, LN.y - 8);
+  if (v.ov > .01) {                                        // which line is which, once the sources are drawn
+    const y = LN.y - 9, x1 = LN.x + LN.w;
+    const w2 = tw('matched source', 15), w1 = tw('estimate', 15);
+    line([[x1 - w2 - 34, y - 5], [x1 - w2 - 8, y - 5]], {color: C.navy, width: 1.3, dash: [5, 3.5], alpha: v.ov});
+    text('matched source', x1, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+    const x2 = x1 - w2 - 52;
+    line([[x2 - w1 - 34, y - 5], [x2 - w1 - 8, y - 5]], {color: C.blue, width: 1.6, alpha: v.ov});
+    text('estimate', x2, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+  }
+}
+function panelB(v, cur) {
+  sub('b', SC.x - 70, 84, 'joint scatter', arrive(.06));
+  const ax = scatter(SC, v.sig, {p: seg(.05, .35), pts: seg(.2, .35)});
+  // the source axes fade out where the signal they carry sinks under the noise
+  const arrows = clamp((Math.hypot(...v.cols[0]) - .3) / .25) * clamp((Math.hypot(...v.cols[1]) - .3) / .25);
+  sourceArrows(ax, v.cols, arrows * seg(.4, .3), 2.6);
+  if (cur.a > 0) dot(ax.X(v.sig[0][cur.n]), ax.Y(v.sig[1][cur.n]), 4.2, {color: C.ink, fill: '#fff', width: 1.4, alpha: cur.a});
+  const [a0, a1] = swap(v.ls), la = arrive(.22);
+  math(v.labA + '_1', SC.x + SC.s / 2, SC.y + SC.s + 50, {size: 18, align: 'center', alpha: la * a0});
+  math(v.labB + '_1', SC.x + SC.s / 2, SC.y + SC.s + 50, {size: 18, align: 'center', alpha: la * a1});
+  ylab(v.labA + '_2', SC.x - 46, SC.y + SC.s / 2, la * a0);
+  ylab(v.labB + '_2', SC.x - 46, SC.y + SC.s / 2, la * a1);
+  kapLabel(v, SC.x, SC.y - 8);
+}
+/* K(theta) from the fourth moments of z: exact at every angle */
+function kurtPair(m, th) {
+  const c = Math.cos(th), s = Math.sin(th);
+  const k1 = c ** 4 * m[0] + 4 * c ** 3 * s * m[1] + 6 * c * c * s * s * m[2] + 4 * c * s ** 3 * m[3] + s ** 4 * m[4] - 3;
+  const k2 = s ** 4 * m[0] - 4 * s ** 3 * c * m[1] + 6 * s * s * c * c * m[2] - 4 * s * c ** 3 * m[3] + c ** 4 * m[4] - 3;
+  return Math.abs(k1) + Math.abs(k2);
+}
+function panelC(v) {
+  const a = v.kon, la = arrive(.1);
+  sub('c', 18, KB.y - 24, 'kurtosis against rotation', la);
+  math('K(\\theta) = |\\rm{kurt}\\ y_1| + |\\rm{kurt}\\ y_2|', KB.x + KB.w, KB.y - 24, {size: 16, color: C.body, align: 'right', alpha: la * a});
+  const ax = axes({x: KB.x, y: KB.y, w: KB.w, h: KB.h, xlim: [-45, 45], ylim: [0, D.kmax], xticks: [-45, -30, -15, 0, 15, 30, 45],
+    yticks: D.kticks, xlabel: '\\rm{rotation angle}\\ \\theta\\ (\\rm{deg})', ylabel: 'K(\\theta)', ylabelGap: 46,
+    tickSize: 16, labelSize: 17, progress: seg(.1, .35), alpha: a});
+  const m = st().m, pts = [];
+  for (let i = 0; i <= 360; i++) { const d = -45 + i / 4; pts.push([ax.X(d), ax.Y(kurtPair(m, d * Math.PI / 180))]); }
+  const thd = st().th * 180 / Math.PI;
+  ax.inside(() => {
+    line([[ax.X(thd), KB.y + KB.h], [ax.X(thd), ax.Y(kurtPair(m, st().th))]], {color: C.guide, width: 1, dash: [5, 4], alpha: a * seg(.4, .3)});
+    line(pts, {color: C.navy, width: 2.2, progress: seg(.25, .45), alpha: a});
+  });
+  const d = v.ang * 180 / Math.PI;
+  dot(ax.X(d), ax.Y(kurtPair(m, v.ang)), 5, {color: '#fff', fill: C.accent, width: 1.4, alpha: a * seg(.45, .25)});
+}
+function table(v) {
+  const s = st(), a = arrive(.35) * lerp(.55, 1, v.ov), {x0, x1, y} = TB;
+  const cE = x0 + 132, cS = x0 + 266;
+  rule(x0, x1, y, 1.3, a);
+  text('source', x0, y + 22, {size: 16, color: C.body, alpha: a});
+  text('estimate', cE, y + 22, {size: 16, color: C.body, alpha: a});
+  text('SIR', cS, y + 22, {size: 16, color: C.body, align: 'right', alpha: a});
+  math('\\rho', x1, y + 22, {size: 17, color: C.body, align: 'right', alpha: a});
+  rule(x0, x1, y + 31, .8, a);
+  const names = ['harmonic', 'impacts'];
+  for (let j = 0; j < 2; j++) {
+    const yy = y + 56 + j * 26;
+    const w0 = text(names[j] + ' ', x0, yy, {size: 16, alpha: a});
+    math('s_' + (j + 1), x0 + w0, yy, {size: 16, alpha: a});
+    math(s.est[j], cE, yy, {size: 16, alpha: a});
+    text(s.sirs[j] + ' dB', cS, yy, {size: 16, align: 'right', alpha: a});
+    text(s.rhos[j], x1, yy, {size: 16, align: 'right', alpha: a});
+  }
+  rule(x0, x1, y + 92, 1.3, a);
+  math('\\rm{rotation}\\ \\theta^{*} = ' + s.thd + '\\rm{ deg, }\\ K(\\theta^{*}) = ' + s.Ks, x0, y + 122, {size: 15, color: C.body, alpha: a});
+  math('\\rm{source kurtosis: }' + D.ks[0] + '\\rm{ (harmonic), }' + D.ks[1] + '\\rm{ (impacts)}', x0, y + 146, {size: 14, color: C.muted, alpha: arrive(.4)});
+}
+function snrRow() {
+  const a = arrive(.4);
+  text('SNR (dB)', SN.x - 10, SN.y + 19, {size: 15, color: C.body, align: 'right', alpha: a});
+  D.snrs.forEach((v, i) => chip(SN.x + i * SN.pitch, SN.y, SN.w, SN.h, num(v, 0), null,
+    {on: i === SEL, hover: HOV.snr === i, down: DOWN.snr === i}, arrive(.4 + .01 * i)));
+}
+function draw() {
+  const {w, v} = view(), cur = cursor(w);
+  stageRow(w.k, w.ph);
+  panelA(v, cur);
+  panelB(v, cur);
+  panelC(v);
+  table(v);
+  snrRow();
+  mixed(D.params, 18, H - 12, {size: 14, color: C.muted, alpha: seg(.5, .3)});
+}
+function status() {
+  const s = st(), k = clock().k;
+  return 'Stage ' + (k + 1) + ' of ' + NS + ', ' + STAGES[k][0] + '. SNR ' + D.snrs[SEL] + ' dB: correlation ' + s.rhos[0] +
+    ' with the harmonic source and ' + s.rhos[1] + ' with the impacts.';
+}
+const GS = group('stage', 'Stage of kurtosis ICA', STAGES.map((s, i) => ({aria: 'Stage ' + (i + 1) + ': ' + s[0]})),
+  () => clock().k, j => chooseStage(j));
+const GN = group('snr', 'Sensor SNR', D.snrs.map(v => ({aria: 'SNR ' + v + ' dB'})), () => SEL, i => chooseData(() => { SEL = i; }));
+place(GN, D.snrs.map((_, i) => [SN.x + i * SN.pitch - (SN.pitch - SN.w) / 2, SN.y - 8, SN.pitch, SN.h + 16]));
+BANDS.push([SN.x - 80, SN.y - 10, SN.x + D.snrs.length * SN.pitch + 6, SN.y + SN.h + 10]);
+function reset() { TOUR0 = TOUR_START; JUMP = null; CHG = null; sync(); }
+sync();
+boot();
+</script>
+</body>
+</html>

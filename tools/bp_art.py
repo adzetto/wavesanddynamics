@@ -66,9 +66,13 @@ _FB = "from-bridges-to-photons"
 # must stand alone, "alone": its neighbours are left out and the box is
 # widened with paper instead).
 PICKS = {
-    _VW: ("content:anim/nf-building.webp", "waves-guide", (30, 168, 948, 622), "alone"),
+    # the building figure, re-laid in landscape on 5 Oct 2026: its modes row,
+    # "Total vibration = 1st mode + 2nd mode +"
+    _VW: ("content:anim/nf-building.webp", "waves-guide", (14, 12, 860, 392), "alone"),
     _FB: ("content:anim/nf-ph-slits.webp", "photons", (0, 187, 668, 563), "alone"),
-    _SP: ("content:anim/nf-sp-cover.webp", "signal-guide", (20, 0, 600, 292), "alone"),
+    # the guide's cover since 5 Oct 2026, the shared foundations: its first two
+    # problems, each with its computed example
+    _SP: ("content:anim/nf-sp-foundations.webp", "signal-guide", (20, 0, 880, 285), "alone"),
     _ML: ("content:anim/nf-mla-logreg.webp", "ml-guide", (126, 25, 1300, 685)),
     "probability-statistics.html": ("content:anim/nf-pr-overview.webp", "probability-deck", None),
     # his research documents' pictures are redrawn too (round 12): each card

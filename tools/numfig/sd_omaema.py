@@ -12,20 +12,34 @@ k = 9.5 MN/m, 2 % damping in every mode).
   over a longer and longer record; the modes are identified from the
   output alone by covariance driven stochastic subspace identification.
 
-  EMA (bottom row): a shaker on the roof applies a known sine sweep,
-  0.4 to 7 Hz; the force and the roof acceleration are recorded; the
-  frequency response a3/F is their ratio, and a three mode modal model
-  fitted to it gives the modal parameters.
+  EMA (bottom row), the two measured inputs his words name, "(e.g.,
+  shaker, earthquake)" (the professor's note of Oct 2026: "also add shaker
+  and base earthquake motion recorded"):
+  - a shaker: an electrodynamic shaker on a stand beside the frame drives
+    the roof through a stinger and a force sensor with a known sine sweep,
+    0.4 to 7 Hz; the force F and the roof acceleration a3 are recorded;
+  - an earthquake: the ground moves (a Kanai-Tajimi filtered, enveloped
+    white noise, seeded), an accelerometer on the foundation records the
+    ground acceleration a_g, the floors respond (exact state space, first
+    order hold); the input-output relation is the transmissibility a3/a_g.
+  In both, the frequency response is estimated from the two records,
+  H1 = S_xy / S_xx (Welch), and drawn on the model's exact curve; a modal
+  model fitted to it gives the three natural frequencies. The row shows the
+  two inputs in turn, test after test, until the reader picks one (chips;
+  ?view=shaker or ?view=earthquake preselects one).
 
 Both rows find the model's three natural frequencies; the check file
 compares them with the eigenvalues and with the closed form of a uniform
 shear building, w_n = 2 sqrt(k/m) sin((2n - 1) pi / (2(2N + 1))).
 
-Run: python tools/numfig/sd_omaema.py [--look]   (writes content/anim/
-nf-sd-omaema.html and .webp and tools/numfig/sd_omaema.check.txt)
+Run: python tools/numfig/sd_omaema.py [--look] [--dense]   (writes content/
+anim/nf-sd-omaema.html and .webp and tools/numfig/sd_omaema.check.txt)
 """
 import os
+import shutil
 import sys
+import tempfile
+import threading
 
 import numpy as np
 import scipy.linalg as sla
@@ -54,10 +68,21 @@ T_EMA = 200.0                              # s: its record (the frame is still a
 FMAX = 7.0                                 # Hz: the plots
 LOOP = 22.0                                # s: the page's loop
 T0 = 0.6                                   # s: the loop starts (page clock)
-B_T0 = 7.0                                 # loop time the sweep starts
-FS_PAGE = 60.0                             # Hz: the page's samples (simulated at 120 Hz)
+B_T0 = 7.0                                 # loop time the sweep (or the ground motion) starts
+FS_PAGE = 60.0                             # Hz: the page's samples (top row simulated at 120 Hz)
 TW = 8.0                                   # s: the window of the ambient traces
 LEVELS = [1, 2, 4, 8, 16, 32, 64]          # averages shown on the way to the whole record
+# the earthquake (bottom row's second input)
+FS_Q = 480.0                               # Hz: its record, and the bottom row's simulations (8 x FS_PAGE)
+SEED_Q = 3                                 # the ground motion's white noise
+WN_FS = 100.0                              # Hz: the white noise samples, linear between
+KT_FG, KT_ZG = 2.5, 0.6                    # Kanai-Tajimi ground filter: Hz, damping (firm ground)
+CP_FF, CP_ZF = 0.25, 0.6                   # Clough-Penzien high pass: Hz, damping
+ENV_T1, ENV_T2, ENV_C = 1.5, 7.0, 0.5      # Jennings, Housner and Tsai envelope: s, s, 1/s
+Q_END, Q_TAPER = 14.5, 1.0                 # s: the motion is over (a cosine taper over its last second)
+PGA = 0.03                                 # m/s^2: a weak motion, as monitored buildings mostly record
+T_Q = 200.0                                # s: its record (from rest to rest)
+H = 552                                    # the drawing's height (W = 1000)
 
 
 # ------------------------------------------------------------------ model
@@ -90,9 +115,30 @@ def statespace(M, K, C):
     return signal.StateSpace(A, B, Cy, Dy)
 
 
+def both_statespace(M, K, C):
+    """The bottom row's frame, x = [u, v] relative to the ground; inputs the
+    roof force F and the ground acceleration a_g; outputs the floors' absolute
+    accelerations (3) and their displacements relative to the ground (3):
+    M u'' + C u' + K u = e3 F - M iota a_g, absolute acceleration u'' + a_g."""
+    Mi = np.linalg.inv(M)
+    e3, iota = np.array([0.0, 0.0, 1.0]), np.ones(3)
+    A = np.block([[np.zeros((3, 3)), np.eye(3)], [-Mi @ K, -Mi @ C]])
+    B = np.vstack([np.zeros((3, 2)), np.column_stack([Mi @ e3, -iota])])
+    Cy = np.vstack([np.hstack([-Mi @ K, -Mi @ C]), np.hstack([np.eye(3), np.zeros((3, 3))])])
+    Dy = np.vstack([np.column_stack([Mi @ e3, np.zeros(3)]), np.zeros((3, 2))])
+    return signal.StateSpace(A, B, Cy, Dy)
+
+
 def frf(M, K, C, f):
     """Receptance matrices H(f) = (K - w^2 M + i w C)^-1, shape (len(f), 3, 3)."""
     return np.array([np.linalg.inv(K - (2 * np.pi * x) ** 2 * M + 2j * np.pi * x * C) for x in np.atleast_1d(f)])
+
+
+def transmissibility(M, K, C, f):
+    """The exact absolute acceleration transmissibility ground -> roof,
+    a3 / a_g = 1 - w^2 [H(w) (-M iota)]_3."""
+    iota = np.ones(3)
+    return np.array([1 + (2 * np.pi * x) ** 2 * (h @ (M @ iota))[2] for x, h in zip(np.atleast_1d(f), frf(M, K, C, f))])
 
 
 def run(ss, force, dt):
@@ -189,7 +235,16 @@ def oma(ss, seed=SEED_REC):
                 f=f_id, zeta=z_id, shapes=sh)
 
 
-# ------------------------------------------------------------------ EMA
+# ------------------------------------------------------------------ EMA: the shaker
+def h1(x, y, fs):
+    """H1 = S_xy / S_xx by Welch's method over one rectangular segment, the
+    whole record: a test that starts and ends at rest leaves nothing out
+    (a window or shorter segments would cut its transient)."""
+    f, sxy = signal.csd(x, y, fs=fs, window="boxcar", nperseg=x.size, detrend=False)
+    _, sxx = signal.welch(x, fs=fs, window="boxcar", nperseg=x.size, detrend=False)
+    return f, sxy / sxx
+
+
 def ema(ss, M, K, C):
     """One sweep from rest, recorded until the frame is still again; the FRF
     a3/F from their transforms, and a three mode modal model fitted to it."""
@@ -205,6 +260,9 @@ def ema(ss, M, K, C):
     fb, hb = fr[band], Hm[band]
     exact = np.array([-(2 * np.pi * x) ** 2 * h[:, 2] for x, h in zip(fb, frf(M, K, C, fb))])
     err = np.abs(hb - exact).max() / np.abs(exact).max()
+    # the same through Welch's H1 (one rectangular segment, the whole record)
+    fw, hw = h1(F, acc[:, 2], FS_SIM)
+    h1_err = np.abs(hw[band] - hb[:, 2]).max() / np.abs(hb[:, 2]).max()
 
     def model(p, fq):                                                     # a driving point accelerance, 3 modes
         om = 2 * np.pi * fq
@@ -245,15 +303,164 @@ def ema(ss, M, K, C):
     shapes = np.array([np.linalg.lstsq(A, np.concatenate([hb[:, r].real, hb[:, r].imag]), rcond=None)[0]
                        for r in range(3)])                               # (floor, mode): phi_i phi_3
     return dict(fr=fb, h3=h3, exact=exact[:, 2], fit=p, p0=np.array(p0).reshape(3, 3), frf_err=err,
-                fit_err=fit_err, shapes=shapes)
+                fit_err=fit_err, shapes=shapes, h1_err=h1_err)
+
+
+# ------------------------------------------------------------------ EMA: the earthquake
+def kt_cp():
+    """White noise -> ground acceleration: the Kanai-Tajimi filter (firm ground)
+    times the Clough-Penzien high pass, which takes away the low frequencies
+    that would leave the ground displaced."""
+    wg, wf = 2 * np.pi * KT_FG, 2 * np.pi * CP_FF
+    num = np.polymul([2 * KT_ZG * wg, wg ** 2], [1.0, 0.0, 0.0])
+    den = np.polymul([1.0, 2 * KT_ZG * wg, wg ** 2], [1.0, 2 * CP_ZF * wf, wf ** 2])
+    return signal.TransferFunction(num, den)
+
+
+def envelope(t):
+    """Jennings, Housner and Tsai (1968): rises as (t/t1)^2, holds to t2, then
+    decays as exp(-c (t - t2)); a cosine taper over the last second ends it at
+    Q_END."""
+    t = np.asarray(t, float)
+    e = np.where(t < ENV_T1, (t / ENV_T1) ** 2, np.where(t <= ENV_T2, 1.0, np.exp(-ENV_C * (t - ENV_T2))))
+    s = np.clip((t - (Q_END - Q_TAPER)) / Q_TAPER, 0, 1)
+    e = e * (0.5 + 0.5 * np.cos(np.pi * s))
+    return np.where((t >= 0) & (t <= Q_END), e, 0.0)
+
+
+def integrate(a, dt):
+    """Velocity and displacement of an acceleration linear between its samples,
+    exactly: v by the trapezoid, u by the cubic each interval holds."""
+    v = np.concatenate([[0.0], np.cumsum((a[1:] + a[:-1]) / 2 * dt)])
+    u = np.concatenate([[0.0], np.cumsum(v[:-1] * dt + dt * dt * (2 * a[:-1] + a[1:]) / 6)])
+    return v, u
+
+
+def ground_motion(n):
+    """The ground acceleration, n samples at FS_Q (linear between): seeded white
+    noise (WN_FS samples, linear between) through kt_cp() from rest, times the
+    envelope; then a baseline correction, a combination of the envelope and
+    the envelope times t, that brings the ground's velocity and displacement
+    back to zero exactly at Q_END; scaled to PGA. Returns a, v, u, the
+    correction's coefficients and the uncorrected end values."""
+    dt = 1 / FS_Q
+    t = np.arange(n) * dt
+    rng = np.random.default_rng(SEED_Q)
+    nw = int(round(Q_END * WN_FS)) + 1
+    wn = rng.standard_normal(nw)
+    wt = np.interp(t, np.arange(nw) / WN_FS, wn, right=0.0)
+    _, a, _ = signal.lsim(kt_cp(), wt, t, interp=True)
+    e = envelope(t)
+    a = a * e
+    k = int(round(Q_END * FS_Q))
+    va, ua = integrate(a, dt)
+    v1, u1 = integrate(e, dt)
+    v2, u2 = integrate(e * t, dt)
+    c = np.linalg.solve([[v1[k], v2[k]], [u1[k], u2[k]]], [va[k], ua[k]])
+    a = a - c[0] * e - c[1] * e * t
+    a[k + 1:] = 0.0
+    scale = PGA / np.abs(a).max()
+    a = a * scale
+    v, u = integrate(a, dt)
+    return a, v, u, c, (va[k] * scale, ua[k] * scale)
+
+
+def newmark(M, K, C, ag, dt, sub):
+    """Average acceleration Newmark (gamma 1/2, beta 1/4) for M u'' + C u' + K u
+    = -M iota a_g, a_g linear between its samples and each interval cut in
+    `sub` steps: the independent check of the state space response. Returns
+    the roof's relative displacement at the samples."""
+    h = dt / sub
+    iota = np.ones(3)
+    Keff = K + 2 / h * C + 4 / h ** 2 * M
+    lu = sla.lu_factor(Keff)
+    u = np.zeros(3); v = np.zeros(3); acc = np.zeros(3)
+    out = [0.0]
+    for i in range(ag.size - 1):
+        for s in range(sub):
+            g1 = ag[i] + (ag[i + 1] - ag[i]) * (s + 1) / sub
+            rhs = -M @ iota * g1 + M @ (4 / h ** 2 * u + 4 / h * v + acc) + C @ (2 / h * u + v)
+            un = sla.lu_solve(lu, rhs)
+            vn = 2 / h * (un - u) - v
+            an = 4 / h ** 2 * (un - u) - 4 / h * v - acc
+            u, v, acc = un, vn, an
+        out.append(u[2])
+    return np.array(out)
+
+
+def quake(M, K, C):
+    """The recorded earthquake: the ground motion, the frame's response from
+    rest (exact state space, first order hold), H1 from the two records against
+    the exact transmissibility, and a modal model of the transmissibility
+    fitted to it."""
+    dt = 1 / FS_Q
+    n = int(T_Q * FS_Q)
+    t = np.arange(n) * dt
+    ag, vg, ug, corr, raw_end = ground_motion(n)
+    ss = both_statespace(M, K, C)
+    _, y, _ = signal.lsim(ss, np.column_stack([np.zeros(n), ag]), t, interp=True)
+    aabs, urel = y[:, :3], y[:, 3:]
+    f, hq = h1(ag, aabs[:, 2], FS_Q)
+    band = (f >= 0.3) & (f <= FMAX)
+    fb, hb = f[band], hq[band]
+    exact = transmissibility(M, K, C, fb)
+    err = np.abs(hb - exact).max() / np.abs(exact).max()
+    # what a Hann windowed Welch average of 40.96 s segments would read (the transient cut up)
+    fw, sxy = signal.csd(ag, aabs[:, 2], fs=FS_Q, window="hann", nperseg=int(40.96 * FS_Q), detrend=False)
+    _, sxx = signal.welch(ag, fs=FS_Q, window="hann", nperseg=int(40.96 * FS_Q), detrend=False)
+    hw = sxy / sxx
+    wpk = [np.abs(hw[np.abs(fw - g) < 0.2]).max() / np.abs(exact[np.abs(fb - g) < 0.2]).max() - 1
+           for g in (1.38, 3.87, 5.59)]
+
+    def model(p, fq):                                                     # 1 + sum w^2 c_r / (w_r^2 - w^2 + 2i z w_r w)
+        om = 2 * np.pi * fq
+        out = np.ones(fq.size, complex)
+        for r in range(3):
+            fn, z, c = p[3 * r:3 * r + 3]
+            wn = 2 * np.pi * fn
+            out += om ** 2 * c / (wn ** 2 - om ** 2 + 2j * z * wn * om)
+        return out
+
+    mag = np.abs(hb)
+    p0, lo, hi = [], [], []
+    for g in (1.4, 3.9, 5.6):
+        near = np.where(np.abs(fb - g) < 0.4)[0]
+        i = near[np.argmax(mag[near])]
+        j, k_ = i, i
+        while mag[j] > mag[i] / np.sqrt(2):
+            j -= 1
+        while mag[k_] > mag[i] / np.sqrt(2):
+            k_ += 1
+        z0 = (fb[k_] - fb[j]) / (2 * fb[i])
+        c0 = -2 * z0 * (hb[i] - 1).imag                                    # at w_r: T - 1 = c_r / (2i z_r)
+        p0 += [fb[i], z0, c0]
+        lo += [fb[i] * 0.9, 1e-4, -np.inf]
+        hi += [fb[i] * 1.1, 0.2, np.inf]
+
+    def res(p):
+        d = (model(p, fb) - hb) / np.abs(hb)
+        return np.concatenate([d.real, d.imag])
+
+    sol = least_squares(res, p0, bounds=(lo, hi), x_scale="jac", xtol=1e-15, ftol=1e-15, gtol=1e-15)
+    p = sol.x.reshape(3, 3)
+    fit_err = np.abs(model(sol.x, fb) - hb).max() / np.abs(hb).max()
+    # Arias intensity, exact for the piecewise linear record: pi / (2 g) int a^2 dt
+    ia = np.concatenate([[0.0], np.cumsum(dt * (ag[:-1] ** 2 + ag[:-1] * ag[1:] + ag[1:] ** 2) / 3)]) * np.pi / (2 * 9.80665)
+    d5, d95 = t[np.searchsorted(ia, 0.05 * ia[-1])], t[np.searchsorted(ia, 0.95 * ia[-1])]
+    # the independent check: Newmark, finer and finer, against the state space (first 30 s)
+    m30 = int(30 * FS_Q) + 1
+    nm = [np.abs(newmark(M, K, C, ag[:m30], dt, sub) - urel[:m30, 2]).max() / np.abs(urel[:m30, 2]).max()
+          for sub in (1, 2, 4)]
+    return dict(t=t, ag=ag, vg=vg, ug=ug, aabs=aabs, urel=urel, fr=fb, h=hb, exact=exact, err=err, fit=p,
+                p0=np.array(p0).reshape(3, 3), fit_err=fit_err, ia=ia, d5=d5, d95=d95, corr=corr,
+                raw_end=raw_end, newmark=nm, welch_peaks=wpk)
 
 
 # ------------------------------------------------------------------ the page's signals
 def page_signals(ss):
-    """One loop of both rows, periodic (the loop is seamless): simulated at
-    2 FS_PAGE, kept at FS_PAGE. Top: the ambient forces (white samples at FS,
-    linear between them: another realization of the record's process).
-    Bottom: the sweep from loop time B_T0."""
+    """One loop of the top row, periodic (the loop is seamless): simulated at
+    2 FS_PAGE, kept at FS_PAGE; the ambient forces are white samples at FS,
+    linear between them (another realization of the record's process)."""
     dt = 1 / (2 * FS_PAGE)
     n = int(round(LOOP * 2 * FS_PAGE))
     tt = np.arange(n) * dt
@@ -263,17 +470,39 @@ def page_signals(ss):
     tk = np.arange(nf + 1) / FS
     fam = np.stack([np.interp(tt, tk, np.vstack([knots, knots[:1]])[:, j]) for j in range(3)], 1)
     acc_a, dis_a = periodic(ss, fam, dt)
-    fsw = np.zeros((n, 3))
-    fsw[:, 2] = SW_AMP * sweep(tt - B_T0)
-    acc_b, dis_b = periodic(ss, fsw, dt)
-    # the steady state against a run twice as long from rest (its last period)
-    worst = 0.0
-    for f, a, d in ((fam, acc_a, dis_a), (fsw, acc_b, dis_b)):
-        a2, d2 = run(ss, np.tile(f, (16, 1)), dt)
-        worst = max(worst, np.abs(d2[-n:] - d).max() / np.abs(d).max(), np.abs(a2[-n:] - a).max() / np.abs(a).max())
+    a2, d2 = run(ss, np.tile(fam, (16, 1)), dt)
+    worst = max(np.abs(d2[-n:] - dis_a).max() / np.abs(dis_a).max(), np.abs(a2[-n:] - acc_a).max() / np.abs(acc_a).max())
     k = slice(0, n, 2)
-    return dict(tt=tt[k], knots=knots, acc_a=acc_a[k], dis_a=dis_a[k], acc_b=acc_b[k], dis_b=dis_b[k],
-                fsw=fsw[k, 2], periodic_err=worst, dis_a_full=dis_a, dis_b_full=dis_b)
+    return dict(tt=tt[k], knots=knots, acc_a=acc_a[k], dis_a=dis_a[k], periodic_err=worst, dis_a_full=dis_a)
+
+
+def ema_signals(M, K, C, Q):
+    """The bottom row's three histories, each the periodic steady state of its
+    own forcing, simulated at FS_Q (the earthquake record's own samples) and
+    kept at FS_PAGE: the shaker's sweep every loop (b), the earthquake every
+    loop (q), and the two in turn (r: a sweep loop, then an earthquake loop).
+    Displacements are absolute (relative + the ground's)."""
+    ss = both_statespace(M, K, C)
+    dt = 1 / FS_Q
+    n = int(round(LOOP * FS_Q))
+    tt = np.arange(n) * dt
+    k0, kq = int(round(B_T0 * FS_Q)), int(round(Q_END * FS_Q)) + 1
+    F = SW_AMP * sweep(tt - B_T0)
+    ag = np.zeros(n); ag[k0:k0 + kq] = Q["ag"][:kq]
+    ug = np.zeros(n); ug[k0:k0 + kq] = Q["ug"][:kq]
+    zero = np.zeros(n)
+    forcing = {"b": np.column_stack([F, zero]), "q": np.column_stack([zero, ag]),
+               "r": np.vstack([np.column_stack([F, zero]), np.column_stack([zero, ag])])}
+    ground = {"b": zero, "q": ug, "r": np.concatenate([zero, ug])}
+    out, worst = {}, 0.0
+    for key, u_in in forcing.items():
+        m = u_in.shape[0]
+        _, y, _ = signal.lsim(ss, np.tile(u_in, (8, 1)), np.arange(8 * m) * dt, interp=True)
+        _, y2, _ = signal.lsim(ss, np.tile(u_in, (16, 1)), np.arange(16 * m) * dt, interp=True)
+        y, y2 = y[-m:], y2[-m:]
+        worst = max(worst, np.abs(y2 - y).max(0).max() / np.abs(y).max())
+        out[key] = dict(acc=y[:, 2], dis=y[:, 3:] + ground[key][:, None], ground=ground[key])
+    return out, worst, ag, ug
 
 
 def db(x, ref):
@@ -291,8 +520,8 @@ const first = () => t < T0 + L;                           // the first loop: the
 const POSTER_T = D.poster;
 
 /* ------------------------------------------------------------ layout */
-const COL = [{x: 22, w: 170}, {x: 240, w: 120}, {x: 408, w: 170}, {x: 626, w: 320}];
-const ROW = [{y: 88, h: 120, lab: 76}, {y: 312, h: 120, lab: 300}];
+const COL = [{x: 22, w: 170}, {x: 232, w: 160}, {x: 432, w: 150}, {x: 622, w: 320}];
+const ROW = [{y: 88, h: 120, lab: 76}, {y: 316, h: 140, lab: 304}];
 const cx = c => COL[c].x + COL[c].w / 2;
 const DASH = '–';
 const WORDS = [
@@ -301,11 +530,29 @@ const WORDS = [
   [['Known, controlled force', '(e.g., shaker,', 'earthquake)'], ['Structure'], ['Sensors measure', 'input and output'],
    ['Input-Output System ID', '(Experimental Modal Analysis ' + DASH + ' EMA)']]];
 
+/* ------------------------------------------------------------ the bottom row's input
+   his "(e.g., shaker, earthquake)": a shaker driving the roof, or a recorded
+   ground motion. The row shows them in turn, test after test (test 0, in the
+   first loop, is the shaker's), until the reader picks one; ?view=shaker or
+   ?view=earthquake picks one from the start (the overlap check of each). */
+const INPUT = ['shaker', 'earthquake'];
+const VIEW = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'shaker' ? 0 : v === 'earthquake' ? 1 : null; })();
+let PIN = VIEW, HC = -1, DC = -1;            // the reader's pick; the chip under the pointer, pressed
+function reset() { PIN = VIEW; }             // restart: in turn again
+const parity = k => ((k % 2) + 2) % 2;
+const testNo = () => Math.floor((t - T0 - BT0 + .15) / L);   // the test the row shows: the next one once the last has faded
+const shown = () => PIN !== null ? PIN : parity(testNo());   // 0: the shaker, 1: the earthquake
+
 /* ------------------------------------------------------------ signals */
 const NPS = D.n, FSP = D.fsp;
 const AA = [0, 1, 2].map(j => b64i8(D.a.acc[j])), DA = [0, 1, 2].map(j => b64f32(D.a.dis[j]));
 const KN = [0, 1, 2].map(j => b64i8(D.a.knots[j]));
-const AB = b64i8(D.b.acc), DB = [0, 1, 2].map(j => b64f32(D.b.dis[j]));
+/* the bottom row: three histories, each the periodic steady state of its own
+   forcing: the shaker every loop (EB), the earthquake every loop (EQ), the two
+   in turn (ER, two loops long, the shaker's loop first) */
+const EB = {acc: b64i8(D.b.acc), dis: [0, 1, 2].map(j => b64f32(D.b.dis[j]))};
+const EQ = {acc: b64i8(D.q.acc), dis: [0, 1, 2].map(j => b64f32(D.q.dis[j])), ag: b64i8(D.q.ag), ug: b64f32(D.q.ug)};
+const ER = {acc: b64i8(D.r.acc), dis: [0, 1, 2].map(j => b64f32(D.r.dis[j]))};
 const wrap = (i, n) => ((i % n) + n) % n;
 function cr(arr, s) {                                     // Catmull-Rom through the periodic samples, s in seconds
   const u = s * FSP, i = Math.floor(u), f = u - i, n = arr.length;
@@ -316,6 +563,24 @@ function sweepF(s) {                                      // the shaker's force,
   if (s < 0 || s > SWT) return 0;
   const tp = D.taper, w = s < tp ? .5 - .5 * Math.cos(Math.PI * s / tp) : s > SWT - tp ? .5 - .5 * Math.cos(Math.PI * (SWT - s) / tp) : 1;
   return w * Math.sin(2 * Math.PI * (D.f0 * s + .5 * RATE * s * s));
+}
+/* the bottom frame now: floors and ground (units) */
+function bottomNow() {
+  const s = tau(), s2 = ((t - T0) % (2 * L) + 2 * L) % (2 * L);
+  if (PIN === 0) return {u: EB.dis.map(a => cr(a, s)), g: 0};
+  if (PIN === 1) return {u: EQ.dis.map(a => cr(a, s)), g: cr(EQ.ug, s)};
+  return {u: ER.dis.map(a => cr(a, s2)), g: s2 >= L ? cr(EQ.ug, s2 - L) : 0};
+}
+/* the records of test k at loop time q: the roof's acceleration and the input, each scaled to 1 */
+function a3Of(k, q) {
+  if (PIN === 0) return cr(EB.acc, q) / 127;
+  if (PIN === 1) return cr(EQ.acc, q) / 127;
+  return cr(ER.acc, parity(k) * L + q) / 127;
+}
+const agOf = q => cr(EQ.ag, q) / 127;
+function ariasAt(s) {                                     // the earthquake's Arias intensity so far, of its whole, s after its start
+  const u = clamp(s * 20, 0, D.arias.length - 1), i = Math.min(D.arias.length - 2, Math.floor(u));
+  return lerp(D.arias[i], D.arias[i + 1], u - i);
 }
 
 /* ------------------------------------------------------------ pieces */
@@ -343,15 +608,17 @@ function trace(f, s0, s1, x0, x1, y, hh, o) {
 }
 const zeroLine = (x0, x1, y, a) => line([[x0, y], [x1, y]], { color: C.rule, width: 1, alpha: a });
 
-/* the frame: three storeys, rigid floors; u (drawing units) at floors 1..3 */
+/* the frame: three storeys, rigid floors; u (drawing units) at floors 1..3 and g at the ground,
+   all absolute; the pale frame at rest stays where it was */
 function frameDraw(r, u, p, o = {}) {
-  const X = cx(1) + 6, HW = 26, SH = 30, yg = ROW[r].y + 106;
-  const fl = [0, u[0], u[1], u[2]];
+  const X = o.X ?? cx(1) + 6, HW = 26, SH = 30, yg = o.yg ?? ROW[r].y + 106, g = o.g || 0;
+  const g0 = o.g0 ?? X - 50, g1 = o.g1 ?? X + 44;
+  const fl = [g, u[0], u[1], u[2]];
   const ys = k => yg - SH * k;
   // the ground
-  line([[X - 50, yg], [X + 44, yg]], { width: 1.8, progress: p });
+  line([[g0 + g, yg], [g1 + g, yg]], { width: 1.8, progress: p });
   if (p >= 1) { ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.beginPath();
-    for (let x = X - 46; x < X + 44; x += 7) { ctx.moveTo(x, yg); ctx.lineTo(x - 5, yg + 6); } ctx.stroke(); ctx.restore(); }
+    for (let x = g0 + 4; x < g1; x += 7) { ctx.moveTo(x + g, yg); ctx.lineTo(x + g - 5, yg + 6); } ctx.stroke(); ctx.restore(); }
   // at rest, pale
   const rest = [[X - HW, yg], [X - HW, ys(3)], [X + HW, ys(3)], [X + HW, yg]];
   line(rest, { color: C.rule, width: 1, progress: p });
@@ -373,17 +640,45 @@ function frameDraw(r, u, p, o = {}) {
   }
   return { X, HW, SH, yg, ys };
 }
+/* the shaker beside the roof: an electrodynamic shaker in a trunnion on a post, standing on the
+   ground; its armature, the stinger and the force sensor (F) at the roof move with the roof */
+function shakerDraw(F, u3, a) {
+  if (a <= 0) return;
+  const yr = F.ys(3), xe = F.X - F.HW - 3 + u3;            // the roof's left end
+  const b0 = F.X - 94, b1 = F.X - 60, px = (b0 + b1) / 2;  // the body, fixed
+  line([[b0 + 5, yr + 10], [px, yr + 19], [b1 - 5, yr + 10]], { width: 1.4, alpha: a });   // trunnion
+  line([[px, yr + 19], [px, F.yg - 3]], { width: 1.6, alpha: a });                          // post
+  line([[px - 10, F.yg - 1.5], [px + 10, F.yg - 1.5]], { width: 3, alpha: a });             // base plate
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.navy;
+  ctx.fillRect(b1 - 8, yr - 4, 18 + u3, 8);                                                 // armature (its back inside the body)
+  ctx.fillRect(xe - 7, yr - 6, 7, 12);                                                      // force sensor
+  ctx.restore();
+  line([[b1 + 10 + u3, yr], [xe - 7, yr]], { width: 1.6, alpha: a });                      // stinger
+  line([[b0, yr - 10], [b1, yr - 10], [b1, yr + 10], [b0, yr + 10]], { width: 1.4, fill: C.steel, close: true, alpha: a });
+  line([[b1 - 5, yr - 10], [b1 - 5, yr + 10]], { color: C.ink, width: 1, alpha: a });      // its front plate
+  dot(px, yr, 3, { color: C.ink, fill: '#fff', width: 1.2, alpha: a });                      // the trunnion's pivot
+  math('F', xe - 3.5, yr - 13, { size: 16, align: 'center', alpha: a });
+}
+/* the earthquake: the ground moves under the frame, an accelerometer on the foundation records it */
+function quakeDraw(F, g, a) {
+  if (a <= 0) return;
+  const sx = F.X - F.HW - 18 + g;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.navy; ctx.fillRect(sx - 3.5, F.yg - 8, 7, 7); ctx.restore();
+  math('a_{g}', F.X - F.HW - 27, F.yg - 14, { size: 16, align: 'right', alpha: a });
+  arrow(F.X - 24, F.yg + 16, F.X + 24, F.yg + 16, { color: C.guide, width: 1.4, head: 7, both: true, alpha: a });
+}
 
 /* ------------------------------------------------------------ the plots */
-const PL = r => ({ x: COL[3].x, y: ROW[r].y, w: COL[3].w, h: ROW[r].h, xlim: [0, D.fmax], ylim: D.ylim[r] });
-const FR = D.fr, NF = FR.length, SPEC = D.spec.map(s => b64f32(s)), FRB = D.frf.f, HB = b64f32(D.frf.db);
-function plot(r, p) {
-  const P = PL(r);
-  const g = axes({ ...P, xticks: [0, 1, 2, 3, 4, 5, 6, 7], yticks: D.yticks[r], yfmt: () => '', progress: p });
+const PL = r => ({ x: COL[3].x, y: ROW[r].y, w: COL[3].w, h: ROW[r].h, xlim: [0, D.fmax] });
+const FR = D.fr, SPEC = D.spec.map(s => b64f32(s));
+const FRF = [D.frf.b, D.frf.q].map(o => ({ f: o.f, est: b64f32(o.est), mod: b64f32(o.mod) }));
+function plot(r, p, which) {
+  const P = PL(r), lim = D.ylim[which], ticks = D.yticks[which];
+  const g = axes({ ...P, ylim: lim, xticks: [0, 1, 2, 3, 4, 5, 6, 7], yticks: ticks, yfmt: () => '', progress: p });
   const a = clamp(p * 1.4);
-  for (const v of D.yticks[r]) math(fmt(v), P.x + P.w + 7, g.Y(v) + 5, { size: 15, alpha: a });
-  math(D.ylab[r], 993, P.y + P.h / 2, { size: 15, align: 'center', rot: -Math.PI / 2, alpha: a });
-  return g;
+  for (const v of ticks) math(fmt(v), P.x + P.w + 7, g.Y(v) + 5, { size: 15, alpha: a });
+  math(D.ylab[which], 993, P.y + P.h / 2, { size: 16, align: 'center', rot: -Math.PI / 2, alpha: a });
+  return { g, P: { ...P, ylim: lim } };
 }
 function curve(g, P, xs, ys, o, upto = Infinity) {
   const pts = [];
@@ -419,13 +714,13 @@ function rowA() {
   for (let j = 0; j < 3; j++) {
     const fl = 2 - j, kn = KN[fl], nk = kn.length;
     const fAt = q => { const u = q * D.fs, i = Math.floor(u), w = u - i; return lerp(kn[wrap(i, nk)], kn[wrap(i + 1, nk)], w) / 127; };
-    math('F_{' + (fl + 1) + '}', x0 + 8, lvl[j] + 5, { size: 14, color: C.muted, alpha: lab(.3) });
-    zeroLine(x0 + 32, x0 + sw - 8, lvl[j], tr);
-    trace(fAt, s - D.tw, s, x0 + 32, x0 + sw - 8, lvl[j], 13, { color: C.guide, width: 1.1, alpha: tr });
+    math('F_{' + (fl + 1) + '}', x0 + 8, lvl[j] + 5, { size: 16, color: C.muted, alpha: lab(.3) });
+    zeroLine(x0 + 34, x0 + sw - 8, lvl[j], tr);
+    trace(fAt, s - D.tw, s, x0 + 34, x0 + sw - 8, lvl[j], 13, { color: C.guide, width: 1.1, alpha: tr });
     const ac = AA[fl], x3 = COL[2].x;
-    math('a_{' + (fl + 1) + '}', x3 + 8, lvl[j] + 5, { size: 14, alpha: lab(.34) });
-    zeroLine(x3 + 32, x3 + COL[2].w - 8, lvl[j], tr);
-    trace(q => cr(ac, q) / 127, s - D.tw, s, x3 + 32, x3 + COL[2].w - 8, lvl[j], 13, { color: C.navy, width: 1.2, alpha: tr });
+    math('a_{' + (fl + 1) + '}', x3 + 8, lvl[j] + 5, { size: 16, alpha: lab(.34) });
+    zeroLine(x3 + 34, x3 + COL[2].w - 8, lvl[j], tr);
+    trace(q => cr(ac, q) / 127, s - D.tw, s, x3 + 34, x3 + COL[2].w - 8, lvl[j], 13, { color: C.navy, width: 1.2, alpha: tr });
   }
   // the structure, swaying with its computed response; the random forces act on every floor
   const u = [0, 1, 2].map(j => cr(DA[j], s));
@@ -436,7 +731,7 @@ function rowA() {
     arrow(xa - 8, y, xa + 8, y, { color: C.guide, width: 1.4, head: 6, both: true, alpha: fa });
   }
   // the output spectrum, averaged over more and more of the record, and the modes it holds
-  const P = PL(r), g = plot(r, seg(.12, .4));
+  const { g, P } = plot(r, seg(.12, .4), 0);
   const nL = SPEC.length;
   let k = nL - 1, w = 1;                                   // the level shown and its blend from the one before
   if (first()) {
@@ -450,73 +745,157 @@ function rowA() {
   const done = !first() || t >= T0 + D.pick;
   const am = D.fn.map((_, i) => done ? (first() ? lab(T0 + D.pick + .08 * i) : 1) : 0);
   marks(g, P, FR, SPEC[nL - 1], D.oma, lab(.5), am);
-  text('record ' + D.rec[k], g.X(D.reclab), P.y + 20, { size: 14, color: C.muted, align: 'center', alpha: lab(.45) });
+  text('record ' + D.rec[k], g.X(D.reclab), P.y + 20, { size: 15, color: C.muted, align: 'center', alpha: lab(.45) });
 }
 
-/* ------------------------------------------------------------ bottom row: EMA */
+/* ------------------------------------------------------------ bottom row: EMA, a shaker or an earthquake */
+const CHIP = [{x: 30, w: 64}, {x: 100, w: 86}], CHY = ROW[1].y + 8, CHH = 24;
 function rowB() {
-  const r = 1, y0 = ROW[r].y, s = tau();
+  const r = 1, y0 = ROW[r].y, s = tau(), k = testNo(), cs = shown();
   words(r, .14);
   for (let c = 0; c < 3; c++) box(c, r, seg(.06 + .04 * c, .35));
   flow(r, seg(.3, .25));
-  // the input is measured too: from the force to the sensors
+  // the input is measured too: from the input to the sensors
   const yb = y0 + ROW[r].h, yf = yb + 20;
   const fp = seg(.35, .35);
   line([[cx(0), yb + 1], [cx(0), yf], [cx(2), yf]], { width: 1.8, progress: fp });
   if (fp >= 1) arrow(cx(2), yf, cx(2), yb + 7, { width: 1.8, head: 9 });
-  // the test: the sweep and the decay after it, drawn up to the cursor while it runs
+  // the reader's choice of input, in the input's box
+  const ca = lab(.3);
+  INPUT.forEach((nm, i) => uiChip(CHIP[i].x, CHY, CHIP[i].w, CHH, nm, { on: i === cs, hover: HC === i, down: DC === i }, ca));
+  // the test: the input and the response, drawn up to the cursor while it runs; between two tests
+  // the last one fades and, while they take turns, the next input takes its place
   const w0 = BT0 - .5, w1 = BT0 + SWT + 1.5;              // loop times shown in the boxes
-  const going = s >= BT0 && s < w1;                       // the cursor runs
-  const wiping = s >= BT0 - .45 && s < BT0;               // the last test fades before the next
+  const going = s >= w0 + .5 && s < w1;                   // the cursor runs
+  const wiping = s >= BT0 - .45 && s < BT0 - .15;
   const wipe = wiping ? 1 - clamp((s - (BT0 - .45)) / .3) : 1;
+  const swap = PIN === null;                              // the inputs take turns: the outgoing fades, the next arrives
+  const enter = swap && s >= BT0 - .15 && s < BT0 + .15 ? clamp((s - (BT0 - .15)) / .3) : 1;
+  const own = swap ? (wiping ? wipe : enter) : 1;         // the alpha of what belongs to the input shown
   const upto = going ? s : w1;
   const x1 = COL[0].x, x3 = COL[2].x, tr = seg(.2, .4);
-  const XS = (c, q) => COL[c].x + 32 + (COL[c].w - 40) * (q - w0) / (w1 - w0);
-  const TOP = y0 + 34, BOT = y0 + 86;
-  math('F', x1 + 8, y0 + 65, { size: 14, alpha: lab(.34) });
-  zeroLine(x1 + 32, x1 + COL[0].w - 8, y0 + 60, tr);
-  math('F', x3 + 8, TOP + 5, { size: 14, alpha: lab(.38) });
-  math('a_{3}', x3 + 8, BOT + 5, { size: 14, alpha: lab(.4) });
-  zeroLine(x3 + 32, x3 + COL[2].w - 8, TOP, tr); zeroLine(x3 + 32, x3 + COL[2].w - 8, BOT, tr);
-  const aB = q => cr(AB, q) / 127;
-  const al = tr * wipe;
+  const XS = (c, q) => COL[c].x + 34 + (COL[c].w - 42) * (q - w0) / (w1 - w0);
+  const TOP = y0 + 46, BOT = y0 + 106, YI = y0 + 92;
+  const inName = cs === 0 ? 'F' : 'a_{g}', inRec = cs === 0 ? (q => sweepF(q - BT0)) : agOf;
+  math(inName, x1 + 8, YI + 5, { size: 16, alpha: lab(.34) * own });
+  zeroLine(x1 + 34, x1 + COL[0].w - 8, YI, tr);
+  math(inName, x3 + 8, TOP + 5, { size: 16, alpha: lab(.38) * own });
+  math('a_{3}', x3 + 8, BOT + 5, { size: 16, alpha: lab(.4) });
+  zeroLine(x3 + 34, x3 + COL[2].w - 8, TOP, tr); zeroLine(x3 + 34, x3 + COL[2].w - 8, BOT, tr);
+  const al = tr * wipe * (swap ? enter : 1);
   const draw3 = (c, f, y, hh) => trace(f, w0, upto, XS(c, w0), XS(c, upto), y, hh, { color: C.navy, width: 1.1, alpha: al });
   if (upto > w0 && al > 0) {
-    draw3(0, q => sweepF(q - BT0), y0 + 60, 26);
-    draw3(2, q => sweepF(q - BT0), TOP, 16);
-    draw3(2, aB, BOT, 24);
+    draw3(0, inRec, YI, 26);
+    draw3(2, inRec, TOP, 17);
+    draw3(2, q => a3Of(k, q), BOT, 24);
   }
-  if (going) for (const c of [0, 2]) line([[XS(c, s), y0 + 6], [XS(c, s), y0 + ROW[r].h - 6]], { color: C.ink, width: 1, alpha: .45 });
-  // the structure and the shaker on its roof
-  const u = [0, 1, 2].map(j => cr(DB[j], s));
-  const F = frameDraw(r, u, seg(.14, .35));
-  const sa = lab(.35), ys = F.ys(3), xb = COL[1].x + 8;       // a modal shaker beside the roof, on its stinger
-  ctx.save(); ctx.globalAlpha *= sa; ctx.fillStyle = C.navy; ctx.fillRect(xb, ys - 6, 15, 12); ctx.restore();
-  line([[xb + 15, ys], [F.X - F.HW - 3 + u[2], ys]], { color: C.ink, width: 1.4, alpha: sa });
-  // the frequency response a3/F, revealed as the sweep passes each frequency
-  const P = PL(r), g = plot(r, seg(.16, .4));
-  const sweeping = s >= BT0 && s < BT0 + SWT;
-  const fs = sweeping ? D.f0 + RATE * (s - BT0) : Infinity;   // the sweep's frequency now
-  curve(g, P, FRB, HB, { color: C.navy, width: 1.6, alpha: wipe, progress: seg(.3, .45) }, fs);
-  if (sweeping) g.inside(() => line([[g.X(fs), P.y + 1], [g.X(fs), P.y + P.h - 1]], { color: C.ink, width: 1, alpha: .45 }));
+  if (going) {
+    line([[XS(0, s), y0 + 40], [XS(0, s), y0 + ROW[r].h - 6]], { color: C.ink, width: 1, alpha: .45 });
+    line([[XS(2, s), y0 + 6], [XS(2, s), y0 + ROW[r].h - 6]], { color: C.ink, width: 1, alpha: .45 });
+  }
+  // the structure, and its input: the shaker at the roof, or the ground moving under it
+  const B = bottomNow();
+  const F = frameDraw(r, B.u, seg(.14, .35), { X: COL[1].x + 114, yg: y0 + 118, g: B.g, g0: COL[1].x + 20, g1: COL[1].x + 148 });
+  const ea = lab(.35) * own;
+  if (cs === 0) shakerDraw(F, B.u[2], ea); else quakeDraw(F, B.g, ea);
+  // the frequency response from the two records, H1 = Sxy / Sxx, on the model's exact curve
+  const { g, P } = plot(r, seg(.16, .4), 1 + cs);
+  const R = FRF[cs], mp = seg(.3, .45);
+  curve(g, P, R.f, R.mod, { color: C.mist, width: 6, alpha: own, progress: mp });
   const l0 = T0 + Math.floor((t - T0) / L) * L;           // this loop's start, page clock
-  const am = D.fn.map((f, i) => {
-    if (!sweeping) return wipe * lab(.62 + .06 * i);        // (at the intro: once the curve is drawn)
-    // marked once the sweep has passed the peak's half power band and the cursor has cleared its value
-    const w = math(D.ema[i].toFixed(2), 0, -1e4, { size: 15, alpha: 0 });
-    const fclear = D.ema[i] + (w / 2 + 5) / (P.w / D.fmax);
-    const tp = BT0 + (Math.max(D.fpass[i], fclear) - D.f0) / RATE;
-    return s >= tp ? settle(l0 + tp, .28) : 0;
-  });
-  marks(g, P, FRB, HB, D.ema, lab(.5), am);
-  const xl = seg(.3, .3);
+  let am, ra = wipe * (swap ? enter : 1), reach = Infinity;
+  if (cs === 0) {
+    const sweeping = s >= BT0 && s < BT0 + SWT;
+    if (sweeping) {
+      reach = D.f0 + RATE * (s - BT0);                    // the sweep's frequency now
+      g.inside(() => line([[g.X(reach), P.y + 1], [g.X(reach), P.y + P.h - 1]], { color: C.ink, width: 1, alpha: .45 }));
+    }
+    am = D.fn.map((f, i) => {
+      if (!sweeping) return ra * lab(.62 + .06 * i);       // (at the intro: once the curve is drawn)
+      // marked once the sweep has passed the peak's half power band and the cursor has cleared its value
+      const w = math(D.ema[i].toFixed(2), 0, -1e4, { size: 15, alpha: 0 });
+      const fclear = D.ema[i] + (w / 2 + 5) / (P.w / D.fmax);
+      const tp = BT0 + (Math.max(D.fpass[i], fclear) - D.f0) / RATE;
+      return s >= tp ? settle(l0 + tp, .28) : 0;
+    });
+  } else {
+    // every frequency at once: the estimate firms up as the ground motion's energy (Arias) arrives,
+    // and the modes are marked once 95 % of it has
+    const shaking = s >= BT0 && s < w1;
+    if (shaking) ra *= ariasAt(s - BT0);
+    am = D.fn.map((f, i) => {
+      if (!shaking) return wipe * (swap ? enter : 1) * lab(.62 + .06 * i);
+      const tp = BT0 + D.d95 + .08 * i;
+      return s >= tp ? settle(l0 + tp, .28) : 0;
+    });
+  }
+  curve(g, P, R.f, R.est, { color: C.navy, width: 1.6, alpha: ra, progress: mp }, reach);
+  marks(g, P, R.f, R.mod, cs === 0 ? D.ema : D.emaq, lab(.5), am);
+  // the axis, and the key to the two curves, in the band the curves leave free between the first two
+  // peaks (where the top plot notes its record)
+  const xl = seg(.3, .3), kx = g.X(D.keyx);
   math('f\\ (\\rm{Hz})', P.x + P.w / 2, P.y + P.h + 42, { size: 16, align: 'center', alpha: xl });
+  // (as the family sets a key: a thin box, white fill; the sweep's cursor passes behind it)
+  const kw = 5 + 18 + 6 + text('model', 0, -1e4, { size: 15, alpha: 0 }) + 5;
+  line([[kx - 5, P.y + 5], [kx - 5 + kw, P.y + 5], [kx - 5 + kw, P.y + 44], [kx - 5, P.y + 44]],
+       { color: C.ink, width: 1, fill: '#fff', close: true, alpha: xl });
+  line([[kx, P.y + 16], [kx + 18, P.y + 16]], { color: C.mist, width: 6, alpha: xl });
+  text('model', kx + 24, P.y + 21, { size: 15, color: C.body, alpha: xl });
+  line([[kx, P.y + 34], [kx + 18, P.y + 34]], { color: C.navy, width: 1.6, alpha: xl });
+  math('H_{1}', kx + 24, P.y + 39, { size: 15, alpha: xl });
 }
 
 function draw() {
   rowA(); rowB();
   const pa = lab(.9);
-  math(D.params, 22, H - 12, { size: 14, color: C.muted, alpha: pa });
+  math(D.params, 22, H - 30, { size: 15, color: C.muted, alpha: pa });
+  math(D.params2, 22, H - 11, { size: 15, color: C.muted, alpha: pa });
+}
+
+/* ------------------------------------------------------------ the reader's hand: the two chips
+   a radio group (arrows move and pick); a pick holds until the figure is restarted, and a click
+   on a chip, or just beside one, never pauses the figure */
+if (!STILL) {
+  const FIG = document.querySelector('.fig'), css = document.createElement('style');
+  css.textContent = '.nfc{position:absolute;box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;color:transparent;' +
+    'cursor:pointer;font:inherit;overflow:hidden;-webkit-tap-highlight-color:transparent}.nfc:focus{outline:none}' +
+    '.nfc::after{content:"";position:absolute;left:0;right:0;top:16.7%;bottom:16.7%}' +
+    '.nfc:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}';
+  document.head.appendChild(css);
+  const group = document.createElement('div');
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', 'Measured input of the input-output test (they take turns until one is picked)');
+  FIG.insertBefore(group, FIG.querySelector('.ctl'));
+  const names = ['Shaker on the roof: a measured swept sine force', 'Recorded earthquake: the measured ground acceleration'];
+  const btns = [], pct = (v, of) => (v / of * 100) + '%';
+  const sync = () => btns.forEach((b, i) => { b.setAttribute('aria-checked', String(PIN === i)); b.tabIndex = i === (PIN ?? 0) ? 0 : -1; });
+  const pick = i => { PIN = i; sync(); if (!playing) render(); };
+  INPUT.forEach((nm, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'nfc'; b.setAttribute('role', 'radio'); b.textContent = nm;
+    b.setAttribute('aria-label', names[i]);
+    b.style.left = pct(CHIP[i].x, W); b.style.width = pct(CHIP[i].w, W);
+    b.style.top = pct(CHY + CHH / 2 - 18, H); b.style.height = pct(36, H);
+    b.addEventListener('click', e => { e.stopPropagation(); pick(i); });
+    b.addEventListener('keydown', e => {
+      const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      const j = e.key === 'Home' ? 0 : e.key === 'End' ? 1 : d ? (i + d + 2) % 2 : -1;
+      if (j < 0) return;
+      e.preventDefault(); btns[j].focus(); pick(j);
+    });
+    const hover = (h, d) => () => { HC = h; DC = d; if (!playing) render(); };
+    b.addEventListener('pointerenter', hover(i, -1)); b.addEventListener('pointerleave', hover(-1, -1));
+    b.addEventListener('pointerdown', hover(i, i)); b.addEventListener('pointerup', hover(i, -1));
+    group.appendChild(b); btns.push(b);
+  });
+  sync();
+  const rs = document.getElementById('rs');
+  rs.addEventListener('click', () => sync());               // restart: in turn again
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const r = cv.getBoundingClientRect(), X = (e.clientX - r.left) * W / r.width, Y = (e.clientY - r.top) * H / r.height;
+    if (X > CHIP[0].x - 8 && X < CHIP[1].x + CHIP[1].w + 6 && Y > CHY - 12 && Y < CHY + CHH + 12) e.stopPropagation();
+  }, true);
 }
 boot();
 """
@@ -528,29 +907,47 @@ def main():
     fn = w / 2 / np.pi
     O = oma(ss)
     E = ema(ss, M, K, C)
+    Q = quake(M, K, C)
     P = page_signals(ss)
+    BS, b_err, ag_loop, ug_loop = ema_signals(M, K, C, Q)
 
-    # ---- the plots' curves, in dB of each one's highest point
+    # ---- the plots' curves, in dB of each one's highest point (the transmissibility in dB of 1)
     fr = O["fr"]
     band = (fr >= 0.15) & (fr <= 7.0)
     ref = O["spectra"][-1][band].max()
     spec = [db(s[band], ref) for s in O["spectra"]]
-    hdb = 20 * np.log10(np.abs(E["h3"]) / np.abs(E["h3"]).max())
+    hmax = np.abs(E["h3"]).max()
     keep = np.arange(0, E["fr"].size, 2)
+    keepq = np.arange(0, Q["fr"].size, 2)
+    frf_b = {"f": E["fr"][keep], "est": common.f32(20 * np.log10(np.abs(E["h3"][keep]) / hmax)),
+             "mod": common.f32(20 * np.log10(np.abs(E["exact"][keep]) / hmax))}
+    frf_q = {"f": Q["fr"][keepq], "est": common.f32(20 * np.log10(np.abs(Q["h"][keepq]))),
+             "mod": common.f32(20 * np.log10(np.abs(Q["exact"][keepq])))}
     # where the sweep has passed each mode's half power band
     fpass = [f * (1 + 2 * ZETA) for f in fn]
     # the traces' scales
     a_amp = np.abs(P["acc_a"]).max()
     knots_amp = np.abs(P["knots"]).max()
-    b_amp = np.abs(P["acc_b"][:, 2]).max()
     gain_a = 7.0 / np.abs(P["dis_a"]).max()                  # drawing units per metre, top row
-    gain_b = 9.0 / np.abs(P["dis_b"]).max()
+    dmax = max(np.abs(BS[k]["dis"]).max() for k in BS)
+    gain_e = 9.0 / dmax                                      # the bottom row, all three histories
+    n8 = slice(0, None, int(round(FS_Q / FS_PAGE)))
+    nl = int(round(LOOP * FS_Q))
+
+    def acc_i8(a, halves=1):
+        parts = np.split(a, halves)
+        return common.i8(np.concatenate([p / np.abs(p).max() * 127 for p in parts]))
+
     seg_s = NPER / FS
+
     def rec_len(n):
         s = seg_s * (n + 1) / 2
         return f"{s / 60:.0f} min" if s < 3600 * 0.99 else f"{s / 3600:.0f} h"
+
     levels = O["levels"]
     poster = round(T0 + B_T0 + SW_T + 2.0, 2)
+    ar = Q["ia"] / Q["ia"][-1]
+    arias = [round(float(np.interp(x, Q["t"], ar)), 4) for x in np.arange(0, Q_END + 1e-9, 0.05)]
     data = {
         "loop": LOOP, "t0": T0, "bt0": B_T0, "swt": SW_T, "f0": SW_F0, "f1": SW_F1, "taper": SW_TAPER,
         "fmax": FMAX, "fs": FS, "fsp": FS_PAGE, "n": int(P["tt"].size), "tw": TW, "step": 0.8, "pick": 6.0,
@@ -558,65 +955,132 @@ def main():
         "a": {"acc": [common.i8(P["acc_a"][:, j] / a_amp * 127) for j in range(3)],
               "dis": [common.f32(P["dis_a"][:, j] * gain_a) for j in range(3)],
               "knots": [common.i8(P["knots"][:, j] / knots_amp * 127) for j in range(3)]},
-        "b": {"acc": common.i8(P["acc_b"][:, 2] / b_amp * 127),
-              "dis": [common.f32(P["dis_b"][:, j] * gain_b) for j in range(3)]},
+        "b": {"acc": acc_i8(BS["b"]["acc"][n8]), "dis": [common.f32(BS["b"]["dis"][n8, j] * gain_e) for j in range(3)]},
+        "q": {"acc": acc_i8(BS["q"]["acc"][n8]), "dis": [common.f32(BS["q"]["dis"][n8, j] * gain_e) for j in range(3)],
+              "ag": acc_i8(ag_loop[n8]), "ug": common.f32(ug_loop[n8] * gain_e)},
+        "r": {"acc": acc_i8(BS["r"]["acc"][n8], 2), "dis": [common.f32(BS["r"]["dis"][n8, j] * gain_e) for j in range(3)]},
         "fr": fr[band], "spec": [common.f32(s) for s in spec],
         "rec": [rec_len(n) for n in levels],
-        "frf": {"f": E["fr"][keep], "db": common.f32(hdb[keep])},
-        "ylim": [[-45, 12], [-45, 12]], "yticks": [[0, -20, -40], [0, -20, -40]],
-        "ylab": [r"\rm{spectrum\ (dB)}", r"|a_{3}/F|\ (\rm{dB})"], "reclab": 2.65,
-        "fn": fn, "fpass": fpass, "oma": O["f"], "ema": E["fit"][:, 0],
-        "params": (r"\rm{shear frame, 3 floors: }m\rm{ = 25 t, }k\rm{ = 9.5 MN/m, }\zeta\rm{ = 2 %;   model }"
-                   r"f_{n}\rm{ = " + ", ".join(f"{v:.2f}" for v in fn) + r" Hz (dashed);   sweep 0.4 to 7 Hz in 12 s}"),
+        "frf": {"b": frf_b, "q": frf_q},
+        "ylim": [[-45, 12], [-45, 12], [-35, 45]], "yticks": [[0, -20, -40], [0, -20, -40], [40, 20, 0, -20]],
+        "ylab": [r"\rm{spectrum\ (dB)}", r"|a_{3}/F|\ (\rm{dB})", r"|a_{3}/a_{g}|\ (\rm{dB})"], "reclab": 2.65,
+        "fn": fn, "fpass": fpass, "oma": O["f"], "ema": E["fit"][:, 0], "emaq": Q["fit"][:, 0],
+        "arias": arias, "d95": float(Q["d95"]), "keyx": 1.925,
+        "params": (r"\rm{shear frame, 3 floors: }m\rm{ = 25 t, }k\rm{ = 9.5 MN/m, }\zeta\rm{ = 2%;   model }"
+                   r"f_{n}\rm{ = " + ", ".join(f"{v:.2f}" for v in fn) + r" Hz (dashed)}"),
+        # (the hyphen is U+2010: math() sets an ASCII hyphen as a minus sign)
+        "params2": (r"\rm{shaker: sweep 0.4 to 7 Hz in 12 s;   earthquake: Kanai‐Tajimi noise (2.5 Hz, }\zeta_{g}"
+                    r"\rm{ = 0.6), enveloped, PGA " + f"{PGA:g}" + r" m/s}^{2}"),
     }
+    quick = "--quick" in sys.argv          # the page alone, to look at it: no scatter, no checks, no check file
     # the output-only identification's own scatter: the same pipeline on other records
     errs = []
-    for seed in range(8):
+    for seed in (range(8) if not quick else []):
         rng = np.random.default_rng(seed)
         acc, _ = run(ss, F_RMS * rng.standard_normal((int(T_OMA * FS), 3)), 1 / FS)
         errs.append(ssi_cov(acc)[0][:3] - fn)
-    errs = np.array(errs)
+    errs = np.array(errs) if errs else np.zeros((1, 3))
     scatter = dict(n=len(errs), rms=np.sqrt((errs ** 2).mean(0)), max=np.abs(errs).max(0),
                    agree=int(sum(all(f"{a:.2f}" == f"{b:.2f}" for a, b in zip(e + fn, fn)) for e in errs)))
-    txt = report(M, K, C, w, Phi, O, E, P, dict(gain_a=gain_a, gain_b=gain_b, poster=poster, a_amp=a_amp,
-                                                    b_amp=b_amp, knots_amp=knots_amp, scatter=scatter))
-    with open(os.path.join(HERE, "sd_omaema.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(txt)
+    X = dict(gain_a=gain_a, gain_e=gain_e, poster=poster, a_amp=a_amp, knots_amp=knots_amp, scatter=scatter,
+             b_err=b_err, dmax=dmax, BS=BS)
+    txt = report(M, K, C, w, Phi, O, E, Q, P, X)
+    if not quick:
+        with open(os.path.join(HERE, "sd_omaema.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(txt)
     print(txt)
     title = "Figure 2: OMA and EMA workflow"
     aria = ("Two workflows on one three storey frame. Top: an unknown random force shakes it, sensors measure "
             "the output only, and the output spectrum, averaged over a longer and longer record, shows the "
-            "modes that output-only identification finds. Bottom: a shaker applies a known sweep, sensors "
-            "measure input and output, and their ratio, the frequency response, gives the same three "
-            "natural frequencies.")
-    common.build_html(NAME, title, aria, 1000, 512, data, poster_js(JS, poster))
+            "modes that output-only identification finds. Bottom: a known input, in turn a shaker's swept force "
+            "at the roof and a recorded earthquake ground motion, sensors measure input and output, and the "
+            "frequency response estimated from them, drawn on the model's exact curve, gives the same three "
+            "natural frequencies. Two chips pick the input.")
+    common.build_html(NAME, title, aria, 1000, H, data, poster_js(JS, poster))
+    if quick:
+        return
     # the page's own motion: its Catmull-Rom sway between the 60 Hz samples against the
-    # simulation's 120 Hz samples there, and its sweep formula against this one
+    # simulations' samples there, its sweep formula and its Arias intensity against this one
     import guided_ut
-    mid = lambda arr, g: arr[1::2][:1300] * g                                  # the samples the page lacks
     q = (2 * np.arange(1300) + 1) / (2 * FS_PAGE)
     cases = [(f"Array.from({{length: 1300}}, (_, i) => cr(DA[{j}], (2 * i + 1) / {2 * FS_PAGE:g}))",
-              mid(P["dis_a_full"][:, j], gain_a)) for j in range(3)]
-    cases += [(f"Array.from({{length: 1300}}, (_, i) => cr(DB[{j}], (2 * i + 1) / {2 * FS_PAGE:g}))",
-               mid(P["dis_b_full"][:, j], gain_b)) for j in range(3)]
+              P["dis_a_full"][1::2][:1300, j] * gain_a) for j in range(3)]
+    half = int(round(FS_Q / FS_PAGE / 2))                     # the simulation's sample half way between two of the page's
+    for key, arr in (("EB", "b"), ("EQ", "q")):
+        cases += [(f"Array.from({{length: 1300}}, (_, i) => cr({key}.dis[{j}], (2 * i + 1) / {2 * FS_PAGE:g}))",
+                   BS[arr]["dis"][half::2 * half][:1300, j] * gain_e) for j in range(3)]
+    cases += [(f"Array.from({{length: 2600}}, (_, i) => cr(ER.dis[{j}], (2 * i + 1) / {2 * FS_PAGE:g}))",
+               BS["r"]["dis"][half::2 * half][:2600, j] * gain_e) for j in range(3)]
+    cases.append(("Array.from({length: 1300}, (_, i) => cr(EQ.ug, (2 * i + 1) / 120))",
+                  ug_loop[half::2 * half][:1300] * gain_e))
     sway = guided_ut.check_page(NAME, cases)
     ts = np.arange(0, SW_T, 0.013)
     force = guided_ut.check_page(NAME, [(f"Array.from({{length: {ts.size}}}, (_, i) => sweepF(i * 0.013))", sweep(ts))])
+    tq = np.arange(0, Q_END, 0.037)
+    arias_err = guided_ut.check_page(NAME, [(f"Array.from({{length: {tq.size}}}, (_, i) => ariasAt(i * 0.037))",
+                                             np.interp(tq, Q["t"], ar))])
     sd_check.append(os.path.join(HERE, "sd_omaema.check.txt"), [
         "", "THE PAGE'S OWN MOTION (evaluated in the browser)",
         "  the frames' sway: the page's Catmull-Rom interpolation of its 60 Hz samples, half way between them,",
-        f"  against the simulation's 120 Hz samples there (both rows, all floors, the first {1300 / FS_PAGE:.1f} s):",
-        f"  largest difference {sway:.3f} drawing units (the sway reaches 7 and 9 units)",
+        "  against the simulations' samples there (the top row, the bottom row's three histories and the",
+        f"  ground, all floors): largest difference {sway:.3f} drawing units (the sway reaches 7 and 9 units)",
         f"  the page's sweep formula against this generator's, every 13 ms: largest difference {force:.1e}"
-        " (amplitude 1)"])
+        " (amplitude 1)",
+        f"  the page's Arias intensity (its 20 Hz table, linear between; it fades the earthquake's estimate in)"
+        f" against the record's: {arias_err:.1e}"])
     print("still:", common.still(NAME))
-    sd_check.append(os.path.join(HERE, "sd_omaema.check.txt"),
-                    sd_check.record(NAME, 2 * LOOP + T0, 0.1, "--dense" in sys.argv))
+    rec = sd_check.record(NAME, 2 * LOOP + T0, 0.1, "--dense" in sys.argv,
+                          knock="the bottom plot's key (model, H1) is a white box drawn after the sweep's cursor,"
+                                " which passes behind it")
+    # each input held by the reader (?view=), over two loops
+    times = [round(float(x), 2) for x in np.arange(0.1, 2 * LOOP + T0 + 1e-9, 0.2)]
+    held = {}
+    for v in ("shaker", "earthquake"):
+        res = overlaps_at(f"view={v}", times)
+        held[v] = {k_: r for k_, r in res.items() if r["labels"] or r["crossings"]}
+        if held[v]:
+            print("COLLISIONS", v, list(held[v].items())[:5])
+    rec.insert(-1, f"  each input held by the reader (?view=shaker, ?view=earthquake), at the poster and every 0.2 s"
+                   f" from 0.1 to {times[-1]:g} s ({len(times)} moments each): "
+                   + ("nothing collides" if not any(held.values()) else "COLLISIONS"))
+    sd_check.append(os.path.join(HERE, "sd_omaema.check.txt"), rec)
+    if any(held.values()):
+        raise SystemExit("collisions with an input held")
     if "--look" in sys.argv:
-        print(common.frames(NAME, [0.3, 0.8, 1.4, 3.0, 6.0, 7.8, 9.0, 12.0, 16.0, 19.0]))
+        print(common.frames(NAME, [0.3, 0.8, 1.4, 3.0, 6.0, 7.8, 9.0, 12.0, 16.0, 19.0, 30.0, 36.0]))
 
 
-def report(M, K, C, w, Phi, O, E, P, X):
+def overlaps_at(query, times, width=672):
+    """common.overlaps() with a query string: the collisions at the poster and
+    at each moment in `times`, with the page in that state."""
+    from playwright.sync_api import sync_playwright
+    tmp = tempfile.mkdtemp(prefix="numfig-")
+    out = {}
+    try:
+        os.makedirs(os.path.join(tmp, "anim"))
+        shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
+        shutil.copy(os.path.join(common.ANIM, f"nf-{NAME}.html"), os.path.join(tmp, "anim"))
+        srv = common._server(tmp)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page(viewport={"width": width, "height": 1400}, device_scale_factor=1)
+            pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-{NAME}.html?still&overlap&{query}")
+            pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=30000)
+            pg.wait_for_timeout(150)
+            for s in [None] + list(times):
+                if s is not None:
+                    pg.evaluate(f"() => {{ t = {s:.6g}; render(); }}")
+                lab, cro = pg.evaluate("[window.__overlaps || [], window.__crossings || []]")
+                out["still" if s is None else f"t={s:g}"] = {"labels": lab, "crossings": cro}
+            b.close()
+        srv.shutdown()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return out
+
+
+def report(M, K, C, w, Phi, O, E, Q, P, X):
     L = []
     say = L.append
     fn = w / 2 / np.pi
@@ -653,10 +1117,12 @@ def report(M, K, C, w, Phi, O, E, P, X):
     say("    this record's errors are within that scatter, and the two decimals the figure prints hold for "
         f"{sc['agree']} of the {sc['n']} records")
     say("")
-    say("EMA (bottom row): input and output")
-    say(f"  a shaker on the roof: linear sine sweep {SW_F0:g} to {SW_F1:g} Hz in {SW_T:g} s, cosine tapered {SW_TAPER:g} s at both ends,")
+    say("EMA (bottom row), input 1, the shaker: input and output")
+    say(f"  an electrodynamic shaker on a stand beside the frame drives the roof through a stinger and a force")
+    say(f"  sensor: linear sine sweep {SW_F0:g} to {SW_F1:g} Hz in {SW_T:g} s, cosine tapered {SW_TAPER:g} s at both ends,")
     say(f"  {SW_AMP/1e3:g} kN; simulated from rest at {FS_SIM:g} Hz (first order hold, exact), recorded {T_EMA:g} s")
-    say("  frequency response a3/F: the transforms of the roof acceleration and the force, divided")
+    say("  frequency response a3/F: H1 = S_xy / S_xx (Welch, one rectangular segment: the whole record, which")
+    say(f"  starts and ends at rest); the same as the ratio of the two transforms to {E['h1_err']:.1e}")
     say(f"  CHECK: against the exact accelerance -w^2 (K - w^2 M + i w C)^-1 over {SW_F0+0.15:g} to {SW_F1-0.15:g} Hz:")
     say(f"    largest difference {E['frf_err']:.1e} of its largest value")
     say("  modal parameters: a driving point model of 3 modes, -w^2 sum a_r / (w_r^2 - w^2 + 2i zeta_r w_r w),")
@@ -670,24 +1136,77 @@ def report(M, K, C, w, Phi, O, E, P, X):
     say("  (peak picking alone would read " + ", ".join(f"{v:.3f}" for v in E["p0"][:, 0])
         + " Hz: at 2 % damping the modes' tails move the peaks)")
     say("")
-    say("BOTH FIND THE SAME FREQUENCIES (as the figure prints them, two decimals)")
+    say("EMA (bottom row), input 2, the earthquake: base motion recorded")
+    say(f"  ground acceleration: seeded white noise (seed {SEED_Q}, unit variance, samples at {WN_FS:g} Hz, linear between)")
+    say(f"  through a Kanai-Tajimi filter (firm ground: f_g = {KT_FG:g} Hz, zeta_g = {KT_ZG:g}) and the Clough-Penzien")
+    say(f"  high pass (f_f = {CP_FF:g} Hz, zeta_f = {CP_ZF:g}), from rest (scipy lsim, first order hold), sampled at {FS_Q:g} Hz;")
+    say(f"  times the Jennings, Housner and Tsai envelope ((t/{ENV_T1:g})^2 to {ENV_T1:g} s, 1 to {ENV_T2:g} s, then"
+        f" exp(-{ENV_C:g} (t - {ENV_T2:g})), a cosine")
+    say(f"  taper over its last {Q_TAPER:g} s, zero after {Q_END:g} s)")
+    c = Q["corr"]
+    say(f"  baseline: a_g - c1 e(t) - c2 t e(t) with c1, c2 such that the ground's velocity and displacement are zero")
+    say(f"  at {Q_END:g} s (before it: {Q['raw_end'][0]*1e3:.3f} mm/s, {Q['raw_end'][1]*1e3:.3f} mm); after it:"
+        f" {Q['vg'][-1]:.1e} m/s, {Q['ug'][-1]:.1e} m at the record's end")
+    say(f"  scaled to PGA {PGA:g} m/s^2 (a weak motion, as monitored buildings mostly record):"
+        f" PGV {np.abs(Q['vg']).max()*1e3:.2f} mm/s, PGD {np.abs(Q['ug']).max()*1e3:.2f} mm;")
+    say(f"  Arias intensity {Q['ia'][-1]*1e6:.2f} x 1e-6 m/s, significant duration (5 to 95 %) {Q['d5']:.2f} to"
+        f" {Q['d95']:.2f} s ({Q['d95']-Q['d5']:.2f} s)")
+    say("  the frame's response from rest: M u'' + C u' + K u = -M iota a_g (u relative to the ground), state space")
+    say(f"  with the record linear between its samples (lsim, first order hold: exact), {T_Q:g} s; roof: relative"
+        f" {np.abs(Q['urel'][:, 2]).max()*1e3:.2f} mm,")
+    say(f"  absolute acceleration {np.abs(Q['aabs'][:, 2]).max():.3f} m/s^2 (the ground's own {PGA:g})")
+    nm = Q["newmark"]
+    say(f"  CHECK: Newmark's average acceleration on the same record, the first 30 s, steps of 1/{FS_Q:g}, 1/{2*FS_Q:g},"
+        f" 1/{4*FS_Q:g} s: largest difference")
+    say(f"    from the state space {nm[0]:.1e}, {nm[1]:.1e}, {nm[2]:.1e} of the roof's largest (second order:"
+        f" ratios {nm[0]/nm[1]:.2f}, {nm[1]/nm[2]:.2f})")
+    say("  transmissibility a3/a_g: H1 = S_xy / S_xx (Welch, one rectangular segment, the whole record from rest")
+    say("  to rest; Hann windowed 40.96 s segments, half overlap, would cut the transient and read the peaks "
+        + ", ".join(f"{v*100:+.0f} %" for v in Q["welch_peaks"]) + ")")
+    say(f"  CHECK: against the exact a3/a_g = 1 - w^2 [(K - w^2 M + i w C)^-1 (-M iota)]_3 over 0.3 to {FMAX:g} Hz:")
+    say(f"    largest difference {Q['err']:.1e} of its largest value ({20*np.log10(np.abs(Q['exact']).max()):.1f} dB);"
+        f" at 0.3 Hz |a3/a_g| = {np.abs(Q['h'][0]):.4f} (rigid at low frequency: 1)")
+    say("  modal parameters: a model of 3 modes, 1 + w^2 sum c_r / (w_r^2 - w^2 + 2i zeta_r w_r w), fitted by least")
+    say(f"  squares (start: the peaks and half power widths); largest misfit {Q['fit_err']:.1e}")
+    cs_ = Phi[2] * (Phi.T @ M @ np.ones(3))
+    for r in range(3):
+        f_, z_, c_ = Q["fit"][r]
+        say(f"    mode {r+1}: f = {f_:.6f} Hz ({f_/fn[r]-1:+.1e}), zeta = {z_*100:.4f} %, c = {c_:+.5f}"
+            f" (phi_r,3 Gamma_r = {cs_[r]:+.5f})")
+    say(f"  CHECK: sum of the fitted c_r = {Q['fit'][:, 2].sum():.6f} (closed form: sum phi_r,3 Gamma_r = 1, the roof's"
+        " share of a rigid motion)")
+    say("")
+    say("ALL FIND THE SAME FREQUENCIES (as the figure prints them, two decimals)")
     say("  model " + ", ".join(f"{v:.2f}" for v in fn) + " Hz; OMA " + ", ".join(f"{v:.2f}" for v in O["f"])
-        + " Hz; EMA " + ", ".join(f"{v:.2f}" for v in E["fit"][:, 0]) + " Hz")
-    assert all(f"{a:.2f}" == f"{b:.2f}" == f"{c:.2f}" for a, b, c in zip(fn, O["f"], E["fit"][:, 0]))
+        + " Hz; EMA, shaker " + ", ".join(f"{v:.2f}" for v in E["fit"][:, 0])
+        + " Hz; EMA, earthquake " + ", ".join(f"{v:.2f}" for v in Q["fit"][:, 0]) + " Hz")
+    assert all(f"{a:.2f}" == f"{b:.2f}" == f"{c:.2f}" == f"{d:.2f}"
+               for a, b, c, d in zip(fn, O["f"], E["fit"][:, 0], Q["fit"][:, 0]))
     say("")
     say("THE PAGE")
-    say(f"  one loop of {LOOP:g} s, both rows periodic (seamless): the steady state of the loop's forces, the")
-    say(f"  period simulated 8 times from rest at {2*FS_PAGE:g} Hz, kept at {FS_PAGE:g} Hz; against 16 periods:"
-        f" largest difference {P['periodic_err']:.1e}")
-    say(f"  top row: another realization (seed {SEED_PAGE}) of the same ambient process, a {TW:g} s window scrolling in real time;")
+    say(f"  one loop of {LOOP:g} s, both rows periodic (seamless): the steady state of the loop's forces")
+    say(f"  top row: the period simulated 8 times from rest at {2*FS_PAGE:g} Hz, kept at {FS_PAGE:g} Hz; against 16"
+        f" periods: largest difference {P['periodic_err']:.1e}")
+    say(f"    another realization (seed {SEED_PAGE}) of the same ambient process, a {TW:g} s window scrolling in real time;")
     say(f"    the spectrum builds up once, over the first {0.8*7:.1f} s, then the modes are marked")
-    say(f"  bottom row: the sweep from loop time {B_T0:g} s, in real time; a3/F drawn as the sweep passes each")
-    say("    frequency; a mode is marked once the sweep has passed its half power band and the cursor its value")
+    say(f"  bottom row: the test from loop time {B_T0:g} s, in real time; three histories, each the periodic steady")
+    say(f"    state of its own forcing (8 periods from rest at {FS_Q:g} Hz, kept at {FS_PAGE:g} Hz; against 16 periods:"
+        f" largest difference {X['b_err']:.1e}):")
+    say("    the shaker every loop, the earthquake every loop, and the two in turn (two loops: the shaker's, then the")
+    say("    earthquake's); the row shows the inputs in turn (test 0, in the first loop, is the shaker's; the intro")
+    say("    shows the earthquake's before it), and a chip holds one, with its own history, until a restart")
+    say("    shaker: a3/F drawn as the sweep passes each frequency; a mode is marked once the sweep has passed its")
+    say("    half power band and the cursor its value")
+    say("    earthquake: every frequency at once; the estimate firms up with the ground motion's Arias intensity and")
+    say(f"    the modes are marked at 95 % of it ({Q['d95']:.2f} s into the motion)")
     say(f"  frames drawn 30 units a storey; sway x {X['gain_a']/1e3:.0f} units/mm (top: ambient), x"
-        f" {X['gain_b']/1e3:.1f} units/mm (bottom: the sweep)")
+        f" {X['gain_e']/1e3:.2f} units/mm (bottom: all three histories,")
+    say(f"    the same scale; the largest absolute floor displacement {X['dmax']*1e3:.2f} mm draws 9 units); the ground"
+        f" moves {np.abs(X['BS']['q']['ground']).max()*X['gain_e']:.1f} units at most")
     say(f"  the traces are scaled to their largest values: ambient force {X['knots_amp']:.0f} N, accelerations"
-        f" {X['a_amp']*1e3:.1f} mm/s^2 (top), roof {X['b_amp']:.3f} m/s^2 (bottom)")
-    say(f"  poster (printed frame) at t = {X['poster']} s: both rows complete, the sweep just over")
+        f" {X['a_amp']*1e3:.1f} mm/s^2 (top); each bottom record to its own largest")
+    say(f"  poster (printed frame) at t = {X['poster']} s: both rows complete, the sweep just over (the shaker shown,")
+    say("    the earthquake's chip beside it)")
     return "\n".join(L) + "\n"
 
 

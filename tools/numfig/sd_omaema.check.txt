@@ -26,10 +26,12 @@ OMA (top row): output only
     the frequencies scatter 0.9, 1.3, 2.5 mHz rms about the model's (modes 1, 2, 3), largest error 1.7, 2.1, 3.7 mHz;
     this record's errors are within that scatter, and the two decimals the figure prints hold for 8 of the 8 records
 
-EMA (bottom row): input and output
-  a shaker on the roof: linear sine sweep 0.4 to 7 Hz in 12 s, cosine tapered 0.4 s at both ends,
+EMA (bottom row), input 1, the shaker: input and output
+  an electrodynamic shaker on a stand beside the frame drives the roof through a stinger and a force
+  sensor: linear sine sweep 0.4 to 7 Hz in 12 s, cosine tapered 0.4 s at both ends,
   2 kN; simulated from rest at 400 Hz (first order hold, exact), recorded 200 s
-  frequency response a3/F: the transforms of the roof acceleration and the force, divided
+  frequency response a3/F: H1 = S_xy / S_xx (Welch, one rectangular segment: the whole record, which
+  starts and ends at rest); the same as the ratio of the two transforms to 4.2e-16
   CHECK: against the exact accelerance -w^2 (K - w^2 M + i w C)^-1 over 0.55 to 6.85 Hz:
     largest difference 2.9e-04 of its largest value
   modal parameters: a driving point model of 3 modes, -w^2 sum a_r / (w_r^2 - w^2 + 2i zeta_r w_r w),
@@ -40,28 +42,65 @@ EMA (bottom row): input and output
     mode 3: f = 5.590511 Hz (-5.3e-07), zeta = 2.0000 %, MAC (residues of the three floors) 1.0000000
   (peak picking alone would read 1.380, 3.875, 5.630 Hz: at 2 % damping the modes' tails move the peaks)
 
-BOTH FIND THE SAME FREQUENCIES (as the figure prints them, two decimals)
-  model 1.38, 3.87, 5.59 Hz; OMA 1.38, 3.87, 5.59 Hz; EMA 1.38, 3.87, 5.59 Hz
+EMA (bottom row), input 2, the earthquake: base motion recorded
+  ground acceleration: seeded white noise (seed 3, unit variance, samples at 100 Hz, linear between)
+  through a Kanai-Tajimi filter (firm ground: f_g = 2.5 Hz, zeta_g = 0.6) and the Clough-Penzien
+  high pass (f_f = 0.25 Hz, zeta_f = 0.6), from rest (scipy lsim, first order hold), sampled at 480 Hz;
+  times the Jennings, Housner and Tsai envelope ((t/1.5)^2 to 1.5 s, 1 to 7 s, then exp(-0.5 (t - 7)), a cosine
+  taper over its last 1 s, zero after 14.5 s)
+  baseline: a_g - c1 e(t) - c2 t e(t) with c1, c2 such that the ground's velocity and displacement are zero
+  at 14.5 s (before it: -0.759 mm/s, -6.057 mm); after it: -2.4e-18 m/s, -4.5e-16 m at the record's end
+  scaled to PGA 0.03 m/s^2 (a weak motion, as monitored buildings mostly record): PGV 2.95 mm/s, PGD 1.76 mm;
+  Arias intensity 121.30 x 1e-6 m/s, significant duration (5 to 95 %) 1.65 to 8.12 s (6.47 s)
+  the frame's response from rest: M u'' + C u' + K u = -M iota a_g (u relative to the ground), state space
+  with the record linear between its samples (lsim, first order hold: exact), 200 s; roof: relative 1.61 mm,
+  absolute acceleration 0.126 m/s^2 (the ground's own 0.03)
+  CHECK: Newmark's average acceleration on the same record, the first 30 s, steps of 1/480, 1/960, 1/1920 s: largest difference
+    from the state space 6.5e-04, 1.6e-04, 4.0e-05 of the roof's largest (second order: ratios 4.00, 4.00)
+  transmissibility a3/a_g: H1 = S_xy / S_xx (Welch, one rectangular segment, the whole record from rest
+  to rest; Hann windowed 40.96 s segments, half overlap, would cut the transient and read the peaks +154 %, +22 %, +27 %)
+  CHECK: against the exact a3/a_g = 1 - w^2 [(K - w^2 M + i w C)^-1 (-M iota)]_3 over 0.3 to 7 Hz:
+    largest difference 4.9e-05 of its largest value (29.7 dB); at 0.3 Hz |a3/a_g| = 1.0589 (rigid at low frequency: 1)
+  modal parameters: a model of 3 modes, 1 + w^2 sum c_r / (w_r^2 - w^2 + 2i zeta_r w_r w), fitted by least
+  squares (start: the peaks and half power widths); largest misfit 6.6e-05
+    mode 1: f = 1.380743 Hz (-1.0e-07), zeta = 1.9999 %, c = +1.22038 (phi_r,3 Gamma_r = +1.22041)
+    mode 2: f = 3.868755 Hz (-1.2e-07), zeta = 2.0000 %, c = -0.28005 (phi_r,3 Gamma_r = -0.28011)
+    mode 3: f = 5.590512 Hz (-2.7e-07), zeta = 1.9999 %, c = +0.05967 (phi_r,3 Gamma_r = +0.05970)
+  CHECK: sum of the fitted c_r = 1.000002 (closed form: sum phi_r,3 Gamma_r = 1, the roof's share of a rigid motion)
+
+ALL FIND THE SAME FREQUENCIES (as the figure prints them, two decimals)
+  model 1.38, 3.87, 5.59 Hz; OMA 1.38, 3.87, 5.59 Hz; EMA, shaker 1.38, 3.87, 5.59 Hz; EMA, earthquake 1.38, 3.87, 5.59 Hz
 
 THE PAGE
-  one loop of 22 s, both rows periodic (seamless): the steady state of the loop's forces, the
-  period simulated 8 times from rest at 120 Hz, kept at 60 Hz; against 16 periods: largest difference 6.0e-13
-  top row: another realization (seed 11) of the same ambient process, a 8 s window scrolling in real time;
+  one loop of 22 s, both rows periodic (seamless): the steady state of the loop's forces
+  top row: the period simulated 8 times from rest at 120 Hz, kept at 60 Hz; against 16 periods: largest difference 6.0e-13
+    another realization (seed 11) of the same ambient process, a 8 s window scrolling in real time;
     the spectrum builds up once, over the first 5.6 s, then the modes are marked
-  bottom row: the sweep from loop time 7 s, in real time; a3/F drawn as the sweep passes each
-    frequency; a mode is marked once the sweep has passed its half power band and the cursor its value
-  frames drawn 30 units a storey; sway x 38 units/mm (top: ambient), x 3.0 units/mm (bottom: the sweep)
-  the traces are scaled to their largest values: ambient force 362 N, accelerations 33.3 mm/s^2 (top), roof 0.468 m/s^2 (bottom)
-  poster (printed frame) at t = 21.6 s: both rows complete, the sweep just over
+  bottom row: the test from loop time 7 s, in real time; three histories, each the periodic steady
+    state of its own forcing (8 periods from rest at 480 Hz, kept at 60 Hz; against 16 periods: largest difference 4.4e-13):
+    the shaker every loop, the earthquake every loop, and the two in turn (two loops: the shaker's, then the
+    earthquake's); the row shows the inputs in turn (test 0, in the first loop, is the shaker's; the intro
+    shows the earthquake's before it), and a chip holds one, with its own history, until a restart
+    shaker: a3/F drawn as the sweep passes each frequency; a mode is marked once the sweep has passed its
+    half power band and the cursor its value
+    earthquake: every frequency at once; the estimate firms up with the ground motion's Arias intensity and
+    the modes are marked at 95 % of it (8.12 s into the motion)
+  frames drawn 30 units a storey; sway x 38 units/mm (top: ambient), x 3.03 units/mm (bottom: all three histories,
+    the same scale; the largest absolute floor displacement 2.97 mm draws 9 units); the ground moves 5.3 units at most
+  the traces are scaled to their largest values: ambient force 362 N, accelerations 33.3 mm/s^2 (top); each bottom record to its own largest
+  poster (printed frame) at t = 21.6 s: both rows complete, the sweep just over (the shaker shown,
+    the earthquake's chip beside it)
 
 THE PAGE'S OWN MOTION (evaluated in the browser)
   the frames' sway: the page's Catmull-Rom interpolation of its 60 Hz samples, half way between them,
-  against the simulation's 120 Hz samples there (both rows, all floors, the first 21.7 s):
-  largest difference 0.007 drawing units (the sway reaches 7 and 9 units)
+  against the simulations' samples there (the top row, the bottom row's three histories and the
+  ground, all floors): largest difference 0.007 drawing units (the sway reaches 7 and 9 units)
   the page's sweep formula against this generator's, every 13 ms: largest difference 1.1e-16 (amplitude 1)
+  the page's Arias intensity (its 20 Hz table, linear between; it fades the earthquake's estimate in) against the record's: 5.6e-03
 
 OVERLAP (engine.js ?overlap)
   common.still(): at the poster and every 0.25 s up to the poster time: no label meets a label,
   no stroke crosses a label (the still would not have been written otherwise)
   common.overlaps() every 0.1 s from 0.1 to 44.6 s (two loops, 447 moments): nothing collides
-  no knockout is relied on and nothing is allowed (still(allow=()))
+  each input held by the reader (?view=shaker, ?view=earthquake), at the poster and every 0.2 s from 0.1 to 44.5 s (223 moments each): nothing collides
+  one label sits on a knockout by design: the bottom plot's key (model, H1) is a white box drawn after the sweep's cursor, which passes behind it; nothing is allowed (still(allow=()))

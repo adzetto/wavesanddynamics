@@ -37,7 +37,7 @@ html,body{margin:0;padding:0;background:#fff;}
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 530;
+const W = 1000, H = 520;
 const DATA = {"trees":[{"root":{"f":0,"op":"ge","v":50.0,"no":1,"yes":4},"kids":[{"f":1,"op":"ge","v":720.0,"no":2,"yes":3,"leaf":[0,1]},{"f":2,"op":"le","v":37.8,"no":6,"yes":5,"leaf":[0,1]}]},{"root":{"f":1,"op":"ge","v":705.0,"no":1,"yes":4},"kids":[{"f":0,"op":"ge","v":50.0,"no":2,"yes":3,"leaf":[0,1]},{"f":2,"op":"le","v":36.8,"no":6,"yes":5,"leaf":[0,1]}]},{"root":{"f":2,"op":"le","v":38.3,"no":4,"yes":1},"kids":[{"f":1,"op":"ge","v":735.0,"no":5,"yes":6,"leaf":[0,1]},{"f":0,"op":"ge","v":50.0,"no":2,"yes":3,"leaf":[0,1]}]},{"root":{"f":0,"op":"ge","v":50.0,"no":1,"yes":4},"kids":[{"f":1,"op":"ge","v":720.0,"no":2,"yes":3,"leaf":[0,1]},{"f":2,"op":"le","v":37.8,"no":6,"yes":5,"leaf":[0,1]}]},{"root":{"f":0,"op":"ge","v":51.7,"no":1,"yes":4},"kids":[{"f":1,"op":"ge","v":720.0,"no":2,"yes":3,"leaf":[0,1]},{"f":2,"op":"le","v":37.4,"no":6,"yes":5,"leaf":[0,1]}]}],"apps":[[38.0,725,24.0],[42.0,725,40.0],[52.0,735,40.0]],"one":0.9216,"big":0.9408};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
@@ -641,18 +641,18 @@ function box(x, y, w, h, o = {}) {
   if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
   ctx.restore();
 }
-/* a legend inside the axes: a thin 1 px box, white fill, serif 15.
-   rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
+/* a legend inside the axes: a thin 1 px box, white fill, serif 16 (the round of 5 Oct 2026:
+   legends 16 to 17). rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
 function legend(x, y, rows, a = 1, w = 0) {
   if (a <= 0) return;
-  ctx.save(); ctx.font = font({size: 15});
+  ctx.save(); ctx.font = font({size: 16});
   const tw = Math.max(...rows.map(r => ctx.measureText(r[1]).width)); ctx.restore();
-  const W_ = w || tw + 58, H_ = rows.length * 22 + 10;
+  const W_ = w || tw + 60, H_ = rows.length * 24 + 10;
   box(x, y, W_, H_, {fill: '#fff', stroke: C.ink, width: 1, alpha: a});
   rows.forEach(([key, lab], i) => {
-    const yy = y + 21 + 22 * i;
+    const yy = y + 23 + 24 * i;
     ctx.save(); ctx.globalAlpha *= a; key(x + 22, yy - 5); ctx.restore();
-    text(lab, x + 44, yy, {size: 15, alpha: a});
+    text(lab, x + 44, yy, {size: 16, alpha: a});
   });
   return W_;
 }
@@ -705,7 +705,7 @@ function mw(s, size = 16) { return math(s, 0, -1e4, {size, alpha: 0}); }
 const D = DATA, NTR = D.trees.length;
 const CX = k => 102 + 199 * k, RY = 128, KY = 210, LY = 272, VY = 318;
 const BX = 500, BY = 414, BW = 330, BH = 80;
-const AT0 = .55, AP = 3.6;
+const AT0 = .55, AP = 5.0;                  // an applicant every 5 s: the answer rests 2.6 s
 const POSTER_T = AT0 + 2.5;
 const FN = ['income', 'credit score', 'debt'];
 const cond = q => (q.op === 'ge' ? '≥ ' : '≤ ') +
@@ -713,7 +713,7 @@ const cond = q => (q.op === 'ge' ? '≥ ' : '≤ ') +
 const yes = (q, a) => q.op === 'ge' ? a[q.f] >= q.v - 1e-9 : a[q.f] <= q.v + 1e-9;
 
 function qbox(cx, cy, w, q, a, hot) {
-  node(cx, cy, w, 46, [FN[q.f], cond(q)], {alpha: a, size: 15, gap: 18, stroke: hot ? C.accent : C.ink,
+  node(cx, cy, w, 46, [FN[q.f], cond(q)], {alpha: a, size: 16, gap: 19, stroke: hot ? C.accent : C.ink,
     width: hot ? 1.8 : 1.3});
 }
 function draw() {
@@ -725,7 +725,7 @@ function draw() {
 
   D.trees.forEach((tr, k) => {
     const cx = CX(k), a = arrive(.02 + .05 * k);
-    text('tree ' + (k + 1), cx, RY - 36, {size: 15, color: C.muted, align: 'center', alpha: a});
+    text('tree ' + (k + 1), cx, RY - 36, {size: 16, color: C.body, align: 'center', alpha: a});
     // this applicant's path through tree k
     const s1 = app ? (yes(tr.root, app) ? 1 : 0) : -1, kid = s1 >= 0 ? tr.kids[s1] : null;
     const s2 = kid ? (yes(kid, app) ? 1 : 0) : -1;
@@ -746,6 +746,12 @@ function draw() {
       });
       qbox(kx, KY, 90, q, arrive(.12 + .04 * k), side === s1 && p1 >= 1);
     });
+    // the first tree says which way an answer goes, as Figure 10 does: no to the left, yes to the right
+    if (k === 0) {
+      const la = clamp(ea * 2 - 1), my = (RY + 23 + KY - 23) / 2 + 5;
+      text('no', cx - 23.5 - 13, my, {size: 16, italic: true, color: C.body, align: 'right', alpha: la});
+      text('yes', cx + 23.5 + 13, my, {size: 16, italic: true, color: C.body, alpha: la});
+    }
     qbox(cx, RY, 118, tr.root, a, app && p1 > 0);
     // the vote
     if (app) {
@@ -776,15 +782,13 @@ function draw() {
       {size: 16, alpha: fade});
   }
   // key to the leaves
-  const ka = arrive(.5), kx = 700, ky = 30;
-  box(kx, ky - 11, 14, 14, {fill: C.navy, stroke: C.navy, width: 1.4, alpha: ka});
-  text('leaf: approve', kx + 20, ky + 1, {size: 15, alpha: ka});
-  box(kx + 132, ky - 11, 14, 14, {fill: '#fff', stroke: C.navy, width: 1.4, alpha: ka});
-  text('decline', kx + 152, ky + 1, {size: 15, alpha: ka});
-  text('each tree: its own bootstrap sample of Figure 10’s 200 applications, 2 of 3 features tried per split; ' +
-       'no goes left, yes right', 18, H - 32, {size: 14, color: C.muted, alpha: arrive(.9)});
-  text('on 5,000 new applications, one fully grown tree is right ' + (D.one * 100).toFixed(1) + '% of the time, ' +
-       'a forest of 300 such trees ' + (D.big * 100).toFixed(1) + '%', 18, H - 12, {size: 14, color: C.muted, alpha: arrive(.9)});
+  const ka = arrive(.5), kx = 742, ky = 30;
+  box(kx, ky - 12, 14, 14, {fill: C.navy, stroke: C.navy, width: 1.4, alpha: ka});
+  text('leaf: approve', kx + 20, ky + 1, {size: 16, alpha: ka});
+  box(kx + 136, ky - 12, 14, 14, {fill: '#fff', stroke: C.navy, width: 1.4, alpha: ka});
+  text('decline', kx + 156, ky + 1, {size: 16, alpha: ka});
+  text('5 trees of depth 2; bootstrap samples; 2 of 3 features a split', 18, H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 </script>

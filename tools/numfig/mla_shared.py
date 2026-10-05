@@ -105,18 +105,18 @@ function box(x, y, w, h, o = {}) {
   if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
   ctx.restore();
 }
-/* a legend inside the axes: a thin 1 px box, white fill, serif 15.
-   rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
+/* a legend inside the axes: a thin 1 px box, white fill, serif 16 (the round of 5 Oct 2026:
+   legends 16 to 17). rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
 function legend(x, y, rows, a = 1, w = 0) {
   if (a <= 0) return;
-  ctx.save(); ctx.font = font({size: 15});
+  ctx.save(); ctx.font = font({size: 16});
   const tw = Math.max(...rows.map(r => ctx.measureText(r[1]).width)); ctx.restore();
-  const W_ = w || tw + 58, H_ = rows.length * 22 + 10;
+  const W_ = w || tw + 60, H_ = rows.length * 24 + 10;
   box(x, y, W_, H_, {fill: '#fff', stroke: C.ink, width: 1, alpha: a});
   rows.forEach(([key, lab], i) => {
-    const yy = y + 21 + 22 * i;
+    const yy = y + 23 + 24 * i;
     ctx.save(); ctx.globalAlpha *= a; key(x + 22, yy - 5); ctx.restore();
-    text(lab, x + 44, yy, {size: 15, alpha: a});
+    text(lab, x + 44, yy, {size: 16, alpha: a});
   });
   return W_;
 }

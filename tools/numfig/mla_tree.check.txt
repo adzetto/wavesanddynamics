@@ -27,3 +27,4 @@ CHECK 3: the page's four new applicants, routed by the page's questions and by s
   income 41k, credit 745, debt 30 %: page leaf 1, sklearn leaf 1, approve
   income 73k, credit 705, debt 44 %: page leaf 2, sklearn leaf 2, decline
   income 38k, credit 668, debt 21 %: page leaf 0, sklearn leaf 0, decline
+PAGE: an applicant every 4.8 s (3.1 s before 5 Oct 2026); each path rests 2.6 s, written out.

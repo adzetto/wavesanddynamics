@@ -15,9 +15,9 @@ number computed.
 
 The page shows all three and plays each in turn: the parts of the timestamp
 each feature comes from, a probe carried through the log curve from one
-histogram to the other, and the records encoded one by one. Each has an 8 s
-window of a 27 s round, paced so every step can be followed (30 Sep 2026:
-twice as slow as before; the timing is in the check file).
+histogram to the other, and the records encoded one by one, each in its own
+window of a 36 s round, paced so every step can be followed (the timing is in
+the check file).
 
 Run: python tools/numfig/mla_features.py [--look]
 """
@@ -76,17 +76,15 @@ say("")
 say("(c) ENCODING: one-hot of diagnosis group " + ", ".join(DIAG))
 say(f"  CHECK: scikit-learn OneHotEncoder gives {OH.tolist()}; each row sums to 1: {bool(np.all(OH.sum(1) == 1))}")
 say("")
-say("TIMING (30 Sep 2026, the client: slow Figure 6 down so each step can be followed): every step")
-say("  about twice as slow, old values in brackets; the intro unchanged (readable by 0.6 s, all in by 1.2 s)")
-say("  round 27 s (13.5 s): each step an 8 s window (4 s) from 0.6 s, then 3 s at rest (1.5 s); poster 25.6 s (13.6 s)")
-say("  (a) each feature in turn every 1.56 s (0.78 s): its source and value light up in 0.3 s (0.15 s),")
-say("      hold 0.94 s (0.47 s) and dim in 0.3 s (0.15 s); first at 0.8 s (0.6 s)")
-say("  (b) the probe fades in at 18 k$ (it used to appear at 45 k$ and leave mid-glide), then glides to 45, 110")
-say("      and 230 k$ with a 0.8 s spring (0.5 s), one stop every 2 s (0.95 s), so each value holds still about")
-say("      0.7 s (it never came to rest before), and fades out; timed from its own window (the old cycle of")
-say("      4.55 s ran on the page clock and drifted against the 13.5 s round)")
-say("  (c) the table's values clear in 0.4 s (at once) and each record takes 1.4 s (0.7 s): it lights up in")
-say("      0.24 s (0.12 s), its ones and zeros appear 0.5 s in, in 0.3 s (0.25 s in, 0.15 s), and it dims")
+say("TIMING (30 Sep 2026, the client: slow Figure 6 down so each step can be followed; 5 Oct 2026: every")
+say("  value read rests 2.5 s): round 36 s from 0.6 s, windows (a) 11.5 s, (b) 13.5 s, (c) 8 s, then 3 s at rest;")
+say("  poster 34.6 s. The intro is unchanged (readable by 0.6 s, all in by 1.2 s).")
+say("  (a) each feature in turn every 2.2 s (1.56 s): its source and value light up in 0.3 s, hold 1.6 s and dim")
+say("      in 0.3 s; first at 0.2 s into the window")
+say("  (b) the probe fades in at 18 k$, then glides to 45, 110 and 230 k$ with a 0.8 s spring, one stop every")
+say("      3.3 s (2 s), so each value it reads rests 2.5 s (0.7 s), and fades out; timed from its own window")
+say("  (c) the table's values clear in 0.4 s and each record takes 1.4 s: it lights up in 0.24 s, its ones and")
+say("      zeros appear 0.5 s in, in 0.3 s, and it dims")
 report(STEM, L)
 
 DATA = {
@@ -97,35 +95,36 @@ DATA = {
 
 JS = LIB + r"""
 const D = DATA;
-/* each step runs in its own window of a 27 s round, then rests; paced so it
-   can be followed (30 Sep 2026: twice as slow as before) */
-const R0 = .6, WIN = 8, ROUND = 27;
-const POSTER_T = R0 + 3 * WIN + 1;
-function win(k) { if (t < R0) return -1; const u = (t - R0) % ROUND - k * WIN; return u >= 0 && u < WIN ? u : -1; }
+/* each step runs in its own window of a 36 s round, then rests; paced so it can be followed
+   (30 Sep 2026: twice as slow as before; 5 Oct 2026: every value the probe reads rests 2.5 s,
+   each feature's source stays lit 1.9 s) */
+const R0 = .6, WINS = [11.5, 13.5, 8], START = [0, 11.5, 25], ROUND = 36;
+const POSTER_T = R0 + 33 + 1;
+function win(k) { if (t < R0) return -1; const u = (t - R0) % ROUND - START[k]; return u >= 0 && u < WINS[k] ? u : -1; }
 
 /* (a) extraction */
 function drawA() {
   const A = D.a, u = win(0), a0 = arrive(0);
   sub('a', 18, 34, 'extraction', a0);
   const bx = 24, by = 70;
-  text('purchase time', bx, by, {size: 14, color: C.body, alpha: a0});
+  text('purchase time', bx, by - 2, {size: 16, color: C.body, alpha: a0});
   box(bx, by + 8, 200, 32, {stroke: C.ink, width: 1.3, alpha: a0});
   const ts = A.ts, date = ts.slice(0, 10), hh = ts.slice(11, 13);
   const tx = bx + 12, ty = by + 30;
   const wDate = tw(date + ' ', 17), wHH = tw(hh, 17);
   text(ts, tx, ty, {size: 17, alpha: a0});
-  text('previous purchase ' + A.prev, bx, by + 62, {size: 14, color: C.body, alpha: arrive(.05)});
+  text('previous purchase ' + A.prev, bx, by + 62, {size: 16, color: C.body, alpha: arrive(.05)});
   // which part of the raw field each feature comes from: 0 the date, 1 the hour, 2 both dates
   const SRC = [1, 0, 0, 0, 2];
   const FX = 24, FY = 176, RH = 30, LANE = 236;       // LANE: between the names and the values
   // its window: each feature in turn, every AS: its source and value light up (.3 s), hold, and dim (.3 s)
-  const A0 = .2, AS = 1.56;
+  const A0 = .2, AS = 2.2;
   const k = u < 0 ? -1 : Math.min(4, Math.floor((u - A0) / AS));
   A.f.forEach(([nm, v], i) => {
     const ui = u - A0 - AS * i;
-    const a = arrive(.1 + .04 * i), on = i === k ? clamp(ui / .3) * (1 - clamp((ui - 1.24) / .3)) : 0;
-    text(nm, FX, FY + i * RH, {size: 15, alpha: a});
-    text(v, 318, FY + i * RH, {size: 15, align: 'right', bold: on > .5, color: on > .5 ? C.accent : C.ink, alpha: a});
+    const a = arrive(.1 + .04 * i), on = i === k ? clamp(ui / .3) * (1 - clamp((ui - 1.9) / .3)) : 0;
+    text(nm, FX, FY + i * RH, {size: 16, alpha: a});
+    text(v, 318, FY + i * RH, {size: 16, align: 'right', bold: on > .5, color: on > .5 ? C.accent : C.ink, alpha: a});
     line([[FX, FY + i * RH + 9], [318, FY + i * RH + 9]], {color: C.rule, width: 1, alpha: a * .8});
     if (on > 0) {
       // underline the part of the timestamp; a dashed leader runs from it round the text
@@ -133,15 +132,15 @@ function drawA() {
       // to the feature's row, and across to its value
       const s = SRC[i], x0 = s === 1 ? tx + wDate : tx, x1 = s === 1 ? tx + wDate + wHH : tx + tw(date, 17);
       line([[x0, ty + 5], [x1, ty + 5]], {color: C.accent, width: 2.2, alpha: on});
-      const p0 = bx + tw('previous purchase ', 14), p1 = bx + tw('previous purchase ' + A.prev, 14);
+      const p0 = bx + tw('previous purchase ', 16), p1 = bx + tw('previous purchase ' + A.prev, 16);
       if (s === 2) line([[p0, by + 67], [p1, by + 67]], {color: C.accent, width: 2, alpha: on});
       const sx = s === 2 ? (p0 + p1) / 2 : (x0 + x1) / 2, sy = s === 2 ? by + 70 : ty + 8;
       const gy = s === 2 ? (by + 70 + FY - 12) / 2 : (by + 40 + by + 52) / 2, ry = FY + i * RH - 5;
-      const vx = 318 - tw(v, 15, {bold: true}) - 5;
+      const vx = 318 - tw(v, 16, {bold: true}) - 5;
       line([[sx, sy], [sx, gy], [LANE, gy], [LANE, ry], [vx, ry]], {color: C.accent, width: 1.2, dash: [4, 3], alpha: on});
     }
   });
-  text('five features from one field', FX, FY + 5 * RH + 4, {size: 14, color: C.muted, alpha: arrive(.3)});
+  text('five features from one field', FX, FY + 5 * RH + 6, {size: 16, color: C.body, alpha: arrive(.3)});
 }
 
 /* (b) transformation: the log curve, with the raw histogram above it and
@@ -152,17 +151,21 @@ function drawB() {
   const P = {x: 410, y: 124, w: 196, h: 196}, MH = 54, GAP = 7;
   const g = axes({...P, xlim: [0, 350], ylim: [.8, 2.66], xticks: [0, 100, 200, 300], yticks: [1, 1.5, 2, 2.5],
     yfmt: v => v === 1 ? '1' : v === 2 ? '2' : v.toFixed(1), xlabel: '\\rm{income (k$)}', ylabel: '\\rm{log}_{10}\\ \\rm{income}',
-    ylabelGap: 42, progress: seg(.04, .35)});
+    ylabelGap: 44, tickSize: 16, progress: seg(.04, .35)});
   const mx = Math.max(...B.hx), my = Math.max(...B.hy);
   // the probe: an income carried down to the curve and across to its logarithm. Its window: it
-  // fades in at 18 k$ (.3 s) and rests, glides (.8 s) to 45, 110 and 230 k$, a stop every 2 s,
-  // and fades out; `pa` is how much of it shows
+  // fades in at 18 k$ (.3 s) and rests, glides (.8 s) to 45, 110 and 230 k$, a stop every 3.3 s
+  // (each value read rests 2.5 s), and fades out; `pa` is how much of it shows
   const STOPS = [18, 45, 110, 230];
   let probe = -1, pa = 0;
   if (u >= 0) {
-    pa = clamp((u - .2) / .3) * (1 - clamp((u - 7.5) / .3));
+    pa = clamp((u - .2) / .3) * (1 - clamp((u - 12.9) / .3));
     probe = STOPS[0];
-    for (let j = 1; j < STOPS.length; j++) probe += (STOPS[j] - STOPS[j - 1]) * sp(u - 1.5 - 2 * (j - 1), .8);
+    for (let j = 1; j < STOPS.length; j++) {
+      // a glide all but over reads its stop exactly: no last digit ticking over while it rests
+      const g = sp(u - 3 - 3.3 * (j - 1), .8);
+      probe += (STOPS[j] - STOPS[j - 1]) * (g > .985 ? 1 : g);
+    }
   }
   const hiX = pa <= 0 ? -1 : Math.floor(probe / 10), hiY = pa <= 0 ? -1 : Math.floor((Math.log10(probe) - .8) / .06);
   const ha = arrive(.15), top = P.y - GAP, right = P.x + P.w + GAP;
@@ -183,8 +186,8 @@ function drawB() {
     line(pts, {color: C.navy, width: 2.4, progress: seg(.18, .4)});
   });
   // the curve's name, and its ink box: the probe's level line passes behind it, 3 units clear
-  const LX = g.X(215), LY = g.Y(2.05) + 30, lw = mw('y = \\rm{log}_{10}\\ x', 15);
-  const lb = [LX - lw / 2 - 3, LY - 14, LX + lw / 2 + 3, LY + 7];
+  const LX = g.X(215), LY = g.Y(2.05) + 30, lw = mw('y = \\rm{log}_{10}\\ x', 16);
+  const lb = [LX - lw / 2 - 3, LY - 15, LX + lw / 2 + 3, LY + 8];
   if (pa > 0) {
     const px = g.X(probe), py = g.Y(Math.log10(probe)), pr = {color: C.accent, width: 1.2, dash: [4, 3], alpha: pa};
     line([[px, top], [px, py]], pr);
@@ -194,25 +197,25 @@ function drawB() {
     } else line([[px, py], [right, py]], pr);
     dot(px, py, 5, {color: '#fff', fill: C.accent, width: 1.4, alpha: pa});
     math(probe.toFixed(0) + '\\ \\rm{k$}\\ \\to\\ ' + Math.log10(probe).toFixed(2), P.x + P.w - 12, P.y + P.h - 12,
-      {size: 15, color: C.accent, align: 'right', alpha: pa});
+      {size: 16, color: C.accent, align: 'right', alpha: pa});
   }
   const la = arrive(.45);
-  math('y = \\rm{log}_{10}\\ x', LX, LY, {size: 15, color: C.navy, align: 'center', alpha: la});
-  text('raw incomes: skewness ' + B.s[0].toFixed(2), P.x, top - MH - 8, {size: 14, color: C.body, alpha: la});
-  text('logged', right + 4, P.y + P.h + 20, {size: 14, color: C.body, alpha: la});
-  text(nfmt(B.s[1], 2), right + 4, P.y + P.h + 38, {size: 14, color: C.body, alpha: la});
+  math('y = \\rm{log}_{10}\\ x', LX, LY, {size: 16, color: C.navy, align: 'center', alpha: la});
+  text('raw incomes: skewness ' + B.s[0].toFixed(2), P.x, top - MH - 8, {size: 16, color: C.body, alpha: la});
+  text('logged', right + 4, P.y + P.h + 22, {size: 16, color: C.body, alpha: la});
+  text(nfmt(B.s[1], 2), right + 4, P.y + P.h + 42, {size: 16, color: C.body, alpha: la});
 }
 
 /* (c) encoding: one-hot */
 function drawC() {
   const Cc = D.c, u = win(2), a0 = arrive(.1);
-  sub('c', 708, 34, 'encoding', a0);
-  const X0 = 712, CX = [812, 878, 944], Y0 = 96, RH = 32, n = Cc.d.length;
-  rule(X0 - 4, 976, Y0 - 22, {width: 1.3, alpha: a0});
-  text('diagnosis', X0, Y0 - 4, {size: 15, color: C.body, alpha: a0});
-  Cc.cats.forEach((c, j) => text(c, CX[j], Y0 - 4, {size: 14, color: C.body, align: 'center', alpha: a0}));
-  rule(X0 - 4, 976, Y0 + 6, {alpha: a0});
-  line([[788, Y0 - 22], [788, Y0 + 6 + RH * n + 6]], {color: C.rule, width: 1, alpha: a0});
+  sub('c', 690, 34, 'encoding', a0);
+  const X0 = 694, CX = [812, 874, 940], Y0 = 96, RH = 32, n = Cc.d.length;
+  rule(X0 - 4, 980, Y0 - 22, {width: 1.3, alpha: a0});
+  text('diagnosis', X0, Y0 - 4, {size: 16, color: C.body, alpha: a0});
+  Cc.cats.forEach((c, j) => text(c, CX[j], Y0 - 4, {size: 16, color: C.body, align: 'center', alpha: a0}));
+  rule(X0 - 4, 980, Y0 + 6, {alpha: a0});
+  line([[778, Y0 - 22], [778, Y0 + 6 + RH * n + 6]], {color: C.rule, width: 1, alpha: a0});
   // its window: the ones and zeros clear (.4 s), then each record in turn, every ES: it lights
   // up (.24 s), its ones and zeros appear .5 s in (.3 s), and it dims again
   const E0 = .6, ES = 1.4;
@@ -220,23 +223,22 @@ function drawC() {
   for (let i = 0; i < n; i++) {
     const y = Y0 + 28 + RH * i, a = arrive(.14 + .04 * i), ui = u - E0 - ES * i;
     const on = u >= 0 && i === k ? clamp(ui / .24) * (1 - clamp((ui - 1.16) / .24)) : 0;
-    text(Cc.d[i], X0, y, {size: 15, color: on > .5 ? C.accent : C.ink, alpha: a});
+    text(Cc.d[i], X0, y, {size: 16, color: on > .5 ? C.accent : C.ink, alpha: a});
     const shown = u < 0 ? 1 : u < .4 ? 1 - u / .4 : i < k ? 1 : i === k ? clamp((ui - .5) / .3) : 0;
     Cc.cats.forEach((c, j) => {
       const v = Cc.oh[i][j];
       if (v && on > 0) box(CX[j] - 16, y - 16, 32, 22, {fill: C.wash, alpha: on});
-      text(String(v), CX[j], y, {size: 15, align: 'center', bold: v === 1, color: v ? (on > .5 ? C.accent : C.navy) : C.muted, alpha: a * shown});
+      text(String(v), CX[j], y, {size: 16, align: 'center', bold: v === 1, color: v ? (on > .5 ? C.accent : C.navy) : C.muted, alpha: a * shown});
     });
   }
-  rule(X0 - 4, 976, Y0 + 6 + RH * n + 6, {width: 1.3, alpha: a0});
-  text('one column per group,', X0, Y0 + RH * n + 44, {size: 14, color: C.muted, alpha: arrive(.3)});
-  text('1 where the record belongs', X0, Y0 + RH * n + 62, {size: 14, color: C.muted, alpha: arrive(.3)});
+  rule(X0 - 4, 980, Y0 + 6 + RH * n + 6, {width: 1.3, alpha: a0});
+  text('one column per group,', X0, Y0 + RH * n + 46, {size: 16, color: C.body, alpha: arrive(.3)});
+  text('1 where the record belongs', X0, Y0 + RH * n + 67, {size: 16, color: C.body, alpha: arrive(.3)});
 }
 
 function draw() {
   drawA(); drawB(); drawC();
-  text('extraction with Python’s datetime; 2,000 simulated incomes (lognormal, median $45k); ' +
-       'one-hot encoding with scikit-learn', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  text('2,000 simulated incomes, lognormal, median $45k', 18, H - 14, {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """

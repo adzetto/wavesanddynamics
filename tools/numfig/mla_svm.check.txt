@@ -40,7 +40,7 @@ GRID: boundary and margins traced on 241 x 241 (step 0.0267); surface 25 x 25 (s
   surface mesh (bilinear between its nodes) against f on a 97 x 97 grid: max |diff| = 0.057 (of a range -2.06 .. 2.82)
   f as the page computes it (DATA rounded to 5 decimals) against f: max |diff| on 97 x 97 = 2.5e-05
 
-PAGE (nf-mla-svm.html, 1000 x 840)
+PAGE (nf-mla-svm.html, 1000 x 736)
   (b) the tour: from 3.2 s the camera turns from straight above to the 3-D view on Motion's spring
       (visual duration 2.0 s, bounce 0; the lift it replaces took 1.0 s), holds 6 s, turns back in
       2.0 s and rests 12 s. A click on (b), the cube button or Enter on it takes over: a spring of

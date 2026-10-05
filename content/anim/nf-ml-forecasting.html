@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Figure 3a: Three numerical forecasting examples</title>
+<title>Figure 2a: Three numerical forecasting examples</title>
 <style>
 @font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
 @font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
@@ -33,11 +33,11 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Three forecasts of the same synthetic monthly sensor signal: seasonal ARIMA, additive exponential smoothing and gradient boosted trees with lagged inputs. Held-out observations are revealed after the 24-step forecasts. Choose between three forecast origins."></canvas>
+  <canvas id="c" role="img" aria-label="Three forecasts of the same synthetic monthly sensor signal, side by side: seasonal ARIMA, additive exponential smoothing and gradient boosted trees with lagged inputs. Held-out observations are revealed after the 24-step forecasts. The figure steps through three forecast origins; choose one to stay on it."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 1120;
+const W = 1000, H = 630;
 const DATA = {"series":[12.0,13.43806,13.93616,13.63209,12.60159,12.4969,11.24071,9.98859,9.48733,9.49108,8.67231,10.86051,11.02543,14.00376,15.11462,14.94228,15.45376,14.25589,13.29804,11.89676,11.51693,11.46432,10.76826,11.2797,12.86702,13.96386,13.55638,15.77303,13.98889,12.37781,11.27388,11.24704,11.76827,11.01345,11.01904,12.07847,13.06929,14.43953,14.69397,15.63498,15.6425,13.26397,12.6498,11.95164,11.60393,10.76366,10.50848,11.31188,13.38561,14.24198,14.99982,16.4155,15.55354,14.32612,13.43437,12.59357,12.43183,11.37006,10.88693,12.20597,14.12371,14.45913,15.47437,16.36297,16.32396,15.52804,14.18504,12.59666,11.44307,12.2366,11.82309,13.72015,13.9703,17.19481,16.41749,17.84953,16.65371,15.77902,14.62688,13.11695,13.81215,13.09178,12.36013,13.85566,15.4503,15.76718,17.18553,17.53976,17.70278,17.04169,15.54462,13.95707,13.6724,13.33489,12.58191,13.45178,14.69974,16.07457,18.5928,18.23501,18.06837,17.99765,16.56665,15.21228,14.78432,14.06592,14.17813,15.25887,16.41987,16.95872,17.19797,17.81521,18.57888,17.33838,16.77992,15.50701,14.17131,12.21934,13.3732,14.42575,14.9431,17.05241,18.12278,18.80591,18.11131,17.52728,16.09982,15.71337,14.73374,13.45619,14.23779,15.29702,16.44954,16.95145,18.90723,18.76237,19.58859,18.01161,16.85862,15.65385,14.90611,16.16756,15.49048,17.37609,18.27817,18.53899,20.08699,20.54369,20.3804,18.23168,17.45086,15.95396,15.08417,14.78957,15.24495,17.14264,18.19177,17.99062,19.96917,20.21598,19.89541,17.85833,17.37268,16.0421,15.98031,15.82406,16.47516,16.83016,16.88423,19.1486,20.29915,20.33551,19.737,18.52483,16.63088,15.41616,15.20961,16.28112,16.6908,18.32446,18.38681,20.33675,20.63975,21.79,21.79725,20.39955,18.9892,18.33902,16.57079,14.95534,16.36889,18.68101,18.2401,19.81684,20.08318,20.61908,20.00519,20.10665,18.6093,17.47291,16.11063,16.62873,16.68217,17.50782,18.87619,19.35885,20.71707,20.3636,20.52283,19.92355,18.78448,17.75407,16.69987,17.00854,17.38394,18.02692],"horizon":24,"examples":[{"origin":120,"predictions":[[15.22605,15.6499,15.81876,16.28068,16.84677,15.92564,15.51056,14.56496,13.5726,12.12243,12.97967,13.76164,14.3562,14.6711,14.79654,15.13972,15.56028,14.87595,14.56758,13.86506,13.12781,12.05044,12.68731,13.26825],[15.64141,16.99445,17.6572,18.36032,17.99708,16.98083,15.90028,14.74705,14.40944,13.84539,13.55743,14.78515,16.02587,17.37891,18.04166,18.74478,18.38154,17.36529,16.28474,15.13151,14.7939,14.22986,13.94189,15.16962],[15.44758,17.06859,17.44372,17.44403,17.46256,17.39948,17.06966,15.95377,15.003,13.83248,14.39377,15.61848,16.30335,16.70365,17.13275,17.44403,17.46256,17.06966,17.06966,16.48564,15.37789,13.18959,14.09958,15.10415]],"ci":[[13.5519,16.9002],[13.63138,17.66842],[13.3991,18.23842],[13.55438,19.00698],[13.83251,19.86103],[12.653,19.19829],[11.99696,19.02417],[10.82643,18.30349],[9.62174,17.52346],[7.97016,16.27471],[8.63528,17.32406],[9.23328,18.28999],[9.17322,19.53919],[9.07304,20.26915],[8.75617,20.83691],[8.70746,21.57197],[8.75152,22.36904],[7.71302,22.03888],[7.06625,22.06891],[6.04029,21.68983],[4.99233,21.26329],[3.61573,20.48515],[3.9636,21.41101],[4.26484,22.27166]],"mechanisms":[{"names":["ar.L1","ma.L1","ar.S.L12","sigma2"],"values":[-0.37809,0.05167,0.74293,0.72961],"converged":true},{"smoothing_level":0.43894,"smoothing_trend":0.0,"smoothing_seasonal":0.0},{"features":["lag 1","lag 2","lag 3","lag 12","lag 13","lag 24","time","sin","cos"],"importance":[0.03577,0.00772,0.00571,0.35199,0.03524,0.50984,0.03854,0.00801,0.00717]}],"rmse":[2.46295,0.8611,1.14834],"mae":[2.19018,0.66202,0.84923],"ylim":[2.0,24.0],"yticks":[2.0,6.0,10.0,14.0,18.0,22.0]},{"origin":156,"predictions":[[17.68703,17.94228,19.10424,19.46164,19.33363,17.69217,17.09477,15.95058,15.28556,15.06037,15.4085,16.85927,17.27545,17.47059,18.35889,18.63212,18.53426,17.27938,16.82267,15.94795,15.43954,15.26739,15.53353,16.64263],[17.75688,19.01859,19.88023,20.49763,20.21578,19.10253,18.01278,16.88814,16.42867,15.9709,15.79247,17.10939,18.21605,19.47776,20.3394,20.9568,20.67495,19.5617,18.47194,17.34731,16.88783,16.43007,16.25164,17.56856],[17.65521,17.95565,19.48905,19.56283,19.53579,18.18042,17.40165,16.22197,16.07587,16.66358,16.45956,17.92908,18.64611,18.90236,19.41357,19.56283,19.53579,18.73473,17.82921,16.82164,16.27223,16.67837,17.1224,17.71318]],"ci":[[16.03618,19.33788],[15.97094,19.91362],[16.74396,21.46451],[16.80784,22.11544],[16.40198,22.26528],[14.51169,20.87265],[13.68182,20.50772],[12.32065,19.58051],[11.45067,19.12045],[11.03102,19.08972],[11.19362,19.62337],[12.46671,21.25183],[12.22189,22.32901],[12.01314,22.92804],[12.46379,24.25399],[12.35233,24.91192],[11.88385,25.18467],[10.28093,24.27782],[9.4916,24.15374],[8.29911,23.59678],[7.48547,23.39361],[7.01942,23.51535],[7.00177,24.06528],[7.83623,25.44903]],"mechanisms":[{"names":["ar.L1","ma.L1","ar.S.L12","sigma2"],"values":[-0.38457,0.03724,0.76449,0.70944],"converged":true},{"smoothing_level":0.43048,"smoothing_trend":0.0,"smoothing_seasonal":0.0},{"features":["lag 1","lag 2","lag 3","lag 12","lag 13","lag 24","time","sin","cos"],"importance":[0.14127,0.00135,0.00453,0.31183,0.00145,0.4866,0.03333,0.01243,0.00721]}],"rmse":[0.96627,0.9088,0.73664],"mae":[0.78297,0.73054,0.57621],"ylim":[6.0,26.0],"yticks":[6.0,10.0,14.0,18.0,22.0,26.0]},{"origin":192,"predictions":[[18.70048,20.12616,20.33991,21.18425,21.18558,20.14926,19.10452,18.62263,17.31415,16.11889,17.16419,18.87422,18.88853,19.94298,20.10104,20.72554,20.72651,19.95998,19.18723,18.8308,17.86297,16.97889,17.75205,19.01688],[18.96654,20.24251,21.15713,21.74838,21.46236,20.26741,19.1451,18.03161,17.531,17.1153,17.12497,18.46377,19.4152,20.69117,21.60579,22.19704,21.91102,20.71607,19.59376,18.48027,17.97966,17.56396,17.57363,18.91243],[18.59731,20.34882,20.62678,21.43915,21.36551,21.30695,20.28387,18.44493,17.07208,16.63131,16.89731,19.40269,18.96823,20.40261,20.80506,21.43915,21.36551,21.26241,21.04579,19.72581,18.00002,17.14573,17.35878,19.95387]],"ci":[[17.09123,20.30974],[18.19706,22.05525],[18.27951,22.40031],[19.06124,23.30725],[19.02891,23.34225],[17.97221,22.3263],[16.91364,21.29539],[16.42135,20.82391],[15.10435,19.52394],[13.90167,18.33612],[14.94018,19.3882],[16.64382,21.10462],[16.27826,21.49879],[17.16497,22.72098],[17.23669,22.9654],[17.81064,23.64044],[17.77825,23.67477],[16.98721,22.93276],[16.19475,22.17971],[15.82136,21.84024],[14.8382,20.88774],[13.93978,20.01801],[14.69921,20.80489],[15.95071,22.08305]],"mechanisms":[{"names":["ar.L1","ma.L1","ar.S.L12","sigma2"],"values":[0.62345,-0.96239,0.73965,0.67415],"converged":true},{"smoothing_level":0.4429,"smoothing_trend":0.0,"smoothing_seasonal":0.0},{"features":["lag 1","lag 2","lag 3","lag 12","lag 13","lag 24","time","sin","cos"],"importance":[0.14684,0.00237,0.00338,0.33654,0.00355,0.47525,0.01768,0.00709,0.00731]}],"rmse":[0.71147,0.9568,1.15775],"mae":[0.57776,0.85807,0.94323],"ylim":[12.0,24.0],"yticks":[12.0,14.0,16.0,18.0,20.0,22.0,24.0]}]};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
@@ -598,106 +598,139 @@ function uiChip(x, y, w, h, label, st = {}, a = 1) {
 function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
 function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
 
-const D = DATA, POSTER_T = 10, FIG = cv.closest('.fig');
-/* the origin shown; TS: when it was chosen while playing (its forecasts are drawn again
-   from then, quickly), null on the tour or when chosen paused; the chip under the pointer
-   and the one pressed */
-let selected = 0, TS = null, HOVER = -1, DOWN = -1;
-function reset() { selected = 0; TS = null; sync(); }
+const D = DATA, POSTER_T = 8, FIG = cv.closest('.fig');
+/* the origin on show. The tour takes the three origins in turn, PER s each: the history is
+   drawn, then the forecasts, then what happened and the errors; they rest, and fade out before
+   the next origin comes in. A chosen origin (a chip, the keyboard, or ?origin=0..2 for the
+   checks) stops the tour there. TS: when it was chosen while playing (it is drawn in again from
+   then), null when chosen paused or preset (complete at once); HOVER, DOWN: the chip under the
+   pointer and the one pressed */
+const PER = 10, PICK = /[?&]origin=([0-2])\b/.exec(location.search);
+let manual = PICK ? +PICK[1] : null, TS = null, HOVER = -1, DOWN = -1, shown = -1;
+function reset() { manual = PICK ? +PICK[1] : null; TS = null; sync(); }
 /* the subtitles in the caption's own terms, lower case, as the family sets them */
-const titles = ['seasonal ARIMA', 'additive Holt-Winters exponential smoothing', 'gradient boosted trees, lagged inputs'];
+const titles = ['seasonal ARIMA', 'Holt-Winters smoothing', 'gradient boosted trees'];
 /* statsmodels' parameter names, as the textbook writes them */
 const SYM = {'ar.L1': '\\phi_1', 'ma.L1': '\\theta_1', 'ar.S.L12': '\\Phi_1'};
 function sub(l, x, y, words, a) { panel(l, x, y, {alpha: a}); text(words, x + 35, y, {size: 17, color: C.body, alpha: a}); }
-const arrive = t0 => settle(t0, .28);
 function tw(s, size) { ctx.save(); ctx.font = font({size}); const w = ctx.measureText(s).width; ctx.restore(); return w; }
-/* layout: the origin chips on the first line, as Figure 18b sets its number of neurons;
-   each chip's hit area is 100 by 50 units around it */
-const TOP = 36, PH = 340, AH = 200, RX = 708, VX = 880, KY = 1030;
-const CH = {x: 664, y: TOP - 19, w: 92, h: 28, pitch: 106};
+/* layout: the three panels side by side, each with its errors and its fitted model under it, the
+   key under them all; the origin chips on the first line, as Figure 18b sets its number of
+   neurons (each chip's hit area 108 by 50 units around it) */
+const PX = [80, 395, 710], PY = 100, PW = 270, PH = 214, SY = 398, KY = 546;
+const CH = {x: 666, y: 12, w: 100, h: 30, pitch: 108};
+/* where the drawing is: the origin i, the time u since it began to come in (s0: that moment on
+   the clock), and how much of it shows (fade: 1, or going out at the end of its turn) */
+function state() {
+  if (manual !== null) return TS === null ? {i: manual, u: 99, s0: -99, fade: 1} : {i: manual, u: t - TS, s0: TS, fade: 1};
+  const k = Math.floor(t / PER), u = t - k * PER;
+  return {i: k % 3, u, s0: k * PER, fade: 1 - clamp((u - (PER - .4)) / .4)};
+}
 function draw() {
-  const ex = D.examples[selected], origin = ex.origin, start = origin - 48, fresh = TS !== null;
-  const reveal = fresh ? clamp((t - TS) / 1.2) : clamp((t - 1) / 5), actual = fresh ? seg(TS + 1.2, .3) : seg(6.5, .7);
-  const head = fresh ? 1 : seg(.3, .3);
-  text('forecast origin', CH.x - 14, TOP, {size: 15, color: C.body, align: 'right'});
+  const S = state(), ex = D.examples[S.i], origin = ex.origin, start = origin - 48, end = origin + 24, F = S.fade;
+  if (S.i !== shown) { shown = S.i; sync(); }
+  const E = (a, d) => easeInOut(clamp((S.u - a) / d));
+  // in turn: the history (.1 s), the forecasts (.35 s, drawn forward in .75 s), what happened and
+  // the errors (1.05 s); this origin's numbers come in with it, the rest of the figure stays
+  const hist = E(.1, .4), reveal = clamp((S.u - .35) / .75), act = E(1.05, .3) * F, L = F * clamp(S.u / .3);
+  const ar = d => settle(S.s0 + d, .28) * F;
+  text('forecast origin', CH.x - 14, CH.y + 20, {size: 16, color: C.body, align: 'right', alpha: settle(0, .28)});
   D.examples.forEach((e, i) => uiChip(CH.x + i * CH.pitch, CH.y, CH.w, CH.h, 'month ' + e.origin,
-    {on: i === selected, hover: i === HOVER, down: i === DOWN}));
+    {on: i === S.i, hover: i === HOVER, down: i === DOWN, size: 16}));
+  // regular 12-month ticks up to origin + 24: the last forecast month falls just before the end
+  const xt = [0, 1, 2, 3, 4, 5, 6].map(k => start + 12 * k);
+  const yt = ex.yticks.filter(v => (v - ex.yticks[0]) % 4 === 0);
   for (let j = 0; j < 3; j++) {
-    const top = TOP + j * PH, AY = top + 35;
-    sub(String.fromCharCode(97 + j), 18, top, titles[j], arrive(.04 * j));
-    const la = arrive(.25 + .05 * j);   // the panel's labels arrive with its axes
-    const ax = axes({x: 100, y: AY, w: 550, h: AH, xlim: [start, origin + D.horizon - 1], ylim: ex.ylim,
-      xticks: [start, start + 12, start + 24, start + 36, origin, origin + 12, origin + 23], yticks: ex.yticks,
-      xlabel: '\\rm{month}', ylabel: '\\rm{sensor level (a.u.)}', grid: true, progress: seg(.02 * j, .35)});
+    const P = {x: PX[j], y: PY, w: PW, h: PH}, ap = seg(.02 * j, .35), aa = clamp(ap * 1.4);
+    const X = v => P.x + (v - start) / (end - start) * P.w, Y = v => P.y + P.h - (v - ex.ylim[0]) / (ex.ylim[1] - ex.ylim[0]) * P.h;
+    sub(String.fromCharCode(97 + j), P.x - 62, 80, titles[j], settle(.04 * j, .28));
+    // the light grid and the ticks as axes() draws them; the numbers are this origin's
+    for (const v of xt) line([[X(v), P.y], [X(v), P.y + P.h]], {color: C.grid, width: 1, alpha: aa});
+    for (const v of yt) line([[P.x, Y(v)], [P.x + P.w, Y(v)]], {color: C.grid, width: 1, alpha: aa * L});
+    const ax = axes({...P, xlim: [start, end], ylim: ex.ylim, xlabel: '\\rm{month}', ylabel: j ? '' : '\\rm{sensor level (a.u.)}',
+      tickSize: 16, progress: ap});
+    for (const v of xt) {
+      line([[X(v), P.y + P.h], [X(v), P.y + P.h - 5]], {width: 1.1, alpha: aa});
+      line([[X(v), P.y], [X(v), P.y + 5]], {width: 1.1, alpha: aa});
+      math(fmt(v), X(v), P.y + P.h + 22, {size: 16, align: 'center', alpha: aa * L});
+    }
+    for (const v of yt) {
+      line([[P.x, Y(v)], [P.x + 5, Y(v)]], {width: 1.1, alpha: aa * L});
+      line([[P.x + P.w, Y(v)], [P.x + P.w - 5, Y(v)]], {width: 1.1, alpha: aa * L});
+      math(fmt(v), P.x - 8, Y(v) + 5.6, {size: 16, align: 'right', alpha: aa * L});
+    }
     ax.inside(() => {
-      ctx.fillStyle = C.steel; ctx.globalAlpha = .45; ctx.fillRect(ax.X(origin - .5), AY, ax.X(origin + 23) - ax.X(origin - .5), AH); ctx.globalAlpha = 1;
-      const history = Array.from({length: 48}, (_, i) => [ax.X(start + i), ax.Y(D.series[start + i])]);
-      line(history, {color: C.navy, width: 2.1, progress: seg(.12, .4)});
+      ctx.fillStyle = C.steel; ctx.globalAlpha = .45 * aa; ctx.fillRect(X(origin - .5), P.y, X(end) - X(origin - .5), P.h); ctx.globalAlpha = 1;
+      const history = Array.from({length: 48}, (_, i) => [X(start + i), Y(D.series[start + i])]);
       const n = Math.max(1, Math.ceil(reveal * D.horizon));
-      if (j === 0 && n > 1) {
+      if (j === 0 && reveal > 0 && n > 1) {
         ctx.beginPath();
-        ex.ci.slice(0, n).forEach((v, i) => i ? ctx.lineTo(ax.X(origin + i), ax.Y(v[0])) : ctx.moveTo(ax.X(origin), ax.Y(v[0])));
-        for (let i = n - 1; i >= 0; i--) ctx.lineTo(ax.X(origin + i), ax.Y(ex.ci[i][1]));
-        ctx.closePath(); ctx.fillStyle = C.mist; ctx.globalAlpha = .35; ctx.fill(); ctx.globalAlpha = 1;
+        ex.ci.slice(0, n).forEach((v, i) => i ? ctx.lineTo(X(origin + i), Y(v[0])) : ctx.moveTo(X(origin), Y(v[0])));
+        for (let i = n - 1; i >= 0; i--) ctx.lineTo(X(origin + i), Y(ex.ci[i][1]));
+        ctx.closePath(); ctx.fillStyle = C.mist; ctx.globalAlpha = .35 * F; ctx.fill(); ctx.globalAlpha = 1;
       }
+      line(history, {color: C.navy, width: 2.1, progress: hist, alpha: F});
       // what happened: open navy marks on a hairline, once the forecasts are drawn
-      const seen = Array.from({length: 24}, (_, i) => [ax.X(origin + i), ax.Y(D.series[origin + i])]);
-      line([history[47], ...seen], {color: C.navy, width: 1, alpha: actual});
-      seen.forEach(p => dot(...p, 2.6, {color: C.navy, fill: '#fff', width: 1.2, alpha: actual}));
+      const seen = Array.from({length: 24}, (_, i) => [X(origin + i), Y(D.series[origin + i])]);
+      line([history[47], ...seen], {color: C.navy, width: 1, alpha: act});
+      seen.forEach(p => dot(...p, 2.6, {color: C.navy, fill: '#fff', width: 1.2, alpha: act}));
       // the forecast, the line to follow: crimson, drawn over what happened
-      const pp = ex.predictions[j].slice(0, n).map((v, i) => [ax.X(origin + i), ax.Y(v)]);
-      line([[ax.X(origin - 1), ax.Y(D.series[origin - 1])], ...pp], {color: C.accent, width: 2.6, alpha: head});
-      dot(...pp[n - 1], 4.5, {color: C.accent, fill: '#fff', alpha: head});
-      line([[ax.X(origin - .5), AY], [ax.X(origin - .5), AY + AH]], {color: C.guide, width: 1, dash: [5, 4]});
+      if (reveal > 0) {
+        const pp = ex.predictions[j].slice(0, n).map((v, i) => [X(origin + i), Y(v)]);
+        line([[X(origin - 1), Y(D.series[origin - 1])], ...pp], {color: C.accent, width: 2.6, alpha: F});
+        dot(...pp[n - 1], 4.5, {color: C.accent, fill: '#fff', alpha: F});
+      }
+      line([[X(origin - .5), P.y], [X(origin - .5), P.y + P.h]], {color: C.guide, width: 1, dash: [5, 4], alpha: aa});
     });
-    text('forecast', ax.X(origin - .5) + 7, AY + AH - 12, {size: 14, color: C.accent, alpha: la});
-    // the errors: a label and a value on one right edge, one size
-    text('RMSE', RX, AY + 21, {size: 16, alpha: actual}); text(ex.rmse[j].toFixed(3), VX, AY + 21, {size: 16, align: 'right', alpha: actual});
-    text('MAE', RX, AY + 45, {size: 16, alpha: actual}); text(ex.mae[j].toFixed(3), VX, AY + 45, {size: 16, align: 'right', alpha: actual});
+    // under the panel: its errors, then the model as fitted to this history
+    const x0 = P.x, la = ar(.25 + .05 * j);
+    text('RMSE', x0, SY, {size: 17, alpha: act}); text(ex.rmse[j].toFixed(3), x0 + 58, SY, {size: 17, alpha: act});
+    text('MAE', x0 + 140, SY, {size: 17, alpha: act}); text(ex.mae[j].toFixed(3), x0 + 189, SY, {size: 17, alpha: act});
     if (j === 0) {
-      math('(1,\\,1,\\,1)\\ \\times\\ (1,\\,0,\\,0)_{12}', RX, AY + 84, {size: 16, alpha: la});
-      const names = ex.mechanisms[0].names, values = ex.mechanisms[0].values;
-      names.slice(0, 3).forEach((name, i) => math((SYM[name] || '\\rm{' + name + '}') + ' = ' + values[i].toFixed(3), RX, AY + 112 + i * 23, {size: 15, alpha: la}));
-      text('shaded: 95% model interval', RX, AY + AH, {size: 14, color: C.muted, alpha: la});
+      const v = ex.mechanisms[0].values, nm = ex.mechanisms[0].names, s = k => (SYM[nm[k]] || '\\rm{' + nm[k] + '}') + ' = ' + v[k].toFixed(3);
+      math('(1,\\,1,\\,1)\\ \\times\\ (1,\\,0,\\,0)_{12}', x0, SY + 27, {size: 16, alpha: la});
+      math(s(0) + ',\\ \\ ' + s(1), x0, SY + 53, {size: 16, alpha: la});
+      math(s(2), x0, SY + 79, {size: 16, alpha: la});
     } else if (j === 1) {
       const p = ex.mechanisms[1];
-      text('additive Holt-Winters', RX, AY + 84, {size: 16, alpha: la});
-      math('\\alpha\\ \\rm{(level)} = ' + p.smoothing_level.toFixed(3), RX, AY + 112, {size: 15, alpha: la});
-      math('\\beta\\ \\rm{(trend)} = ' + p.smoothing_trend.toFixed(3), RX, AY + 135, {size: 15, alpha: la});
-      math('\\gamma\\ \\rm{(season)} = ' + p.smoothing_seasonal.toFixed(3), RX, AY + 158, {size: 15, alpha: la});
-      text('period: 12 months', RX, AY + AH, {size: 14, color: C.muted, alpha: la});
+      text('additive, 12-month season', x0, SY + 27, {size: 16, alpha: la});
+      math('\\alpha\\ \\rm{(level)} = ' + p.smoothing_level.toFixed(3), x0, SY + 53, {size: 16, alpha: la});
+      math('\\beta\\ \\rm{(trend)} = ' + p.smoothing_trend.toFixed(3), x0, SY + 79, {size: 16, alpha: la});
+      math('\\gamma\\ \\rm{(season)} = ' + p.smoothing_seasonal.toFixed(3), x0, SY + 105, {size: 16, alpha: la});
     } else {
       const p = ex.mechanisms[2], order = p.importance.map((v, i) => [i, v]).sort((a, b) => b[1] - a[1]).slice(0, 3);
-      text('120 trees, depth 2, rate 0.05', RX, AY + 84, {size: 16, alpha: la});
-      text('training feature importance', RX, AY + 110, {size: 14, color: C.muted, alpha: la});
+      text('120 trees, depth 2, rate 0.05', x0, SY + 27, {size: 16, alpha: la});
+      text('training feature importance', x0, SY + 52, {size: 15, color: C.muted, alpha: la});
       order.forEach(([i, v], r) => {
-        const y = AY + 133 + r * 21, x1 = 778 + 100 * v;
-        text(p.features[i], RX, y, {size: 15, alpha: la});
-        line([[778, y - 10], [x1, y - 10], [x1, y + 1], [778, y + 1]], {color: C.blue, width: 1, fill: C.mist, close: true, alpha: la});
-        text(v.toFixed(2), VX, y, {size: 14, align: 'right', alpha: la});
+        const y = SY + 78 + r * 25, b0 = x0 + 66, b1 = b0 + 120 * v;
+        text(p.features[i], x0, y, {size: 16, alpha: la});
+        line([[b0, y - 11], [b1, y - 11], [b1, y + 1], [b0, y + 1]], {color: C.blue, width: 1, fill: C.mist, close: true, alpha: la});
+        text(v.toFixed(2), x0 + 236, y, {size: 16, align: 'right', alpha: la});
       });
-      text('future lags use predictions', RX, AY + AH, {size: 14, color: C.muted, alpha: la});
     }
   }
-  // the key, as the family draws one: a thin box, white fill, serif 15
+  // the key, as the family draws one: a thin box, white fill, serif 16; what happened comes in
+  // with the first errors and stays
+  const ka = seg(1.05, .3);
   const keys = [
     [x => line([[x, KY + 16], [x + 28, KY + 16]], {color: C.navy, width: 2.1}), 'observed history', 1],
     [x => line([[x, KY + 16], [x + 28, KY + 16]], {color: C.accent, width: 2.6}), 'forecast', 1],
-    [x => { line([[x, KY + 16], [x + 28, KY + 16]], {color: C.navy, width: 1, alpha: actual});
-            dot(x + 14, KY + 16, 2.6, {color: C.navy, fill: '#fff', width: 1.2, alpha: actual}); }, 'withheld observations', actual]];
-  const room = 550 - 32 - keys.reduce((s, k) => s + 36 + tw(k[1], 15), 0);
-  line([[100, KY], [650, KY], [650, KY + 32], [100, KY + 32]], {color: C.ink, width: 1, fill: '#fff', close: true});
-  let kx = 116;
-  keys.forEach(([mark, label, a]) => { mark(kx); kx += 36 + text(label, kx + 36, KY + 21, {size: 15, alpha: a}) + room / 2; });
-  text('synthetic monthly signal; each model sees the same past only; errors compare all 24 forecast months', 18, H - 14, {size: 14, color: C.muted});
+    [x => { line([[x, KY + 16], [x + 28, KY + 16]], {color: C.navy, width: 1, alpha: ka});
+            dot(x + 14, KY + 16, 2.6, {color: C.navy, fill: '#fff', width: 1.2, alpha: ka}); }, 'withheld observations', ka],
+    [x => { ctx.save(); ctx.globalAlpha = .6; ctx.fillStyle = C.mist; ctx.fillRect(x, KY + 9, 28, 14); ctx.restore(); }, 'ARIMA 95% interval', 1]];
+  const gap = 26, wk = keys.reduce((s, k) => s + 36 + tw(k[1], 16), 0) + gap * (keys.length - 1) + 32;
+  line([[PX[0], KY], [PX[0] + wk, KY], [PX[0] + wk, KY + 32], [PX[0], KY + 32]], {color: C.ink, width: 1, fill: '#fff', close: true});
+  let kx = PX[0] + 16;
+  keys.forEach(([mark, label, a]) => { mark(kx); kx += 36 + text(label, kx + 36, KY + 21, {size: 16, alpha: a}) + gap; });
+  text('synthetic monthly signal, seed 17, 216 months', 18, H - 14, {size: 15, color: C.muted});
 }
 const radios = [];
 let said = null;
-function sync() { radios.forEach((b, i) => { b.setAttribute('aria-checked', String(i === selected)); b.tabIndex = i === selected ? 0 : -1; }); }
-/* choosing never pauses: playing, the new origin's forecasts are drawn again from now
-   (1.2 s, then what happened); paused, the figure shows them complete */
+function sync() { radios.forEach((b, i) => { b.setAttribute('aria-checked', String(i === shown)); b.tabIndex = i === shown ? 0 : -1; }); }
+/* choosing never pauses: playing, the new origin is drawn in again from now (history, forecasts,
+   then what happened) and stays; paused, the figure shows it complete */
 function choose(i) {
-  selected = i; TS = playing ? t : null; if (!playing) t = POSTER_T; render(); sync();
+  manual = i; TS = playing ? t : null; if (!playing) t = Math.max(t, POSTER_T); render(); sync();
   const e = D.examples[i];
   if (said) said.textContent = 'Forecast from month ' + e.origin + ': RMSE ' + e.rmse.map(v => v.toFixed(3)).join(', ') +
     ' for ARIMA, Holt-Winters and the trees.';
@@ -705,7 +738,7 @@ function choose(i) {
 if (!STILL) {
   document.head.insertAdjacentHTML('beforeend', '<style>.nfm{position:absolute;pointer-events:auto;box-sizing:border-box;margin:0;padding:0;' +
     'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
-    '.nfm:focus{outline:none}.nfm::after{content:"";position:absolute;inset:22% 4%}' +
+    '.nfm:focus{outline:none}.nfm::after{content:"";position:absolute;inset:20% 3.7%}' +
     '.nfm:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}</style>');   // the ring hugs the drawn chip
   const group = document.createElement('div'); group.setAttribute('role', 'radiogroup'); group.setAttribute('aria-label', 'Forecast origin');
   group.style.cssText = 'position:absolute;inset:0;pointer-events:none';
@@ -713,7 +746,7 @@ if (!STILL) {
   D.examples.forEach((e, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'nfm'; b.textContent = 'month ' + e.origin;
     b.setAttribute('role', 'radio'); b.setAttribute('aria-label', 'Forecast from month ' + e.origin);
-    b.style.left = (CH.x - 4 + i * CH.pitch) / 10 + '%'; b.style.width = '10%';
+    b.style.left = (CH.x - 4 + i * CH.pitch) / 10 + '%'; b.style.width = (CH.pitch) / 10 + '%';
     b.style.top = (CH.y + CH.h / 2 - 25) / H * 100 + '%'; b.style.height = 50 / H * 100 + '%';
     b.addEventListener('click', ev => { ev.stopPropagation(); choose(i); });
     b.addEventListener('keydown', ev => {
@@ -738,7 +771,7 @@ if (!STILL) {
   FIG.addEventListener('click', e => {
     if (e.target !== cv) return;
     const r = cv.getBoundingClientRect(), X = (e.clientX - r.left) * W / r.width, Y = (e.clientY - r.top) * H / r.height;
-    if (Y < CH.y + CH.h + 18 && X > CH.x - 150) e.stopPropagation();
+    if (Y < CH.y + CH.h + 18 && X > CH.x - 130) e.stopPropagation();
   }, true);
 }
 boot();

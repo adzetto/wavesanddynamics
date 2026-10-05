@@ -105,7 +105,8 @@ def near(v):
 
 stops = [near(v) for v in (11.0, 17.5, 23.5, 31.0)]
 say("PAGE")
-say("  the probe rests at four tumors and glides between them along the fitted curve:")
+say("  the probe rests 2.5 s at each of four tumors (1.2 s before 5 Oct 2026) and glides 0.75 s between them")
+say("  along the fitted curve:")
 for i in stops:
     say(f"    x = {x[i]:.1f} mm, p = {p[i]:.4f}, label {int(y[i])},"
         f" classified {'positive' if p[i] > 0.5 else 'negative'}")
@@ -116,7 +117,7 @@ DATA = {"x": x, "y": y, "b0": b0, "b1": b1, "xs": xs, "stops": [float(x[i]) for 
 
 JS = LIB + r"""
 const D = DATA, n = D.x.length;
-const POSTER_T = 5.8;
+const POSTER_T = 9;
 const P = x => 1 / (1 + Math.exp(-(D.b0 + D.b1 * x)));
 const A = {x: 96, y: 86, w: 862, h: 356};
 
@@ -139,8 +140,8 @@ const LEV = new Array(n).fill(0), STEP = [0, 1, -1, 2, -2];
 function draw() {
   const g = axes({...A, xlim: [0, 45], ylim: [-.06, 1.06], xticks: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45],
     yticks: [0, .25, .5, .75, 1], yfmt: v => v === 0 ? '0' : v === 1 ? '1' : String(v),
-    xlabel: '\\rm{tumor diameter}\\ x\\ \\rm{(mm)}', ylabel: '\\rm{probability of malignant}', ylabelGap: 58,
-    progress: seg(0, .35), box: false});
+    xlabel: '\\rm{tumor diameter}\\ x\\ \\rm{(mm)}', ylabel: '\\rm{probability of malignant}', ylabelGap: 60,
+    tickSize: 16, progress: seg(0, .35), box: false});
   const fa = seg(0, .35);
   line([[A.x, A.y], [A.x + A.w, A.y]], {width: 1.3, progress: fa});
   line([[A.x + A.w, A.y], [A.x + A.w, A.y + A.h]], {width: 1.3, progress: fa});
@@ -149,7 +150,7 @@ function draw() {
   for (let s = -4; s <= 8; s += 2) {
     const xx = (s - D.b0) / D.b1; if (xx < 0 || xx > 45) continue;
     line([[g.X(xx), A.y], [g.X(xx), A.y + 5]], {width: 1.1, alpha: sa});
-    math(fmt(s), g.X(xx), A.y - 8, {size: 15, align: 'center', alpha: sa});
+    math(fmt(s), g.X(xx), A.y - 8, {size: 16, align: 'center', alpha: sa});
   }
   math('\\rm{score}\\ b_{0} + b_{1}x', A.x + A.w / 2, A.y - 32, {size: 17, align: 'center', alpha: sa});
 
@@ -159,16 +160,17 @@ function draw() {
   // the probe glides from tumor to tumor along the computed curve. Its guides go first, under the
   // type, the curve and the marks; the one across breaks where it would run through a region's
   // name or the readout, 4 units clear each side, as dim() leaves its label room
-  const c = cycle(.6, D.stops.map((v, k) => [v, k === D.stops.length - 1 ? 1.2 : 1.2]), .75);
+  // it rests 2.5 s at each tumor, long enough to read its probability (5 Oct 2026: 1.2 s before)
+  const c = cycle(.6, D.stops.map(v => [v, 2.5]), .75);
   const xp = cyc(c), pp = P(xp), qa = arrive(.62), px = g.X(xp), py = g.Y(pp);
   const rx = A.x + 16, ry = A.y + 140, LY = g.Y(.9), PX = g.X(D.xs) + 10, NX = g.X(D.xs) - 14;
   const rs = 'x = ' + xp.toFixed(1) + '\\ \\rm{mm},\\ \\ p = ' + pp.toFixed(2);
   const cs = pp > .5 ? 'classified positive' : 'classified negative';
   if (qa > 0) {
-    const pr = {color: C.accent, width: 1.2, dash: [4, 3], alpha: qa}, wn = tw('classified negative', 15);
+    const pr = {color: C.accent, width: 1.2, dash: [4, 3], alpha: qa}, wn = tw('classified negative', 16);
     line([[px, A.y + A.h], [px, py]], pr);
     const holes = [[rx, rx + Math.max(mw(rs, 16), tw(cs, 16)), ry - 13, ry + 27], [NX - wn, NX, LY - 12, LY + 4],
-                   [PX, PX + tw('classified positive', 15), LY - 12, LY + 4]].sort((a, b) => a[0] - b[0]);
+                   [PX, PX + tw('classified positive', 16), LY - 13, LY + 4]].sort((a, b) => a[0] - b[0]);
     let x = A.x;
     for (const [x0, x1, y0, y1] of holes) {
       if (x >= px) break;
@@ -178,13 +180,13 @@ function draw() {
     }
     if (x < px) line([[x, py], [px, py]], pr);
   }
-  text('classified positive', PX, LY, {size: 15, color: C.navy, alpha: za});
-  text('classified negative', NX, LY, {size: 15, color: C.body, align: 'right', alpha: za});
+  text('classified positive', PX, LY, {size: 16, color: C.navy, alpha: za});
+  text('classified negative', NX, LY, {size: 16, color: C.body, align: 'right', alpha: za});
   // the threshold and where the curve crosses it
   const ta = seg(.42, .3);
   line([[A.x, g.Y(.5)], [A.x + A.w, g.Y(.5)]], {color: C.guide, width: 1, dash: [5, 4], progress: ta});
   line([[g.X(D.xs), A.y + A.h], [g.X(D.xs), A.y]], {color: C.guide, width: 1, dash: [5, 4], progress: ta});
-  text('0.5 threshold', A.x + A.w - 10, g.Y(.5) - 8, {size: 15, color: C.body, align: 'right', alpha: arrive(.55)});
+  text('0.5 threshold', A.x + A.w - 10, g.Y(.5) - 8, {size: 16, color: C.body, align: 'right', alpha: arrive(.55)});
 
   // the fitted sigmoid
   const pts = [];
@@ -208,9 +210,8 @@ function draw() {
     [(x, y) => mark(x, y + 1, 0, 1), 'benign (label 0)'],
     [(x, y) => line([[x - 12, y + 1], [x + 12, y + 1]], {color: C.blue, width: 2.6}), 'fitted sigmoid'],
   ], arrive(.6));
-  math(`\\rm{40 simulated tumors (${D.n0} benign, ${D.n1} malignant); maximum likelihood:} b_0 = ${nfmt(D.b0, 2)}, ` +
-       `b_1 = ${D.b1.toFixed(3)} \\rm{per mm; threshold at ${D.xs.toFixed(1)} mm}`, 18, H - 14,
-       {size: 14, color: C.muted, alpha: arrive(.9)});
+  math(`\\rm{40 simulated tumors;}\\ b_0 = ${nfmt(D.b0, 2)},\\ b_1 = ${D.b1.toFixed(3)}\\ \\rm{per mm; boundary ${D.xs.toFixed(1)} mm}`,
+       18, H - 14, {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """
@@ -226,4 +227,4 @@ if __name__ == "__main__":
     common.build_html(NAME, TITLE, ARIA, 1000, 540, DATA, JS)
     print(common.still(NAME))
     if "--look" in sys.argv:
-        print(common.frames(NAME, [0.2, 0.5, 0.8, 1.4, 2.2, 4.2]))
+        print(common.frames(NAME, [0.2, 0.5, 0.8, 1.4, 2.2, 4.2, 7.5, 9.0]))

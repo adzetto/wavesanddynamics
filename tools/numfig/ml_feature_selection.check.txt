@@ -6,9 +6,16 @@ Filter: top 3 absolute Pearson correlations, training rows only.
 Wrapper: forward selection with 5-fold CV Ridge; scaler fitted within each fold.
 Embedded: Lasso coefficient path on training-standardized inputs; alpha 0.12 fixed in advance.
 Filter [1 4 2]; Wrapper [1 2 3]; Embedded [1 2 3].
-Held-out RMSE with the same Ridge predictor: [1.724402032406995, 0.6616052227324133, 0.6616052227324133].
-Pearson vs standardized dot-product max error 1.67e-16.
-OLS true-feature coefficients [3.0246398603889033, -2.0133189015234896, 1.4831731168475337], true values [3, -2, 1.5].
+Held-out RMSE with the same Ridge predictor: [1.7244020324069953, 0.6616052227324132, 0.6616052227324132].
+Pearson vs standardized dot-product max error 5.55e-16.
+OLS true-feature coefficients [3.024639860388903, -2.0133189015234896, 1.4831731168475346], true values [3, -2, 1.5].
+Lasso path: 100 penalties from 0.001 to 10, log spaced. At 0.001 the coefficients equal the closed form w_ls - alpha (Z'Z/n)^-1 sign(w_ls) within 1.4e-08 (least squares on the standardized inputs).
+Every coefficient is exactly 0 from alpha_max = max|z_j'(y - mean)|/n = 3.0380 on (closed form); below 0.98 alpha_max every penalty on the grid keeps at least one feature.
+Wrapper CV RMSE by step: 2.5899, 1.6285, 0.6918, 0.6892, 0.6895, 0.6926; after three features it is flat (within 0.5%), so three are kept.
 Predictive importance is not causal importance; this is a reproducible synthetic example.
+Page: 1000 x 640, (a), (b), (c) side by side, each with its result under it. The tour shows forward
+steps 1, 2, 3 (3.5 s, 2.5 s, then for good), each table going out in 0.15 s before the next comes in;
+the slider under (b) shows any of the six steps (?step=1..6 presets one for the checks). The Lasso
+paths draw from the smallest penalty to the largest, as the penalty increases.
 Sources: https://scikit-learn.org/stable/modules/feature_selection.html
 Poster and intro overlap checks passed.

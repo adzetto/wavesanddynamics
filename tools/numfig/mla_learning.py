@@ -10,7 +10,7 @@ counts, shares and a symmetry, each a few lines of numpy: holes (enclosed
 background regions), strokes across the two middle rows, strokes down the
 two middle columns, the share of ink in the top half and in the left half,
 and left-right mirror symmetry. A logistic regression (scikit-learn,
-standardised features) predicts the digit from those six numbers alone.
+standardized features) predicts the digit from those six numbers alone.
 
 (b) Feature learning: a network 64-16-12-10 (scikit-learn MLPClassifier,
 tanh, alpha 0.01) sees the raw pixels, scaled to 0..1, and learns its own
@@ -155,6 +155,11 @@ say("THE SIX TEST IMAGES")
 for i in pick:
     say(f"  test #{i}: digit {yte[i]}; designed features predict {pl[i]} (p {PL[i].max():.2f}),"
         f" network predicts {pm[i]} (p {qm[i]:.2f})")
+say("")
+say("PAGE (1000 x 625): a test image every 4.5 s (2.6 s before 5 Oct 2026). As an image comes in (0.3 s), the")
+say("  last image's features, unit activations and probabilities fade out; then each stage fills in turn (features")
+say("  from 0.35 s, layer 1 at 0.45 s, layer 2 at 0.65 s, the probabilities at 0.85 s and 0.9 s), and the answer")
+say("  rests about 3.2 s. The probability bars stand on an axis from 0 to 1; a key under the tiles reads them.")
 report(STEM, L)
 
 DATA = {
@@ -169,16 +174,23 @@ DATA = {
 
 JS = LIB + r"""
 const D = DATA, K = D.lab.length;
-const T0 = .05, PER = 2.6;
-const POSTER_T = T0 + 1.6;
-/* the image on show and how far its pass through the models has come */
+/* a test image every PER s. As one comes in, the last image's answer goes (FD s: its features,
+   its units and its probabilities fade); then the new pass fills each stage in turn and rests,
+   so no image is ever shown beside another image's answer (5 Oct 2026: 2.6 s a digit before) */
+const T0 = .05, PER = 4.5, FD = .3;
+const POSTER_T = T0 + 3;
+/* the image on show, its predecessor, and how far its pass has come */
 function slot() {
   if (t < T0) return {k: 0, prev: -1, u: 0};
   const n = Math.floor((t - T0) / PER);
   return {k: n % K, prev: n === 0 ? -1 : (n - 1) % K, u: t - T0 - n * PER};
 }
-const sw = (s, d) => sp(s.u - d * .8, .28);                   // the spring of one stage of the pass
-const val = (s, arr, d, i) => { const p = sw(s, d), a = s.prev < 0 ? 0 : arr[s.prev][i]; return lerp(a, arr[s.k][i], p); };
+/* a stage of the pass: whose values it shows (k), how much of them (g, growing from nothing on a
+   spring that starts d s in) and how visible they are (a: the last image's, going out) */
+function stage(s, d) {
+  if (s.prev >= 0 && s.u < FD) return {k: s.prev, g: 1, a: 1 - s.u / FD};
+  return {k: s.k, g: sp(s.u - d, .3), a: 1};
+}
 
 function pix(x, y, cell, v, alpha) {                    // an 8 x 8 image, v in [0, 1]
   if (alpha <= 0) return;
@@ -199,82 +211,100 @@ function tiles(x0, y0, n, cols, cell, gap, get, act, alpha) {
   }
 }
 function input(s, x, y, cell, a) {
-  const na = s.prev < 0 ? 1 : clamp(s.u / .25);
+  const na = s.prev < 0 ? 1 : clamp(s.u / FD);
   if (s.prev >= 0) pix(x, y, cell, D.img[s.prev].map(v => v / 16), a * (1 - na));
   pix(x, y, cell, D.img[s.k].map(v => v / 16), a * na);
   box(x, y, 8 * cell, 8 * cell, {stroke: C.ink, width: 1.2, alpha: a});
-  text('input, 8 × 8 pixels', x + 4 * cell, y + 8 * cell + 22, {size: 15, color: C.body, align: 'center', alpha: a});
+  text('input, 8 × 8 pixels', x + 4 * cell, y + 8 * cell + 23, {size: 16, color: C.body, align: 'center', alpha: a});
 }
-function bars(x0, y0, probs, a, la = 1) {               // ten class probabilities, the largest in accent; la: its labels
-  const W_ = 20, P_ = 29, Hh = 100;
-  line([[x0 - 6, y0], [x0 + 10 * P_ - 3, y0]], {width: 1.2, alpha: a});
+/* ten class probabilities on a probability axis, the largest in accent. a: the axis and digits;
+   st: the stage whose probabilities are drawn (they grow, or the last image's go out) */
+function bars(x0, y0, probs, a, st) {
+  const W_ = 20, P_ = 29, Hh = 100, ba = st.a * a;
+  line([[x0 - 10, y0], [x0 + 10 * P_ - 3, y0]], {width: 1.2, alpha: a});
+  line([[x0 - 10, y0], [x0 - 10, y0 - Hh]], {width: 1.2, alpha: a});
+  for (const v of [0, .5, 1]) line([[x0 - 10, y0 - Hh * v], [x0 - 5, y0 - Hh * v]], {width: 1.1, alpha: a});
+  for (const v of [0, .5, 1]) text(v === .5 ? '0.5' : String(v), x0 - 16, y0 - Hh * v + 5.6, {size: 16, align: 'right', alpha: a});
   let best = 0; for (let i = 1; i < 10; i++) if (probs[i] > probs[best]) best = i;
+  const hi = clamp((st.g - .5) * 2) * ba, lo = 1 - (st.g > .5 ? hi / Math.max(ba, 1e-9) * ba : 0);
   for (let i = 0; i < 10; i++) {
-    const h = Hh * probs[i];
-    if (h > .3) box(x0 + i * P_, y0 - h, W_, h, {fill: i === best ? C.accent : C.sky, alpha: a});
-    text(String(i), x0 + i * P_ + W_ / 2, y0 + 18, {size: 15, align: 'center', alpha: a,
-      color: i === best ? C.accent : C.ink, bold: i === best});
+    const h = Hh * probs[i] * st.g;
+    if (h > .3) box(x0 + i * P_, y0 - h, W_, h, {fill: i === best ? C.accent : C.sky, alpha: ba});
+    // the answer's digit turns crimson once its bar has grown; the two never show at once
+    const cx = x0 + i * P_ + W_ / 2, cr = i === best ? clamp(2 * hi - 1) : 0, ck = i === best ? clamp(1 - 2 * hi) : 1;
+    if (ck > 0) text(String(i), cx, y0 + 19, {size: 16, align: 'center', alpha: a * ck});
+    if (cr > 0) text(String(i), cx, y0 + 19, {size: 16, align: 'center', alpha: a * cr, color: C.accent, bold: true});
   }
-  text('predicts ' + best, x0 + 10 * P_ - 3, y0 - Hh - 12, {size: 16, align: 'right', alpha: a * la, color: C.accent});
-  math('p = ' + probs[best].toFixed(2), x0 - 6, y0 - Hh - 12, {size: 15, color: C.body, alpha: a * la});
-  text('probability of each digit', x0 + 5 * P_ - 3, y0 + 42, {size: 15, color: C.body, align: 'center', alpha: a});
+  const la = clamp((st.g - .7) / .3) * ba;
+  text('predicts ' + best, x0 + 10 * P_ - 3, y0 - Hh - 12, {size: 17, align: 'right', alpha: la, color: C.accent});
+  math('p = ' + probs[best].toFixed(2), x0 + 2, y0 - Hh - 12, {size: 16, color: C.body, alpha: la});
+  text('probability of each digit', x0 + 5 * P_ - 3, y0 + 43, {size: 16, color: C.body, align: 'center', alpha: a});
 }
 function draw() {
   const s = slot();
-  const IC = 13, OUT = 690;
+  const IC = 13, OUT = 700;
 
   /* (a) feature engineering */
   const a0 = arrive(0);
   sub('a', 18, 34, 'feature engineering', a0);
-  text('humans design the features first', 53, 56, {size: 15, color: C.muted, alpha: arrive(.05)});
-  const AY = 98;
+  text('humans design the features first', 53, 58, {size: 16, color: C.body, alpha: arrive(.05)});
+  const AY = 98, MY = AY + 4 * IC;
   input(s, 24, AY, IC, a0);
   const FX = 196, FY = AY + 10, RH = 26;
-  arrow(24 + 8 * IC + 8, AY + 4 * IC, FX - 12, AY + 4 * IC, {width: 1.3, head: 9, alpha: seg(.06, .3)});
+  arrow(24 + 8 * IC + 8, MY, FX - 12, MY, {width: 1.3, head: 9, alpha: seg(.06, .3)});
   D.fn.forEach((nm, i) => {
-    const a = arrive(.08 + .03 * i), y = FY + i * RH, v = val(s, D.f, .2 + .03 * i, i);
-    text(nm, FX, y, {size: 15, alpha: a});
-    line([[FX + 138, y - 5], [FX + 218, y - 5]], {color: C.rule, width: 5, alpha: a});
+    const a = arrive(.08 + .03 * i), y = FY + i * RH, st = stage(s, .35 + .04 * i), v = D.f[st.k][i] * st.g;
+    text(nm, FX, y, {size: 16, alpha: a});
+    line([[FX + 140, y - 5], [FX + 220, y - 5]], {color: C.rule, width: 5, alpha: a});
     const w = 80 * clamp(v / D.fmax[i]);
-    if (w > .5) line([[FX + 138, y - 5], [FX + 138 + w, y - 5]], {color: C.navy, width: 5, alpha: a});
+    if (w > .5) line([[FX + 140, y - 5], [FX + 140 + w, y - 5]], {color: C.navy, width: 5, alpha: a * st.a});
     const vs = D.fmax[i] > 1 ? (Math.round(v * 2) / 2).toFixed(Math.round(v * 2) % 2 ? 1 : 0) : v.toFixed(2);
-    text(vs, FX + 260, y, {size: 15, align: 'right', alpha: a});
+    text(vs, FX + 264, y, {size: 16, align: 'right', alpha: a * st.a * clamp(st.g * 3)});
   });
-  text('six designed features', FX + 130, FY + 6 * RH + 8, {size: 15, color: C.body, align: 'center', alpha: arrive(.3)});
-  const ba = arrive(.2), MY = AY + 4 * IC;
-  arrow(FX + 272, MY, 502, MY, {width: 1.3, head: 9, alpha: ba});
-  node(566, MY, 116, 56, ['logistic', 'regression'], {alpha: ba, size: 16, gap: 19});
-  arrow(630, MY, OUT - 14, MY, {width: 1.3, head: 9, alpha: ba});
-  const first = st => s.prev < 0 ? clamp(sw(s, st) * 3) : 1;      // no answer before the first pass reaches it
-  bars(OUT, AY + 150, Array.from({length: 10}, (_, i) => val(s, D.pl, .45, i)), arrive(.28), first(.45));
+  text('six designed features', FX + 132, FY + 6 * RH + 10, {size: 16, color: C.body, align: 'center', alpha: arrive(.3)});
+  const ba = arrive(.2);
+  arrow(FX + 276, MY, 504, MY, {width: 1.3, head: 9, alpha: ba});
+  node(568, MY, 116, 56, ['logistic', 'regression'], {alpha: ba, size: 16, gap: 19});
+  arrow(632, MY, OUT - 32, MY, {width: 1.3, head: 9, alpha: ba});
+  const sa = stage(s, .85);
+  // the probability axis is centred a quarter below the arrow, so the arrow runs between its numbers
+  bars(OUT, MY + 75, Array.from({length: 10}, (_, i) => D.pl[sa.k][i]), arrive(.28), sa);
 
   /* (b) feature learning */
-  const BY = 352, b0 = arrive(.06);
+  const BY = 322, b0 = arrive(.06);
   sub('b', 18, BY, 'feature learning', b0);
-  text('the network learns its own features from the pixels', 53, BY + 22, {size: 15, color: C.muted, alpha: arrive(.1)});
-  const IY = BY + 64;
+  text('the network learns its own features from the pixels', 53, BY + 24, {size: 16, color: C.body, alpha: arrive(.1)});
+  const IY = BY + 62, MB = IY + 4 * IC;
   input(s, 24, IY, IC, b0);
   const CELL = 3.8, GAP = 5, TS = 8 * CELL, LX = 196;
-  arrow(24 + 8 * IC + 8, IY + 4 * IC, LX - 12, IY + 4 * IC, {width: 1.3, head: 9, alpha: seg(.1, .3)});
+  arrow(24 + 8 * IC + 8, MB, LX - 12, MB, {width: 1.3, head: 9, alpha: seg(.1, .3)});
   const t1 = arrive(.14), t2 = arrive(.22);
-  const L1Y = IY + 4 * IC - (4 * TS + 3 * GAP) / 2;
-  tiles(LX, L1Y, 16, 4, CELL, GAP, j => D.p1[j], j => val(s, D.a1, .25, j), t1);
-  text('layer 1: 16 units', LX + (4 * TS + 3 * GAP) / 2, L1Y + 4 * TS + 3 * GAP + 22, {size: 15, color: C.body, align: 'center', alpha: t1});
-  const L2X = LX + 4 * TS + 3 * GAP + 48, L2Y = IY + 4 * IC - (3 * TS + 2 * GAP) / 2;
-  arrow(LX + 4 * TS + 3 * GAP + 10, IY + 4 * IC, L2X - 12, IY + 4 * IC, {width: 1.3, head: 9, alpha: t2});
-  tiles(L2X, L2Y, 12, 4, CELL, GAP, j => D.p2[j], j => val(s, D.a2, .38, j), t2);
-  text('layer 2: 12 units', L2X + (4 * TS + 3 * GAP) / 2, L1Y + 4 * TS + 3 * GAP + 22, {size: 15, color: C.body, align: 'center', alpha: t2});
-  const OX = (L2X + 4 * TS + 3 * GAP + OUT) / 2, oa = arrive(.28);
-  arrow(L2X + 4 * TS + 3 * GAP + 10, IY + 4 * IC, OX - 46, IY + 4 * IC, {width: 1.3, head: 9, alpha: oa});
-  node(OX, IY + 4 * IC, 80, 56, ['output', 'layer'], {alpha: oa, size: 16, gap: 19});
-  arrow(OX + 46, IY + 4 * IC, OUT - 14, IY + 4 * IC, {width: 1.3, head: 9, alpha: oa});
-  bars(OUT, IY + 150 - 10, Array.from({length: 10}, (_, i) => val(s, D.pm, .5, i)), arrive(.32), first(.5));
+  const L1Y = MB - (4 * TS + 3 * GAP) / 2;
+  const s1 = stage(s, .45), s2 = stage(s, .65);
+  tiles(LX, L1Y, 16, 4, CELL, GAP, j => D.p1[j], j => D.a1[s1.k][j] * s1.g * s1.a, t1);
+  text('layer 1: 16 units', LX + (4 * TS + 3 * GAP) / 2, L1Y + 4 * TS + 3 * GAP + 23, {size: 16, color: C.body, align: 'center', alpha: t1});
+  const L2X = LX + 4 * TS + 3 * GAP + 48, L2Y = MB - (3 * TS + 2 * GAP) / 2;
+  arrow(LX + 4 * TS + 3 * GAP + 10, MB, L2X - 12, MB, {width: 1.3, head: 9, alpha: t2});
+  tiles(L2X, L2Y, 12, 4, CELL, GAP, j => D.p2[j], j => D.a2[s2.k][j] * s2.g * s2.a, t2);
+  text('layer 2: 12 units', L2X + (4 * TS + 3 * GAP) / 2, L1Y + 4 * TS + 3 * GAP + 23, {size: 16, color: C.body, align: 'center', alpha: t2});
+  const OX = (L2X + 4 * TS + 3 * GAP + OUT - 40) / 2, oa = arrive(.28);
+  arrow(L2X + 4 * TS + 3 * GAP + 10, MB, OX - 46, MB, {width: 1.3, head: 9, alpha: oa});
+  node(OX, MB, 80, 56, ['output', 'layer'], {alpha: oa, size: 16, gap: 19});
+  arrow(OX + 46, MB, OUT - 32, MB, {width: 1.3, head: 9, alpha: oa});
+  const so = stage(s, .9);
+  bars(OUT, MB + 75, Array.from({length: 10}, (_, i) => D.pm[so.k][i]), arrive(.32), so);
+  // what a tile is, as a key: the picture is what excites its unit, the darkness how much this image does
+  const ka = arrive(.4), ky = L1Y + 4 * TS + 3 * GAP + 50;
+  text('each tile: what excites its unit;', LX - 172, ky + 21, {size: 16, color: C.body, alpha: ka});
+  const k1 = LX + 72;
+  pix(k1, ky, CELL, D.p1[0], ka * .2); box(k1, ky, TS, TS, {stroke: C.ink, width: .6, alpha: ka * .55});
+  text('quiet', k1 + TS + 8, ky + 21, {size: 16, color: C.body, alpha: ka});
+  const k2 = k1 + TS + 60;
+  pix(k2, ky, CELL, D.p1[0], ka); box(k2, ky, TS, TS, {stroke: C.ink, width: .6, alpha: ka * .55});
+  text('excited by this image', k2 + TS + 8, ky + 21, {size: 16, color: C.body, alpha: ka});
 
-  text('each tile: the training images that excite a unit, averaged; the darker the tile, the more this image excites that unit',
-       18, H - 34, {size: 14, color: C.muted, alpha: arrive(.6)});
-  text('scikit-learn digits, ' + thou(D.n[0]) + ' training and ' + D.n[1] + ' test images; test accuracy: designed features ' +
-       (D.acc[0] * 100).toFixed(0) + '%, network 64-16-12-10 ' + (D.acc[1] * 100).toFixed(0) + '%',
-       18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  text('scikit-learn digits; test accuracy ' + (D.acc[0] * 100).toFixed(0) + '% (a), ' + (D.acc[1] * 100).toFixed(0) + '% (b)',
+       18, H - 14, {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """
@@ -286,7 +316,7 @@ ARIA = ('One handwritten digit feeds two models: above, six features a person de
         'probabilities, and six test images take turns.')
 
 if __name__ == "__main__":
-    common.build_html(NAME, TITLE, ARIA, 1000, 690, DATA, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, 625, DATA, JS)
     print(common.still(NAME))
     if "--look" in sys.argv:
-        print(common.frames(NAME, [0.3, 0.6, 1.0, 1.7, 2.9, 3.5]))
+        print(common.frames(NAME, [0.3, 0.6, 1.0, 1.7, 3.0, 4.6, 4.9, 5.6]))

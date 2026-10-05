@@ -22,3 +22,9 @@ nf-mla-cleaning: Figure 4, the five data cleaning steps
 (e) SMOTE: 196 normal ~ N(0, diag(1, 0.64)) (seed 21), 4 frauds; k = 3; 192 synthetic frauds
   CHECK: every synthetic point lies on its segment: max |cross product| 4.4e-16, fraction in [0.006, 0.997]
   CHECK: classes after SMOTE: normal 196, fraud 196 (50 % : 50 %)
+
+PAGE (1000 x 670, 900 before 5 Oct 2026): (a), (b), (c) on the first row, (d) and (e) on the second. Each step
+  replays in its own 3 s window of a 17 s round: what it made fades out in 0.3 s, then it is made again, step
+  by step (no part vanishes at once); the first round opens on the gap ('?'), not on the filled answer. (c)'s
+  ages are a dot plot (an age whose mark would meet its neighbor's sits a level up); the slip goes out at 430
+  and comes in at 43. (e) has axes: two standardized transaction features.

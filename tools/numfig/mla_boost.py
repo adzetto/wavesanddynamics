@@ -11,7 +11,7 @@ The page evaluates the trees itself: F at any moment is F_0 plus nu times
 the trees added so far (the tree being added enters in proportion), so the
 sum in (a), the residual stems in (b) and the marker on (c) all follow from
 the same 51 trees every frame. Rounds 1 to 5 play one by one; 6 to 50 run
-on quickly; the next tree is shown fitted to what is left; then it rewinds.
+on quickly; the next tree is shown fitted to what is left; then it fades back to the start.
 
 Run: python tools/numfig/mla_boost.py [--look]
 """
@@ -105,7 +105,8 @@ say(f"  m = 0: {gap[0]:.4f}, 1: {gap[1]:.4f}, 5: {gap[5]:.4f}, 15: {gap[15]:.4f}
     f" smallest at m = {int(gap.argmin())} ({gap.min():.4f})")
 say(f"  noise sd {SIGMA}: the gap after {M} rounds is {gap[M]/SIGMA:.2f} of it")
 say("")
-say("PAGE: rounds 1 to 5 one by one, 6 to 50 run on, tree 51 shown on the last residuals, rewind")
+say("PAGE: rounds 1 to 5 one by one, 6 to 50 run on, tree 51 shown on the last residuals; then what the trees made")
+say("  fades out (0.4 s) and the start fades in (0.4 s), in place of the fast rewind before 5 Oct 2026")
 report(STEM, L)
 
 DATA = {"x": x, "y": y, "F0": F0, "nu": NU, "M": M,
@@ -136,57 +137,60 @@ function treePts(k, X, Y, sc = 1) {
   return p;
 }
 
-/* the boosting clock: s trees added so far, the tree on show in (b), its draw progress */
-const T1 = .75, RD = 1.25, NR = 5, FF = 4.0, END = 3.0, RW = 1.1, REST = .5;
+/* the boosting clock: s trees added so far, the tree on show in (b), its draw progress, and how
+   much of what the trees have made shows (fade): at the end of the loop the sum of 50 trees, its
+   residuals and its marker fade out and the start fades in (no fast rewind, 5 Oct 2026) */
+const T1 = .75, RD = 1.25, NR = 5, FF = 4.0, END = 3.0, RW = .8, REST = .5;
 const LOOP = NR * RD + FF + END + RW + REST;
 function clockAt() {
-  if (t < T1) return {s: 0, k: 1, draw: 0, show: 0, loop: 0};
+  if (t < T1) return {s: 0, k: 1, draw: 0, show: 0, loop: 0, fade: 1};
   const tau = (t - T1) % LOOP, loop = Math.floor((t - T1) / LOOP);
   if (tau < NR * RD) {                     // rounds 1..5: draw tree k, then add it
     const k = Math.floor(tau / RD) + 1, u = tau - (k - 1) * RD;
     const add = sp(u - .5, .5);
-    return {s: k - 1 + add, k, draw: easeInOut(clamp(u / .38)), show: 1 - clamp((u - 1.0) / .2), loop};
+    return {s: k - 1 + add, k, draw: easeInOut(clamp(u / .38)), show: 1 - clamp((u - 1.0) / .2), loop, fade: 1};
   }
   let u = tau - NR * RD;
-  if (u < FF) return {s: NR + (M - NR) * easeInOut(u / FF), k: 0, draw: 0, show: 0, loop};
+  if (u < FF) return {s: NR + (M - NR) * easeInOut(u / FF), k: 0, draw: 0, show: 0, loop, fade: 1};
   u -= FF;
-  if (u < END) return {s: M, k: M + 1, draw: easeInOut(clamp(u / .38)), show: 1, loop};
+  if (u < END) return {s: M, k: M + 1, draw: easeInOut(clamp(u / .38)), show: 1, loop, fade: 1};
   u -= END;
-  if (u < RW) return {s: M * (1 - sp(u, .8)), k: M + 1, draw: 1, show: 1 - clamp(u / .25), loop};
-  return {s: 0, k: 1, draw: 0, show: 0, loop};
+  if (u < RW / 2) return {s: M, k: M + 1, draw: 1, show: 1 - u / (RW / 2), loop, fade: 1 - u / (RW / 2)};
+  if (u < RW) return {s: 0, k: 1, draw: 0, show: 0, loop, fade: (u - RW / 2) / (RW / 2)};
+  return {s: 0, k: 1, draw: 0, show: 0, loop, fade: 1};
 }
 const POSTER_T = T1 + NR * RD + FF + 1.6;
 
 function draw() {
-  const ck = clockAt(), s = ck.s;
+  const ck = clockAt(), s = ck.s, fd = ck.fade;
   /* (a) the sum of trees */
   sub('a', 18, 34, 'sum of trees so far', arrive(0));
   const g = axes({...PA, xlim: [0, 10], ylim: [-3.5, 2.5], xticks: [0, 2, 4, 6, 8, 10], yticks: [-3, -2, -1, 0, 1, 2],
-    xlabel: '', ylabel: 'y', ylabelGap: 38, progress: seg(0, .35)});
+    xlabel: '', ylabel: 'y', ylabelGap: 38, tickSize: 16, progress: seg(0, .35)});
   g.inside(() => {
     line(D.tx.map((v, i) => [g.X(v), g.Y(D.ty[i])]), {color: C.ink, width: 1.6, dash: [7, 5], progress: seg(.16, .4)});
     // earlier sums, left behind as the rounds go on
     for (const [m, lab] of [[1, '1'], [5, '5'], [15, '15']]) {
-      const a = s > m ? .9 * clamp((s - m) * 3) : 0;
+      const a = s > m ? .9 * clamp((s - m) * 3) * fd : 0;
       if (a > 0) line(sumPts(m, g.X, g.Y), {color: C.guide, width: 1.2, alpha: a});
     }
-    line(sumPts(s, g.X, g.Y), {color: C.navy, width: 2.5, progress: seg(.3, .36)});
+    line(sumPts(s, g.X, g.Y), {color: C.navy, width: 2.5, progress: seg(.3, .36), alpha: fd});
     for (let i = 0; i < n; i++) mark(g.X(D.x[i]), g.Y(D.y[i]), 4, arrive(.04 + .26 * D.x[i] / 10), 3.9);
   });
   const na = Math.floor(s + 1e-6);
   math('\\rm{after}\\ ' + na + '\\ \\rm{tree' + (na === 1 ? '' : 's') + '}', PA.x + PA.w - 12, PA.y + PA.h - 14,
-    {size: 17, align: 'right', alpha: arrive(.5)});
+    {size: 17, align: 'right', alpha: arrive(.5) * fd});
 
   /* (b) the residuals, and the next tree fitted to them */
   sub('b', 18, PB.y - 28, 'residuals and the next tree', arrive(.1));
   const h = axes({...PB, xlim: [0, 10], ylim: [-2.5, 2.5], xticks: [0, 2, 4, 6, 8, 10], yticks: [-2, 0, 2],
-    xlabel: 'x', ylabel: '\\rm{residual}', ylabelGap: 38, progress: seg(.06, .35)});
+    xlabel: 'x', ylabel: '\\rm{residual}', ylabelGap: 38, tickSize: 16, progress: seg(.06, .35)});
   h.inside(() => {
     line([[PB.x, h.Y(0)], [PB.x + PB.w, h.Y(0)]], {color: C.rule, width: 1});
     for (let i = 0; i < n; i++) {
       const r = D.y[i] - Fs(s, D.x[i]), a = seg(.45 + .2 * D.x[i] / 10, .25);
-      line([[h.X(D.x[i]), h.Y(0)], [h.X(D.x[i]), h.Y(r)]], {color: C.sky, width: 1.4, progress: a});
-      if (a > .5) mark(h.X(D.x[i]), h.Y(r), 4, a, 3.2);
+      line([[h.X(D.x[i]), h.Y(0)], [h.X(D.x[i]), h.Y(r)]], {color: C.sky, width: 1.4, progress: a, alpha: fd});
+      if (a > .5) mark(h.X(D.x[i]), h.Y(r), 4, a * fd, 3.2);
     }
     if (ck.k && ck.show > 0) line(treePts(ck.k, h.X, h.Y), {color: C.accent, width: 2.4, progress: ck.draw, alpha: ck.show});
   });
@@ -199,11 +203,11 @@ function draw() {
   /* (c) how far the sum is from the true pattern */
   sub('c', PC.x - 62, 34, 'distance to the true pattern', arrive(.12));
   const q = axes({...PC, xlim: [0, 50], ylim: [0, 1.4], xticks: [0, 25, 50], yticks: [0, .5, 1],
-    yfmt: v => v === 0 ? '0' : v.toFixed(1), xlabel: '\\rm{trees}', ylabel: '\\rm{RMS distance}', ylabelGap: 40,
-    progress: seg(.08, .35)});
+    yfmt: v => v === 0 ? '0' : v.toFixed(1), xlabel: '\\rm{trees}', ylabel: '\\rm{RMS distance}', ylabelGap: 42,
+    tickSize: 16, progress: seg(.08, .35)});
   q.inside(() => line(D.gap.map((v, i) => [q.X(i), q.Y(v)]), {color: C.navy, width: 2.2, progress: seg(.2, .42)}));
   const gi = Math.min(M, Math.floor(s)), gv = lerp(D.gap[gi], D.gap[Math.min(M, gi + 1)], s - gi);
-  dot(q.X(s), q.Y(gv), 5.5, {color: '#fff', fill: C.accent, width: 1.4, alpha: arrive(.55)});
+  dot(q.X(s), q.Y(gv), 5.5, {color: '#fff', fill: C.accent, width: 1.4, alpha: arrive(.55) * fd});
 
   legend(PC.x - 62, PB.y - 10, [
     [(x, y) => mark(x, y + 1, 4, 1, 3.9), 'data'],
@@ -213,8 +217,8 @@ function draw() {
     [(x, y) => line([[x, y - 8], [x, y + 9]], {color: C.sky, width: 1.4}), 'residual'],
     [(x, y) => line([[x - 13, y + 5], [x - 3, y + 5], [x - 3, y - 4], [x + 13, y - 4]], {color: C.accent, width: 2.4}), 'next tree'],
   ], arrive(.65), 238);
-  text('50 simulated points, noise sd 0.4; depth 2 regression trees, learning rate 0.1, 50 rounds', 18, H - 14,
-       {size: 14, color: C.muted, alpha: arrive(.9)});
+  text('50 points, noise sd 0.4; trees of depth 2; learning rate 0.1', 18, H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """

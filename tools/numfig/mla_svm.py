@@ -45,7 +45,7 @@ from mla_shared import LIB, report
 
 NAME, STEM = "mla-svm", "mla_svm"
 LIM = 3.2
-HPAGE = 840                                   # the page: 1000 x 840 drawing units
+HPAGE = 736                                   # the page: 1000 x 736 drawing units (840 before 5 Oct 2026)
 
 # ------------------------------------------------------------------ (a) linear
 rng = np.random.default_rng(3)
@@ -283,8 +283,8 @@ DATA = {
 JS = LIB + r"""
 const LIMX = DATA.lim, DA = DATA.a, DB = DATA.b;
 const POSTER_T = 17.5;
-const SQ = 368, PA = {x: 70, y: 62, w: SQ, h: SQ}, PB = {x: 596, y: 62, w: SQ, h: SQ};
-const PC = {x: 70, y: 530, w: SQ, h: 136}, PD = {x: 596, y: 530, w: SQ, h: 136};
+const SQ = 330, PA = {x: 72, y: 58, w: SQ, h: SQ}, PB = {x: 616, y: 58, w: SQ, h: SQ};
+const PC = {x: 72, y: 480, w: SQ, h: 124}, PD = {x: 616, y: 480, w: 348, h: 124};   // (b') a little wider: its key
 const rad = d => d * Math.PI / 180;
 const INSTANT = REDUCED || STILL;                     // interactions switch at once
 const TU = () => performance.now() / 1000;          // the clock of the reader's own actions
@@ -309,7 +309,7 @@ function uline(g, S, s) {
 function drawA() {
   sub('a', 18, 34, 'linear SVM', arrive(0));
   const g = axes({...PA, xlim: [-LIMX, LIMX], ylim: [-LIMX, LIMX], xticks: [-3, -2, -1, 0, 1, 2, 3],
-    yticks: [-3, -2, -1, 0, 1, 2, 3], xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 40, progress: seg(0, .35)});
+    yticks: [-3, -2, -1, 0, 1, 2, 3], xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 42, tickSize: 16, progress: seg(0, .35)});
   const cy = cycle(.6, [[DA.th, 6.0], [DA.th - DA.swing, .8], [DA.th, .8], [DA.th + DA.swing, 1.2]], .8);
   const th = cyc(cy), S = street(th);
   const ra = arrive(.36);
@@ -346,12 +346,12 @@ function drawA() {
   const h = axes({...PC, xlim: [DA.th - 24, DA.th + 24], ylim: [0, 1.4],
     xticks: [-20, -10, 0, 10, 20].map(v => DA.th + v), yticks: [0, .4, .8, 1.2],
     xfmt: v => fmt(Math.round(v - DA.th)), yfmt: v => v === 0 ? '0' : v.toFixed(1),
-    xlabel: '\\rm{boundary rotation (deg)}', ylabel: '\\rm{margin}', ylabelGap: 44, progress: seg(.08, .35)});
+    xlabel: '\\rm{boundary rotation (deg)}', ylabel: '\\rm{margin}', ylabelGap: 46, tickSize: 16, progress: seg(.08, .35)});
   const pts = DA.tg.map((v, i) => [h.X(v), h.Y(Math.max(0, DA.mg[i]))]);
   h.inside(() => line(pts, {color: C.navy, width: 2.2, progress: seg(.2, .42)}));
   const pk = arrive(.62);
   line([[h.X(DA.th), h.Y(DA.wmax)], [h.X(DA.th), PC.y + PC.h]], {color: C.guide, width: 1, dash: [5, 4], alpha: pk});
-  text('widest: the SVM', h.X(DA.th) + 8, h.Y(DA.wmax) - 8, {size: 15, color: C.body, alpha: pk});
+  text('widest: the SVM', h.X(DA.th) + 8, h.Y(DA.wmax) - 8, {size: 16, color: C.body, alpha: pk});
   dot(h.X(th), h.Y(S.w), 5.5, {color: '#fff', fill: C.accent, width: 1.4, alpha: arrive(.5)});
 }
 
@@ -369,7 +369,7 @@ const NS = DB.ns, SG = DB.sg, SF = DB.sf;          // SF[j * NS + i] = f(SG[i], 
 const ZL = 3, HZ = .5;                             // the box: f from -3 to 3, half as tall as it is wide
 const FMAX = Math.max(...SF) + .05;
 const CAM = {az: 34, el: 34};                      // the 3-D view (deg); a drag moves it
-const S3 = 138, C3 = {x: PB.x + SQ / 2 + 2, y: PB.y + SQ / 2 + 4};
+const S3 = 124, C3 = {x: PB.x + SQ / 2 + 2, y: PB.y + SQ / 2 + 4};
 
 /* the camera between straight above (lam 0: the plane as a 2-D plot) and the 3-D view (lam 1) */
 function camera(lam) {
@@ -380,11 +380,11 @@ function camera(lam) {
   // reaches the titles, the arrow or the figure's edge (a turned or steep view needs less)
   // (what is drawn counts: the walls' top once they show, the f axis's numbers on the left once they show)
   let s = lerp(SQ / 2, S3, lam);
-  const left = lerp(560, 585, clamp((lam - .5) / .2)), top = HZ * clamp((lam - .72) / .2);
+  const left = lerp(PB.x - 36, PB.x - 6, clamp((lam - .5) / .2)), top = HZ * clamp((lam - .72) / .2);
   for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-HZ, 0, top]) {
     const a = x * ca - y * sa, b = (x * sa + y * ca) * se + z * ce;
     if (a > 1e-9) s = Math.min(s, (976 - cx) / a); else if (a < -1e-9) s = Math.min(s, (cx - left) / -a);
-    if (b > 1e-9) s = Math.min(s, (cy - 56) / b); else if (b < -1e-9) s = Math.min(s, (460 - cy) / -b);
+    if (b > 1e-9) s = Math.min(s, (cy - 54) / b); else if (b < -1e-9) s = Math.min(s, (PD.y - 70 - cy) / -b);
   }
   const P = (x, y, z) => {
     const xn = x / LIMX, yn = y / LIMX, zn = z / ZL * HZ, xr = xn * ca - yn * sa, yr = xn * sa + yn * ca;
@@ -630,7 +630,7 @@ function drawB(sl) {
   const lb = clamp((lam - .8) / .15) * clamp((72 - CAM.az) / 10) * clamp((62 - CAM.el) / 10) * clamp((CAM.el - 10) / 4);
   if (lb > 0) {
     const p = P(-.62 * L, L, 0), q = P(-.3 * L, L, 0), an = Math.atan2(q[1] - p[1], q[0] - p[0]);
-    math('f = 0', p[0] + Math.sin(an) * 7, p[1] - Math.cos(an) * 7, {size: 15, color: C.body, rot: an, alpha: lb});
+    math('f = 0', p[0] + Math.sin(an) * 7, p[1] - Math.cos(an) * 7, {size: 16, color: C.body, rot: an, alpha: lb});
   }
   // where the line of (b') crosses the boundary
   const za = arrive(.85);
@@ -700,7 +700,7 @@ function front(cam, pa) {
     line([px, F(v, -L + 5 / cam.s * L)], {color: C.ink, width: 1.1, alpha: ta});
     line([py, F(-L + 5 / cam.s * L, v)], {color: C.ink, width: 1.1, alpha: ta});
     // in 3-D the two axes meet at the near corner: one -3 there is enough
-    place(fmt(v), px, nx, 15, rx); place(fmt(v), py, ny, 15, ry * (v === -3 ? 1 - clamp((lam - .1) / .25) : 1));
+    place(fmt(v), px, nx, 16, rx); place(fmt(v), py, ny, 16, ry * (v === -3 ? 1 - clamp((lam - .1) / .25) : 1));
   }
   // the axis labels: under and beside the plot from above, off the near edges' middles in 3-D
   const mxp = F(0, -L), myp = F(-L, 0);
@@ -714,7 +714,7 @@ function front(cam, pa) {
     for (const z of ZT) {
       const p = P(-L, L, z);
       line([p, P(-L + 5 / cam.s * L / Math.max(.2, Math.cos(cam.az)), L, z)], {color: C.ink, width: 1.1, alpha: up});
-      math(fmt(z), p[0] - 8, p[1] + 5.25, {size: 15, align: 'right', alpha: up});
+      math(fmt(z), p[0] - 8, p[1] + 5.6, {size: 16, align: 'right', alpha: up});
     }
     const zp = P(-L, L, 0);
     math('f', zp[0] - 34, zp[1] + 5, {size: 17, align: 'center', alpha: up});
@@ -724,8 +724,8 @@ function front(cam, pa) {
 /* ------------------------------------------------------------ (b') f along the line */
 function drawBp(sl) {
   const g = axes({...PD, xlim: [-SL, SL], ylim: [-4.6, 5], xticks: [-3, -2, -1, 0, 1, 2, 3],
-    yticks: [-4, -2, 0, 2, 4], xlabel: '\\rm{position along the line}', ylabel: 'f', ylabelGap: 34,
-    progress: seg(.1, .35)});
+    yticks: [-4, -2, 0, 2, 4], xlabel: '\\rm{position along the line}', ylabel: 'f', ylabelGap: 36,
+    tickSize: 16, progress: seg(.1, .35)});
   const ba = arrive(.55), ca = seg(.3, .45), za = arrive(.85), N = 97;
   // the decision function the curves below add up, and the surface of the 3-D view is
   math('f(x) = b + \\Sigma_{i}\\ \\alpha_{i} y_{i}\\ \\rm{exp}(-\\gamma\\, |x - x_{i}|^{2})', PD.x + PD.w / 2, PD.y - 14,
@@ -744,11 +744,11 @@ function drawBp(sl) {
   // what the curves are
   const la = arrive(.8), ly = PD.y + 20;
   line([[PD.x + 10, ly - 5], [PD.x + 30, ly - 5]], {color: C.mist, width: 1.1, alpha: la});
-  text('one bump per support vector', PD.x + 36, ly, {size: 15, color: C.ink, alpha: la});
-  const kw = mw('b + \\rm{their sum}', 15), kx = PD.x + PD.w - 8 - kw;
+  text('bump per support vector', PD.x + 36, ly, {size: 16, color: C.ink, alpha: la});
+  const kw = mw('b + \\rm{their sum}', 16), kx = PD.x + PD.w - 8 - kw;
   line([[kx - 26, ly - 5], [kx - 6, ly - 5]], {color: C.blue, width: 2.4, alpha: la});
-  math('b + \\rm{their sum}', kx, ly, {size: 15, alpha: la});
-  math('b', PD.x + PD.w + 7, g.Y(B0) + 5, {size: 15, color: C.body, alpha: la});
+  math('b + \\rm{their sum}', kx, ly, {size: 16, alpha: la});
+  math('b', PD.x + PD.w + 7, g.Y(B0) + 5.6, {size: 16, color: C.body, alpha: la});
 }
 
 /* ------------------------------------------------------------ the arrow from (a) to (b) */
@@ -763,11 +763,11 @@ function drawArrow() {
     if (a >= 1) arrow(AR.x1 - 12, AR.y, AR.x1, AR.y, {color: col, width: 1.5, head: 10});
   }
   const mx = (AR.x0 + AR.x1) / 2;
-  text('add a kernel', mx, AR.y - 11, {size: 15, color: C.body, align: 'center', alpha: arrive(.75)});
+  text('add a kernel', mx, AR.y - 11, {size: 16, color: C.body, align: 'center', alpha: arrive(.75)});
   if (cmp > .005) {
-    text('straight line', mx, AR.y + 34, {size: 14, color: C.accent, align: 'center', alpha: cmp});
+    text('straight line', mx, AR.y + 34, {size: 16, color: C.accent, align: 'center', alpha: cmp});
     text(Math.round(100 * DB.line.n / DB.n) + '%', mx, AR.y + 54, {size: 17, color: C.accent, align: 'center', alpha: cmp});
-    text('RBF kernel', mx, AR.y + 82, {size: 14, color: C.ink, align: 'center', alpha: cmp});
+    text('RBF kernel', mx, AR.y + 82, {size: 16, color: C.ink, align: 'center', alpha: cmp});
     text('100%', mx, AR.y + 102, {size: 17, color: C.ink, align: 'center', alpha: cmp});
   }
 }
@@ -775,13 +775,13 @@ function drawArrow() {
 /* ------------------------------------------------------------ the legend and the parameters */
 function legendRow(y, rows, a) {
   if (a <= 0) return;
-  const gap = 26, kw = 30, ws = rows.map(r => kw + 8 + mw(r[1], 15));
+  const gap = 26, kw = 30, ws = rows.map(r => kw + 8 + mw(r[1], 16));
   const tot = ws.reduce((s, v) => s + v, 0) + gap * (rows.length - 1), x0 = (W - tot) / 2;
   box(x0 - 14, y, tot + 28, 30, {fill: '#fff', stroke: C.ink, width: 1, alpha: a});
   let x = x0;
   rows.forEach(([key, lab], i) => {
     ctx.save(); ctx.globalAlpha *= a; key(x + kw / 2, y + 15); ctx.restore();
-    math(lab, x + kw + 8, y + 20, {size: 15, alpha: a});
+    math(lab, x + kw + 8, y + 21, {size: 16, alpha: a});
     x += ws[i] + gap;
   });
 }
@@ -790,7 +790,7 @@ function draw() {
   const sl = sliceOf(psiAt());
   drawB(sl); drawBp(sl); drawArrow();
   if (!STILL) hint();
-  legendRow(PC.y + PC.h + 70, [
+  legendRow(PC.y + PC.h + 66, [
     [(x, y) => mark(x, y, 1, 1), '\\rm{class A}'],
     [(x, y) => mark(x, y, 0, 1), '\\rm{class B}'],
     [(x, y) => { mark(x, y, 1, 1); ring(x, y, 9.5); }, '\\rm{support vector}'],
@@ -798,15 +798,14 @@ function draw() {
     [(x, y) => line([[x - 13, y], [x + 13, y]], {width: 1.2, dash: [6, 4]}), '\\rm{margins},\\ f = \\pm 1'],
   ], arrive(.7));
   // short of the controls in the corner (the 3-D button stays there in the guide's page)
-  text('scaled features; (a) hard margin; (b) γ = 0.5, C = 10, b = ' + nfmt(B0, 2) +
-       ': all ' + DB.n + ' separated; best straight line ' + DB.line.n + ' of ' + DB.n,
-       18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  math('\\rm{scaled features; (a) hard margin; (b)}\\ \\gamma\\ = 0.5,\\ C = 10', 18, H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 const TAP = matchMedia('(hover: none)').matches;      // a touch screen: tap, not click
 function hint() {
   const to = target(), a = arrive(1.2), w = TAP ? 'tap' : 'click';
   const s = to > .5 ? 'drag to turn, ' + w + ' for 2D' : w + ' for the 3D view';
-  text(s, PB.x + SQ, 34, {size: 14, color: C.muted, align: 'right', alpha: .9 * a});
+  text(s, W - 18, 34, {size: 16, color: C.muted, align: 'right', alpha: .9 * a});
 }
 
 /* ------------------------------------------------------------ the reader */

@@ -10,7 +10,7 @@ FIT (closed form)
   b1 = Sxy/Sxx = 169.4761 $/ft^2,  b0 = ybar - b1 xbar = 45.1344 k$
 
 CHECK 1: closed form against two independent solvers
-  numpy lstsq:          b0 = 45.1344447032, b1 = 0.169476142421  |diff| 1.3e-13, 5.6e-17
+  numpy lstsq:          b0 = 45.1344447032, b1 = 0.169476142421  |diff| 2.7e-13, 8.3e-17
   sklearn Linear...:    b0 = 45.1344447032, b1 = 0.169476142421  |diff| 0.0e+00, 0.0e+00
 
 CHECK 2: the normal equations (residuals sum to zero and are orthogonal to x)

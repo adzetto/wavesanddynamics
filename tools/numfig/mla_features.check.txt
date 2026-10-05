@@ -16,14 +16,12 @@ nf-mla-features: Figure 6, the three feature engineering steps
 (c) ENCODING: one-hot of diagnosis group cardiac, renal, respiratory, cardiac, renal
   CHECK: scikit-learn OneHotEncoder gives [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0], [0, 1, 0]]; each row sums to 1: True
 
-TIMING (30 Sep 2026, the client: slow Figure 6 down so each step can be followed): every step
-  about twice as slow, old values in brackets; the intro unchanged (readable by 0.6 s, all in by 1.2 s)
-  round 27 s (13.5 s): each step an 8 s window (4 s) from 0.6 s, then 3 s at rest (1.5 s); poster 25.6 s (13.6 s)
-  (a) each feature in turn every 1.56 s (0.78 s): its source and value light up in 0.3 s (0.15 s),
-      hold 0.94 s (0.47 s) and dim in 0.3 s (0.15 s); first at 0.8 s (0.6 s)
-  (b) the probe fades in at 18 k$ (it used to appear at 45 k$ and leave mid-glide), then glides to 45, 110
-      and 230 k$ with a 0.8 s spring (0.5 s), one stop every 2 s (0.95 s), so each value holds still about
-      0.7 s (it never came to rest before), and fades out; timed from its own window (the old cycle of
-      4.55 s ran on the page clock and drifted against the 13.5 s round)
-  (c) the table's values clear in 0.4 s (at once) and each record takes 1.4 s (0.7 s): it lights up in
-      0.24 s (0.12 s), its ones and zeros appear 0.5 s in, in 0.3 s (0.25 s in, 0.15 s), and it dims
+TIMING (30 Sep 2026, the client: slow Figure 6 down so each step can be followed; 5 Oct 2026: every
+  value read rests 2.5 s): round 36 s from 0.6 s, windows (a) 11.5 s, (b) 13.5 s, (c) 8 s, then 3 s at rest;
+  poster 34.6 s. The intro is unchanged (readable by 0.6 s, all in by 1.2 s).
+  (a) each feature in turn every 2.2 s (1.56 s): its source and value light up in 0.3 s, hold 1.6 s and dim
+      in 0.3 s; first at 0.2 s into the window
+  (b) the probe fades in at 18 k$, then glides to 45, 110 and 230 k$ with a 0.8 s spring, one stop every
+      3.3 s (2 s), so each value it reads rests 2.5 s (0.7 s), and fades out; timed from its own window
+  (c) the table's values clear in 0.4 s and each record takes 1.4 s: it lights up in 0.24 s, its ones and
+      zeros appear 0.5 s in, in 0.3 s, and it dims

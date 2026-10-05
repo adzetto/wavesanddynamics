@@ -1,4 +1,4 @@
-Figure 3a: synthetic monthly sensor level, seed 17, 216 observations.
+Figure 2a: synthetic monthly sensor level, seed 17, 216 observations.
 Signal = 12 + 0.035 t + 2.4 sin(2 pi t/12) + AR(1) noise (phi .55, innovation SD .6).
 Origins 120, 156, 192. Each forecast predicts all 24 steps without observing future values.
 Seasonal ARIMA(1,1,1)x(1,0,0,12), fitted by statsmodels; all optimizers converged.
@@ -15,4 +15,9 @@ https://scikit-learn.org/stable/auto_examples/applications/plot_time_series_lagg
 Origin 120: RMSE [2.462951786461619, 0.8610956128288396, 1.148338753089933]; MAE [2.1901761996893274, 0.6620230900568604, 0.8492328485311371] (ARIMA, Holt-Winters, trees).
 Origin 156: RMSE [0.9662673382986066, 0.9088022714140008, 0.736638039957234]; MAE [0.782972534483088, 0.730543279356788, 0.5762076845104273] (ARIMA, Holt-Winters, trees).
 Origin 192: RMSE [0.7114661708703989, 0.9567963867816685, 1.1577536367275612]; MAE [0.577756807021193, 0.8580659958348202, 0.9432289520049749] (ARIMA, Holt-Winters, trees).
-Poster and intro overlap checks passed.
+Page: 1000 x 630, the three panels side by side; each panel's errors and fitted model under it.
+Timing: the history is drawn by 0.5 s, the forecasts from 0.35 s to 1.1 s, what happened and the errors
+by 1.35 s. The tour then rests 8.25 s on each origin (120, 156, 192, 10 s each), fades it out in 0.4 s
+and draws the next in; a chosen origin stops the tour there (?origin=0..2 presets one for the checks).
+x ticks every 12 months from origin - 48 to origin + 24; the last forecast month is origin + 23.
+Poster, intro and tour overlap checks passed.

@@ -20,4 +20,5 @@ CHECK 4: the sum of trees approaches the true pattern (RMS gap on a 4001 point g
   m = 0: 1.1320, 1: 1.0340, 5: 0.7510, 15: 0.4330, 50: 0.2645; smallest at m = 46 (0.2642)
   noise sd 0.4: the gap after 50 rounds is 0.66 of it
 
-PAGE: rounds 1 to 5 one by one, 6 to 50 run on, tree 51 shown on the last residuals, rewind
+PAGE: rounds 1 to 5 one by one, 6 to 50 run on, tree 51 shown on the last residuals; then what the trees made
+  fades out (0.4 s) and the start fades in (0.4 s), in place of the fast rewind before 5 Oct 2026

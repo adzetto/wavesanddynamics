@@ -41,7 +41,8 @@ def compute():
         steps.append(dict(selected=chosen.copy(), candidates=candidates, rmse=best[1]))
     scaler = StandardScaler().fit(Xt)
     Z = scaler.transform(Xt)
-    alphas = np.geomspace(4., .003, 80)
+    # the penalty increasing, as the path is drawn: from almost least squares to no feature at all
+    alphas = np.geomspace(.001, 10., 100)
     coefs = np.array([Lasso(alpha=a, max_iter=30000, tol=1e-10).fit(Z, yt).coef_ for a in alphas])
     alpha = .12
     embedded = Lasso(alpha=alpha, max_iter=30000, tol=1e-10).fit(Z, yt)
@@ -63,9 +64,22 @@ def compute():
     zy = (yt - yt.mean()) / yt.std()
     assert np.max(abs(r - z.T @ zy / len(zy))) < 1e-12
     assert set(wrapper_set) == {0, 1, 2}
+    assert all(abs(s["rmse"] / steps[2]["rmse"] - 1) < .005 for s in steps[3:])      # flat after three
     ols = np.linalg.lstsq(np.column_stack([np.ones(len(Xt)), Xt[:, :3]]), yt, rcond=None)[0]
     assert np.max(abs(ols[1:] - data["truth"][:3])) < .15
     assert np.isfinite(coefs).all()
+    # Two closed forms for the path's ends (scikit-learn's objective, 1/(2n) squared error plus
+    # alpha |w|_1). While no coefficient has reached zero, the optimality condition
+    # (Z'Z/n) w = Z'y/n - alpha sign(w) gives w = w_ls - alpha (Z'Z/n)^-1 sign(w_ls), w_ls least
+    # squares on the same standardized inputs; and every coefficient is zero from
+    # alpha_max = max_j |z_j'(y - mean y)| / n on.
+    ols_z = np.linalg.lstsq(np.column_stack([np.ones(len(Z)), Z]), yt, rcond=None)[0][1:]
+    near = ols_z - alphas[0] * np.linalg.solve(Z.T @ Z / len(Z), np.sign(ols_z))
+    assert np.all(np.sign(near) == np.sign(ols_z))
+    lasso_gap = float(np.max(abs(coefs[0] - near)))
+    amax = float(np.max(abs(Z.T @ (yt - yt.mean()))) / len(yt))
+    assert lasso_gap < 1e-6
+    assert np.all(coefs[alphas >= amax] == 0) and np.all(np.any(coefs[alphas < .98 * amax] != 0, axis=1))
     notes = ["Figure 6a: synthetic sensor-feature regression, seed 42, 480 independent rows.",
              "y = 3 x1 - 2 x2 + 1.5 x3 + epsilon; epsilon SD 0.7.",
              "x4 = 0.97 x1 + 0.15 noise; x5 and x6 independent nuisance features.",
@@ -77,15 +91,29 @@ def compute():
              f"Held-out RMSE with the same Ridge predictor: {data['rmse']}.",
              f"Pearson vs standardized dot-product max error {np.max(abs(r - z.T @ zy / len(zy))):.2e}.",
              f"OLS true-feature coefficients {ols[1:].tolist()}, true values [3, -2, 1.5].",
+             f"Lasso path: 100 penalties from 0.001 to 10, log spaced. At 0.001 the coefficients equal the closed form "
+             f"w_ls - alpha (Z'Z/n)^-1 sign(w_ls) within {lasso_gap:.1e} (least squares on the standardized inputs).",
+             f"Every coefficient is exactly 0 from alpha_max = max|z_j'(y - mean)|/n = {amax:.4f} on (closed form); "
+             f"below 0.98 alpha_max every penalty on the grid keeps at least one feature.",
+             "Wrapper CV RMSE by step: " + ", ".join(f"{s['rmse']:.4f}" for s in steps) +
+             "; after three features it is flat (within 0.5%), so three are kept.",
              "Predictive importance is not causal importance; this is a reproducible synthetic example.",
+             "Page: 1000 x 640, (a), (b), (c) side by side, each with its result under it. The tour shows forward",
+             "steps 1, 2, 3 (3.5 s, 2.5 s, then for good), each table going out in 0.15 s before the next comes in;",
+             "the slider under (b) shows any of the six steps (?step=1..6 presets one for the checks). The Lasso",
+             "paths draw from the smallest penalty to the largest, as the penalty increases.",
              "Sources: https://scikit-learn.org/stable/modules/feature_selection.html"]
     return data, notes
 
 
 JS = r"""
 const D = DATA, POSTER_T = 8, FIG = cv.closest('.fig');
-let manual = null, stepInput = null, lastK = 0;
-function reset() { manual = null; }
+/* the forward step on show: the tour takes steps 1, 2 and 3 (the three the wrapper keeps; 3.5,
+   2.5 s, then for good), each table going out (.15 s) before the next comes in (.25 s); the
+   slider (or ?step=1..6 for the checks) shows any of the six */
+const NS = D.steps.length, TOUR = [0, 3.5, 6], PICK = /[?&]step=([1-6])\b/.exec(location.search);
+let manual = PICK ? +PICK[1] : null, stepInput = null, lastK = 0;
+function reset() { manual = PICK ? +PICK[1] : null; if (stepInput) stepInput.value = manual || 1; }
 /* the family's conventions: x_j in math, a true minus, subtitles 17 in C.body,
    booktabs rules, labels that arrive on Motion's spring */
 const xv = j => 'x_{' + (j + 1) + '}';
@@ -95,90 +123,116 @@ const n3 = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(3);
 const arrive = t0 => settle(t0, .28);
 function sub(l, x, y, words, a) { panel(l, x, y, {alpha: a}); text(words, x + 35, y, {size: 17, color: C.body, alpha: a}); }
 function rule(x0, x1, y, w, a) { line([[x0, y], [x1, y]], {color: C.ink, width: w, alpha: a}); }
-/* the right column; the step slider sits under (b), between its axis label and (c) */
-const RX = 682, TX = 910, SLY = 680;
+/* layout: the three panels side by side, each with its result under it; the step slider under
+   (b), its handle under the plot's own feature counts */
+const PX = [74, 400, 726], PY = 62, PW = 250, PH = 190, TY = 372, SLY = 334;
+function tour() {          // the step, how much of its table shows, and the marker gliding from the last
+  let k = 1; while (k < 3 && t >= TOUR[k]) k++;
+  const tc = TOUR[k - 1], next = k < 3 ? TOUR[k] : 1e9;
+  const a = (k === 1 ? 1 : clamp((t - tc) / .25)) * (1 - clamp((t - next + .15) / .15));
+  return {k, a, from: k === 1 ? 1 : k - 1, glide: k === 1 ? 1 : settle(tc, .4)};
+}
 function draw() {
-  const u = manual === null ? clamp((t - 1) / 5) : manual;
-  const k = Math.min(3, 1 + Math.floor(u * 2.99)), step = D.steps[k - 1];
+  const T = manual === null ? tour() : {k: manual, a: 1, from: manual, glide: 1};
+  const k = T.k, step = D.steps[k - 1], ta = T.a;
   if (manual === null && stepInput) stepInput.value = k;
   if (stepInput && k !== lastK) {
     lastK = k;
-    stepInput.setAttribute('aria-valuetext', 'step ' + k + ' of 3: ' + plain(step.selected) + ', CV RMSE ' + step.rmse.toFixed(3));
+    stepInput.setAttribute('aria-valuetext', 'step ' + k + ' of ' + NS + ': ' + plain(step.selected) + ', CV RMSE ' + step.rmse.toFixed(3));
   }
-  const xs = 110, ww = 500;
-  sub('a', 18, 34, 'filter: score before fitting', arrive(0));
-  const a = axes({x: xs, y: 76, w: ww, h: 200, xlim: [0, 1], ylim: [.5, 6.5],
-    xticks: [0, .25, .5, .75, 1], yticks: [1, 2, 3, 4, 5, 6], yfmt: v => 'x_{' + (7 - v) + '}',
-    xlabel: '|r(x_j, y)|', ylabel: '\\rm{feature}', grid: true, progress: seg(0, .35)});
+  /* (a) the filter: absolute correlations with the target, the three largest kept */
+  const xa = PX[0];
+  sub('a', xa - 56, 34, 'filter: score before fitting', arrive(0));
+  const a = axes({x: xa, y: PY, w: PW, h: PH, xlim: [0, 1], ylim: [.5, 6.5],
+    xticks: [0, .25, .5, .75, 1], yticks: [], xlabel: '|r(x_j, y)|', ylabel: '\\rm{feature}', ylabelGap: 40,
+    grid: true, tickSize: 16, progress: seg(0, .35)});
+  const ya = clamp(seg(0, .35) * 1.4);
   for (let j = 0; j < 6; j++) {
-    const yy = a.Y(6 - j), kept = D.filter.includes(j), len = D.correlation[j] * seg(.15 + j * .04, .35), x1 = a.X(0) + len * ww;
+    // the feature's name as its tick label, large enough that its index reads (subscript 13 units)
+    const yy = a.Y(6 - j);
+    line([[xa, yy], [xa + 5, yy]], {width: 1.1, alpha: ya}); line([[xa + PW, yy], [xa + PW - 5, yy]], {width: 1.1, alpha: ya});
+    math(xv(j), xa - 9, yy + 6, {size: 19, align: 'right', alpha: ya});
+    const kept = D.filter.includes(j), len = D.correlation[j] * seg(.15 + j * .04, .35), x1 = xa + len * PW;
     // the three kept: navy; the others: mist with a blue edge, as the family draws a bar
-    if (len > 0 && kept) { ctx.fillStyle = C.navy; ctx.fillRect(a.X(0), yy - 8, len * ww, 16); }
-    else if (len > 0) line([[a.X(0), yy - 8], [x1, yy - 8], [x1, yy + 8], [a.X(0), yy + 8]], {color: C.blue, width: 1, fill: C.mist, close: true});
-    text(D.correlation[j].toFixed(3), a.X(len) + 8, yy + 5, {size: 14, alpha: lab()});
+    if (len > 0 && kept) { ctx.fillStyle = C.navy; ctx.fillRect(xa, yy - 8, len * PW, 16); }
+    else if (len > 0) line([[xa, yy - 8], [x1, yy - 8], [x1, yy + 8], [xa, yy + 8]], {color: C.blue, width: 1, fill: C.mist, close: true});
+    text(D.correlation[j].toFixed(3), a.X(len) + 7, yy + 5.5, {size: 16, alpha: seg(.4, .3)});
   }
   const aa = arrive(.3);
-  text('top three correlations', RX, 88, {size: 16, color: C.body, alpha: aa});
-  math(subset(D.filter), RX, 117, {size: 17, alpha: aa});
-  math('x_4\\ \\rm{repeats much of}\\ x_1', RX, 156, {size: 15, color: C.muted, alpha: aa});
-  math('x_3\\ \\rm{carries extra information}', RX, 179, {size: 15, color: C.muted, alpha: aa});
-  text('held-out RMSE ' + D.rmse[0].toFixed(3), RX, 228, {size: 16, alpha: aa});
-  sub('b', 18, 368, 'wrapper: fit candidate subsets', arrive(.04));
-  const b = axes({x: xs, y: 410, w: ww, h: 190, xlim: [1, 6], ylim: [.4, 3],
+  text('top three correlations', xa, TY, {size: 16, color: C.body, alpha: aa});
+  math(subset(D.filter), xa, TY + 28, {size: 17, alpha: aa});
+  math('x_4\\ \\rm{repeats much of}\\ x_1', xa, TY + 61, {size: 16, color: C.body, alpha: aa});
+  math('x_3\\ \\rm{carries extra information}', xa, TY + 85, {size: 16, color: C.body, alpha: aa});
+  text('held-out RMSE ' + D.rmse[0].toFixed(3), xa, TY + 120, {size: 17, alpha: aa});
+
+  /* (b) the wrapper: forward selection by cross-validated error */
+  const xb = PX[1];
+  sub('b', xb - 56, 34, 'wrapper: fit candidate subsets', arrive(.04));
+  const b = axes({x: xb, y: PY, w: PW, h: PH, xlim: [1, 6], ylim: [.4, 3],
     xticks: [1, 2, 3, 4, 5, 6], yticks: [.5, 1, 1.5, 2, 2.5, 3],
-    xlabel: '\\rm{number of features}', ylabel: '\\rm{CV RMSE}', grid: true, progress: seg(.1, .35)});
+    xlabel: '\\rm{number of features}', ylabel: '\\rm{CV RMSE}', ylabelGap: 44, grid: true, tickSize: 16, progress: seg(.1, .35)});
   const pp = D.steps.map((s, i) => [b.X(i + 1), b.Y(s.rmse)]);
   b.inside(() => line(pp, {color: C.navy, width: 2.4, progress: seg(.3, .45)}));
   const da = arrive(.3);     // the marks arrive with their line
-  pp.forEach((p, i) => dot(...p, 4, {color: C.navy, fill: '#fff', alpha: da}));
-  dot(...pp[k - 1], 7, {color: C.accent, fill: C.accent, alpha: da});
-  const ab = arrive(.4);
-  text('forward step ' + k + ' of 3', RX, 421, {size: 16, color: C.body, alpha: ab});
-  math(subset(step.selected), RX, 450, {size: 17, alpha: ab});
-  // the candidates of this step, as a booktabs table; the one added in crimson
-  rule(RX, TX, 470, 1.3, ab);
-  text('candidate', RX, 488, {size: 15, color: C.body, alpha: ab});
-  text('CV RMSE', TX, 488, {size: 15, color: C.body, align: 'right', alpha: ab});
-  rule(RX, TX, 496, .8, ab);
+  pp.forEach(p => dot(...p, 4, {color: C.navy, fill: '#fff', alpha: da}));
+  const cp = [lerp(pp[T.from - 1][0], pp[k - 1][0], T.glide), lerp(pp[T.from - 1][1], pp[k - 1][1], T.glide)];
+  dot(...cp, 7, {color: C.accent, fill: C.accent, alpha: da});
+  // why it keeps three: the error is flat after the third feature
+  text('flat after 3', b.X(4.85), b.Y(1.08), {size: 16, color: C.body, align: 'center', alpha: arrive(.5)});
+  const ab = arrive(.4) * ta;
+  text('forward step ' + k + ' of ' + NS, xb, TY, {size: 16, color: C.body, alpha: ab});
+  math(subset(step.selected), xb, TY + 28, {size: 17, alpha: ab});
+  // the candidates of this step and the CV RMSE with each added, as a booktabs table in two
+  // halves; the one added in crimson
+  const HX = [xb, xb + 132], HW = 118, a0 = arrive(.4);
+  rule(xb, xb + PW, TY + 42, 1.3, a0);
+  HX.forEach(x => { text('add', x, TY + 60, {size: 16, color: C.body, alpha: a0});
+                    text('CV RMSE', x + HW, TY + 60, {size: 16, color: C.body, align: 'right', alpha: a0}); });
+  rule(xb, xb + PW, TY + 68, .8, a0);
   step.candidates.forEach(([j, v], i) => {
-    const yy = 515 + i * 21, col = step.selected[k - 1] === j ? C.accent : C.body;
-    math('\\rm{add}\\ ' + xv(j), RX, yy, {size: 15, color: col, alpha: ab});
-    text(v.toFixed(3), TX, yy, {size: 15, align: 'right', color: col, alpha: ab});
+    const x = HX[Math.floor(i / 3)], yy = TY + 89 + (i % 3) * 23, col = step.selected[k - 1] === j ? C.accent : C.body;
+    math(xv(j), x, yy, {size: 17, color: col, alpha: ab});
+    text(v.toFixed(3), x + HW, yy, {size: 16, align: 'right', color: col, alpha: ab});
   });
-  const foot = 515 + (step.candidates.length - 1) * 21 + 10;
-  rule(RX, TX, foot, 1.3, ab);
-  text('three-feature test RMSE ' + D.rmse[1].toFixed(3), RX, foot + 28, {size: 16, alpha: ab});
-  sub('c', 18, 724, 'embedded: L1 shrinks coefficients', arrive(.08));
-  const c = axes({x: xs, y: 766, w: ww, h: 200, xlim: [-3, 1], ylim: [-2.5, 3.5],
+  rule(xb, xb + PW, TY + 145, 1.3, a0);
+  text('three-feature test RMSE ' + D.rmse[1].toFixed(3), xb, TY + 172, {size: 17, alpha: a0});
+
+  /* (c) the embedded method: the Lasso path, the penalty increasing left to right */
+  const xc = PX[2];
+  sub('c', xc - 56, 34, 'embedded: L1 shrinks coefficients', arrive(.08));
+  const c = axes({x: xc, y: PY, w: PW, h: PH, xlim: [-3, 1], ylim: [-2.5, 3.5],
     xticks: [-3, -2, -1, 0, 1], xfmt: v => String(10 ** v), yticks: [-2, -1, 0, 1, 2, 3],
-    xlabel: '\\rm{penalty}\\ \\alpha\\ \\rm{(log scale)}', ylabel: '\\rm{coefficient}', grid: true, progress: seg(.15, .35)});
-  const colors = [C.navy, C.blue, C.accent, C.sky, C.guide, C.muted];
+    xlabel: '\\rm{penalty}\\ \\alpha\\ \\rm{(log scale)}', ylabel: '\\rm{coefficient}', ylabelGap: 40, grid: true, tickSize: 16,
+    progress: seg(.15, .35)});
+  // the three that matter in the blues, solid; the copy and the two nuisances dashed in greys
+  const colors = [C.navy, C.blue, C.sky, C.guide, C.muted, C.body], dashes = [null, null, null, [6, 3], [2, 3], [7, 3, 2, 3]];
   const ga = clamp(seg(.15, .35) * 1.4);   // the guides come with the axes
   c.inside(() => {
     line([[c.X(-3), c.Y(0)], [c.X(1), c.Y(0)]], {color: C.rule, width: 1, alpha: ga});
-    for (let j = 0; j < 6; j++) line(D.alphas.map((a, i) => [c.X(Math.log10(a)), c.Y(D.coefs[i][j])]),
-      {color: colors[j], width: j < 3 ? 2.4 : 1.4, dash: j > 2 ? [4, 3] : null, progress: seg(.3 + .04 * j, .4)});
+    for (let j = 5; j >= 0; j--) line(D.alphas.map((v, i) => [c.X(Math.log10(v)), c.Y(D.coefs[i][j])]),
+      {color: colors[j], width: j < 3 ? 2.4 : 1.5, dash: dashes[j], progress: seg(.3 + .04 * j, .45)});
     line([[c.X(Math.log10(D.alpha)), c.Y(-2.5)], [c.X(Math.log10(D.alpha)), c.Y(3.5)]], {color: C.guide, width: 1, dash: [5, 4], alpha: ga});
   });
   const ac = arrive(.5);
-  math('\\rm{Lasso,}\\ \\alpha\\ = ' + D.alpha, RX, 778, {size: 16, color: C.body, alpha: ac});
-  // the key, as the family draws one: a thin box, white fill, serif 15
-  line([[RX - 6, 792], [TX + 6, 792], [TX + 6, 934], [RX - 6, 934]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: ac});
+  math('\\rm{Lasso,}\\ \\alpha\\ = ' + D.alpha, xc, TY, {size: 16, color: C.body, alpha: ac});
+  // the key, as the family draws one: a thin box, white fill, serif 16
+  const KT = TY + 12, KB = KT + 6 * 22 + 12;
+  line([[xc, KT], [xc + PW, KT], [xc + PW, KB], [xc, KB]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: ac});
   D.embedded_coef.forEach((v, j) => {
-    const yy = 813 + j * 22;
-    line([[RX + 4, yy - 5], [RX + 28, yy - 5]], {color: colors[j], width: 2, dash: j > 2 ? [4, 3] : null, alpha: ac});
-    math(xv(j) + '\\rm{: ' + D.features[j] + '}', RX + 38, yy, {size: 15, alpha: ac});
-    text(n3(v), TX, yy, {size: 15, align: 'right', alpha: ac});
+    const yy = KT + 23 + j * 22;
+    line([[xc + 8, yy - 5], [xc + 32, yy - 5]], {color: colors[j], width: j < 3 ? 2.4 : 1.5, dash: dashes[j], alpha: ac});
+    math(xv(j) + '\\rm{: ' + D.features[j] + '}', xc + 40, yy, {size: 16, alpha: ac});
+    text(n3(v), xc + PW - 8, yy, {size: 16, align: 'right', alpha: ac});
   });
-  math('\\rm{selected}\\ ' + subset(D.embedded), RX, 966, {size: 16, alpha: ac});
-  text('held-out RMSE ' + D.rmse[2].toFixed(3), RX, 994, {size: 16, alpha: ac});
-  text('synthetic sensor features, 360 train, 120 test; same Ridge predictor for all held-out comparisons', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.6)});
+  math('\\rm{selected}\\ ' + subset(D.embedded), xc, KB + 26, {size: 16, alpha: ac});
+  text('held-out RMSE ' + D.rmse[2].toFixed(3), xc, KB + 53, {size: 17, alpha: ac});
+  text('synthetic sensor features, 360 train, 120 test', 18, H - 14, {size: 15, color: C.muted, alpha: arrive(.6)});
 }
-function lab() { return seg(.4, .3); }
 if (!STILL) {
-  /* the step slider in the figure's own terms: a 3 unit C.rule track and a 15 unit white
-     handle with a 2 unit navy ring, as Figure 18a draws its epoch slider (larger under the
-     pointer), and the focus ring every figure control has */
+  /* the step slider in the figure's own terms: a 3 unit C.rule track and a 15 unit white handle
+     with a 2 unit navy ring, as Figure 18a draws its epoch slider (larger under the pointer), and
+     the focus ring every figure control has; the handle's centre runs exactly under (b)'s
+     feature counts 1 to 6 */
   document.head.insertAdjacentHTML('beforeend', '<style>' +
     '.nfr{-webkit-appearance:none;appearance:none;background:transparent;margin:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
     '.nfr::-webkit-slider-runnable-track{height:var(--tk);background:#D7D2CA;border:0}' +
@@ -189,27 +243,34 @@ if (!STILL) {
     '.nfr::-moz-range-thumb{box-sizing:border-box;width:var(--th);height:var(--th);border-radius:50%;background:#fff;border:var(--bw) solid #043052}' +
     '.nfr:hover::-moz-range-thumb,.nfr:active::-moz-range-thumb{width:var(--th2);height:var(--th2)}' +
     '.nfr:focus{outline:none}.nfr:focus-visible{outline:2px solid #095A94;outline-offset:0}</style>');
-  const ctl = document.createElement('label');
-  ctl.style.cssText = 'position:absolute;left:11%;top:' + (SLY - 18) / H * 100 + '%;font:500 15px "CMU Serif";color:#544F48;' +
-    'display:flex;align-items:center;gap:14px;width:50%;white-space:nowrap';
-  ctl.textContent = 'forward-selection step';
-  const input = document.createElement('input'); input.type = 'range'; input.min = 1; input.max = 3; input.step = 1; input.value = 3;
+  const TH = 15, X0 = PX[1] - TH / 2, X1 = PX[1] + PW + TH / 2;
+  const lab = document.createElement('label'); lab.htmlFor = 'nfstep'; lab.textContent = 'forward-selection step';
+  lab.style.cssText = 'position:absolute;right:' + (100 - (X0 - 8) / 10) + '%;top:' + (SLY - 10) / H * 100 + '%;' +
+    'font:500 16px "CMU Serif";color:#544F48;white-space:nowrap;cursor:pointer';
+  const input = document.createElement('input'); input.type = 'range'; input.id = 'nfstep';
+  input.min = 1; input.max = NS; input.step = 1; input.value = manual || 1;
   input.className = 'nfr'; stepInput = input;
-  input.setAttribute('aria-label', 'Forward-selection step'); input.style.width = '35%';
+  input.setAttribute('aria-label', 'Forward-selection step');
+  input.style.cssText = 'position:absolute;left:' + X0 / 10 + '%;width:' + (X1 - X0) / 10 + '%;top:' + (SLY - 18) / H * 100 + '%';
   new ResizeObserver(() => {
     const s = cv.getBoundingClientRect().width / W, px = v => v * s + 'px';
-    ctl.style.fontSize = px(15); ctl.style.gap = px(14); input.style.height = px(36);
-    input.style.setProperty('--th', px(15)); input.style.setProperty('--th2', px(17));
+    lab.style.fontSize = px(16); lab.style.lineHeight = px(20); input.style.height = px(36);
+    input.style.setProperty('--th', px(TH)); input.style.setProperty('--th2', px(17));
     input.style.setProperty('--tk', Math.max(1, 3 * s) + 'px'); input.style.setProperty('--bw', Math.max(1, 2 * s) + 'px');
   }).observe(cv);
-  input.addEventListener('input', () => { manual = (Number(input.value) - 1) / 2; render(); });
-  ctl.addEventListener('click', e => e.stopPropagation()); ctl.appendChild(input);
-  FIG.insertBefore(ctl, FIG.querySelector('.ctl'));
+  // any touch of the slider takes over, even at the step the tour is showing
+  const take = () => { manual = Number(input.value); render(); };
+  input.addEventListener('input', take);
+  input.addEventListener('change', take);
+  input.addEventListener('pointerdown', take);
+  input.addEventListener('keydown', take);
+  for (const el of [lab, input]) el.addEventListener('click', e => e.stopPropagation());
+  FIG.insertBefore(lab, FIG.querySelector('.ctl')); FIG.insertBefore(input, FIG.querySelector('.ctl'));
   // a click just beside the slider (12 units or 8 CSS px) is meant for it: it never pauses
   FIG.addEventListener('click', e => {
     if (e.target !== cv) return;
     const r = cv.getBoundingClientRect(), u = W / r.width, X = (e.clientX - r.left) * u, Y = (e.clientY - r.top) * u, m = Math.max(12, 8 * u);
-    if (Math.abs(Y - SLY) < 18 + m && X > 110 - m && X < 610 + m) e.stopPropagation();
+    if (Math.abs(Y - SLY) < 18 + m && X > PX[1] - 175 && X < X1 + m) e.stopPropagation();
   }, true);
 }
 boot();
@@ -221,9 +282,9 @@ def main():
     common.build_html(NAME, "Figure 6a: Three approaches to feature selection",
                       "Three numerical examples on the same synthetic regression data: correlation filtering, "
                       "forward subset selection with cross-validation, and a Lasso coefficient path.",
-                      1000, 1080, data, JS)
+                      1000, 640, data, JS)
     print(common.still(NAME))
-    print(common.frames(NAME, [.6, 2, 5, 8]))
+    print(common.frames(NAME, [.3, .7, 1.4, 3.6, 6.2, 8]))
     Path(__file__).with_suffix(".check.txt").write_text("\n".join(notes) + "\nPoster and intro overlap checks passed.\n", encoding="utf-8")
     print("\n".join(notes))
 

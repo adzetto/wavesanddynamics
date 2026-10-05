@@ -120,7 +120,7 @@ function draw() {
   sub('a', 18, 34, 'best-fit line and residuals', arrive(0));
   const g = axes({...PA, xlim: [800, 3100], ylim: [100, 600], xticks: [1000, 1500, 2000, 2500, 3000],
     yticks: [100, 200, 300, 400, 500, 600], xlabel: '\\rm{floor area (ft}^{2}\\rm{)}', ylabel: '\\rm{price (k$)}',
-    ylabelGap: 54, progress: seg(0, .35)});
+    ylabelGap: 54, tickSize: 16, progress: seg(0, .35)});
   const segA = i => seg(.34 + .018 * i, .26);
   g.inside(() => {
     // squared residuals: a square on each residual, away from the line
@@ -148,7 +148,7 @@ function draw() {
   if (ma > 0) {
     line([[mx - 6, my - 6], [mx + 6, my + 6]], {width: 1.5, alpha: ma});
     line([[mx - 6, my + 6], [mx + 6, my - 6]], {width: 1.5, alpha: ma});
-    text('mean point', mx + 10, my + 20, {size: 15, color: C.body, alpha: ma});
+    text('mean point', mx + 10, my + 21, {size: 16, color: C.body, alpha: ma});
   }
   // the line's name, set along it below its left end (TikZ: node[sloped, below])
   // it names the line only while the line is the best fit: gone within the first 15 % of a tilt
@@ -169,7 +169,7 @@ function draw() {
   const h = axes({...PB, xlim: [100, 240], ylim: [0, 40000], xticks: [100, 140, 180, 220],
     yticks: [0, 10000, 20000, 30000, 40000], yfmt: v => thou(v),
     xlabel: '\\rm{slope ($ per ft}^{2}\\rm{)}', ylabel: '\\rm{sum of squared residuals (k$}^{2}\\rm{)}',
-    ylabelGap: 66, progress: seg(.04, .35)});
+    ylabelGap: 70, tickSize: 16, progress: seg(.04, .35)});
   const par = [];
   for (let k = 0; k <= 140; k++) { const bb = (100 + k) / 1000; par.push([h.X(bb * 1000), h.Y(SSR(bb))]); }
   h.inside(() => line(par, {color: C.navy, width: 2.2, progress: seg(.18, .42)}));
@@ -177,7 +177,7 @@ function draw() {
   line([[h.X(D.b1 * 1000), h.Y(SSR(D.b1))], [h.X(D.b1 * 1000), PB.y + PB.h]],
     {color: C.guide, width: 1, dash: [5, 4], alpha: ga});
   // named beside its guide (TikZ: node[right]), not on it
-  text('least squares', h.X(D.b1 * 1000) + 7, h.Y(SSR(D.b1)) + 28, {size: 15, color: C.body, alpha: ga});
+  text('least squares', h.X(D.b1 * 1000) + 7, h.Y(SSR(D.b1)) + 29, {size: 16, color: C.body, alpha: ga});
   const pa = arrive(.5);
   dot(h.X(b * 1000), h.Y(SSR(b)), 5.5, {color: '#fff', fill: C.accent, width: 1.4, alpha: pa});
   // the numbers of the line being drawn
@@ -186,8 +186,8 @@ function draw() {
   math('\\rm{sum ' + thou(SSR(b)) + ' k$}^{2}', cx, PB.y + 52, {size: 16, align: 'center',
     color: off > .02 ? C.accent : C.ink, alpha: ra});
 
-  text('14 simulated house sales; least squares: price = ' + D.b0.toFixed(1) + ' k$ + $' + (D.b1 * 1000).toFixed(1) +
-       ' per ft² × area; each square’s side is its residual', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  text('14 simulated house sales; price = ' + D.b0.toFixed(1) + ' k$ + $' + (D.b1 * 1000).toFixed(1) +
+       ' per ft² × area', 18, H - 14, {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """

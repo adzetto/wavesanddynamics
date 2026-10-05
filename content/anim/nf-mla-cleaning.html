@@ -33,11 +33,11 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Five rows, one per cleaning step, each on a small worked example: a missing glucose value filled with the median and flagged in a new column, dates and heights made consistent, two ages beyond Tukey's fence investigated (one kept, one typing slip corrected from 430 to 43), three features turned into z-scores, and four frauds among 196 normal transactions balanced with synthetic frauds by SMOTE."></canvas>
+  <canvas id="c" role="img" aria-label="Five panels, one per cleaning step, each on a small worked example: a missing glucose value filled with the median and flagged in a new column, dates and heights made consistent, two ages beyond Tukey's fence investigated (one kept, one typing slip corrected from 430 to 43), three features turned into z-scores, and four frauds among 196 normal transactions balanced with synthetic frauds by SMOTE."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 900;
+const W = 1000, H = 670;
 const DATA = {"a":{"glu":[98,142,-1,115,104,131,88],"med":109.5,"mid":[104.0,115.0]},"b":{"raw":[["12/05/2024","172 cm"],["2024-12-09","68 in"],["11 Dec 2024","5 ft 9 in"]],"iso":["2024-12-05","2024-12-09","2024-12-11"],"cm":[172.0,172.72,175.26]},"c":{"ages":[34,45,29,51,38,62,47,55,41,430,58,36,96,49],"q":[38.75,48.0,57.25],"f":[11.0,85.0],"w":[29,62]},"d":{"names":["age (years)","income (k$)","glucose (mg/dL)"],"x":[[23.0,37.0,45.0,52.0,61.0,74.0],[28.0,54.0,61.0,95.0,120.0,210.0],[82.0,96.0,104.0,118.0,141.0,187.0]],"z":[[-1.56525,-0.71148,-0.22361,0.20328,0.75213,1.54492],[-1.1222,-0.68454,-0.56671,0.00561,0.42643,1.9414],[-1.13551,-0.73134,-0.50039,-0.09623,0.56775,1.89572]],"lim":[[20,80],[0,240],[60,200]],"mean":[48.66667,94.66667,121.33333],"sd":[16.39783,59.40726,34.63941]},"e":{"maj":[[0.35877,1.20854],[-1.78633,1.34929],[-0.04732,-0.63998],[-0.80296,-0.86625],[-0.22365,0.66711],[0.58406,0.51063],[-1.69481,-1.25677],[1.5538,0.77511],[2.18321,0.96785],[-1.02439,1.02822],[0.62839,0.17186],[-0.81987,0.00222],[-0.147,0.71403],[0.1245,1.2678],[-0.77449,0.37688],[0.49884,-0.69147],[-1.18127,0.81086],[0.51744,-0.13],[0.39437,-0.54028],[0.23835,-0.4841],[0.18879,0.78887],[-0.33963,0.67982],[-1.0342,-0.23079],[-1.36474,-0.08047],[0.07865,-0.15781],[-0.26768,1.07216],[1.42379,-0.9725],[1.17411,-1.37846],[-0.73448,-0.13876],[0.11106,-0.83793],[-0.72247,0.06132],[-0.69342,-0.51296],[0.66626,0.74538],[-0.06006,0.01456],[-0.0196,-0.36359],[-0.51139,-0.8302],[0.64839,-0.06733],[-0.13744,0.16043],[0.53067,1.13683],[-0.27355,-0.32094],[0.20057,-0.6764],[1.27243,0.741],[0.69392,-0.09569],[0.73958,0.84016],[0.49991,-0.22399],[-1.68507,0.75757],[-0.35325,-0.67459],[0.8906,0.27054],[-1.41884,-0.07923],[-0.26923,0.79409],[-1.89512,-0.30845],[-0.13825,1.13512],[-1.08339,-2.35235],[-1.38403,0.21046],[0.80959,1.38683],[0.40094,-0.64185],[0.88439,-0.00885],[-0.20096,0.01404],[1.27458,-0.72115],[-1.02393,-0.05322],[-0.06657,-0.65157],[-0.87946,0.30213],[1.33784,0.57039],[0.68512,0.99659],[-1.99097,-1.20826],[-0.7054,-0.95609],[-0.9894,0.0559],[-1.28439,-0.3548],[-2.04315,-0.77918],[1.34555,-0.43432],[0.32414,0.56652],[-0.4909,0.46327],[0.21454,0.55792],[-0.63555,-1.15214],[-1.02212,-0.44385],[0.53583,-0.16345],[-0.39881,-0.14375],[1.09976,-0.4604],[1.51133,-0.98207],[-0.59224,0.684],[0.51783,-0.68441],[-0.10903,-0.56714],[0.85102,0.43179],[-0.71311,0.31775],[-0.36715,-0.05753],[0.06461,-0.45124],[0.42501,0.36823],[0.42593,0.88371],[-0.27174,-1.18629],[-0.48907,0.16059],[0.02199,0.46295],[0.80642,-0.09407],[-0.11037,-0.78993],[1.0331,-0.21115],[-1.08331,-0.8915],[-0.41477,1.24432],[0.77255,-1.35523],[-0.12361,0.21117],[0.62656,0.27493],[-0.64074,0.32951],[-0.55415,-1.79252],[-0.70886,-0.54877],[0.95363,0.8448],[-1.04528,0.13913],[0.09014,-1.14864],[-2.05314,-0.07421],[0.13644,-0.47587],[-2.71117,-0.02359],[-0.57862,-0.71153],[-0.32419,-0.90285],[0.55984,0.00848],[-0.55946,0.2255],[-0.0321,-1.21456],[-0.14415,-0.36573],[-1.74072,-0.52163],[0.42634,-0.4956],[1.40751,1.35857],[-0.30635,0.44275],[1.99265,-0.26522],[-0.89896,-0.33787],[-1.37422,-1.07935],[0.20865,-0.33341],[0.24644,0.3907],[-0.76432,-0.15556],[-0.2693,-0.53493],[-0.83646,0.25244],[-0.14025,0.26583],[1.00092,0.81137],[-1.11206,-0.68466],[-0.25625,0.09891],[0.93839,-0.76974],[-0.43685,0.19763],[1.22887,1.10339],[-1.00598,-0.16963],[-0.80775,0.67798],[0.4469,-0.28624],[-0.61125,0.23596],[0.98029,-0.61396],[-0.32366,0.09038],[0.01801,0.27029],[-0.99958,-0.47594],[-2.10011,0.04459],[1.07016,-1.64576],[-0.63181,0.71882],[-0.1428,-1.51603],[1.16879,-1.14078],[1.37091,-0.46771],[-0.70655,0.02156],[-0.02218,0.48038],[0.50251,-0.11835],[1.32253,0.57078],[0.27379,0.10809],[-0.09533,-0.06206],[0.6649,0.3794],[0.03973,0.81209],[-0.26221,0.34872],[0.85952,-0.8924],[-0.26411,1.33505],[-0.9571,0.92166],[-1.05976,0.32443],[-1.06419,-0.49311],[-0.37531,-0.43906],[1.00857,0.6668],[0.87006,0.15479],[1.63669,0.82303],[0.32475,-0.83903],[0.68545,0.52173],[0.09434,0.57031],[0.76994,-0.23877],[0.5653,0.27765],[0.31315,-0.27344],[-0.46298,0.0949],[1.43172,1.86079],[-0.36981,-0.84348],[-0.34156,-0.66811],[-0.41706,0.31743],[-0.91425,0.48717],[0.79155,1.21315],[1.81927,0.79826],[2.26719,-0.3997],[0.27647,0.13765],[0.43919,0.81967],[-0.32327,1.3707],[1.27597,0.28246],[0.47172,-0.77073],[-2.47598,-0.06473],[0.324,0.1883],[-1.08979,-0.35369],[1.75926,0.58896],[0.6243,-0.23919],[0.74675,1.0339],[0.76638,-0.31455],[0.29516,-0.69129],[-0.29174,0.48086],[-0.51956,-0.17386],[1.44003,-0.12315]],"min":[[1.5,1.7],[2.9,0.3],[2.1,0.8],[3.7,1.9]],"syn":[[1.81693,1.38307],[3.38122,1.68084],[1.6729,1.44065],[2.20454,0.73466],[1.71379,1.37932],[1.99251,1.20749],[2.53341,0.66659],[2.0962,0.8057],[1.62635,1.57365],[1.69447,1.40829],[1.87123,1.32877],[2.2274,0.9726],[3.33154,1.8665],[2.43297,0.59189],[1.81781,1.22329],[1.62978,1.50533],[1.51924,1.67113],[3.20128,0.90255],[3.40734,1.6988],[1.6403,1.48955],[1.82072,1.37928],[3.47088,1.87917],[1.66324,1.45514],[2.71338,0.41663],[1.98879,0.96682],[3.6002,1.89093],[2.81142,0.35536],[1.98091,1.21909],[1.52235,1.70203],[1.54561,1.63159],[2.43673,1.0315],[2.42659,0.59588],[2.64878,0.45701],[2.88589,0.30882],[2.22782,0.88788],[2.54351,1.10491],[1.79355,1.25968],[3.44271,1.38542],[2.74515,0.45485],[3.54371,1.58743],[2.59605,0.60395],[3.20808,0.91617],[2.18567,1.01433],[1.96112,1.00832],[3.56625,1.80805],[2.80709,0.35807],[1.80061,1.24909],[2.62158,0.47401],[1.69817,1.40274],[2.4873,0.55794],[2.702,0.42375],[2.71146,0.48854],[3.49921,1.49842],[2.68679,0.43326],[3.35557,1.66321],[2.65248,1.80477],[2.51973,1.08856],[1.90827,1.08759],[1.87032,1.14452],[1.93815,1.04278],[1.72637,1.36044],[2.2138,0.9862],[2.30932,0.89068],[2.30487,0.94085],[2.41016,0.60615],[3.07001,0.64002],[2.76258,0.38589],[2.59223,0.60777],[2.75873,0.38829],[2.22658,0.88703],[2.55027,1.79548],[3.309,1.11799],[2.48481,0.55949],[3.34311,1.18622],[2.79717,0.36427],[2.11718,1.08282],[2.55288,0.51695],[1.63222,1.50166],[2.17755,1.7616],[2.85953,0.34047],[3.5459,1.88599],[1.8692,1.1462],[2.57719,1.79793],[3.27783,1.05566],[2.56774,1.12157],[3.07274,0.64548],[3.49501,1.49002],[2.47717,1.05931],[1.93222,1.05166],[1.75915,1.31127],[3.69754,1.89508],[2.03037,0.90445],[1.57219,1.70656],[2.43436,1.02987],[3.53503,1.57005],[3.17485,1.85226],[1.71145,1.38283],[2.34472,0.64705],[2.04369,1.15631],[3.6644,1.89676],[2.86968,0.33032],[3.52651,1.78073],[1.98186,0.97721],[1.77598,1.28603],[3.12065,0.74129],[2.8386,0.33837],[2.54528,1.79503],[2.47571,0.56518],[2.65995,0.45003],[3.01266,0.52532],[3.56103,1.88737],[1.51068,1.68932],[2.60752,0.59248],[3.56123,1.8046],[2.25282,0.94718],[2.46706,1.78791],[1.71407,1.37889],[2.91294,0.32588],[3.25287,1.5926],[3.12195,0.7439],[3.47239,1.87931],[2.84617,1.82238],[2.22983,1.76635],[2.70358,0.49642],[3.11628,0.73256],[2.58095,0.49941],[3.5109,1.52179],[3.48845,1.47689],[2.46717,0.73283],[2.62597,0.57403],[1.67463,1.43806],[1.63454,1.71223],[1.81745,1.38255],[1.71074,1.3839],[2.24589,0.95411],[2.79207,0.36746],[2.27334,0.69166],[2.04781,0.87828],[2.73519,0.40301],[3.55211,1.79833],[2.85384,0.32885],[2.93402,1.83037],[2.57495,0.50316],[2.66563,0.44648],[2.42191,0.77809],[2.58568,1.1339],[3.68227,1.88781],[2.28123,0.91877],[3.30588,1.11175],[2.62308,0.47307],[2.72176,1.22746],[3.68296,1.86593],[2.55055,1.10975],[2.70057,0.42465],[3.13552,0.77103],[3.6365,1.77299],[2.70948,0.41907],[3.23405,1.57966],[2.17769,0.85341],[2.4745,0.56593],[1.53874,1.66126],[3.03286,0.56573],[3.14689,0.79378],[2.36707,0.83293],[3.40873,1.69975],[2.24353,0.71029],[2.14134,0.77416],[1.96326,1.00511],[3.20075,1.55676],[2.46133,0.57417],[2.30393,0.9402],[2.79586,0.36509],[1.7674,1.4326],[2.45755,0.74245],[1.95128,1.02308],[2.40168,0.61145],[2.90556,0.31112],[2.46768,0.73232],[2.79761,0.40239],[2.67351,1.19429],[2.10731,0.79543],[2.14303,0.77311],[2.70983,0.41886],[2.32471,0.65956],[2.58536,0.49665],[2.8893,1.8263],[2.87622,1.33365],[1.54951,1.65049],[2.92901,1.82991],[3.10601,1.49163],[2.817,0.35188],[2.78164,1.81651]],"src":[0,3,2,2,0,1,1,2,1,0,0,0,0,2,0,2,2,3,2,0,0,3,0,1,0,0,1,1,3,2,2,1,2,1,2,3,2,1,1,3,0,1,0,0,3,1,0,2,0,1,2,0,3,2,3,3,3,2,0,2,2,1,1,2,2,3,1,0,2,3,3,1,2,1,2,1,2,2,0,1,0,2,0,1,3,1,3,2,0,0,1,0,3,2,3,0,2,2,0,3,0,3,0,0,3,1,3,2,2,1,0,1,1,3,0,0,2,3,2,3,0,0,0,1,1,2,3,3,0,0,0,3,1,0,1,1,1,0,2,3,2,3,2,1,1,2,3,0,3,2,2,1,3,2,1,1,2,2,2,1,0,1,3,1,2,1,2,2,2,2,3,2,1,0,2,2,1,0,1,2,2,2,2,2,2,3,3,1,3,3,2,3]}};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
@@ -641,18 +641,18 @@ function box(x, y, w, h, o = {}) {
   if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash); ctx.strokeRect(x, y, w, h); }
   ctx.restore();
 }
-/* a legend inside the axes: a thin 1 px box, white fill, serif 15.
-   rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
+/* a legend inside the axes: a thin 1 px box, white fill, serif 16 (the round of 5 Oct 2026:
+   legends 16 to 17). rows: [[drawKey(x, y), label], ...]; key drawn in a 30 unit slot */
 function legend(x, y, rows, a = 1, w = 0) {
   if (a <= 0) return;
-  ctx.save(); ctx.font = font({size: 15});
+  ctx.save(); ctx.font = font({size: 16});
   const tw = Math.max(...rows.map(r => ctx.measureText(r[1]).width)); ctx.restore();
-  const W_ = w || tw + 58, H_ = rows.length * 22 + 10;
+  const W_ = w || tw + 60, H_ = rows.length * 24 + 10;
   box(x, y, W_, H_, {fill: '#fff', stroke: C.ink, width: 1, alpha: a});
   rows.forEach(([key, lab], i) => {
-    const yy = y + 21 + 22 * i;
+    const yy = y + 23 + 24 * i;
     ctx.save(); ctx.globalAlpha *= a; key(x + 22, yy - 5); ctx.restore();
-    text(lab, x + 44, yy, {size: 15, alpha: a});
+    text(lab, x + 44, yy, {size: 16, alpha: a});
   });
   return W_;
 }
@@ -703,201 +703,219 @@ function tw(s, size = 16, o = {}) {
 function mw(s, size = 16) { return math(s, 0, -1e4, {size, alpha: 0}); }
 
 const D = DATA;
-const ROW = [0, 172, 344, 516, 688];
-const R0 = .6, WIN = 3, ROUND = 17;
+/* three panels on the first row, two on the second; each step replays in its own window of a
+   17 s round: what it made fades out (FD), then it is made again, step by step */
+const COL = [18, 344, 670], ROW = [34, 368];
+const R0 = .6, WIN = 3, ROUND = 17, FD = .3;
 const POSTER_T = R0 + 5 * WIN + 1;
 function win(k) { if (t < R0) return -1; const u = (t - R0) % ROUND - k * WIN; return u >= 0 && u < WIN ? u : -1; }
-/* a value that, in its window, starts over from `from` and reaches `to` at time a..a+d (spring) */
-const replay = (u, a, d = .3) => u < 0 ? 1 : sp(u - a, d);
-
-/* (a) imputation */
-function drawA() {
-  const y0 = ROW[0], u = win(0), A = D.a;
-  sub('a', 18, y0 + 30, 'imputation', arrive(0));
-  const X0 = 250, DX = 52, ya = y0 + 70, aa = arrive(.05);
-  rule(40, X0 + 6 * DX + 30, ya - 22, {width: 1.3, alpha: aa});
-  text('patient', 40, ya - 4, {size: 15, color: C.body, alpha: aa});
-  for (let k = 0; k < 7; k++) text(String(k + 1), X0 + k * DX, ya - 4, {size: 15, color: C.body, align: 'center', alpha: aa});
-  rule(40, X0 + 6 * DX + 30, ya + 4, {alpha: aa});
-  text('glucose (mg/dL)', 40, ya + 20, {size: 15, alpha: aa});
-  const ind = replay(u, 1.95);
-  /* the empty cell, one thing at a time (out, then in): as the window opens the value gives way
-     to '?'; once the median is marked, '?' goes and the median slides in from the strip's side */
-  let qa = 0, va = 1, vdx = 0;
-  if (u >= 0) {
-    const vin = sp(u - 1.55, .3);
-    qa = clamp((u - .12) / .15) * (1 - clamp((u - 1.3) / .15));
-    va = u < .12 ? 1 - u / .12 : vin; vdx = u < .12 ? 0 : 14 * (1 - vin);
-  }
-  A.glu.forEach((v, k) => {
-    if (v >= 0) { text(String(v), X0 + k * DX, ya + 20, {size: 15, align: 'center', alpha: aa}); return; }
-    box(X0 + k * DX - 24, ya + 5, 48, 21, {fill: C.wash, alpha: aa});
-    text('?', X0 + k * DX, ya + 20, {size: 16, bold: true, color: C.accent, align: 'center', alpha: aa * qa});
-    text(A.med.toFixed(1), X0 + k * DX + vdx, ya + 20, {size: 15, bold: true, color: C.accent, align: 'center', alpha: aa * va});
-  });
-  text('was missing', 40, ya + 44, {size: 15, alpha: aa * ind});
-  A.glu.forEach((v, k) => text(v >= 0 ? '0' : '1', X0 + k * DX, ya + 44, {size: 15, align: 'center', alpha: aa * ind,
-    color: v >= 0 ? C.ink : C.accent, bold: v < 0}));
-  rule(40, X0 + 6 * DX + 30, ya + 52, {width: 1.3, alpha: aa});
-  // the six observed values in order, and their median
-  const SX = v => 640 + (v - 80) / 70 * 320, sy = y0 + 110, sa = arrive(.12);
-  line([[SX(80), sy], [SX(150), sy]], {width: 1.2, alpha: sa});
-  for (const v of [80, 100, 120, 140]) { line([[SX(v), sy], [SX(v), sy + 5]], {width: 1.1, alpha: sa});
-    text(String(v), SX(v), sy + 20, {size: 14, align: 'center', alpha: sa}); }
-  text('observed glucose (mg/dL)', SX(115), sy + 40, {size: 14, color: C.body, align: 'center', alpha: sa});
-  A.glu.forEach(v => { if (v >= 0) mark(SX(v), sy - 12, 1, arrive(.15 + .2 * (v - 80) / 70), 4.4); });
-  const ma = u < 0 ? arrive(.4) : clamp((u - .7) / .25);
-  for (const v of A.mid) ring(SX(v), sy - 12, 9, {alpha: u < 0 ? 0 : clamp((u - .35) / .2) * (1 - clamp((u - 1.3) / .2))});
-  line([[SX(A.med), sy - 32], [SX(A.med), sy]], {color: C.accent, width: 2, alpha: ma});
-  text('median ' + A.med.toFixed(1), SX(A.med), sy - 38, {size: 15, color: C.accent, align: 'center', alpha: ma});
-  // the median then fills the empty cell (above): it slides in there, it does not fly over the
-  // table's rules and column numbers
+/* in its window: 1 at rest, going out over the first FD s, back from a (a spring of d s) */
+const again = (u, a, d = .3) => u < 0 ? 1 : u < FD ? 1 - u / FD : sp(u - a, d);
+function ticksUnder(X, vals, y, a) {         // a number line's ticks under it, and their numbers
+  for (const v of vals) { line([[X(v), y], [X(v), y + 5]], {width: 1.1, alpha: a});
+    text(String(v), X(v), y + 22, {size: 16, align: 'center', alpha: a}); }
 }
 
-/* (b) formats and units */
+/* (a) imputation: the glucose column with its gap, the median of what was observed */
+function drawA() {
+  // the first time round it opens on the gap ('?'), not on the answer, and goes on from there
+  const u = t < R0 + .45 ? .45 : win(0), A = D.a, x0 = COL[0];
+  sub('a', x0, ROW[0], 'imputation', arrive(0));
+  const CX = [x0 + 42, x0 + 148, x0 + 254], top = ROW[0] + 18, RH = 21, r0 = top + 46, aa = arrive(.05);
+  rule(x0 + 6, x0 + 296, top, {width: 1.3, alpha: aa});
+  ['patient', 'glucose (mg/dL)', 'was missing'].forEach((h, c) =>
+    text(h, CX[c], top + 18, {size: 16, color: C.body, align: 'center', alpha: aa}));
+  rule(x0 + 6, x0 + 296, top + 26, {alpha: aa});
+  // the empty cell, one thing at a time: the value gives way to '?'; once the median is marked,
+  // '?' goes and the median slides in from the side; then the new column is filled
+  const qa = u < 0 ? 0 : clamp((u - FD) / .15) * (1 - clamp((u - 1.45) / .15));
+  const vin = u < 0 ? 1 : u < FD ? 1 - u / FD : sp(u - 1.7, .3), vdx = u < FD ? 0 : 14 * (1 - vin);
+  const ind = again(u, 2.1);
+  A.glu.forEach((v, k) => {
+    const y = r0 + k * RH, a = aa;
+    text(String(k + 1), CX[0], y, {size: 16, align: 'center', alpha: a});
+    if (v >= 0) text(String(v), CX[1], y, {size: 16, align: 'center', alpha: a});
+    else {
+      box(CX[1] - 28, y - 16, 56, 22, {fill: C.wash, alpha: a});
+      text('?', CX[1], y, {size: 17, bold: true, color: C.accent, align: 'center', alpha: a * qa});
+      text(A.med.toFixed(1), CX[1] + vdx, y, {size: 16, bold: true, color: C.accent, align: 'center', alpha: a * vin});
+    }
+    text(v >= 0 ? '0' : '1', CX[2], y, {size: 16, align: 'center', alpha: a * ind, color: v >= 0 ? C.ink : C.accent, bold: v < 0});
+  });
+  rule(x0 + 6, x0 + 296, r0 + 6 * RH + 8, {width: 1.3, alpha: aa});
+  // the six observed values in order, and their median
+  const SX = v => x0 + 86 + (v - 80) / 70 * 200, sy = ROW[0] + 266, sa = arrive(.12);
+  text('observed', x0 + 6, sy + 5, {size: 16, color: C.body, alpha: sa});
+  line([[SX(80), sy], [SX(150), sy]], {width: 1.2, alpha: sa});
+  ticksUnder(SX, [80, 100, 120, 140], sy, sa);
+  A.glu.forEach(v => { if (v >= 0) mark(SX(v), sy - 12, 1, arrive(.15 + .2 * (v - 80) / 70), 4.4); });
+  const ma = u < 0 ? arrive(.4) : u < FD ? 1 - u / FD : clamp((u - .85) / .25);
+  for (const v of A.mid) ring(SX(v), sy - 12, 9, {alpha: u < FD ? 0 : clamp((u - .5) / .2) * (1 - clamp((u - 1.45) / .2))});
+  line([[SX(A.med), sy - 30], [SX(A.med), sy]], {color: C.accent, width: 2, alpha: ma});
+  text('median ' + A.med.toFixed(1), SX(A.med), sy - 36, {size: 16, color: C.accent, align: 'center', alpha: ma});
+}
+
+/* (b) formats and units: the records as they came, and in one format and one unit */
 function drawB() {
-  const y0 = ROW[1], u = win(1), B = D.b;
-  sub('b', 18, y0 + 30, 'inconsistent formats and units', arrive(.04));
-  const tA = [60, 230], tB = [560, 730], y1 = y0 + 62, aa = arrive(.08);
-  const table = (x, head, rows, a, rowA) => {
-    rule(x - 20, x + 290, y1 - 20, {width: 1.3, alpha: a});
-    text(head[0], x, y1 - 2, {size: 15, color: C.body, alpha: a}); text(head[1], x + 170, y1 - 2, {size: 15, color: C.body, alpha: a});
-    rule(x - 20, x + 290, y1 + 6, {alpha: a});
+  const u = win(1), B = D.b, x0 = COL[1];
+  sub('b', x0, ROW[0], 'inconsistent formats and units', arrive(.04));
+  const DX = x0 + 12, HX = x0 + 150, aa = arrive(.08), L = x0 + 4, R = x0 + 248;
+  const table = (top, head, rows, a, rowA) => {
+    rule(L, R, top, {width: 1.3, alpha: a});
+    text(head[0], DX, top + 18, {size: 16, color: C.body, alpha: a}); text(head[1], HX, top + 18, {size: 16, color: C.body, alpha: a});
+    rule(L, R, top + 26, {alpha: a});
     rows.forEach((r, i) => { const ra = a * rowA(i);
-      text(r[0], x, y1 + 26 + 22 * i, {size: 15, alpha: ra}); text(r[1], x + 170, y1 + 26 + 22 * i, {size: 15, alpha: ra}); });
-    rule(x - 20, x + 290, y1 + 26 + 22 * 2 + 10, {width: 1.3, alpha: a});
+      text(r[0], DX, top + 46 + 22 * i, {size: 16, alpha: ra}); text(r[1], HX, top + 46 + 22 * i, {size: 16, alpha: ra}); });
+    rule(L, R, top + 100, {width: 1.3, alpha: a});
   };
-  table(tA[0], ['visit date', 'height'], B.raw, aa, () => 1);
-  const conv = i => replay(u, .45 + .55 * i);
-  table(tB[0], ['visit date', 'height (cm)'], B.iso.map((d, i) => [d, B.cm[i].toFixed(1)]), aa, conv);
-  const ar = arrive(.12);
-  arrow(400, y1 + 30, 520, y1 + 30, {width: 1.3, head: 9, alpha: ar});
-  text('one date format', 460, y1 + 20, {size: 14, color: C.body, align: 'center', alpha: ar});
-  text('one unit', 460, y1 + 50, {size: 14, color: C.body, align: 'center', alpha: ar});
+  const T1 = ROW[0] + 18, T2 = ROW[0] + 168;
+  table(T1, ['visit date', 'height'], B.raw, aa, () => 1);
+  const conv = i => again(u, .6 + .55 * i);
+  table(T2, ['visit date', 'height (cm)'], B.iso.map((d, i) => [d, B.cm[i].toFixed(1)]), aa, conv);
+  const ar = arrive(.12), ax = x0 + 60;
+  arrow(ax, T1 + 110, ax, T2 - 10, {width: 1.3, head: 9, alpha: ar});
+  text('one date format, one unit', ax + 16, (T1 + 100 + T2) / 2 + 6, {size: 16, color: C.body, alpha: ar});
   // in its window: the record being converted, on both sides, in the accent
   if (u >= 0) for (let i = 0; i < 3; i++) {
-    const h = clamp((u - .3 - .55 * i) / .15) * (1 - clamp((u - .8 - .55 * i) / .15));
-    if (h > 0) { box(tA[0] - 12, y1 + 12 + 22 * i, 300, 20, {stroke: C.accent, width: 1.4, alpha: h});
-      box(tB[0] - 12, y1 + 12 + 22 * i, 300, 20, {stroke: C.accent, width: 1.4, alpha: h}); }
+    const h = clamp((u - .45 - .55 * i) / .15) * (1 - clamp((u - .95 - .55 * i) / .15));
+    if (h > 0) for (const T of [T1, T2]) box(L, T + 30 + 22 * i, R - L, 22, {stroke: C.accent, width: 1.4, alpha: h});
   }
 }
 
-/* (c) outlier handling, on a broken axis */
+/* (c) outlier handling, on a broken axis. The ages as a dot plot: an age whose mark would meet
+   its neighbor's sits a level up (the levels of the ages as corrected, 43 for the slip) */
+const CA0 = COL[2] + 20, CA1 = COL[2] + 216, CB0 = COL[2] + 250, CB1 = COL[2] + 300, CR = 4.2;
+const CX_ = v => v <= 100 ? CA0 + (v - 20) / 80 * (CA1 - CA0) : CB0 + (v - 420) / 20 * (CB1 - CB0);
+const CLV = (() => {
+  const fin = D.c.ages.map(v => v === 430 ? 43 : v), idx = fin.map((_, i) => i).sort((i, j) => fin[i] - fin[j]);
+  const lv = new Array(fin.length).fill(0), last = [];
+  for (const i of idx) { let l = 0; while (last[l] !== undefined && CX_(fin[i]) - last[l] < 2 * CR + 1.5) l++; lv[i] = l; last[l] = CX_(fin[i]); }
+  return lv;
+})();
 function drawC() {
-  const y0 = ROW[2], u = win(2), Cc = D.c;
-  sub('c', 18, y0 + 30, 'outlier handling', arrive(.08));
-  const A0 = 60, A1 = 600, B0 = 648, B1 = 740, sy = y0 + 118;
-  const X = v => v <= 110 ? A0 + (v - 20) / 90 * (A1 - A0) : B0 + (v - 420) / 20 * (B1 - B0);
-  const aa = arrive(.12);
-  line([[A0, sy], [A1 + 8, sy]], {width: 1.2, alpha: aa}); line([[B0 - 8, sy], [B1, sy]], {width: 1.2, alpha: aa});
-  for (const bx of [A1 + 14, B0 - 14]) line([[bx - 4, sy + 6], [bx + 4, sy - 6]], {width: 1.2, alpha: aa});
-  for (const v of [20, 40, 60, 80, 100, 420, 440]) {
-    line([[X(v), sy], [X(v), sy + 5]], {width: 1.1, alpha: aa}); text(String(v), X(v), sy + 20, {size: 14, align: 'center', alpha: aa});
-  }
-  text('age (years)', X(60), sy + 40, {size: 14, color: C.body, align: 'center', alpha: aa});
+  const u = win(2), Cc = D.c, x0 = COL[2], X = CX_, sy = ROW[0] + 140;
+  sub('c', x0, ROW[0], 'outlier handling', arrive(.08));
+  const aa = arrive(.12), lev = l => sy - 13 - 10 * l;
+  line([[CA0, sy], [CA1 + 8, sy]], {width: 1.2, alpha: aa}); line([[CB0 - 8, sy], [CB1, sy]], {width: 1.2, alpha: aa});
+  for (const bx of [CA1 + 13, CB0 - 13]) line([[bx - 4, sy + 6], [bx + 4, sy - 6]], {width: 1.2, alpha: aa});
+  ticksUnder(X, [20, 40, 60, 80, 100, 420, 440], sy, aa);
+  text('age (years)', X(60), sy + 44, {size: 16, color: C.body, align: 'center', alpha: aa});
   // Tukey's box and fence, from the ages as recorded
-  const bp = u < 0 ? seg(.3, .4) : clamp((u - .3) / .5), by = sy - 44, [q1, md, q3] = Cc.q;
+  const bp = u < 0 ? seg(.3, .4) : u < FD ? 1 - u / FD : clamp((u - .45) / .5), by = sy - 56, [q1, md, q3] = Cc.q;
   box(X(q1), by - 9, X(q3) - X(q1), 18, {stroke: C.ink, width: 1.3, alpha: bp});
   line([[X(md), by - 9], [X(md), by + 9]], {width: 1.6, alpha: bp});
   line([[X(Cc.w[0]), by], [X(q1), by]], {width: 1.2, alpha: bp}); line([[X(q3), by], [X(Cc.w[1]), by]], {width: 1.2, alpha: bp});
   line([[X(Cc.w[0]), by - 5], [X(Cc.w[0]), by + 5]], {width: 1.2, alpha: bp}); line([[X(Cc.w[1]), by - 5], [X(Cc.w[1]), by + 5]], {width: 1.2, alpha: bp});
   line([[X(Cc.f[1]), by - 18], [X(Cc.f[1]), sy]], {color: C.guide, width: 1, dash: [5, 4], alpha: bp});
-  text('Q3 + 1.5 IQR', X(Cc.f[1]), by - 24, {size: 14, color: C.body, align: 'center', alpha: bp});
-  // the ages; the slip travels from 430 to 43 once it has been checked
-  const flag = u < 0 ? arrive(.5) : clamp((u - .85) / .2);
-  const keep = u < 0 ? arrive(.6) : clamp((u - 1.25) / .2);
-  const fix = u < 0 ? 1 : sp(u - 1.7, .55);
+  text('Q3 + 1.5 IQR', X(Cc.f[1]), by - 24, {size: 16, color: C.body, align: 'center', alpha: bp});
+  // the ages; once checked, the slip goes out at 430 (a dashed ring keeps its place) and comes in at 43
+  // (q: how far the correction has come; going out, the corrected value fades where it is)
+  const flag = u < 0 ? arrive(.5) : u < FD ? 1 - u / FD : clamp((u - 1.0) / .2);
+  const keep = u < 0 ? arrive(.6) : u < FD ? 1 - u / FD : clamp((u - 1.4) / .2);
+  const q = u < FD ? 1 : clamp((u - 1.85) / .5), back = u < 0 ? 1 : u < FD ? 1 - u / FD : clamp((u - FD) / .15);
   Cc.ages.forEach((v, i) => {
     const a = arrive(.1 + .25 * i / Cc.ages.length);
     if (v === 430) {
-      const x = lerp(X(430), X(43), fix), y = sy - 14 - 46 * Math.sin(Math.PI * fix);
-      if (fix > .02) ring(X(430), sy - 14, 9, {alpha: .8 * flag, dash: [3, 3]});
-      mark(x, y, 3, a, 4.6);
-      if (fix < .98) ring(x, y, 9, {alpha: flag});
+      if (q < .5) { mark(X(430), lev(0), 3, a * back * (1 - 2 * q), CR); ring(X(430), lev(0), 9, {alpha: flag * (1 - 2 * q)}); }
+      else {
+        ring(X(430), lev(0), 9, {alpha: .8 * flag * (u < FD ? 1 : 2 * q - 1), dash: [3, 3]});
+        mark(X(43), lev(CLV[i]), 3, a * back * (u < FD ? 1 : 2 * q - 1), CR);
+      }
     } else {
-      mark(X(v), sy - 14, v === 96 ? 3 : 1, a, 4.6);
-      if (v === 96) ring(X(v), sy - 14, 9, {alpha: flag});
+      mark(X(v), lev(CLV[i]), v === 96 ? 3 : 1, a, CR);
+      if (v === 96) ring(X(v), lev(CLV[i]), 9, {alpha: flag});
     }
   });
-  text('checked: real, kept', X(96), sy - 30, {size: 14, color: C.accent, align: 'center', alpha: keep});
-  text('430 was a typing slip for 43: corrected', X(430), sy + 40, {size: 14, color: C.accent, align: 'center', alpha: clamp(fix * 3 - 2) * (u < 0 ? arrive(.7) : 1)});
+  // its label starts past the fence, so the fence never runs through it
+  text('checked: real, kept', X(Cc.f[1]) + 9, sy - 30, {size: 16, color: C.accent, alpha: keep});
+  const sa = u < 0 ? arrive(.7) : u < FD ? 1 - u / FD : clamp(2 * q - 1);
+  text('430 was a typing slip for 43: corrected', CB1 + 6, sy + 68, {size: 16, color: C.accent, align: 'right', alpha: sa});
 }
 
-/* (d) normalization and standardization */
+/* (d) normalization and standardization: each feature on its own scale, then all as z-scores */
 const KIND = [1, 4, 0];
 function drawD() {
-  const y0 = ROW[3], u = win(3), Dd = D.d;
-  sub('d', 18, y0 + 30, 'normalization and standardization', arrive(.12));
-  const RX0 = 196, RX1 = 380, ZX0 = 560, ZX1 = 960, ys = [y0 + 64, y0 + 94, y0 + 124];
+  const u = win(3), Dd = D.d, x0 = COL[0];
+  sub('d', x0, ROW[1], 'normalization and standardization', arrive(.12));
+  const RX0 = x0 + 154, RX1 = x0 + 260, ZX0 = x0 + 42, ZX1 = x0 + 282;
+  const ys = [ROW[1] + 36, ROW[1] + 64, ROW[1] + 92], zs = [ROW[1] + 154, ROW[1] + 182, ROW[1] + 210];
   const ZX = z => ZX0 + (z + 2.5) / 5 * (ZX1 - ZX0);
-  const aa = arrive(.16);
+  const aa = arrive(.16), za = arrive(.3);
+  for (const y of zs) line([[ZX0, y], [ZX1, y]], {width: 1.1, alpha: za});
   Dd.names.forEach((nm, k) => {
     const [lo, hi] = Dd.lim[k], RX = v => RX0 + (v - lo) / (hi - lo) * (RX1 - RX0), y = ys[k];
-    text(nm, 40, y + 5, {size: 15, alpha: aa});
+    text(nm, x0 + 6, y + 5, {size: 16, alpha: aa});
     line([[RX0, y], [RX1, y]], {width: 1.1, alpha: aa});
     for (const v of [lo, hi]) line([[RX(v), y - 4], [RX(v), y + 4]], {width: 1, alpha: aa});
-    text(String(lo), RX0 - 6, y + 5, {size: 14, color: C.body, align: 'right', alpha: aa});
-    text(String(hi), RX1 + 6, y + 5, {size: 14, color: C.body, alpha: aa});
-    line([[ZX0, y], [ZX1, y]], {width: 1.1, alpha: aa});
+    text(String(lo), RX0 - 6, y + 5, {size: 16, color: C.body, align: 'right', alpha: aa});
+    text(String(hi), RX1 + 6, y + 5, {size: 16, color: C.body, alpha: aa});
     for (let i = 0; i < 6; i++) {
-      const x0 = RX(Dd.x[k][i]), x1 = ZX(Dd.z[k][i]), a = arrive(.18 + .03 * i + .04 * k);
-      mark(x0, y - 7, KIND[k], a, 4.2);
-      const p = replay(u, .3 + .25 * k + .05 * i, .45);
-      if (u >= 0 && p < .999) { const xx = lerp(x0, x1, p); mark(xx, y - 7 - 26 * Math.sin(Math.PI * p), KIND[k], 1, 4.2); }
-      if (p > .98 || u < 0) mark(x1, y - 7, KIND[k], u < 0 ? a : 1, 4.2);
+      const x1 = RX(Dd.x[k][i]), x2 = ZX(Dd.z[k][i]), a = arrive(.18 + .03 * i + .04 * k);
+      mark(x1, y - 7, KIND[k], a, 4.2);
+      // in its window the z marks go out, then each travels down from its own scale to its z-score
+      if (u < 0) { mark(x2, zs[k] - 7, KIND[k], a, 4.2); continue; }
+      if (u < FD) { mark(x2, zs[k] - 7, KIND[k], 1 - u / FD, 4.2); continue; }
+      // down from its own scale first, then along to its z-score: clear of the formula on the left
+      const p = clamp((u - (.45 + .25 * k + .05 * i)) / .55), e1 = easeInOut(clamp(p / .6)), e2 = easeInOut(clamp((p - .4) / .6));
+      if (p > 0 && p < 1) mark(lerp(x1, x2, e2), lerp(y - 7, zs[k] - 7, e1), KIND[k], 1, 4.2);
+      if (p >= 1) mark(x2, zs[k] - 7, KIND[k], 1, 4.2);
     }
   });
-  const za = arrive(.3), yb = ys[2];
+  const yb = zs[2];
   for (const z of [-2, -1, 0, 1, 2]) { line([[ZX(z), yb], [ZX(z), yb + 5]], {width: 1.1, alpha: za});
-    math(fmt(z), ZX(z), yb + 20, {size: 14, align: 'center', alpha: za}); }
-  text('z-score (standard deviations from the mean)', ZX(0), yb + 40, {size: 14, color: C.body, align: 'center', alpha: za});
-  line([[ZX(0), ys[0] - 16], [ZX(0), yb]], {color: C.guide, width: 1, dash: [5, 4], alpha: za});
-  arrow(424, ys[1] - 7, 536, ys[1] - 7, {width: 1.3, head: 9, alpha: za});
-  math('z = (x - \\rm{mean}) / \\rm{sd}', 480, ys[1] - 18, {size: 15, align: 'center', alpha: za});
+    math(fmt(z), ZX(z), yb + 21, {size: 16, align: 'center', alpha: za}); }
+  text('z-score (standard deviations)', ZX(0), yb + 43, {size: 16, color: C.body, align: 'center', alpha: za});
+  line([[ZX(0), zs[0] - 16], [ZX(0), yb]], {color: C.guide, width: 1, dash: [5, 4], alpha: za});
+  const ax = x0 + 238;
+  arrow(ax, ys[2] + 14, ax, zs[0] - 20, {width: 1.3, head: 9, alpha: za});
+  math('z = (x - \\rm{mean}) / \\rm{sd}', x0 + 6, (ys[2] + zs[0]) / 2 + 5, {size: 16, alpha: za});
 }
 
 /* (e) class imbalance handling */
 function drawE() {
-  const y0 = ROW[4], u = win(4), E = D.e;
-  sub('e', 18, y0 + 30, 'class imbalance handling', arrive(.16));
-  const P = {x: 60, y: y0 + 46, w: 380, h: 118};
-  const g = axes({...P, xlim: [-3.2, 4.4], ylim: [-2.8, 2.6], xticks: [], yticks: [], progress: seg(.18, .35)});
-  const nS = E.syn.length, shown = u < 0 ? nS * clamp(seg(.5, .5) * 1.2) : (u < .3 ? nS * (1 - u / .3) : nS * clamp((u - .45) / 1.6));
+  const u = win(4), E = D.e, x0 = COL[1];
+  sub('e', x0, ROW[1], 'class imbalance handling', arrive(.16));
+  const P = {x: x0 + 62, y: ROW[1] + 24, w: 270, h: 150};
+  const g = axes({...P, xlim: [-3.2, 4.4], ylim: [-2.8, 2.6], xticks: [-2, 0, 2, 4], yticks: [-2, 0, 2],
+    xlabel: '\\rm{feature 1}', ylabel: '\\rm{feature 2}', ylabelGap: 40, tickSize: 16, progress: seg(.18, .35)});
+  const nS = E.syn.length;
+  // in its window the synthetic frauds go out (FD s), then SMOTE makes them again, 192 in 1.6 s
+  const shown = u < 0 ? nS * clamp(seg(.5, .5) * 1.2) : u < FD ? nS : nS * clamp((u - .45) / 1.6);
+  const sa = u < 0 ? 1 : u < FD ? 1 - u / FD : 1;
   g.inside(() => {
     for (const p of E.maj) mark(g.X(p[0]), g.Y(p[1]), 4, arrive(.2), 2.2);
     const m = Math.floor(shown);
     for (let i = 0; i < m; i++) {
       const s = E.min[E.src[i]], q = E.syn[i];
       // each synthetic fraud slides out of its source fraud along the segment to its place
-      const age = u < 0 ? 1 : clamp((shown - i) / 6);
+      const age = u < FD ? 1 : clamp((shown - i) / 6);
       const x = lerp(s[0], q[0], easeOut(age)), y = lerp(s[1], q[1], easeOut(age));
-      ring(g.X(x), g.Y(y), 2.1, {color: C.accent, width: .9, alpha: .85});
+      ring(g.X(x), g.Y(y), 2.1, {color: C.accent, width: .9, alpha: .85 * sa});
     }
     for (const p of E.min) mark(g.X(p[0]), g.Y(p[1]), 1, arrive(.3), 5);
   });
-  // the counts, before and after
-  const BX = 620, BW = 250, bx = n => BW * n / 196, la = arrive(.3), nf = 4 + Math.floor(shown);
-  const rowsY = [y0 + 84, y0 + 128];
-  text('before', 490, rowsY[0] + 5, {size: 15, color: C.body, alpha: la});
-  text('after SMOTE', 490, rowsY[1] + 5, {size: 15, color: C.body, alpha: la});
-  for (const [r, nfr] of [[0, 4], [1, nf]]) {
-    const y = rowsY[r];
-    box(BX, y - 18, bx(196), 12, {fill: C.sky, alpha: la});
-    text('normal 196', BX + bx(196) + 8, y - 8, {size: 14, alpha: la});
-    box(BX, y, Math.max(1.5, bx(nfr)), 12, {fill: C.navy, alpha: la});
-    text('fraud ' + nfr + (r === 0 ? ' (2%)' : ''), BX + Math.max(1.5, bx(nfr)) + 8, y + 10, {size: 14, color: r ? C.accent : C.ink, alpha: la});
+  // the key, then the counts before and after
+  const KX = x0 + 360, ka = arrive(.4), ky = ROW[1] + 32;
+  mark(KX + 4, ky - 5, 4, ka, 2.6); let kx = KX + 14 + text('normal', KX + 14, ky, {size: 16, alpha: ka}) + 18;
+  mark(kx + 4, ky - 5, 1, ka, 4.4); kx += 14 + text('fraud', kx + 14, ky, {size: 16, alpha: ka}) + 18;
+  ring(kx + 4, ky - 5, 3, {color: C.accent, width: 1.1, alpha: ka}); text('synthetic fraud', kx + 14, ky, {size: 16, alpha: ka});
+  const BW = 160, bx = n => BW * n / 196, la = arrive(.3), nf = 4 + Math.floor(shown);
+  const rows = [[ROW[1] + 74, 'before', 4, 1], [ROW[1] + 150, 'after SMOTE', nf, sa]];
+  for (const [y, name, nfr, ra] of rows) {
+    text(name, KX, y, {size: 16, color: C.body, alpha: la});
+    box(KX, y + 10, bx(196), 12, {fill: C.sky, alpha: la});
+    text('normal 196', KX + bx(196) + 8, y + 21, {size: 16, alpha: la});
+    box(KX, y + 28, Math.max(1.5, bx(nfr)), 12, {fill: C.navy, alpha: la * ra});
+    text('fraud ' + nfr + (name === 'before' ? ' (2%)' : ''), KX + Math.max(1.5, bx(nfr)) + 8, y + 39,
+      {size: 16, color: name === 'before' ? C.ink : C.accent, alpha: la * ra});
   }
-  text('4 real frauds and ' + (nf - 4) + ' synthetic', BX, rowsY[1] + 34, {size: 14, color: C.body, alpha: la});
-  const ka = arrive(.4), kx = 490, ky = y0 + 50;
-  mark(kx + 4, ky - 4, 4, ka, 2.6); text('normal', kx + 12, ky, {size: 14, alpha: ka});
-  mark(kx + 72, ky - 4, 1, ka, 4.4); text('fraud', kx + 82, ky, {size: 14, alpha: ka});
-  ring(kx + 132, ky - 4, 3, {color: C.accent, width: 1.1, alpha: ka}); text('synthetic fraud', kx + 140, ky, {size: 14, alpha: ka});
+  text('4 real frauds and ' + (nf - 4) + ' synthetic', KX, ROW[1] + 216, {size: 16, color: C.body, alpha: la * sa});
 }
 
 function draw() {
   drawA(); drawB(); drawC(); drawD(); drawE();
-  text('median imputation with an indicator column; ISO dates and centimetres; Tukey’s fences; z-scores; ' +
-       'SMOTE, 3 neighbours', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  math('\\rm{median fill; 1 in = 2.54 cm; fences at 1.5 IQR; SMOTE,}\\ k = 3', COL[0], H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 </script>

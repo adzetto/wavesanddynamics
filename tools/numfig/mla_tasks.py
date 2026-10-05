@@ -221,6 +221,8 @@ say("      0.8 s (0.34 s): the colours change, and 0.2 s later (0.1 s) the centr
 say("  (d) the readings go in 0.4 s (0.2 s) and come back one by one, 0.76 s apart (0.38 s), each in 0.5 s (0.28 s)")
 say("  (e) the forecast goes in 0.5 s (0.25 s) and is drawn forward in 1.8 s (0.9 s); the days that follow")
 say("      come in one every 0.2 s (0.1 s)")
+say("  5 Oct 2026: type 16 (ticks, labels, keys); the cluster centres an ink cross on a white halo (crimson is")
+say("      each panel's new case); (c)'s status changes once the groups have gone grey; (d) a key for the new readings")
 report(STEM, L)
 
 DATA = {
@@ -247,7 +249,7 @@ const visit = u => u < 0 ? 0 : sp(u - .5, 1.2) - sp(u - 3.5, 1.2);
 function drawA() {
   sub('a', PA.x - 44, 34, 'classification', arrive(0));
   const g = axes({...PA, xlim: [0, 12], ylim: [0, 40], xticks: [0, 4, 8, 12], yticks: [0, 20, 40],
-    xlabel: '\\rm{links per email}', ylabel: '\\rm{capital letters (%)}', ylabelGap: 38, progress: seg(0, .35)});
+    xlabel: '\\rm{links per email}', ylabel: '\\rm{capital letters (%)}', ylabelGap: 38, tickSize: 16, progress: seg(0, .35)});
   const A = D.a, [w1, w2] = A.w, b = A.b;
   const yAt = x => -(b + w1 * x) / w2;
   g.inside(() => {
@@ -258,8 +260,8 @@ function drawA() {
     line([[g.X(0), g.Y(yAt(0))], [g.X(12), g.Y(yAt(12))]], {width: 2, progress: seg(.2, .36)});
     for (let i = 0; i < A.x.length; i++) mark(g.X(A.x[i][0]), g.Y(A.x[i][1]), A.y[i] ? 1 : 0, arrive(.04 + .2 * A.x[i][0] / 12), 4);
   });
-  text('spam', g.X(11.6), g.Y(2.5), {size: 15, color: C.navy, align: 'right', alpha: arrive(.4)});
-  text('not spam', g.X(.3), g.Y(22), {size: 15, color: C.body, alpha: arrive(.4)});
+  text('spam', g.X(11.6), g.Y(2.5), {size: 16, color: C.navy, align: 'right', alpha: arrive(.4)});
+  text('not spam', g.X(.3), g.Y(22), {size: 16, color: C.body, alpha: arrive(.4)});
   // a new email: rests where it is spam, visits a place where it is not, comes back
   const s = visit(win(0));
   const qx = lerp(A.q[0][0], A.q[1][0], s), qy = lerp(A.q[0][1], A.q[1][1], s);
@@ -267,14 +269,14 @@ function drawA() {
   mark(g.X(qx), g.Y(qy), isSpam ? 1 : 0, qa, 5);
   ring(g.X(qx), g.Y(qy), 10, {alpha: qa});
   text('new email: ' + (isSpam ? 'spam' : 'not spam'), PA.x + PA.w, PA.y - 9,
-    {size: 15, color: C.accent, align: 'right', alpha: qa});
+    {size: 16, color: C.accent, align: 'right', alpha: qa});
 }
 
 /* (b) regression */
 function drawB() {
   sub('b', PB.x - 44, 34, 'regression', arrive(.04));
   const g = axes({...PB, xlim: [800, 3100], ylim: [100, 600], xticks: [1000, 2000, 3000], yticks: [200, 400, 600],
-    xlabel: '\\rm{floor area (ft}^{2}\\rm{)}', ylabel: '\\rm{price (k$)}', ylabelGap: 38, progress: seg(.03, .35)});
+    xlabel: '\\rm{floor area (ft}^{2}\\rm{)}', ylabel: '\\rm{price (k$)}', ylabelGap: 40, tickSize: 16, progress: seg(.03, .35)});
   const B = D.b, f = x => B.b0 + B.b1 * x;
   g.inside(() => {
     line([[g.X(800), g.Y(f(800))], [g.X(3100), g.Y(f(3100))]], {color: C.blue, width: 2.2, progress: seg(.22, .36)});
@@ -285,7 +287,7 @@ function drawB() {
   line([[g.X(qx), PB.y + PB.h], [g.X(qx), g.Y(qy)]], {color: C.accent, width: 1.1, dash: [4, 3], alpha: qa});
   line([[PB.x, g.Y(qy)], [g.X(qx), g.Y(qy)]], {color: C.accent, width: 1.1, dash: [4, 3], alpha: qa});
   dot(g.X(qx), g.Y(qy), 5, {color: '#fff', fill: C.accent, width: 1.4, alpha: qa});
-  text('new house: $' + Math.round(qy) + 'k', PB.x + PB.w, PB.y - 9, {size: 15, color: C.accent, align: 'right', alpha: qa});
+  text('new house: $' + Math.round(qy) + 'k', PB.x + PB.w, PB.y - 9, {size: 16, color: C.accent, align: 'right', alpha: qa});
 }
 
 /* (c) clustering: k-means, run again from its start in its window */
@@ -302,21 +304,27 @@ function gmark(x, y, k, a = 1, r = 4) {
   else ctx.arc(x, y, rr, 0, 2 * Math.PI);
   ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = .9; ctx.stroke(); ctx.restore();
 }
+/* a cluster centre: an ink cross on a white halo, as Figure 15's key draws one (crimson is each
+   panel's new case, not the centres) */
 function cross(x, y, a) {
-  line([[x - 7, y - 7], [x + 7, y + 7]], {color: C.accent, width: 2.4, alpha: a});
-  line([[x - 7, y + 7], [x + 7, y - 7]], {color: C.accent, width: 2.4, alpha: a});
+  for (const [c, w] of [['#fff', 5.4], [C.ink, 2.4]]) {
+    line([[x - 7, y - 7], [x + 7, y + 7]], {color: c, width: w, alpha: a});
+    line([[x - 7, y + 7], [x + 7, y - 7]], {color: c, width: w, alpha: a});
+  }
 }
 function drawC() {
   sub('c', PC.x - 44, 34, 'clustering', arrive(.08));
   const g = axes({...PC, xlim: [0, 12], ylim: [0, 120], xticks: [0, 4, 8, 12], yticks: [0, 60, 120],
-    xlabel: '\\rm{visits per month}', ylabel: '\\rm{spend per visit ($)}', ylabelGap: 38, progress: seg(.06, .35)});
+    xlabel: '\\rm{visits per month}', ylabel: '\\rm{spend per visit ($)}', ylabelGap: 40, tickSize: 16, progress: seg(.06, .35)});
   const Cd = D.c, n = Cd.x.length, NS = Cd.lab.length, u = win(2);
   // its window: grey, and the centres back to their start (.5 s), a rest, then a k-means step
   // every KS: each customer takes its nearest centre's colour, and .2 s later each centre
   // glides (.4 s) to its customers' mean, and rests
   const K0 = .9, KS = .8;
-  let labIdx = NS - 1, grey = 0, cen = Cd.cen[NS], back = -1, note = 'three groups found';
-  if (u >= 0 && u < K0) { back = clamp(u / .5); grey = back; note = 'start: no labels'; }
+  let labIdx = NS - 1, grey = 0, cen = Cd.cen[NS], back = -1, note = 'three groups found', na = 1;
+  // the status changes once the groups have gone grey, not while they are still coloured
+  if (u >= 0 && u < K0) { back = clamp(u / .5); grey = back;
+    if (u < .45) na = 1 - u / .45; else { note = 'start: no labels'; na = clamp((u - .45) / .2); } }
   else if (u >= K0) {
     const k = Math.min(NS - 1, Math.floor((u - K0) / KS)), p = sp(u - K0 - k * KS - .2, .4);
     labIdx = k;
@@ -335,14 +343,14 @@ function drawC() {
       for (const c of Cd.cen[0]) cross(g.X(c[0]), g.Y(c[1]), ca * back);
     } else for (const c of cen) cross(g.X(c[0]), g.Y(c[1]), ca);
   });
-  text(note, PC.x + PC.w - 8, PC.y + 18, {size: 14, color: C.body, align: 'right', alpha: arrive(.5)});
+  text(note, PC.x + PC.w - 8, PC.y + 20, {size: 16, color: C.body, align: 'right', alpha: arrive(.5) * na});
 }
 
 /* (d) anomaly detection */
 function drawD() {
   sub('d', PD.x - 44, 334, 'anomaly detection', arrive(.12));
   const g = axes({...PD, xlim: [44, 78], ylim: [0, 7], xticks: [45, 60, 75], yticks: [0, 3, 6],
-    xlabel: '\\rm{temperature (°C)}', ylabel: '\\rm{vibration (mm/s)}', ylabelGap: 32, progress: seg(.09, .35)});
+    xlabel: '\\rm{temperature (°C)}', ylabel: '\\rm{vibration (mm/s)}', ylabelGap: 32, tickSize: 16, progress: seg(.09, .35)});
   const Dd = D.d, u = win(3);
   // its window: the new readings go (.4 s) and come back one by one, .76 s apart, each checked
   const seen = i => clamp(1 - u / .4) + sp(u - .7 - .76 * i, .5);
@@ -359,12 +367,14 @@ function drawD() {
   });
   // labels near the right frame end 8 units inside it, as 'spam' and 'three groups found' do
   const ea = arrive(.6), xin = PD.x + PD.w - 8;
-  text('normal (99%)', xin, g.Y(1.25), {size: 14, color: C.body, align: 'right', alpha: ea});
+  text('normal (99%)', xin, g.Y(1.25), {size: 16, color: C.body, align: 'right', alpha: ea});
+  // what the larger open marks are: the readings being checked
+  mark(PD.x + 16, PD.y + 16, 0, ea, 4.6); text('new reading', PD.x + 27, PD.y + 21, {size: 16, color: C.body, alpha: ea});
   Dd.new.forEach((p, i) => {
     if (!Dd.an[i]) return;
     const a = u >= 0 ? seen(i) : ea;
     const edge = p[0] > 70;                  // by the frame: below its mark, clear of the ellipse
-    text('anomaly', edge ? xin : g.X(p[0]) + 10, g.Y(p[1]) + (edge ? 21 : 4), {size: 14, color: C.accent,
+    text('anomaly', edge ? xin : g.X(p[0]) + 10, g.Y(p[1]) + (edge ? 22 : 5), {size: 16, color: C.accent,
       align: edge ? 'right' : 'left', alpha: a});
   });
 }
@@ -374,7 +384,7 @@ function drawE() {
   sub('e', PE.x - 44, 334, 'forecasting', arrive(.16));
   const E = D.e, NH = E.nh, NT = E.y.length, NFc = NT - NH;
   const g = axes({...PE, xlim: [0, 71], ylim: [70, 140], xticks: [0, 14, 28, 42, 56, 70], yticks: [80, 100, 120, 140],
-    xlabel: '\\rm{day}', ylabel: '\\rm{demand (units)}', ylabelGap: 36, progress: seg(.12, .35)});
+    xlabel: '\\rm{day}', ylabel: '\\rm{demand (units)}', ylabelGap: 40, tickSize: 16, progress: seg(.12, .35)});
   const u = win(4);
   // at rest: the forecast and the days that came; in its window they go (.5 s), the forecast is
   // drawn forward from today (1.8 s), and the days come in one by one, one every .2 s
@@ -399,21 +409,24 @@ function drawE() {
   });
   const ta = arrive(.5), xt = g.X(NH + .5);
   line([[xt, PE.y], [xt, PE.y + PE.h]], {color: C.guide, width: 1, dash: [5, 4], alpha: ta});
-  text('today', xt - 6, PE.y + PE.h - 10, {size: 14, color: C.body, align: 'right', alpha: ta});
-  text('history', g.X(3), PE.y + 18, {size: 14, color: C.navy, alpha: ta});
-  text('forecast', g.X(70), PE.y + 18, {size: 14, color: C.accent, align: 'right', alpha: ta});
+  text('today', xt - 6, PE.y + PE.h - 10, {size: 16, color: C.body, align: 'right', alpha: ta});
+  text('history', g.X(3), PE.y + 20, {size: 16, color: C.navy, alpha: ta});
+  text('forecast', g.X(70), PE.y + 20, {size: 16, color: C.accent, align: 'right', alpha: ta});
   // a key along the top: the band, and the days that came after today
-  const kx = g.X(15), ky = PE.y + 18;
-  box(kx, ky - 11, 14, 12, {fill: C.steel, alpha: ta});
-  const kx2 = kx + 22 + text('80% band', kx + 20, ky, {size: 14, color: C.body, alpha: ta}) + 16;
+  const kx = g.X(15), ky = PE.y + 20;
+  box(kx, ky - 12, 14, 13, {fill: C.steel, alpha: ta});
+  const kx2 = kx + 22 + text('80% band', kx + 20, ky, {size: 16, color: C.body, alpha: ta}) + 18;
   mark(kx2 + 4, ky - 5, 0, ta, 3.2);
-  text('what happened', kx2 + 14, ky, {size: 14, color: C.body, alpha: ta});
+  text('what happened', kx2 + 14, ky, {size: 16, color: C.body, alpha: ta});
 }
 
 function draw() {
   drawA(); drawB(); drawC(); drawD(); drawE();
-  text('simulated data, seeds fixed: logistic regression, least squares, k-means (k = 3), a Gaussian with a 99% ' +
-       'threshold, Holt-Winters', 18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  // the parameter line: words in text (math would set the hyphen as a minus), k in math
+  const fa = arrive(.9), fo = {size: 15, color: C.muted, alpha: fa};
+  let fx = 18 + text('simulated data, fixed seeds; k-means with ', 18, H - 14, fo);
+  fx += math('k = 3', fx, H - 14, fo);
+  text('; anomaly beyond 99%', fx, H - 14, fo);
 }
 boot();
 """

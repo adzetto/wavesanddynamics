@@ -22,3 +22,6 @@ CHECK 4: the page's applicants
   income 38k, credit 725, debt 24 %: votes [1, 1, 0, 1, 1] -> 4 approve, 1 decline; sklearn soft vote 1
   income 42k, credit 725, debt 40 %: votes [1, 0, 0, 1, 1] -> 3 approve, 2 decline; sklearn soft vote 1
   income 52k, credit 735, debt 40 %: votes [0, 0, 1, 0, 0] -> 1 approve, 4 decline; sklearn soft vote 0
+PAGE (1000 x 520): an applicant every 5 s (3.6 s before 5 Oct 2026), so the forest's answer rests 2.6 s;
+  tree 1's edges say no (left) and yes (right); the held-out comparison above (CHECK 3) is kept here,
+  out of the figure's parameter line.

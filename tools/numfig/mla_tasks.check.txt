@@ -42,3 +42,5 @@ TIMING (30 Sep 2026, the client: slow Figure 2 down so each step can be followed
   (d) the readings go in 0.4 s (0.2 s) and come back one by one, 0.76 s apart (0.38 s), each in 0.5 s (0.28 s)
   (e) the forecast goes in 0.5 s (0.25 s) and is drawn forward in 1.8 s (0.9 s); the days that follow
       come in one every 0.2 s (0.1 s)
+  5 Oct 2026: type 16 (ticks, labels, keys); the cluster centres an ink cross on a white halo (crimson is
+      each panel's new case); (c)'s status changes once the groups have gone grey; (d) a key for the new readings

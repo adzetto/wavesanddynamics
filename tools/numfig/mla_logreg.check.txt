@@ -7,14 +7,14 @@ DATA
   malignant: 29.3 23.0 24.9 29.2 37.6 24.4 24.5 32.0 20.7 24.2 31.3 29.5 26.5 30.0 9.0 32.1 20.2 16.0
 
 FIT: maximum likelihood by Newton (IRLS)
-  b0 = -6.0851468928, b1 = 0.3124615167 per mm, after 8 Newton steps
+  b0 = -6.0851468928, b1 = 0.3124615167 per mm, after 12 Newton steps
   log likelihood -13.059562; threshold (p = 0.5) at x* = -b0/b1 = 19.4749 mm
 
 CHECK 1: against scikit-learn (no penalty)
-  sklearn: b0 = -6.0851468928, b1 = 0.3124615167  |diff| 1.3e-13, 6.4e-15
+  sklearn: b0 = -6.0851468928, b1 = 0.3124615167  |diff| 1.3e-13, 6.5e-15
 
 CHECK 2: the optimum (score equations and curvature)
-  gradient X'(y - p) = [-8.9e-16, -2.5e-14]; sum p = 18.0000000000 = number malignant 18
+  gradient X'(y - p) = [2.7e-15, 5.3e-14]; sum p = 18.0000000000 = number malignant 18
   Hessian eigenvalues 0.3386, 1505.82 > 0: a maximum
 
 CHECK 3: the threshold and the slope of the S (closed form)
@@ -26,7 +26,8 @@ CHECK 4: against the best possible boundary for the distributions the data came 
   misclassified at p = 0.5: 4 of 40
 
 PAGE
-  the probe rests at four tumors and glides between them along the fitted curve:
+  the probe rests 2.5 s at each of four tumors (1.2 s before 5 Oct 2026) and glides 0.75 s between them
+  along the fitted curve:
     x = 11.2 mm, p = 0.0701, label 0, classified negative
     x = 16.8 mm, p = 0.3024, label 0, classified negative
     x = 23.0 mm, p = 0.7505, label 1, classified positive

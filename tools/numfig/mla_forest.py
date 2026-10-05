@@ -122,6 +122,9 @@ say("CHECK 4: the page's applicants")
 for a, v in zip(APPS, votes):
     say(f"  income {a[0]:g}k, credit {a[1]}, debt {a[2]:g} %: votes {v} -> {sum(v)} approve,"
         f" {NT - sum(v)} decline; sklearn soft vote {int(rf.predict([a])[0])}")
+say("PAGE (1000 x 520): an applicant every 5 s (3.6 s before 5 Oct 2026), so the forest's answer rests 2.6 s;")
+say("  tree 1's edges say no (left) and yes (right); the held-out comparison above (CHECK 3) is kept here,")
+say("  out of the figure's parameter line.")
 report(STEM, L)
 
 DATA = {"trees": trees, "apps": [list(a) for a in APPS], "one": ONE, "big": BIG}
@@ -130,7 +133,7 @@ JS = LIB + r"""
 const D = DATA, NTR = D.trees.length;
 const CX = k => 102 + 199 * k, RY = 128, KY = 210, LY = 272, VY = 318;
 const BX = 500, BY = 414, BW = 330, BH = 80;
-const AT0 = .55, AP = 3.6;
+const AT0 = .55, AP = 5.0;                  // an applicant every 5 s: the answer rests 2.6 s
 const POSTER_T = AT0 + 2.5;
 const FN = ['income', 'credit score', 'debt'];
 const cond = q => (q.op === 'ge' ? '≥ ' : '≤ ') +
@@ -138,7 +141,7 @@ const cond = q => (q.op === 'ge' ? '≥ ' : '≤ ') +
 const yes = (q, a) => q.op === 'ge' ? a[q.f] >= q.v - 1e-9 : a[q.f] <= q.v + 1e-9;
 
 function qbox(cx, cy, w, q, a, hot) {
-  node(cx, cy, w, 46, [FN[q.f], cond(q)], {alpha: a, size: 15, gap: 18, stroke: hot ? C.accent : C.ink,
+  node(cx, cy, w, 46, [FN[q.f], cond(q)], {alpha: a, size: 16, gap: 19, stroke: hot ? C.accent : C.ink,
     width: hot ? 1.8 : 1.3});
 }
 function draw() {
@@ -150,7 +153,7 @@ function draw() {
 
   D.trees.forEach((tr, k) => {
     const cx = CX(k), a = arrive(.02 + .05 * k);
-    text('tree ' + (k + 1), cx, RY - 36, {size: 15, color: C.muted, align: 'center', alpha: a});
+    text('tree ' + (k + 1), cx, RY - 36, {size: 16, color: C.body, align: 'center', alpha: a});
     // this applicant's path through tree k
     const s1 = app ? (yes(tr.root, app) ? 1 : 0) : -1, kid = s1 >= 0 ? tr.kids[s1] : null;
     const s2 = kid ? (yes(kid, app) ? 1 : 0) : -1;
@@ -171,6 +174,12 @@ function draw() {
       });
       qbox(kx, KY, 90, q, arrive(.12 + .04 * k), side === s1 && p1 >= 1);
     });
+    // the first tree says which way an answer goes, as Figure 10 does: no to the left, yes to the right
+    if (k === 0) {
+      const la = clamp(ea * 2 - 1), my = (RY + 23 + KY - 23) / 2 + 5;
+      text('no', cx - 23.5 - 13, my, {size: 16, italic: true, color: C.body, align: 'right', alpha: la});
+      text('yes', cx + 23.5 + 13, my, {size: 16, italic: true, color: C.body, alpha: la});
+    }
     qbox(cx, RY, 118, tr.root, a, app && p1 > 0);
     // the vote
     if (app) {
@@ -201,15 +210,13 @@ function draw() {
       {size: 16, alpha: fade});
   }
   // key to the leaves
-  const ka = arrive(.5), kx = 700, ky = 30;
-  box(kx, ky - 11, 14, 14, {fill: C.navy, stroke: C.navy, width: 1.4, alpha: ka});
-  text('leaf: approve', kx + 20, ky + 1, {size: 15, alpha: ka});
-  box(kx + 132, ky - 11, 14, 14, {fill: '#fff', stroke: C.navy, width: 1.4, alpha: ka});
-  text('decline', kx + 152, ky + 1, {size: 15, alpha: ka});
-  text('each tree: its own bootstrap sample of Figure 10’s 200 applications, 2 of 3 features tried per split; ' +
-       'no goes left, yes right', 18, H - 32, {size: 14, color: C.muted, alpha: arrive(.9)});
-  text('on 5,000 new applications, one fully grown tree is right ' + (D.one * 100).toFixed(1) + '% of the time, ' +
-       'a forest of 300 such trees ' + (D.big * 100).toFixed(1) + '%', 18, H - 12, {size: 14, color: C.muted, alpha: arrive(.9)});
+  const ka = arrive(.5), kx = 742, ky = 30;
+  box(kx, ky - 12, 14, 14, {fill: C.navy, stroke: C.navy, width: 1.4, alpha: ka});
+  text('leaf: approve', kx + 20, ky + 1, {size: 16, alpha: ka});
+  box(kx + 136, ky - 12, 14, 14, {fill: '#fff', stroke: C.navy, width: 1.4, alpha: ka});
+  text('decline', kx + 156, ky + 1, {size: 16, alpha: ka});
+  text('5 trees of depth 2; bootstrap samples; 2 of 3 features a split', 18, H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """
@@ -221,7 +228,7 @@ ARIA = ("Five small decision trees grown on different random samples of the loan
         "three applicants take turns.")
 
 if __name__ == "__main__":
-    common.build_html(NAME, TITLE, ARIA, 1000, 530, DATA, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, 520, DATA, JS)
     print(common.still(NAME))
     if "--look" in sys.argv:
         print(common.frames(NAME, [0.3, 0.6, 1.2, 2.0, 3.0, 5.0]))

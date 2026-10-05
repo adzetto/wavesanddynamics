@@ -120,6 +120,7 @@ for a in APPLICANTS:
     sk = PAGE_LEAF[int(np.select([tree.apply([a])[0] == v for v in (2, 3, 5, 6)], [0, 1, 2, 3]))]
     say(f"  income {a[0]:g}k, credit {a[1]}, debt {a[2]:g} %: page leaf {pg}, sklearn leaf {sk},"
         f" {'approve' if pg in (1, 3) else 'decline'}")
+say("PAGE: an applicant every 4.8 s (3.1 s before 5 Oct 2026); each path rests 2.6 s, written out.")
 report(STEM, L)
 
 order = np.random.default_rng(99).permutation(N)
@@ -145,7 +146,7 @@ const QS = [
   ['debt ≤ ' + D.q.dti.toFixed(1) + '% of income?', D.n.r],
 ];
 const POUR0 = .28, POUR = .5, HOP = .28;     // records start, spread, time per level
-const AT0 = 1.55, AP = 3.1;                  // the applicants' walk
+const AT0 = 1.55, AP = 4.8;                  // the applicants' walk: each path rests 2.6 s, written out
 const POSTER_T = AT0 + 2.1;
 
 /* where record k is at time t: from the root down to its leaf, and when it lands */
@@ -176,7 +177,7 @@ function edge(p, q, lab, side, a, hot) {
   const L_ = Math.hypot(x1 - x0, y1 - y0), dx = (x1 - x0) / L_, dy = (y1 - y0) / L_;
   let nx = dy, ny = -dx; if (ny > 0) { nx = -nx; ny = -ny; }
   const mx = (x0 + x1) / 2 + nx * 14, my = (y0 + y1) / 2 + ny * 14 + 5;
-  text(lab, mx, my, {size: 15, italic: true, color: hot > 0 ? C.accent : C.body, align: 'center', alpha: clamp(a * 2 - 1)});
+  text(lab, mx, my, {size: 16, italic: true, color: hot > 0 ? C.accent : C.body, align: 'center', alpha: clamp(a * 2 - 1)});
 }
 
 function draw() {
@@ -205,7 +206,7 @@ function draw() {
   nodes.forEach((c, i) => {
     const a = arrive(.02 + .08 * i);
     node(c[0], c[1] - 4, IW, IH, [QS[i][0], {s: (QS[i][1][0] + QS[i][1][1]) + ' records, ' +
-      Math.round(100 * QS[i][1][1] / (QS[i][1][0] + QS[i][1][1])) + '% approved', size: 14, color: C.muted}],
+      Math.round(100 * QS[i][1][1] / (QS[i][1][0] + QS[i][1][1])) + '% approved', size: 16, color: C.body}],
       {alpha: a, gap: 21, stroke: C.ink});
     mix(c[0], c[1] + IH / 2 - 12, IW - 60, QS[i][1], a);
   });
@@ -216,7 +217,7 @@ function draw() {
     const on = lf === i ? clamp((u - 1.55) / .2) * fade : 0;
     node(c[0], c[1] - 4, LW, LH, [{s: approve ? 'approve' : 'decline', bold: true, size: 17,
       color: on > .5 ? C.accent : C.ink},
-      {s: tot ? (approve ? cnt[1] : cnt[0]) + ' of ' + tot + (approve ? ' approved' : ' declined') : ' ', size: 14, color: C.body}],
+      {s: tot ? (approve ? cnt[1] : cnt[0]) + ' of ' + tot + (approve ? ' approved' : ' declined') : ' ', size: 16, color: C.body}],
       {alpha: a, fill: C.steel, stroke: on > 0 ? C.accent : C.ink, width: on > 0 ? 2 : 1.3, gap: 21});
     mix(c[0], c[1] + LH / 2 - 12, LW - 60, cnt, a * clamp(tot));
   });
@@ -244,8 +245,8 @@ function draw() {
     xx += text('  →  ' + s2, xx, yy + 26, {size: 16, alpha: a2});
     text('  →  ' + s3, xx, yy + 26, {size: 16, bold: true, color: C.accent, alpha: fade * clamp((u - 1.6) / .2)});
   }
-  text('200 simulated applications; tree grown by scikit-learn (Gini, depth 2); records flipped from the lender’s rule: 5%',
-       18, H - 14, {size: 14, color: C.muted, alpha: arrive(.9)});
+  text('200 simulated applications; Gini, depth 2; 5% of records flipped', 18, H - 14,
+       {size: 15, color: C.muted, alpha: arrive(.9)});
 }
 boot();
 """

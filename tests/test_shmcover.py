@@ -1,12 +1,17 @@
-"""The SHM and NDT guide's cover, redrawn from models (round 12, shmcover).
+"""The SHM and NDT guide's cover, redrawn from models (round 12, shmcover; 5 Oct
+2026, twice as tall).
 
 His cover (understanding-shm-and-ndt, image1) is a drawing without words: a
 small building, a wave running away from it that turns from teal to orange,
-three sensor dots. tools/numfig/shm_cover.py redraws it as the waves guide's
-cover does its own: the building of Figure 1 swaying in its computed first
-mode with sensors on its floors, one of its steel members at the NDT scale
-(an A0 guided wave from Figure 5 (a)'s model finds a defect and comes back),
-and the transducer's record with the echo marked. content/anim/
+three sensor dots. tools/numfig/shm_cover.py redraws it from models. Since the
+professor's notes of 5 Oct 2026 ("Tepedeki resim => vertical size 2x", with a
+sketch: a tall building with sensors on its floors, a circled spot and an
+arrow to an inset labelled "imaging", an array probe on a piece, a hatched
+defect and the back wall) it is twice as tall: a 12-storey steel frame
+swaying in its computed first mode with sensors on four floors, one joint
+circled and drawn magnified as ultrasonic array imaging of a defect in it,
+the elements firing one after another, the echoes from the defect and the
+back wall, and the image built from them beside it. content/anim/
 anim.shmcover.json puts it where his picture stood.
 """
 
@@ -29,8 +34,8 @@ import preview  # noqa: E402
 ANIM = os.path.join(ROOT, "content", "anim")
 SHM = "understanding-shm-and-ndt"
 NAME = "nf-shm-cover.html"
-TITLE = "A building's first mode, and a guided wave's echo from a defect in one of its members"
-W, H = 1000, 173                                   # his picture is 1344 x 233
+TITLE = "A building's first mode, and ultrasonic imaging of a defect in one of its joints"
+W, H = 1000, 346                                   # his picture is 1344 x 233; twice as tall
 BUILT = os.path.isfile(os.path.join(build.BUILD, SHM, "part-01.json"))
 
 
@@ -52,7 +57,7 @@ def test_the_cover_is_a_numfig_page_in_computer_modern():
     text = page()
     assert f"<title>{html.escape(TITLE, quote=False)}</title>" in text
     assert f"const W = {W}, H = {H};" in text
-    assert abs(W / H - 1344 / 233) / (1344 / 233) < 3e-3          # his picture's proportion
+    assert abs(W / H - 1344 / 233 / 2) / (1344 / 233 / 2) < 3e-3  # his picture's, twice as tall
     # the engine is inlined and the script starts it once the type has loaded
     assert '"CMU Serif", "Figure Math"' in text and "../fonts/figure-math.woff2" in text
     assert "../fonts/cmu-serif-500-roman.woff2" in text and "function boot()" in text
@@ -88,12 +93,12 @@ def test_it_prints_its_own_frame_at_its_ratio():
     with Image.open(os.path.join(ANIM, "nf-shm-cover.webp")) as im:
         assert im.size[0] == 1344 and abs(im.size[1] - 1344 * H / W) <= 2
         px = np.asarray(im.convert("RGB")).astype(int)
-    # a frame, not a blank: the building, the plate and the record are drawn,
-    # and the echo is on it in the crimson
+    # a frame, not a blank: the building, the piece and its image are drawn,
+    # and the defect is in the crimson, in the magnified joint
     assert (px.mean(2) < 128).mean() > 0.01
     crimson = (abs(px[..., 0] - 0xA7) < 40) & (px[..., 1] < 90) & (px[..., 2] < 110)
-    right = crimson[:, int(1344 * .75):]
-    assert right.sum() > 30
+    assert crimson[:, :int(1344 * .25)].sum() == 0
+    assert crimson[:, int(1344 * .3):int(1344 * .62)].sum() > 300
 
 
 def test_the_fragment_puts_it_where_his_picture_stood():
@@ -129,72 +134,48 @@ def test_the_document_head_shows_it_where_the_picture_stood(monkeypatch):
     assert re.sub(r"<figure.*?</figure>", "", was, flags=re.S) == re.sub(r"<figure.*?</figure>", "", now, flags=re.S)
 
 
-def test_the_building_is_figure_1s_in_its_first_mode():
-    from scipy.optimize import brentq
-    d = data()
-    a = d["alpha"]
-    assert (d["H"], a) == (80, 6) and 1 / d["tb"] == pytest.approx(1 / 2.4, rel=1e-4)
-
-    def char(g):                                  # Miranda and Taghavi (2005), eq. 6
-        b = np.sqrt(a * a + g * g)
-        return 2 + (2 + a ** 4 / (g * g * b * b)) * np.cos(g) * np.cosh(b) + a * a / (g * b) * np.sin(g) * np.sinh(b)
-
-    gs = np.linspace(0.05, 5, 5001)
-    v = char(gs)
-    i = np.where(np.sign(v[:-1]) != np.sign(v[1:]))[0][0]
-    g = brentq(char, gs[i], gs[i + 1], xtol=1e-14)
-    b = np.sqrt(a * a + g * g)
-    eta = (g * g * np.sin(g) + g * b * np.sinh(b)) / (g * g * np.cos(g) + b * b * np.cosh(b))
-    xi = np.linspace(0, 1, len(d["psi"]))
-    phi = np.sin(g * xi) - g / b * np.sinh(b * xi) + eta * (np.cosh(b * xi) - np.cos(g * xi))
-    # the drawn shape is the closed form's, 1 at the roof, fixed at the ground, no node
-    assert np.abs(np.array(d["psi"]) - phi / phi[-1]).max() < 1e-4
-    assert d["psi"][0] == 0 and d["psi"][-1] == 1 and np.all(np.diff(d["psi"]) > 0)
-    assert (d["hb"], d["bw"], d["storeys"]) == (136, 51, 24)
+def test_the_building_sways_in_its_own_first_mode():
+    """A uniform shear building, n equal storeys fixed at the ground: its
+    first mode is sin(i pi / (2n + 1)) at floor i, in closed form."""
+    b = data()["b"]
+    n = b["storeys"]
+    assert (n, b["bays"], b["joint"]) == (12, 3, 4)
+    ref = np.sin(np.arange(n + 1) * np.pi / (2 * n + 1)) / np.sin(n * np.pi / (2 * n + 1))
+    assert np.abs(np.array(b["psi"]) - ref).max() < 1e-5
+    assert b["psi"][0] == 0 and b["psi"][-1] == 1 and np.all(np.diff(b["psi"]) > 0)
+    assert b["f1"] * b["tb"] == pytest.approx(1, rel=1e-5) and b["f1"] == pytest.approx(0.7752, abs=1e-4)
 
 
-def test_the_echo_comes_back_when_the_wave_speed_says():
-    import guided_ut as G
-    w = data()["wave"]
-    assert (w["D"], w["R"], w["f0"], w["d_mm"]) == (1.5, 0.5, 50e3, 10)
-    # the group velocity of A0 at 50 kHz (the Rayleigh-Lamb root), and the echo
-    # whose envelope peaks near the burst's centre + 2D/c_g (a little before:
-    # dispersion, guided_ut.check.txt)
-    assert w["cg_ms"] == pytest.approx(G.group_velocity("A", G.F0)[1], rel=1e-5)
-    two_way = 2 * w["D"] / w["cg_ms"] * 1e6
-    assert w["tof_us"] == pytest.approx(w["tpk_us"] - w["tc_us"])
-    assert -0.02 < (w["tof_us"] - two_way) / two_way < 0
-    # the record: the burst at the start, silence, the echo inside its window,
-    # a quarter of the burst and spread out
-    tr = f32(w["trace"])
-    t = np.arange(len(tr)) * w["dtt_us"]
-    assert len(tr) == 1401 and np.abs(tr[t < 70]).max() == pytest.approx(np.abs(tr).max())
-    assert np.abs(tr[(t > 90) & (t < w["win_us"][0] - 60)]).max() < 0.01
-    late = t > 600
-    k = np.argmax(np.abs(tr[late]))
-    assert w["win_us"][0] < t[late][k] < w["win_us"][1]
-    assert 0.2 < np.abs(tr[late]).max() / np.abs(tr[t < 70]).max() < 0.35
-    # the page sums the same lines the check does
-    assert len(f32(w["w"])) == len(f32(w["k"])) == len(f32(w["a"])) == len(f32(w["p"])) == 353
+def test_the_echoes_come_back_along_the_shortest_way_by_the_defect():
+    """Each echo of the inset arrives when the reflection's path, element to
+    the defect's surface to element, says: the shortest such path (Fermat),
+    over the defect's outline, at the steel's P wave speed; the back wall's
+    two way time is 2 d / c_L."""
+    i = data()["i"]
+    xe, A, cl, dfc = np.array(i["xe"]), np.array(i["arrive"]), i["cl"], i["def"]
+    assert len(xe) == 16 and np.allclose(np.diff(xe), 1.5) and (i["wp"], i["dp"]) == (30, 16)
+    assert cl == pytest.approx(5.9, rel=1e-3)
+    th = np.radians(-dfc["tilt"])                 # depth downwards: the tilt turns the other way
+    t = np.linspace(0, 2 * np.pi, 100001)
+    px = dfc["x"] + dfc["a"] * np.cos(t) * np.cos(th) - dfc["b"] * np.sin(t) * np.sin(th)
+    pz = dfc["z"] + dfc["a"] * np.cos(t) * np.sin(th) + dfc["b"] * np.sin(t) * np.cos(th)
+    fermat = np.array([[np.min(np.hypot(px - xe[j], pz) + np.hypot(px - xe[k], pz)) / cl
+                        for k in range(16)] for j in range(16)])
+    assert np.abs(A - fermat).max() < 1e-4 and np.array_equal(A, A.T)        # and reciprocal
+    # every echo of the defect comes before the back wall's
+    assert A.max() < 2 * i["dp"] / cl
 
 
 def test_the_clock_loops_on_the_building_and_the_still_tells_it_all():
     d = data()
-    w = d["wave"]
-    # a wave cycle is three sways; the intro's physics starts by 0.6 s
-    assert d["pw"] == pytest.approx(3 * d["tb"], rel=1e-6)
-    assert d["t0b"] <= 0.6 and d["tf"] <= 0.6
-    # the record, drawn as it arrives, is whole well before it fades
-    assert d["tf"] + 1400e-6 * d["slow"] < d["pw"] - d["fade"] - 1
-    # the still: the building at full sway, the echo's peak reaching the
-    # transducer (it is on the record, named, and still in the plate)
-    assert np.cos(2 * np.pi * (d["poster"] - d["t0b"]) / d["tb"]) == pytest.approx(-1, abs=1e-6)
-    tm = (d["poster"] - d["tf"]) / d["slow"] * 1e6
-    assert w["win_us"][0] + 60 < tm < w["win_us"][1] and abs(tm - w["tpk_us"]) < 5
-    share = np.interp(tm, np.arange(len(w["share"])) * w["dth_us"], w["share"])
-    assert share > 0.37                           # the arrow over the echo, at full strength
-    # the plate goes quiet before the next burst
-    assert w["tend_us"] * 1e-6 * d["slow"] < d["pw"] - d["fade"]
+    b, i = d["b"], d["i"]
+    # eleven sways a loop; the building moves from 0.35 s
+    assert d["period"] == pytest.approx(11 * b["tb"], rel=1e-5) and d["t0b"] <= 0.6
+    # the sixteen elements fire one after another and are done within the loop
+    assert i["tf0"] + 16 * i["dtf"] < d["period"]
+    # the still: the building at full sway during the sixteenth firing
+    assert abs(np.cos(2 * np.pi * (d["poster"] - d["t0b"]) / b["tb"])) == pytest.approx(1, abs=1e-6)
+    assert i["tf0"] + 15 * i["dtf"] < d["poster"] < i["tf0"] + 16 * i["dtf"]
 
 
 def test_the_check_file_records_the_checks_and_nothing_overlaps():
@@ -211,7 +192,7 @@ def test_nothing_overlaps_across_the_motion():
     pytest.importorskip("playwright.sync_api")
     import common
     try:
-        got = common.overlaps("shm-cover", [0.45, 0.8, 2.3, 3.2, 5.6, 7.5])
+        got = common.overlaps("shm-cover", [0.45, 0.8, 2.3, 5.6, 9.0, 11.3, 13.9])
     except Exception as e:                        # no browser on this machine
         pytest.skip(f"playwright could not run: {e}")
     assert {k: v for k, v in got.items() if v["labels"] or v["crossings"]} == {}

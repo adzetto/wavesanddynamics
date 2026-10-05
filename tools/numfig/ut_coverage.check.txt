@@ -33,8 +33,33 @@ COVERAGE (a)
   at positions 117 to 123 only.
   Flaw 2 (lamination 24 mm long, at x = 1.4 m, 3.5 mm deep) lies in a zone
   at positions 277 to 283 only.
-  The scan's pace on the page is designed (slow first steps, then fast, easing while a flaw
-  is under the probe; 7.8 s in all); the positions and what each covers are the model's.
+
+THE PULSE (a), his note of 5 Oct 2026: the vertical waves
+  The probe's band in time: g(s) = exp(-s^2/(2 sigma^2)) cos(2 pi f0 s), sigma = 1/(2 pi sigma_f),
+  sigma_f = BW f0/(2 sqrt(2 ln 2)) = 1.2740 MHz: sigma = 0.1249 us.
+  CHECK: its spectrum (zero padded FFT) is above half its peak over 3.501 to 6.499 MHz,
+     59.96 % of f0 (the model's band: 60 %).
+  Its crests and troughs above a tenth of its peak (Brent's method on g'(s) = 0), drawn as fronts:
+     s = -0.1883 us, g = +0.2997, s = -0.0940 us, g = -0.7401, s = +0.0000 us, g = +1.0000, s = +0.0940 us, g = -0.7401, s = +0.1883 us, g = +0.2997
+  Each front is a plane as wide as the -6 dB zone at its depth, at depth c_L (tau - s), straight down
+  at c_L = 5.92086 mm/us; a column of the beam over a lamination turns back at the lamination's top
+  (its depth z_f - h/2: the model's laminations are flat and planar), every other column at the back
+  wall; up again at c_L; gone when it reaches the probe's face. Down navy, back from a flaw crimson
+  (the echo), back from the back wall blue; each front's opacity is its |g|.
+  CHECK: the echo times the fronts give against 2 z / c_L: back wall 3.3779 us (2d/c_L = 3.3779 us);
+     flaw 1, top at 5.4 mm: 1.8241 us (1.8241 us); its echo comes home 1.554 us before the back wall's would
+     flaw 2, top at 2.9 mm: 0.9796 us (0.9796 us); its echo comes home 2.398 us before the back wall's would
+  CHECK: the page's own fronts (frontsA) against the Python port at 10 moments of the pulses (positions [1, 2, 117, 119, 120, 121, 123, 280, 281]):
+     largest difference 0.0e+00 (mm, m and |g| alike); fronts compared: 5, 5, 5, 5, 5, 5, 5, 5, 10, 8
+  Time slowed 2 x 10^5 for the pulse (5 us of the model per second): down and back through the 10 mm
+  in 3.378 us, 0.676 s on the page; from its first crest leaving to its last home 3.755 us, 0.751 s.
+
+THE PACE (a): designed; which positions exist and what each covers is the model
+  The probe dwells, and sends its pulse, at positions [1, 2, 119, 120, 121, 279, 280, 281]: the first 2, and the
+  three round the middle of each flaw's lit range ([120, 280]); each dwell 1.281 s (glide 0.32 s, the pulse 0.751 s, a pause 0.15 s).
+  Beside a dwell a step takes 0.36 s, 0.58 times less at each step further away, down to 0.0143 s (70 positions per second) in between.
+  The scan takes 19.54 s (the old page's 7.8 s: his "slide a bit slower"); the loop 23.04 s (scan, then 2.4 s held, 0.8 s fading).
+  The still: position 280 (flaw 2's middle), 0.75 us into its pulse: the flaw's echo half way up, crimson; t = 15.558 s.
 
 MODEL (b): GUIDED WAVE
   The S0 mode of Figure 12 (guided_ut.py): Rayleigh-Lamb roots, 3 cycle Hann burst at 50 kHz,
@@ -52,7 +77,33 @@ VALIDATION (b)
   The page's own sum against numpy at three moments: largest difference 7.8e-06.
 
 DISPLAY
-  Both strips on one scale, 400 units/m; the plate's thickness drawn 8.5 times enlarged, the
-  inset under the probe drawn to scale (9 units/mm). Guided wave time slowed 5000 times.
+  1000 x 760. Both strips on one scale, 400 units/m; the plate's thickness drawn 8.5 times enlarged; the window
+  under the probe drawn to scale (12 units/mm, 36 mm wide), its beam pale (steel to mist) so the fronts
+  read on it. Guided wave time slowed 5000 times; the pulse in (a) 2 x 10^5 times, each labelled.
+  In the strip the probe's -6 dB zone fills downward with its pulse where it dwells, down to the back
+  wall, or to a lamination's top where one covers the whole beam (below it is its shadow); the plate is
+  drawn 8.5 times thicker there, so the fronts themselves are drawn in the window, at their true width.
   (b): between the transducer and the next sensor position, a dimension of the span one shot
   inspects, 2 m (x = 0 to 2 m on the strip's own scale), on a white knockout.
+  Type (5 Oct 2026): headings and the strips' labels 17, ticks and the notes in the plots 16, the
+  parameter lines and the slowing 15, nothing under 15; percent closed up (80%).
+  Beside each packet of fronts in the window an arrow says which way it runs (down navy; up crimson
+  from a flaw, blue from the back wall), at its middle crest's depth.
+
+OVERLAP (engine ?overlap, common.overlaps at 672 px; common.still also samples every 0.25 s up to
+  the poster):
+  still: labels none, crossings none
+  t=0.5: labels none, crossings none
+  t=0.9: labels none, crossings none
+  t=1.4: labels none, crossings none
+  t=2.2: labels none, crossings none
+  t=3: labels none, crossings none
+  t=4.4: labels none, crossings none
+  t=7: labels none, crossings none
+  t=9.5: labels none, crossings none
+  t=12: labels none, crossings none
+  t=14.6: labels none, crossings none
+  t=17: labels none, crossings none
+  t=19.6: labels none, crossings none
+  t=22.5413: labels none, crossings none
+  t=24.2413: labels none, crossings none

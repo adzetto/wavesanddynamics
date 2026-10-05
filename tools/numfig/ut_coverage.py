@@ -15,6 +15,19 @@ width at each depth is the insonified zone. The probe steps along the plate at
 an index below the narrowest zone, so coverage builds up position by position,
 and a flaw lights up only while a zone covers it.
 
+His note (5 Oct 2026): "Figure 13 -> bulk wave testing => slide a bit slower
+and animate vertical waves so people can see it's vertical wave prop. easier",
+with a sketch of a probe on the top face and short horizontal fronts stacked
+under it down to the bottom face. So the probe now dwells at its first
+positions and at the positions over each flaw, and at each of those it sends
+its pulse: the probe's band in time (a Gaussian, 5 MHz, 60 % at -6 dB), drawn
+as its crests and troughs, plane fronts as wide as the beam's -6 dB zone at
+each depth, running straight down through the thickness at c_L, back from the
+lamination's top where one lies under the beam (earlier) and from the back
+wall elsewhere, and up again to the probe; time slowed 2 x 10^5. Between the
+dwells it steps on briskly; which positions exist and what each covers is the
+model, the pace is designed.
+
 (b) Guided wave testing. The S0 mode of Figure 12 (3 cycle, 50 kHz, from
 guided_ut.py: same Rayleigh-Lamb roots, same Fourier synthesis) is launched once
 from the transducer at x = 0 and sweeps the span to the next sensor position at
@@ -46,6 +59,16 @@ R_FLAW = 0.25                # S0 displacement reflection of each flaw (schemati
 T_FLAW = np.sqrt(1 - R_FLAW ** 2)
 SLOW = gu.SLOW
 PPM, PH_DRAW = gu.PPM, gu.PH_DRAW
+# ------------------------------------------------------------------ (a) the pulse and the pace
+SLOW_A = 2e5                 # the pulse's time slowed: 5 us of the model per second
+EXT_MIN = 0.1                # the pulse's crests and troughs drawn: those above a tenth of its peak
+VIS = 0.32                   # the glide (s) of a step to a position where the probe dwells
+FIRE = 0.06                  # after the glide, the pulse leaves
+PAUSE = 0.15                 # after the pulse is home, the next step
+N_START = 2                  # the first positions, each with its pulse
+D_NEAR, Q_NEAR = 0.36, 0.58  # beside a dwell: the step's time, and its ratio from one step to the next
+R_FAST = 70.0                # positions per second in between
+POSTER_TAU = 0.75            # the still: the pulse at flaw 2's middle position, 0.75 us in (its echo half way up)
 
 
 def piston(r, z, k, nphi=4096):
@@ -133,33 +156,120 @@ def gw_received(comp, t):
             + gu.synth(comp, 2 * x2, t, T_FLAW ** 2 * R_FLAW))
 
 
-# ------------------------------------------------------------------ scan schedule
-def schedule(n, flaw_idx):
-    """Start time (s, from the first step) of each probe position: slow for the
-    first steps, then fast, easing down while a flaw is under the probe. Only
-    the pace is designed; which positions exist and what each covers is the model."""
-    r_slow, r_fast = 3.0, 75.0
-    i = np.arange(n, dtype=float)
-    ramp = np.clip((i - 2) / 10, 0, 1)
-    ramp = ramp * ramp * (3 - 2 * ramp)
-    rate = r_slow + (r_fast - r_slow) * ramp
-    for fi in flaw_idx:
-        rate = rate / (1 + 6.0 * np.exp(-((i - fi) / 4.0) ** 2))
-    return np.concatenate([[0.0], np.cumsum(1 / rate)[:-1]]), np.cumsum(1 / rate)[-1]
+# ------------------------------------------------------------------ (a) the pulse
+def pulse():
+    """The probe's pulse in time: its Gaussian band (F_PROBE, BW at -6 dB) is
+    g(s) = exp(-s^2 / (2 sigma^2)) cos(2 pi f0 s), sigma = 1/(2 pi sigma_f),
+    sigma_f = BW f0 / (2 sqrt(2 ln 2)). Its crests and troughs (s, g) where
+    |g| >= EXT_MIN: the fronts the page draws."""
+    from scipy.optimize import brentq
+    sf = BW * F_PROBE / (2 * np.sqrt(2 * np.log(2)))
+    st = 1 / (2 * np.pi * sf)
+    g = lambda s: np.exp(-s ** 2 / (2 * st ** 2)) * np.cos(2 * np.pi * F_PROBE * s)
+    dg = lambda s: -np.exp(-s ** 2 / (2 * st ** 2)) * (s / st ** 2 * np.cos(2 * np.pi * F_PROBE * s)
+                                                       + 2 * np.pi * F_PROBE * np.sin(2 * np.pi * F_PROBE * s))
+    s = (np.arange(-4000, 4001) + 0.5) * (5 * st / 4000)          # no grid point on s = 0
+    d = dg(s)
+    ext = [brentq(dg, s[i], s[i + 1], xtol=1e-18) for i in range(len(s) - 1) if d[i] * d[i + 1] < 0]
+    ext = [(e, g(e)) for e in ext if abs(g(e)) >= EXT_MIN]
+    return st, ext
+
+
+# ------------------------------------------------------------------ (a) the pace
+def schedule(n, lit, t_life):
+    """When each probe position begins (s, from the first step), its glide, and
+    the moment its pulse leaves (-1 where the probe does not dwell). It dwells,
+    and sends its pulse, at the first N_START positions and at the three
+    positions round the middle of each flaw's lit range; beside those the
+    steps are slow (D_NEAR, shrinking Q_NEAR times a step), and in between they
+    run at R_FAST. Only the pace is designed; which positions exist and what
+    each covers is the model."""
+    mids = [int(round(np.mean(l))) for l in lit]
+    dwell_at = sorted(set(range(N_START)) | {m + d for m in mids for d in (-1, 0, 1)})
+    D = VIS + FIRE + t_life + PAUSE
+    idx = np.arange(n)
+    dist = np.min(np.abs(idx[:, None] - np.array(dwell_at)[None, :]), axis=1)
+    dwell = np.where(dist == 0, D, np.maximum(1 / R_FAST, D_NEAR * Q_NEAR ** np.maximum(dist - 1, 0)))
+    tstep = np.concatenate([[0.0], np.cumsum(dwell)[:-1]])
+    vis = np.minimum(VIS, 0.7 * dwell)
+    vis[0] = 0.0
+    tfire = np.where(dist == 0, tstep + vis + FIRE, -1.0)
+    tfire[0] = 0.30                                    # the first position: the probe is there from the start
+    return tstep, vis, tfire, float(np.cumsum(dwell)[-1]), dwell_at, D
+
+
+def r5(a):
+    """Rounded as build_html rounds what the page gets (5 places)."""
+    return np.round(np.asarray(a, float), 5)
+
+
+def fronts_a(ip, tau, bz, bw, ext, cl, flaws, index_mm, thick_mm):
+    """The port of the page's frontsA(): [kind (0 down, 1 flaw echo, 2 back wall
+    echo), depth (mm), x from, x to (m), |g|] for the pulse at position ip,
+    tau us after its centre left the face."""
+    def halfw(z):
+        if z <= bz[0]:
+            return bw[0]
+        if z >= bz[-1]:
+            return bw[-1]
+        p = (z - bz[0]) / (bz[1] - bz[0])
+        i = min(len(bz) - 2, int(np.floor(p)))
+        return bw[i] + (bw[i + 1] - bw[i]) * (p - i)
+
+    def minus(spans, fl):
+        s = spans
+        for f in fl:
+            n = []
+            for a, b in s:
+                if f["x1"] <= a or f["x0"] >= b:
+                    n.append([a, b])
+                else:
+                    if f["x0"] > a:
+                        n.append([a, f["x0"]])
+                    if f["x1"] < b:
+                        n.append([f["x1"], b])
+            s = n
+        return s
+
+    xs = (ip + 1) * index_mm / 1000
+    fl = [dict(x0=f["x"] - f["L_mm"] / 2000, x1=f["x"] + f["L_mm"] / 2000, zt=f["z_mm"] - f["h_mm"] / 2) for f in flaws]
+    span = lambda z: [xs - halfw(z) / 1000, xs + halfw(z) / 1000]
+    out = []
+    for se, ge in ext:
+        zd = cl * (tau - se)
+        A = abs(ge)
+        if zd < 0:
+            continue
+        if zd <= thick_mm:
+            for a, b in minus([span(zd)], [f for f in fl if f["zt"] < zd]):
+                out.append([0, zd, a, b, A])
+        for f in fl:
+            zr = 2 * f["zt"] - zd
+            if zd > f["zt"] and zr >= 0:
+                a, b = span(zr)
+                a2, b2 = max(a, f["x0"]), min(b, f["x1"])
+                if b2 > a2:
+                    out.append([1, zr, a2, b2, A])
+        zb = 2 * thick_mm - zd
+        if zd > thick_mm and zb >= 0:
+            for a, b in minus([span(zb)], fl):
+                out.append([2, zb, a, b, A])
+    return out
 
 
 JS = r"""
 const G = DATA;
 G.tc = G.tc_us * 1e-6; G.tmax = G.tmax_us * 1e-6; G.dt_tr = G.dt_tr_us * 1e-6;
-const T0 = 0.15, SLOW = G.slow, M0 = -20e-6, S = .28;
+const T0 = 0.15, SLOW = G.slow, SLOWA = G.slow_a, M0 = -20e-6, S = .28;
 const PX0 = 90, PPM = G.ppm, PH = G.ph, ZS = PH / G.thick_mm;   // ZS: drawing units per mm of depth
 const XU = x => PX0 + x * PPM;
-const PYA = 78, YB = 338, PYB = YB + 100;                                     // the two strips
-const ACC = C.accent, FLAW = '#781E2C', LBL = 15;
+const PYA = 76, YB = 378, PYB = YB + 104;                                     // the two strips
+const ACC = C.accent, FLAW = '#781E2C', LBL = 16, TICK = 16, HEAD = 17;      // type: labels, ticks, headings
 const STOPS = ['#043052', '#2E6A9E', '#9CBBD6', null, '#DEABAB', '#B03F4D', '#651020'];
 const lutWith = mid => _ramp(STOPS.map(s => _hex(s || mid)));
 const LUT_STEEL = lutWith(C.steel), LUT_DONE = lutWith(C.mist);
-const BLUT = _ramp(['#E3EBF2', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+/* the beam under the probe, pale (steel to mist): the pulse's fronts are drawn on it */
+const BLUT = _ramp(['#E3EBF2', '#D3DFEA', '#BFD1E1', '#A9C3DA'].map(_hex));
 
 /* ------------------------------------------------------------ data */
 const COMP = { w: b64f32(G.c.w), k: b64f32(G.c.k), a: b64f32(G.c.a), p: b64f32(G.c.p) };
@@ -167,7 +277,14 @@ const TRACE = b64f32(G.trace);
 const NX = G.nx, DXM = G.dx, U = new Float64Array(NX);
 const I1 = Math.round(G.flaws[0].x / DXM), I2 = Math.round(G.flaws[1].x / DXM);
 const BEAM = b64i8(G.beam.a), BNX = G.beam.nx, BNZ = G.beam.nz;
+const BZ = G.beam.z_mm, BW = G.beam.w_mm;
 const XP = i => (i + 1) * G.index_mm / 1000;                  // probe position i (m): the first flush with the end
+function halfw(z) {                                            // the -6 dB zone's half width (mm) at depth z (mm)
+  if (z <= BZ[0]) return BW[0];
+  if (z >= BZ[BZ.length - 1]) return BW[BW.length - 1];
+  const p = (z - BZ[0]) / (BZ[1] - BZ[0]), i = Math.min(BZ.length - 2, Math.floor(p));
+  return BW[i] + (BW[i + 1] - BW[i]) * (p - i);
+}
 
 /* the S0 burst along the plate at model time tm: incident (passing each flaw
    with T), the echo from flaw 1 (R) and from flaw 2 (T R, then T again past
@@ -194,10 +311,50 @@ function fieldAt(tm) {
   return U;
 }
 
+/* the bulk probe's pulse at position ip, tau us after its centre left the
+   face: its crests and troughs (DATA ext: s, g) as plane fronts [kind, depth
+   (mm), x from, x to (m), |g|], each as wide as the -6 dB zone at its depth,
+   running straight down at c_L; a column of the beam over a lamination turns
+   back at its top (kind 1, the echo), every other column at the back wall
+   (kind 2); up again to the probe */
+function frontsA(ip, tau) {
+  const xs = XP(ip), D = G.thick_mm, c = G.cl, out = [];
+  const fl = G.flaws.map(f => ({ x0: f.x - f.L_mm / 2000, x1: f.x + f.L_mm / 2000, zt: f.z_mm - f.h_mm / 2 }));
+  const span = z => [xs - halfw(z) / 1000, xs + halfw(z) / 1000];
+  const minus = (spans, cut) => {
+    let s = spans;
+    for (const f of cut) {
+      const n = [];
+      for (const [a, b] of s) {
+        if (f.x1 <= a || f.x0 >= b) n.push([a, b]);
+        else { if (f.x0 > a) n.push([a, f.x0]); if (f.x1 < b) n.push([f.x1, b]); }
+      }
+      s = n;
+    }
+    return s;
+  };
+  for (const [se, ge] of G.ext) {
+    const zd = c * (tau - se), A = Math.abs(ge);
+    if (zd < 0) continue;
+    if (zd <= D) for (const [a, b] of minus([span(zd)], fl.filter(f => f.zt < zd))) out.push([0, zd, a, b, A]);
+    for (const f of fl) {
+      const zr = 2 * f.zt - zd;
+      if (zd > f.zt && zr >= 0) {
+        const [a, b] = span(zr), a2 = Math.max(a, f.x0), b2 = Math.min(b, f.x1);
+        if (b2 > a2) out.push([1, zr, a2, b2, A]);
+      }
+    }
+    const zb = 2 * D - zd;
+    if (zd > D && zb >= 0) for (const [a, b] of minus([span(zb)], fl)) out.push([2, zb, a, b, A]);
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------ the clock
    One loop: the guided wave shot (model time, slowed SLOW times) and the bulk
-   probe's scan start together; the scan's pace is designed (slow first steps,
-   fast, easing while a flaw is under the probe), the positions are the model's */
+   probe's scan start together; the scan's pace is designed (dwelling, with a
+   pulse, at its first positions and over each flaw; brisk in between), the
+   positions are the model's */
 const SHOT0 = .3, SHOT1 = SHOT0 + (G.shot_end_us * 1e-6 - M0) * SLOW;
 const SCAN0 = .3, SCAN1 = SCAN0 + G.tscan, HOLD = 2.4, FADE = .8;
 const PER = SCAN1 + HOLD + FADE;
@@ -214,8 +371,15 @@ function probeIndex(st) {                    // the position the probe is at (or
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] > s) hi = m; else lo = m; }
   return lo;
 }
+/* the pulse where the probe dwells: us since its centre left the face (its
+   leading crest leaves at the position's firing time); null elsewhere */
+function tauAt(st, ip) {
+  if (ip < 0 || st.loop < 0 || G.tfire[ip] < 0) return null;
+  return G.ext[0][0] + (st.tau - SCAN0 - G.tfire[ip]) * 1e6 / SLOWA;
+}
+const alive = tau => tau !== null && tau >= G.ext[0][0] && tau <= G.tend_us;
 const fadeOut = st => st.loop < 0 ? 1 : 1 - seg(st.b + SCAN1 + HOLD, FADE);
-const POSTER_T = T0 + PER + SCAN0 + G.poster_scan;
+const POSTER_T = T0 + SCAN0 + G.poster_scan;
 
 /* ------------------------------------------------------------ helpers */
 function offscreen(w, h) { const cvs = document.createElement('canvas'); cvs.width = w; cvs.height = h; const g = cvs.getContext('2d'); return { cvs, g, img: g.createImageData(w, h) }; }
@@ -244,9 +408,9 @@ function lengthAxis(py, t0) {
   for (const v of [0, .5, 1, 1.5, 2]) {
     const a = seg(t0 + .08 + v * .1, .25);
     line([[XU(v), ya], [XU(v), ya - 5]], { color: C.ink, width: 1.1, alpha: a });
-    math(fmt(v), XU(v), ya + 19, { size: 15, align: 'center', alpha: a });
+    keepMath(fmt(v), XU(v), ya + 21, { size: TICK, align: 'center', alpha: a });
   }
-  math('x\\ (\\rm{m})', XU(2) + 36, ya + 19, { size: 16, align: 'left', alpha: seg(t0 + .3, .25) });
+  keepMath('x\\ (\\rm{m})', XU(2) + 34, ya + 21, { size: 17, alpha: seg(t0 + .3, .25) });
 }
 /* a flaw (a lamination), drawn in the strip: dashed until found, filled after */
 function flawMark(x, py, zmm, state, alpha, glow) {
@@ -259,9 +423,9 @@ function flawMark(x, py, zmm, state, alpha, glow) {
   ctx.restore();
 }
 function mix(a, b, s) { const A = _hex(a), B = _hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], s))).join(',')})`; }
-function swatchText(x, y, s, o = {}) { text(s, x, y, { size: LBL, color: C.body, ...o }); }
-/* labels the time cursor passes behind: their ink boxes, kept as they are
-   drawn; gapLine() is a vertical line broken 3 units clear of each */
+function swatchText(x, y, s, o = {}) { text(s, x, y, { size: 17, color: C.body, ...o }); }
+/* labels a line passes behind: their ink boxes, kept as they are drawn;
+   gapLine() (vertical) and gapSeg() (any) are lines broken 3 units clear of each */
 const KEEP = [];
 function keepText(s, x, y, o) {
   text(s, x, y, o);
@@ -269,15 +433,32 @@ function keepText(s, x, y, o) {
   ctx.save(); ctx.font = font(o); ctx.textAlign = o.align || 'left'; const q = ctx.measureText(s); ctx.restore();
   KEEP.push([x - q.actualBoundingBoxLeft, y - q.actualBoundingBoxAscent, x + q.actualBoundingBoxRight, y + q.actualBoundingBoxDescent]);
 }
-function keepMath(s, x, y, o) {                   // left aligned math; its box from its width and size
-  const w = math(s, x, y, o);
-  if (o.alpha > 0) KEEP.push([x - 1, y - o.size * .95, x + w + 1, y + o.size * .45]);
+function keepMath(s, x, y, o) {                   // math; its box from its width and size
+  const w = math(s, x, y, o), x0 = o.align === 'center' ? x - w / 2 : o.align === 'right' ? x - w : x;
+  if (o.alpha > 0) KEEP.push([x0 - 1, y - o.size * .95, x0 + w + 1, y + o.size * .45]);
 }
 function gapLine(x, y0, y1, o) {
   const cuts = KEEP.filter(b => x > b[0] - 3 && x < b[2] + 3).map(b => [b[1] - 3, b[3] + 3]).sort((p, q) => p[0] - q[0]);
   let y = y0;
   for (const [p, q] of cuts) { if (p > y + .5) line([[x, y], [x, Math.min(p, y1)]], o); y = Math.max(y, q); if (y >= y1) return; }
   if (y1 > y + .5) line([[x, y], [x, y1]], o);
+}
+function gapSeg(p, q, o) {
+  const dx = q[0] - p[0], dy = q[1] - p[1], cuts = [];
+  for (const b of KEEP) {
+    let t0 = 0, t1 = 1, ok = true;
+    for (const [pp, qq] of [[-dx, p[0] - (b[0] - 3)], [dx, b[2] + 3 - p[0]], [-dy, p[1] - (b[1] - 3)], [dy, b[3] + 3 - p[1]]]) {
+      if (pp === 0) { if (qq < 0) { ok = false; break; } continue; }
+      const r = qq / pp;
+      if (pp < 0) { if (r > t1) { ok = false; break; } if (r > t0) t0 = r; } else { if (r < t0) { ok = false; break; } if (r < t1) t1 = r; }
+    }
+    if (ok && t1 > t0) cuts.push([t0, t1]);
+  }
+  cuts.sort((u, v) => u[0] - v[0]);
+  const P = u => [p[0] + dx * u, p[1] + dy * u];
+  let s = 0;
+  for (const [a, b] of cuts) { if (a > s) line([P(s), P(a)], o); s = Math.max(s, b); }
+  if (s < 1) line([P(s), q], o);
 }
 /* the engine's dim(), its knockout as deep as the label's ink and opaque from
    the first frame, so the line never shows through the label while both fade
@@ -295,16 +476,15 @@ function dimk(x1, x2, y, label, o) {
 /* ------------------------------------------------------------ (a) bulk wave */
 function panelA(st) {
   panel('a', 20, 34, { alpha: seg(0, .25) });
-  text('bulk wave testing', 58, 34, { size: 16, color: C.body, alpha: settle(.05, S) });
-  const fo = fadeOut(st), ip = probeIndex(st);
+  text('bulk wave testing', 58, 34, { size: HEAD, color: C.body, alpha: settle(.05, S) });
+  const fo = fadeOut(st), ip = probeIndex(st), tau = tauAt(st, ip);
   const drawOutline = plate(PYA, seg(0, .4), seg(.05, .25));
   // coverage: every zone so far (index below the narrowest zone: they join up)
   let xs = null;
   if (ip >= 0) {
-    const i0 = ip, tsI = st.b + SCAN0 + G.tstep[i0], nxt = G.tstep[i0 + 1] ?? G.tstep[i0] + .3;
-    const vis = Math.min(.32, .7 * (nxt - G.tstep[i0]));
-    const g = i0 === 0 ? 1 : settle(tsI, vis);
-    xs = i0 === 0 ? XP(0) : lerp(XP(i0 - 1), XP(i0), g);
+    const tsI = st.b + SCAN0 + G.tstep[ip];
+    const g = ip === 0 ? 1 : settle(tsI, G.vis[ip]);
+    xs = ip === 0 ? XP(0) : lerp(XP(ip - 1), XP(ip), g);
     const edge = xs + G.wmid_mm / 2000;
     ctx.save(); ctx.globalAlpha *= fo; ctx.fillStyle = C.mist;
     ctx.fillRect(XU(0), PYA, XU(Math.min(edge, G.span)) - XU(0), PH); ctx.restore();
@@ -318,46 +498,61 @@ function panelA(st) {
     else if (ip > a1) glow = 1 - seg(st.b + SCAN0 + G.tstep[a1 + 1], .5);
     flawMark(f.x, PYA, f.z_mm, state * fo, settle(.2 + .05 * n, S), glow * fo);
   });
-  // the probe and its insonified zone (-6 dB, pulse echo) beneath it
+  // the probe's insonified zone (-6 dB, pulse echo) beneath it; where it
+  // dwells, the zone fills as its pulse goes down
   if (xs !== null) {
     const zw = G.beam.w_mm, zz = G.beam.z_mm, pts = [];
     for (let q = 0; q < zz.length; q++) pts.push([XU(xs + zw[q] / 1000), PYA + zz[q] * ZS]);
     for (let q = zz.length - 1; q >= 0; q--) pts.push([XU(xs - zw[q] / 1000), PYA + zz[q] * ZS]);
-    const za = seg(st.b + SCAN0, .3) * fo;
-    ctx.save(); ctx.globalAlpha *= .9 * za; ctx.fillStyle = C.blue; ctx.beginPath();
-    pts.forEach(([x, y], q) => q ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); ctx.restore();
+    // (a lamination wider than the beam stops it: below is its shadow)
+    const zlim = G.flaws.reduce((m, f) => {
+      const zt = f.z_mm - f.h_mm / 2, w = halfw(zt) / 1000;
+      return f.x - f.L_mm / 2000 <= XP(ip) - w && f.x + f.L_mm / 2000 >= XP(ip) + w ? Math.min(m, zt) : m;
+    }, G.thick_mm);
+    const za = seg(st.b + SCAN0, .3) * fo, zg = tau === null ? G.thick_mm : clamp(G.cl * (tau - G.ext[0][0]), 0, zlim);
+    if (zg > 0) {
+      ctx.save(); ctx.globalAlpha *= .9 * za; ctx.beginPath(); ctx.rect(XU(xs) - 20, PYA, 40, zg * ZS); ctx.clip();
+      ctx.fillStyle = C.blue; ctx.beginPath();
+      pts.forEach(([x, y], q) => q ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
   }
   drawOutline();
+  lengthAxis(PYA, .05);
   if (xs !== null) {
     const pa = seg(st.b + SCAN0 - .3, .3) * fo, pw = G.probe_mm / 1000 * PPM;
     ctx.save(); ctx.globalAlpha *= pa; ctx.fillStyle = C.navy; ctx.fillRect(XU(xs) - pw / 2, PYA - 11, pw, 11); ctx.restore();
-    text('probe', XU(xs), PYA - 17, { size: 14, color: C.body, align: 'center', alpha: pa });
-    spy(st, xs, pa);
+    text('probe', XU(xs), PYA - 17, { size: 17, color: C.body, align: 'center', alpha: pa });
+    spy(st, xs, pa, ip, tau);
   }
-  lengthAxis(PYA, .05);
   // counters: positions, coverage
   const ca = settle(.3, S);
   const npos = ip + 1, cov = ip < 0 ? 0 : Math.min(100, (XP(ip) + G.wmid_mm / 2000) / G.span * 100);
   const cw = covLine(950, 34, cov, ca * fo + (ip < 0 ? ca : 0) * (1 - fo));
-  text(`probe position ${Math.max(0, npos)} of ${G.npos}`, 950 - cw - 40, 34, { size: 16, color: C.body, align: 'right', alpha: ca });
-  legend(92, 178, seg(.5, .3));
-  text(G.params_a, 92, 272, { size: 14, color: C.muted, alpha: seg(.6, .3) });
+  text(`probe position ${Math.max(0, npos)} of ${G.npos}`, 950 - cw - 40, 34, { size: HEAD, color: C.body, align: 'right', alpha: ca });
+  legend(92, 170, seg(.5, .3));
+  text(G.params_a, 92, 272, { size: 15, color: C.muted, alpha: seg(.6, .3) });
+  // the pulse's slowing, and its clock while it runs
+  math('\\rm{time slowed }' + G.slowtex_a, 92, 306, { size: 15, color: C.muted, alpha: seg(.5, .3) });
+  if (alive(tau)) {
+    const ta = fo * clamp((tau - G.ext[0][0]) / .08) * clamp((G.tend_us - tau) / .08);
+    math(`t = ${Math.max(0, tau).toFixed(2)}\\,\\rm{µs}`, 464, 306, { size: HEAD, align: 'right', alpha: ta });
+  }
 }
 function covLine(xr, y, pct, a) {
-  const s = `coverage ${Math.round(pct)} %`;
-  const w = text(s, xr, y, { size: 16, color: C.body, align: 'right', alpha: a });
-  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(xr - w - 24, y - 11, 16, 11); ctx.restore();
-  line([[xr - w - 24, y - 11], [xr - w - 8, y - 11], [xr - w - 8, y], [xr - w - 24, y], [xr - w - 24, y - 11]], { color: C.ink, width: .8, alpha: a });
-  return w + 24;
+  const s = `coverage ${Math.round(pct)}%`;
+  const w = text(s, xr, y, { size: HEAD, color: C.body, align: 'right', alpha: a });
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(xr - w - 25, y - 12, 17, 12); ctx.restore();
+  line([[xr - w - 25, y - 12], [xr - w - 8, y - 12], [xr - w - 8, y], [xr - w - 25, y], [xr - w - 25, y - 12]], { color: C.ink, width: .8, alpha: a });
+  return w + 25;
 }
 function legend(x, y, a) {
   if (a <= 0) return;
-  const w = 360, h = 70;
+  const w = 380, h = 76;
   ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); ctx.restore();
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]], { color: C.ink, width: 1, alpha: a });
-  const r1 = y + 26, r2 = y + 54, c1 = x + 14, c2 = x + 170;
-  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(c1, r1 - 11, 22, 12);
-  ctx.fillStyle = C.blue; ctx.globalAlpha *= .9; ctx.fillRect(c1 + 8, r2 - 13, 6, 16); ctx.restore();
+  const r1 = y + 29, r2 = y + 59, c1 = x + 14, c2 = x + 184;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.mist; ctx.fillRect(c1, r1 - 12, 22, 13);
+  ctx.fillStyle = C.blue; ctx.globalAlpha *= .9; ctx.fillRect(c1 + 8, r2 - 14, 6, 17); ctx.restore();
   swatchText(c1 + 32, r1, 'inspected', { alpha: a });
   swatchText(c1 + 32, r2, '\u22126 dB zone', { alpha: a });
   ctx.save(); ctx.globalAlpha *= a; ctx.beginPath(); ctx.ellipse(c2 + 10, r1 - 5, 7, 3.5, 0, 0, 2 * Math.PI); ctx.fillStyle = ACC; ctx.fill();
@@ -366,32 +561,32 @@ function legend(x, y, a) {
   swatchText(c2 + 26, r1, 'flaw found', { alpha: a });
   swatchText(c2 + 26, r2, 'flaw not yet found', { alpha: a });
 }
-/* the beam under the probe, to scale: the computed pulsed field and its -6 dB
-   pulse echo zone, in a window 40 mm wide moving with the probe */
-const SPY = { x: 530, y: 188, w: 360, mm: 9 };
-function spy(st, xs, a0) {
+/* the plate under the probe, to scale: the computed pulsed beam (pale) and
+   its -6 dB pulse echo zone, in a window 36 mm wide moving with the probe;
+   where the probe dwells, its pulse runs down and back in it */
+const SPY = { x: 520, y: 182, w: 432, mm: 12 };
+function spy(st, xs, a0, ip, tau) {
   const a = a0 * seg(.45, .3);
   if (a <= 0) return;
-  const hw = SPY.w / 2 / SPY.mm, h = G.thick_mm * SPY.mm, cx = SPY.x + SPY.w / 2;
+  const hw = SPY.w / 2 / SPY.mm, h = G.thick_mm * SPY.mm, cx = SPY.x + SPY.w / 2, xr = SPY.x + SPY.w;
   // the window: centred on the probe, but it stops at the plate's free end
   const wc = Math.max(xs, hw / 1000), X = x => cx + (x - wc) * 1000 * SPY.mm, px = X(xs);
   const x0 = Math.max(SPY.x, X(0));                               // left edge of steel in the window
   const wx0 = XU(wc - hw / 1000), wx1 = XU(wc + hw / 1000);
   line([[wx0, PYA - 2], [wx1, PYA - 2], [wx1, PYA + PH + 2], [wx0, PYA + PH + 2], [wx0, PYA - 2]], { color: C.guide, width: 1, alpha: a });
-  line([[wx0, PYA + PH + 2], [SPY.x, SPY.y - 14]], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
-  line([[wx1, PYA + PH + 2], [SPY.x + SPY.w, SPY.y - 14]], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
-  // the pulsed field under the probe (steel to navy), then its -6 dB zone
-  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.steel; ctx.fillRect(x0, SPY.y, SPY.x + SPY.w - x0, h);
+  gapSeg([wx0, PYA + PH + 2], [SPY.x, SPY.y - 18], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
+  gapSeg([wx1, PYA + PH + 2], [xr, SPY.y - 18], { color: C.guide, width: .9, dash: [4, 3], alpha: a });
+  // the pulsed field under the probe (steel to mist), then its -6 dB zone
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.steel; ctx.fillRect(x0, SPY.y, xr - x0, h);
   ctx.imageSmoothingEnabled = true;
   const bx0 = px + G.beam.x0_mm * SPY.mm, bw = BNX * G.beam.dx_mm * SPY.mm;
-  ctx.beginPath(); ctx.rect(x0, SPY.y, SPY.x + SPY.w - x0, h); ctx.clip();
+  ctx.beginPath(); ctx.rect(x0, SPY.y, xr - x0, h); ctx.clip();
   ctx.drawImage(BIM.cvs, bx0 - G.beam.dx_mm * SPY.mm / 2, SPY.y, bw, h + G.beam.dx_mm * SPY.mm);
   ctx.restore();
-  const zw = G.beam.w_mm, zz = G.beam.z_mm;
-  for (const sg of [-1, 1]) line(zz.map((z, q) => [px + sg * zw[q] * SPY.mm, SPY.y + z * SPY.mm]), { color: C.navy, width: 1.2, dash: [5, 3], alpha: a });
-  math('\\rm{\u22126 dB}', px + zw[Math.round(zz.length * .45)] * SPY.mm + 6, SPY.y + h * .5, { size: 14, color: C.navy, alpha: a });
+  for (const sg of [-1, 1]) line(BZ.map((z, q) => [px + sg * BW[q] * SPY.mm, SPY.y + z * SPY.mm]), { color: C.navy, width: 1.2, dash: [5, 3], alpha: a });
+  const zl = 8.7;
+  math('\\rm{\u22126 dB}', px + halfw(zl) * SPY.mm + 30, SPY.y + zl * SPY.mm, { size: LBL, color: C.navy, alpha: a });
   // flaws passing through the window, at their true size and depth
-  const ip = probeIndex(st);
   G.flaws.forEach((f, n) => {
     const fx = X(f.x);
     if (Math.abs(f.x - wc) * 1000 > hw + f.L_mm / 2) return;
@@ -401,33 +596,53 @@ function spy(st, xs, a0) {
     if (found) { ctx.fillStyle = lit ? ACC : mix(C.steel, ACC, .75); ctx.fill(); }
     ctx.strokeStyle = FLAW; ctx.lineWidth = lit ? 1.8 : 1.1; if (!found) ctx.setLineDash([3, 2.5]); ctx.stroke(); ctx.restore();
   });
+  // the pulse: its crests and troughs as plane fronts, down (navy), back from a
+  // flaw (crimson) or from the back wall (blue)
+  if (alive(tau)) {
+    const fa = a * clamp((G.tend_us - tau) / .08);
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, SPY.y, xr - x0, h); ctx.clip();
+    const fr = frontsA(ip, tau), col = k => k === 1 ? ACC : k === 2 ? C.blue : C.navy;
+    for (const [kind, z, xa, xb, A] of fr) {
+      const y = SPY.y + z * SPY.mm;
+      line([[X(xa), y], [X(xb), y]], { color: col(kind), width: 2.4, alpha: fa * A });
+    }
+    // which way each packet runs: an arrow beside its middle crest, right of the zone
+    const done = new Set();
+    for (const [kind, z] of fr.filter(f => f[4] === 1)) {
+      if (done.has(kind)) continue;
+      done.add(kind);
+      const y = SPY.y + z * SPY.mm, xa_ = px + halfw(z) * SPY.mm + 13, dir = kind === 0 ? 1 : -1;
+      arrow(xa_, y - 12 * dir, xa_, y + 12 * dir, { color: col(kind), width: 1.7, head: 8, alpha: fa });
+    }
+    ctx.restore();
+  }
   // the probe positions in the window: visited ones navy, the next ones grey;
   // shown while the steps are slow enough to follow (at speed they would strobe)
   if (ip >= 0) {
     const iv = (G.tstep[ip + 1] ?? G.tstep[ip] + 1) - G.tstep[ip], ta = a * clamp((iv - .12) / .2);
     if (ta > 0) for (let j = Math.max(0, ip - 5); j <= Math.min(G.npos - 1, ip + 5); j++) {
       const xx = X(XP(j));
-      if (xx < SPY.x + 2 || xx > SPY.x + SPY.w - 2) continue;
+      if (xx < SPY.x + 2 || xx > xr - 2) continue;
       line([[xx, SPY.y], [xx, SPY.y + 7]], { color: j <= ip ? C.navy : C.guide, width: 1.4, alpha: ta });
     }
   }
   // the plate's faces (its free end, when in the window), the probe (10 mm), a scale bar
-  line([[x0, SPY.y], [SPY.x + SPY.w, SPY.y]], { color: C.ink, width: 1.6, alpha: a });
-  line([[x0, SPY.y + h], [SPY.x + SPY.w, SPY.y + h]], { color: C.ink, width: 2.4, alpha: a });
+  line([[x0, SPY.y], [xr, SPY.y]], { color: C.ink, width: 1.6, alpha: a });
+  line([[x0, SPY.y + h], [xr, SPY.y + h]], { color: C.ink, width: 2.4, alpha: a });
   if (X(0) >= SPY.x - .5) line([[X(0), SPY.y], [X(0), SPY.y + h]], { color: C.ink, width: 1.6, alpha: a });
   ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.navy; ctx.fillRect(px - G.probe_mm / 2 * SPY.mm, SPY.y - 14, G.probe_mm * SPY.mm, 14); ctx.restore();
-  const sb = SPY.x + SPY.w - 5 * SPY.mm - 4, sy = SPY.y + h + 16;
+  const sb = xr - 5 * SPY.mm, sy = SPY.y + h + 16;
   line([[sb, sy], [sb + 5 * SPY.mm, sy]], { color: C.ink, width: 1.4, alpha: a });
   line([[sb, sy - 4], [sb, sy + 4]], { color: C.ink, width: 1, alpha: a }); line([[sb + 5 * SPY.mm, sy - 4], [sb + 5 * SPY.mm, sy + 4]], { color: C.ink, width: 1, alpha: a });
-  text('5 mm', sb + 2.5 * SPY.mm, sy + 17, { size: 14, color: C.body, align: 'center', alpha: a });
-  text('beam under the probe, to scale', SPY.x, SPY.y + h + 21, { size: 14, color: C.muted, alpha: a });
+  text('5 mm', sb - 10, sy + 6, { size: LBL, color: C.body, align: 'right', alpha: a });
+  text('beam under the probe, to scale', SPY.x, SPY.y + h + 24, { size: 15, color: C.muted, alpha: a });
 }
 
 /* ------------------------------------------------------------ (b) guided wave */
 function panelB(st) {
   const yh = YB;
   panel('b', 20, yh, { alpha: seg(.05, .25) });
-  text('guided wave testing', 58, yh, { size: 16, color: C.body, alpha: settle(.1, S) });
+  text('guided wave testing', 58, yh, { size: HEAD, color: C.body, alpha: settle(.1, S) });
   const fo = fadeOut(st);
   const drawOutline = plate(PYB, seg(.05, .4), seg(.1, .25));
   let tm = null, front = 0;
@@ -463,37 +678,38 @@ function panelB(st) {
   ctx.save(); ctx.globalAlpha *= tIn; ctx.setLineDash([3, 2.5]); ctx.strokeStyle = C.navy; ctx.lineWidth = 1.3;
   ctx.strokeRect(XU(G.span) - 12, PYB - 13 - 8 * (1 - tIn), 12, 13); ctx.restore();
   const lIn = settle(.25, S);
-  text('transducer', XU(0) - 4, PYB - 46 - 6 * (1 - lIn), { size: LBL, color: C.body, alpha: lIn });
-  text('next sensor position', XU(G.span), PYB - 46 - 6 * (1 - lIn), { size: LBL, color: C.body, align: 'right', alpha: lIn });
+  text('transducer', XU(0) - 4, PYB - 48 - 6 * (1 - lIn), { size: 17, color: C.body, alpha: lIn });
+  text('next sensor position', XU(G.span), PYB - 48 - 6 * (1 - lIn), { size: 17, color: C.body, align: 'right', alpha: lIn });
   // between the two sensors, what lies between them: the span the one shot inspects, dimensioned
-  dimk(XU(0), XU(G.span), PYB - 24, G.spanlab, { size: LBL, color: C.ink, alpha: settle(.3, S) });
+  dimk(XU(0), XU(G.span), PYB - 25, G.spanlab, { size: 17, color: C.ink, alpha: settle(.3, S) });
   lengthAxis(PYB, .1);
   // readouts
   const ca = settle(.3, S);
   const cw = covLine(950, yh, front / G.span * 100, ca * (tm === null ? 1 : fo));
-  text('one transducer position', 950 - cw - 40, yh, { size: 16, color: C.body, align: 'right', alpha: ca });
-  if (tm !== null) math(`t = ${Math.max(0, Math.round(tm * 1e6))}\\,\\rm{µs}`, 58, yh + 26, { size: LBL, alpha: fo * seg(st.b + SHOT0 - .3, .3) });
-  math('\\rm{time slowed }' + G.slowtex, 146, yh + 26, { size: 14, color: C.muted, alpha: seg(.5, .3) });
+  text('one transducer position', 950 - cw - 40, yh, { size: HEAD, color: C.body, align: 'right', alpha: ca });
+  if (tm !== null) math(`t = ${Math.max(0, Math.round(tm * 1e6))}\\,\\rm{µs}`, 58, yh + 30, { size: HEAD, alpha: fo * seg(st.b + SHOT0 - .3, .3) });
+  math('\\rm{time slowed }' + G.slowtex, 160, yh + 30, { size: 15, color: C.muted, alpha: seg(.5, .3) });
   ascanB(st, tm, fo);
 }
 /* the received trace, on a time axis laid under the plate so that t maps to
    the distance c_g (t - t_c)/2: each echo sits under its flaw */
 function ascanB(st, tm, fo) {
-  const y0 = PYB + 96, h = 88, tmaxu = G.tmax * 1e6;
+  const y0 = PYB + 104, h = 92, tmaxu = G.tmax * 1e6;
   const XT = tu => XU(G.cg * (tu * 1e-6 - G.tc) / 2);
   const ax = XT(0), aw = XT(tmaxu) - XT(0);
   const A = axes({ x: ax, y: y0, w: aw, h, xlim: [0, tmaxu], ylim: [-1.15, 1.15], xticks: [0, 100, 200, 300, 400, 500, 600, 700],
-                   yticks: [-1, 0, 1], xlabel: 't\\ (\\rm{µs})', ylabel: 'u/u_0', ylabelGap: 34, progress: seg(.1, .4) });
+                   yticks: [-1, 0, 1], xlabel: 't\\ (\\rm{µs})', ylabel: 'u/u_0', ylabelGap: 38, progress: seg(.1, .4),
+                   tickSize: TICK, labelSize: 17 });
   A.inside(() => line([[A.X(0), A.Y(0)], [A.X(tmaxu), A.Y(0)]], { color: C.rule, width: 1 }));
   // guides from each flaw down to where its echo is expected, burst centre + 2x/c_g
   const la = seg(.55, .3);
   G.flaws.forEach((f, n) => {
     const te = (G.tc + 2 * f.x / G.cg) * 1e6, x = A.X(te);
-    line([[XU(f.x), PYB + PH + 22], [XU(f.x), y0]], { color: C.guide, width: 1, dash: [5, 4], alpha: la * .8 });
+    line([[XU(f.x), PYB + PH + 23], [XU(f.x), y0]], { color: C.guide, width: 1, dash: [5, 4], alpha: la * .8 });
     A.inside(() => line([[x, y0], [x, y0 + h]], { color: C.guide, width: 1, dash: [5, 4], alpha: la }));
-    keepText(`flaw ${n + 1} echo`, x + 6, y0 + 16, { size: 14, color: ACC, alpha: la });
+    keepText(`flaw ${n + 1} echo`, x + 6, y0 + 18, { size: LBL, color: ACC, alpha: la });
   });
-  keepText('initial pulse', A.X(64), A.Y(-.6), { size: 14, color: C.body, alpha: la });
+  keepText('initial pulse', A.X(62), A.Y(-.62), { size: LBL, color: C.body, alpha: la });
   if (tm !== null && tm > 0) {
     const n = TRACE.length, dtu = G.dt_tr * 1e6, k1 = Math.min(n, Math.floor(tm * 1e6 / dtu) + 1);
     const cuts = [0];
@@ -508,7 +724,7 @@ function ascanB(st, tm, fo) {
     const ra = seg(st.b + SHOT1 - .2, .6) * fo;
     G.flaws.forEach((f, n) => {
       const tpk = G.echo_us[n], xl = G.cg * (tpk * 1e-6 - G.tc) / 2;
-      keepMath(`x = c_{\\rm{g}}t/2 = ${xl.toFixed(2)}\\,\\rm{m}`, A.X(tpk) + 6, y0 + h - 10, { size: 14, color: C.body, alpha: ra });
+      keepMath(`x = c_{\\rm{g}}t/2 = ${xl.toFixed(2)}\\,\\rm{m}`, A.X(tpk) + 6, y0 + h - 10, { size: 15, color: C.body, alpha: ra });
     });
     if (st.tau < SHOT1) {
       const cx = A.X(tm * 1e6);
@@ -518,11 +734,11 @@ function ascanB(st, tm, fo) {
     }
   }
   // colour bar of the field in the plate
-  const cb = seg(.45, .3), bx = 400, by = YB + 26;
-  ctx.save(); ctx.globalAlpha *= cb; ctx.imageSmoothingEnabled = true; ctx.drawImage(BAR.cvs, bx, by - 8, 90, 8); ctx.restore();
-  line([[bx, by - 8], [bx + 90, by - 8], [bx + 90, by], [bx, by], [bx, by - 8]], { color: C.ink, width: .8, alpha: cb });
-  math('u_x/u_0', bx - 8, by, { size: 14, align: 'right', alpha: cb });
-  for (const [v, s] of [[0, '-1'], [.5, '0'], [1, '1']]) { line([[bx + v * 90, by], [bx + v * 90, by + 3]], { color: C.ink, width: .8, alpha: cb }); math(s, bx + v * 90, by + 17, { size: 14, align: 'center', alpha: cb }); }
+  const cb = seg(.45, .3), bx = 410, by = YB + 30;
+  ctx.save(); ctx.globalAlpha *= cb; ctx.imageSmoothingEnabled = true; ctx.drawImage(BAR.cvs, bx, by - 9, 96, 9); ctx.restore();
+  line([[bx, by - 9], [bx + 96, by - 9], [bx + 96, by], [bx, by], [bx, by - 9]], { color: C.ink, width: .8, alpha: cb });
+  math('u_x/u_0', bx - 9, by, { size: 15, align: 'right', alpha: cb });
+  for (const [v, s] of [[0, '-1'], [.5, '0'], [1, '1']]) { line([[bx + v * 96, by], [bx + v * 96, by + 3]], { color: C.ink, width: .8, alpha: cb }); math(s, bx + v * 96, by + 18, { size: 15, align: 'center', alpha: cb }); }
 }
 
 function draw() {
@@ -530,7 +746,7 @@ function draw() {
   KEEP.length = 0;
   panelA(st);
   panelB(st);
-  text(G.params, 500, H - 12, { size: 14, color: C.muted, align: 'center', alpha: seg(.6, .3) });
+  text(G.params, 500, H - 12, { size: 15, color: C.muted, align: 'center', alpha: seg(.6, .3) });
 }
 boot();
 """
@@ -561,8 +777,18 @@ def build():
         wz = np.interp(fl["z"], zs, w)
         on = np.nonzero(np.abs(xp - fl["x"]) <= wz + fl["L"] / 2)[0]
         lit.append([int(on[0]), int(on[-1])])
-    t_step, t_scan = schedule(npos, [np.mean(l) for l in lit])
-    print(f"{npos} probe positions; flaws under the zone at positions {lit}; scan {t_scan:.1f} s")
+
+    # the pulse, and the pace
+    sig_t, ext = pulse()
+    cl_mm_us = C_L / 1e3                            # mm/us
+    t_rt = 2 * THICK * 1e3 / cl_mm_us               # us, down and back
+    tend = ext[-1][0] * 1e6 + t_rt                  # the last crest home from the back wall (us after the centre left)
+    t_life = (tend - ext[0][0] * 1e6) * 1e-6 * SLOW_A
+    t_step, vis, t_fire, t_scan, dwell_at, D_dwell = schedule(npos, lit, t_life)
+    print(f"{npos} probe positions; flaws under the zone at positions {lit}; the probe dwells at {[d + 1 for d in dwell_at]}"
+          f" ({D_dwell:.2f} s each, a pulse {t_life:.3f} s); scan {t_scan:.1f} s")
+    ip_p = int(round(np.mean(lit[1])))
+    poster_scan = float(t_fire[ip_p] + (POSTER_TAU - ext[0][0] * 1e6) * 1e-6 * SLOW_A)
 
     # the guided wave shot
     cp, cg = gu.group_velocity("S", gu.F0)
@@ -590,7 +816,8 @@ def build():
     data = dict(
         slow=SLOW, slowtex=gu.sci_tex(SLOW), tc_us=tc * 1e6, f0=gu.F0, ncyc=gu.NCYC, cg=cg, span=SPAN, xend=xend, nx=nx, dx=dx,
         ppm=PPM, ph=PH_DRAW, thick_mm=THICK * 1e3, R=R_FLAW, T=T_FLAW, index_mm=INDEX * 1e3, npos=npos,
-        tstep=t_step, tscan=t_scan, lit=lit, poster_scan=float(t_step[300]) + 0.25, shot_end_us=tmax * 1e6,
+        tstep=t_step, vis=vis, tfire=t_fire, tscan=t_scan, lit=lit, poster_scan=poster_scan, shot_end_us=tmax * 1e6,
+        slow_a=SLOW_A, slowtex_a=gu.sci_tex(SLOW_A), cl=cl_mm_us, ext=[[e * 1e6, g] for e, g in ext], tend_us=tend,
         wmid_mm=float(2 * np.interp(THICK / 2, zs, w) * 1e3), probe_mm=D_PROBE * 1e3,
         flaws=[dict(x=f["x"], z_mm=f["z"] * 1e3, L_mm=f["L"] * 1e3, h_mm=f["h"] * 1e3) for f in FLAWS],
         beam=dict(nx=len(xs), nz=len(zs), x0_mm=xs[0] * 1e3, dx_mm=0.25, z_mm=zs * 1e3, w_mm=w * 1e3,
@@ -606,20 +833,25 @@ def build():
     )
     title = "Figure 13: Coverage comparison between the two families of ultrasonic testing"
     aria = (f"On the same 2 m steel plate, a bulk wave probe steps along {npos} positions, each covering only "
-            "the narrow zone beneath it, and a flaw lights up only when the probe is over it; a single guided "
-            "wave shot from one transducer sweeps the whole span in 0.4 ms and returns an echo from each flaw.")
-    common.build_html("coverage", title, aria, 1000, 716, data, JS)
+            "the narrow zone beneath it; where it pauses, its pulse runs straight down through the plate and "
+            "back, from a flaw or from the back wall, and a flaw lights up only when the probe is over it. A "
+            "single guided wave shot from one transducer sweeps the whole span in 0.4 ms and returns an echo "
+            "from each flaw.")
+    W, H = 1000, 760
+    common.build_html("coverage", title, aria, W, H, data, JS)
+    res = dict(xs=xs, zs=zs, A=A, w=w, lam=lam, k0=k0, N_cf=N_cf, N_simple=N_simple, npos=npos, lit=lit,
+               t_scan=t_scan, cp=cp, cg=cg, comp=comp, echoes=echoes, tc=tc, nx=nx, dx=dx, exag=exag,
+               sig_t=sig_t, ext=ext, t_rt=t_rt, tend=tend, t_life=t_life, dwell_at=dwell_at, D_dwell=D_dwell,
+               t_step=t_step, t_fire=t_fire, poster_scan=poster_scan, ip_p=ip_p, data=data, W=W, H=H)
     png = common.still("coverage")
     print("still:", png)
-    res = dict(xs=xs, zs=zs, A=A, w=w, lam=lam, k0=k0, N_cf=N_cf, N_simple=N_simple, npos=npos, lit=lit,
-               t_scan=t_scan, cp=cp, cg=cg, comp=comp, echoes=echoes, tc=tc, nx=nx, dx=dx, exag=exag)
     validate(res)
     return res
 
 
 def validate(r):
     """Closed forms for the probe, the pulsed beam's convergence, coverage,
-    echo times and the page's own sum; writes ut_coverage.check.txt."""
+    the pulse and its echo times, the page's own sums; writes ut_coverage.check.txt."""
     from scipy.optimize import brentq
     from scipy.special import j1
     L = []
@@ -654,9 +886,38 @@ def validate(r):
     conv = np.abs(w1 - w2).max()
     # 5. coverage of the union of zones at the index
     worst = union_coverage(xs, r["A"][1:], INDEX)
-    # 6. the guided wave: echo times, and the page's own sum
+    # 6. the pulse: its spectrum's -6 dB band (zero padded FFT), and its crests
+    sig_t, ext = r["sig_t"], r["ext"]
+    tt = np.arange(-3e-6, 3e-6, 1e-10)
+    gg = np.exp(-tt ** 2 / (2 * sig_t ** 2)) * np.cos(2 * np.pi * F_PROBE * tt)
+    nfft = 1 << 23
+    spec = np.abs(np.fft.rfft(gg, nfft))
+    ff = np.fft.rfftfreq(nfft, 1e-10)
+    above = ff[spec >= 0.5 * spec.max()]
+    band = (above[-1] - above[0]) / F_PROBE
+    # the echo times the fronts give (1D, at c_L): the back wall and each flaw's top
+    d = r["data"]
+    cl = d["cl"]
+    t_bw = 2 * d["thick_mm"] / cl
+    t_fl = [2 * (f["z_mm"] - f["h_mm"] / 2) / cl for f in d["flaws"]]
+    # 7. the page's fronts against the Python port, at moments of the pulses it sends
+    ext5 = [[float(r5(e * 1e6)), float(r5(g))] for e, g in ext]
+    bz, bw = r5(d["beam"]["z_mm"]), r5(d["beam"]["w_mm"])
+    flaws5 = [{k: float(r5(v)) for k, v in f.items()} for f in d["flaws"]]
+    cl5 = float(r5(cl))
+    m1, m2 = int(round(np.mean(r["lit"][0]))), int(round(np.mean(r["lit"][1])))
+    cases = [(0, 0.4), (0, 1.9), (1, 2.9), (m1 - 1, 1.2), (m1, 0.95), (m1 + 1, 1.5), (m2, POSTER_TAU), (m2 + 1, 0.5),
+             (m1 - 3, 1.6), (m1 + 3, 1.0)]
+    js = []
+    for ip, tau in cases:
+        ref = fronts_a(ip, tau, bz, bw, ext5, cl5, flaws5, float(r5(d["index_mm"])), float(r5(d["thick_mm"])))
+        js.append((f"frontsA({ip}, {tau!r}).flat()", np.array(ref, float).ravel()))
+    page_a, counts = check_fronts(js)
+    # 8. the guided wave: echo times, and the page's own sum
     xg = np.arange(r["nx"]) * r["dx"]
     page = gu.check_page("coverage", [(f"fieldAt({tm!r})", gw_field(r["comp"], xg, tm)) for tm in (150e-6, 300e-6, 480e-6)])
+    over = common.overlaps("coverage", [0.5, 0.9, 1.4, 2.2, 3.0, 4.4, 7.0, 9.5, 12.0, 14.6, 17.0, 19.6,
+                                        T_LOOP(r) - 0.5, T_LOOP(r) + 1.2])
 
     say("Figure 13, coverage of bulk and guided wave testing: check of tools/numfig/ut_coverage.py")
     say("")
@@ -695,8 +956,43 @@ def validate(r):
         f = FLAWS[n]
         say(f"  Flaw {n+1} (lamination {f['L']*1e3:g} mm long, at x = {f['x']:g} m, {f['z']*1e3:g} mm deep) lies in a zone")
         say(f"  at positions {a+1} to {b+1} only.")
-    say("  The scan's pace on the page is designed (slow first steps, then fast, easing while a flaw")
-    say(f"  is under the probe; {r['t_scan']:.1f} s in all); the positions and what each covers are the model's.")
+    say("")
+    say("THE PULSE (a), his note of 5 Oct 2026: the vertical waves")
+    say(f"  The probe's band in time: g(s) = exp(-s^2/(2 sigma^2)) cos(2 pi f0 s), sigma = 1/(2 pi sigma_f),")
+    say(f"  sigma_f = BW f0/(2 sqrt(2 ln 2)) = {BW*F_PROBE/(2*np.sqrt(2*np.log(2)))/1e6:.4f} MHz: sigma = {sig_t*1e6:.4f} us.")
+    say(f"  CHECK: its spectrum (zero padded FFT) is above half its peak over {above[0]/1e6:.3f} to {above[-1]/1e6:.3f} MHz,")
+    say(f"     {band*100:.2f} % of f0 (the model's band: {BW*100:g} %).")
+    say("  Its crests and troughs above a tenth of its peak (Brent's method on g'(s) = 0), drawn as fronts:")
+    say("     " + ", ".join(f"s = {e*1e6:+.4f} us, g = {g:+.4f}" for e, g in ext))
+    say(f"  Each front is a plane as wide as the -6 dB zone at its depth, at depth c_L (tau - s), straight down")
+    say(f"  at c_L = {cl:.5f} mm/us; a column of the beam over a lamination turns back at the lamination's top")
+    say("  (its depth z_f - h/2: the model's laminations are flat and planar), every other column at the back")
+    say("  wall; up again at c_L; gone when it reaches the probe's face. Down navy, back from a flaw crimson")
+    say("  (the echo), back from the back wall blue; each front's opacity is its |g|.")
+    say(f"  CHECK: the echo times the fronts give against 2 z / c_L: back wall {t_bw:.4f} us (2d/c_L = "
+        f"{2*THICK/C_L*1e6:.4f} us);")
+    for n, tf in enumerate(t_fl):
+        f = FLAWS[n]
+        say(f"     flaw {n+1}, top at {(f['z']-f['h']/2)*1e3:.1f} mm: {tf:.4f} us ({2*(f['z']-f['h']/2)/C_L*1e6:.4f} us); its"
+            f" echo comes home {t_bw - tf:.3f} us before the back wall's would")
+    say(f"  CHECK: the page's own fronts (frontsA) against the Python port at {len(cases)} moments of the pulses"
+        f" (positions {sorted(set(c[0]+1 for c in cases))}):")
+    say(f"     largest difference {page_a:.1e} (mm, m and |g| alike); fronts compared: "
+        + ", ".join(str(g) for g, _ in counts))
+    say(f"  Time slowed 2 x 10^5 for the pulse (5 us of the model per second): down and back through the 10 mm")
+    say(f"  in {r['t_rt']:.3f} us, {r['t_rt']*1e-6*SLOW_A:.3f} s on the page; from its first crest leaving to its last"
+        f" home {r['tend']-ext[0][0]*1e6:.3f} us, {r['t_life']:.3f} s.")
+    say("")
+    say("THE PACE (a): designed; which positions exist and what each covers is the model")
+    say(f"  The probe dwells, and sends its pulse, at positions {[p + 1 for p in r['dwell_at']]}: the first {N_START}, and the")
+    say(f"  three round the middle of each flaw's lit range ({[m + 1 for m in (m1, m2)]}); each dwell {r['D_dwell']:.3f} s (glide"
+        f" {VIS} s, the pulse {r['t_life']:.3f} s, a pause {PAUSE} s).")
+    say(f"  Beside a dwell a step takes {D_NEAR} s, {Q_NEAR} times less at each step further away, down to"
+        f" {1/R_FAST:.4f} s ({R_FAST:g} positions per second) in between.")
+    say(f"  The scan takes {r['t_scan']:.2f} s (the old page's 7.8 s: his \"slide a bit slower\"); the loop"
+        f" {T_LOOP(r):.2f} s (scan, then 2.4 s held, 0.8 s fading).")
+    say(f"  The still: position {r['ip_p']+1} (flaw 2's middle), {POSTER_TAU} us into its pulse: the flaw's echo half way"
+        " up, crimson; t = {:.3f} s.".format(0.15 + 0.3 + r["poster_scan"]))
     say("")
     say("MODEL (b): GUIDED WAVE")
     say(f"  The S0 mode of Figure 12 (guided_ut.py): Rayleigh-Lamb roots, 3 cycle Hann burst at 50 kHz,")
@@ -714,14 +1010,54 @@ def validate(r):
     say(f"  The page's own sum against numpy at three moments: largest difference {page:.1e}.")
     say("")
     say("DISPLAY")
-    say(f"  Both strips on one scale, {PPM} units/m; the plate's thickness drawn {r['exag']:g} times enlarged, the")
-    say(f"  inset under the probe drawn to scale (9 units/mm). Guided wave time slowed {SLOW:g} times.")
+    say(f"  {r['W']} x {r['H']}. Both strips on one scale, {PPM} units/m; the plate's thickness drawn {r['exag']:g} times"
+        " enlarged; the window")
+    say(f"  under the probe drawn to scale (12 units/mm, 36 mm wide), its beam pale (steel to mist) so the fronts")
+    say(f"  read on it. Guided wave time slowed {SLOW:g} times; the pulse in (a) 2 x 10^5 times, each labelled.")
+    say("  In the strip the probe's -6 dB zone fills downward with its pulse where it dwells, down to the back")
+    say("  wall, or to a lamination's top where one covers the whole beam (below it is its shadow); the plate is")
+    say("  drawn 8.5 times thicker there, so the fronts themselves are drawn in the window, at their true width.")
     say(f"  (b): between the transducer and the next sensor position, a dimension of the span one shot")
     say(f"  inspects, {SPAN:g} m (x = 0 to {SPAN:g} m on the strip's own scale), on a white knockout.")
+    say("  Type (5 Oct 2026): headings and the strips' labels 17, ticks and the notes in the plots 16, the")
+    say("  parameter lines and the slowing 15, nothing under 15; percent closed up (80%).")
+    say("  Beside each packet of fronts in the window an arrow says which way it runs (down navy; up crimson")
+    say("  from a flaw, blue from the back wall), at its middle crest's depth.")
+    say("")
+    say("OVERLAP (engine ?overlap, common.overlaps at 672 px; common.still also samples every 0.25 s up to")
+    say("  the poster):")
+    for k, v in over.items():
+        say(f"  {k}: labels {v['labels'] or 'none'}, crossings {v['crossings'] or 'none'}")
     txt = "\n".join(L) + "\n"
     with open(os.path.join(common.HERE, "ut_coverage.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)
     print(txt)
+
+
+def T_LOOP(r):
+    return 0.3 + r["t_scan"] + 2.4 + 0.8
+
+
+def check_fronts(cases):
+    """The page's frontsA() in a browser against the port: largest difference and the counts compared."""
+    from playwright.sync_api import sync_playwright
+    path = os.path.join(common.ANIM, "nf-coverage.html").replace("\\", "/")
+    worst, counts = 0.0, []
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page()
+        pg.goto("file:///" + path + "?still")
+        pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=30000)
+        for expr, ref in cases:
+            got = np.array(pg.evaluate(f"Array.from({expr})"), float)
+            counts.append((len(got) // 5, len(ref) // 5))
+            if got.shape != ref.shape:
+                worst = np.inf
+                continue
+            if got.size:
+                worst = max(worst, float(np.abs(got - ref).max()))
+        b.close()
+    return worst, counts
 
 
 if __name__ == "__main__":

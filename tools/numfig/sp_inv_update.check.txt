@@ -1,0 +1,174 @@
+Figure 6 (nf-sp-inv-update): finite element model updating, a nonlinear inverse problem;
+check of tools/numfig/sp_inv_update.py
+
+MODEL (the professor's animation, model-updating-solvers-animation.html)
+  two-storey shear building, floor masses m = 100 t each; K = 10^6 [k1 + k2, -k2; -k2, k2] N/m,
+  k1 (ground storey) and k2 (top storey) in MN/m, searched in [20, 220] MN/m.
+  true building (k1, k2) = (120, 80) MN/m: f1 = 3.183099 Hz (= 10/pi exactly: lambda1 = 400 s^-2),
+  f2 = 7.796968 Hz (lambda2 = 2,400 s^-2), first-mode ratio phi2/phi1 = 2.000000 (= 2).
+  measured (his fixed errors): f1 = 3.192648 Hz (+0.3%), f2 = 7.765780 Hz (-0.4%), r = 2.0400 (+2%).
+  misfit Phi = ((f1 - f1m)/(0.003 f1m))^2 + ((f2 - f2m)/(0.003 f2m))^2 [+ ((r - rm)/(0.05 rm))^2 with the
+  mode shape] [+ ((k1 - 100)/35)^2 + ((k2 - 100)/35)^2 with the prior]; uniform prior on the box.
+  closed form: T = k1 + 2 k2, R = sqrt(k1^2 + 4 k2^2), mu2 = (T + R)/2, mu1 = 2 k1 k2/(T + R) (MN/m),
+  lambda = 10^6 mu / m, f = sqrt(lambda)/(2 pi), r = (k1 + R)/(2 k2).
+
+THE TWIN (Hadamard's second condition, uniqueness, fails)
+  the frequencies fix the trace and determinant of M^-1 K: k1 + 2 k2 = L1 + L2 = 278.324200 and
+  k1 k2 = L1 L2 = 9580.579432 (MN/m, L = (2 pi f)^2 m / 10^6: L1 = 40.240360, L2 = 238.083840), so
+  2 k2^2 - (L1 + L2) k2 + L1 L2 = 0 has two roots: (k1, k2) = (124.8467, 76.7388) next to the
+  true building and its twin (153.4775, 62.4233) MN/m. The twin of any (k1, k2) is (2 k2, k1/2):
+  it keeps k1 + 2 k2 and k1 k2, |det| of the map is 1, and its fixed points are the fold line k1 = 2 k2,
+  where the Jacobian of (k1 + 2 k2, k1 k2), k1 - 2 k2, vanishes.
+  both reproduce the data: f1 = 3.192648158, 3.192648158 Hz; f2 = 7.765780140, 7.765780140 Hz (measured
+  3.192648158, 7.765780140); their mode ratios differ: r = 2.1025 and 2.8140 (measured 2.0400).
+  with exact data the pair would be (120, 80) and (160, 60) (r = 2 and 3). A 0.3% error in f1 and
+  -0.4% in f2 move the fit near the truth by 5.84 MN/m (k1 +4.0%, k2 -4.1%): stability, Hadamard's third condition, is weak too.
+
+VALIDATION
+  1. the closed-form eigenpairs against scipy.linalg.eigh(K, M) on a 21 x 21 grid over the box:
+     largest relative difference 1.3e-15 in f1, f2 and 4.4e-16 in phi2/phi1.
+  2. the eigenvalue sensitivities (Fox and Kapoor, closed form) against central differences at 400
+     random points in all four variants: largest difference 1.9e-10 (relative, or absolute below 1).
+  3. Phi (frequencies only) at 20,000 points and at their twins (2 k2, k1/2): largest difference
+     0.0e+00 (bit for bit: the swap only scales by powers of 2 and reorders sums).
+  4. every local minimum, from L-BFGS-B started on a 25 x 25 grid (eigenvalues of the Hessian > 0):
+     frequencies only: (124.8467, 76.7388) Phi = 1.562e-16; (153.4775, 62.4233) Phi = 4.362e-16
+     with the mode shape: (123.8528, 77.3544) Phi = 0.2458
+     with the prior: (124.4421, 76.9854) Phi = 0.9326; (152.2209, 62.9281) Phi = 3.42
+     with both: (123.6305, 77.4907) Phi = 1.122
+     frequencies only: the two minima against the quadratic's roots: 4.7e-08 and 9.3e-08 MN/m.
+     with the mode shape the twin is not even a local minimum (one minimum left); with the prior it
+     stays a local minimum, Phi 2.49 above the global one: a local solver started on its side is still
+     trapped, though the global optimum is now unique.
+     saddle between them, frequencies only: (138.4180, 69.2090), Phi = 3.1271 (on the fold: k1 - 2 k2 = 0.0e+00)
+     saddle between them, with the prior: (139.9209, 68.4589), Phi = 5.1713
+  5. the map: filled contours of log10 Phi at -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5 (half decades),
+     marching squares (contourpy) on a 2,401 x 2,401 grid of the closed form (0.083 MN/m),
+     simplified to 0.02 MN/m (Douglas-Peucker; kept vertices are contour points) and stored to 0.003 MN/m.
+     log10 Phi at the 3,238 stored vertices off the box edge against their level: median 2.8e-05,
+     99th percentile 3.9e-03, largest 2.6e-02 decades (the largest where the band
+     closes around a minimum and log10 Phi is steepest).
+     grid convergence: band areas from a 1,201 grid against the 2,401 grid, largest relative change
+     1.6e-02 (frequencies only) and 1.7e-03 (with the mode shape), bands over 1 (MN/m)^2.
+  6. the exact posterior, p(k | d) proportional to exp(-Phi/2) on the box: share on the true side of the fold
+     (k1 < 2 k2), midpoint rule on N x N grids:
+     frequencies only     N = 1,000: 0.5000000   2,000: 0.5000000   4,000: 0.5000000
+     with the mode shape  N = 1,000: 0.9999604   2,000: 0.9999604   4,000: 0.9999604
+     with the prior       N = 1,000: 0.7410896   2,000: 0.7410895   4,000: 0.7410895
+     with both            N = 1,000: 0.9999778   2,000: 0.9999778   4,000: 0.9999778
+     frequencies only, exactly one half: the swap maps one side onto the other and keeps area and Phi
+     (the box cuts nothing that carries weight).
+     the marginal p(k1 | d) drawn in (b) (Simpson, 0.01 MN/m in k2) integrates over 100..180 MN/m to
+     1.000000 (frequencies only): all of the posterior lies in the range drawn.
+  7. MCMC (his Metropolis: 4 chains, proposal sd 5 MN/m, 150 burn-in + 4,000 kept steps) against the
+     exact share, from each start chip (16,000 samples each):
+     frequencies only     48.6%, 46.5%, 56.4%, 37.8%   exact 50.0%
+     with the mode shape  100.0%, 100.0%, 100.0%, 100.0%   exact 100.0%
+     with the prior       66.0%, 78.5%, 72.5%, 63.1%   exact 74.1%
+     with both            100.0%, 100.0%, 100.0%, 100.0%   exact 100.0%
+     acceptance from (210, 30), frequencies only: 427, 523, 464, 482 of 4,150 per chain (11.4%).
+     the share is unbiased but noisy: see PSO/MCMC SEEDS below.
+
+PSO/MCMC SEEDS (the same code with seeds 1 to 500 in place of the start's seed)
+  particle swarm, frequencies only: true side 51.6%, twin side 48.4%; best point settled (to 0.01 MN/m) after a median 52 of 70 iterations
+  particle swarm, with the prior: true side 93.4%, twin side 6.6%; best point settled (to 0.01 MN/m) after a median 52 of 70 iterations
+  particle swarm, with the mode shape: true side 100.0%, twin side 0.0%; best point settled (to 0.01 MN/m) after a median 46 of 70 iterations
+  MCMC, frequencies only, seeds 1 to 40: true-side share 51.6% +- 7.9% (exact 50.0%)
+  MCMC, with the prior, seeds 1 to 40: true-side share 72.8% +- 5.2% (exact 74.1%)
+
+RUNS FROM THE START CHIPS (iterations, forward runs, end point; the tour runs (210, 30))
+  (210, 30) frequencies only:
+     gd 249/750 twin (153.52, 62.41); gn 6/7 twin (153.48, 62.42)
+     lm 7/15 twin (153.48, 62.42); pso 70/1988 twin (153.48, 62.42); mcmc 4150/16603 48.6% true
+  (210, 30) with the mode shape:
+     gd 178/537 true (123.86, 77.35); gn 8/9 true (123.85, 77.35)
+     lm 9/19 true (123.85, 77.35); pso 70/1988 true (123.85, 77.36); mcmc 4150/16603 100.0% true
+  (210, 30) with the prior:
+     gd 283/852 twin (152.27, 62.91); gn 8/9 twin (152.22, 62.93)
+     lm 8/17 twin (152.22, 62.93); pso 70/1988 true (124.39, 77.01); mcmc 4150/16603 66.0% true
+  (210, 30) with both:
+     gd 175/528 true (123.64, 77.49); gn 8/9 true (123.63, 77.49)
+     lm 9/19 true (123.63, 77.49); pso 70/1988 true (123.63, 77.49); mcmc 4150/16603 100.0% true
+  (40, 200) frequencies only:
+     gd 250/753 twin (153.51, 62.41); gn 7/8 true (124.85, 76.74)
+     lm 7/15 true (124.85, 76.74); pso 70/1988 twin (153.48, 62.42); mcmc 4150/16604 46.5% true
+  (40, 200) with the mode shape:
+     gd 181/546 true (123.86, 77.35); gn 7/8 true (123.85, 77.35)
+     lm 7/15 true (123.85, 77.35); pso 70/1988 true (123.85, 77.35); mcmc 4150/16604 100.0% true
+  (40, 200) with the prior:
+     gd 275/828 twin (152.27, 62.91); gn 7/8 true (124.44, 76.99)
+     lm 7/15 true (124.44, 76.99); pso 70/1988 twin (152.22, 62.93); mcmc 4150/16604 78.5% true
+  (40, 200) with both:
+     gd 178/537 true (123.64, 77.49); gn 7/8 true (123.63, 77.49)
+     lm 7/15 true (123.63, 77.49); pso 70/1988 true (123.63, 77.49); mcmc 4150/16604 100.0% true
+  (100, 40) frequencies only:
+     gd 157/474 true (124.83, 76.75); gn 4/5 twin (153.48, 62.42)
+     lm 5/11 twin (153.48, 62.42); pso 70/1988 true (124.84, 76.74); mcmc 4150/16604 56.4% true
+  (100, 40) with the mode shape:
+     gd 99/300 true (123.84, 77.36); gn 7/8 true (123.85, 77.35)
+     lm 7/15 true (123.85, 77.35); pso 70/1988 true (123.85, 77.35); mcmc 4150/16604 100.0% true
+  (100, 40) with the prior:
+     gd 145/438 true (124.43, 76.99); gn 5/6 twin (152.22, 62.93)
+     lm 6/13 twin (152.22, 62.93); pso 70/1988 true (124.44, 76.98); mcmc 4150/16604 72.5% true
+  (100, 40) with both:
+     gd 96/291 true (123.62, 77.50); gn 7/8 true (123.63, 77.49)
+     lm 7/15 true (123.63, 77.49); pso 70/1988 true (123.63, 77.49); mcmc 4150/16604 100.0% true
+  (150, 200) frequencies only:
+     gd 159/480 true (124.83, 76.75); gn 5/6 true (124.85, 76.74)
+     lm 5/11 true (124.85, 76.74); pso 70/1988 twin (153.49, 62.42); mcmc 4150/16604 37.8% true
+  (150, 200) with the mode shape:
+     gd 101/306 true (123.84, 77.36); gn 5/6 true (123.85, 77.35)
+     lm 5/11 true (123.85, 77.35); pso 70/1988 true (123.85, 77.35); mcmc 4150/16604 100.0% true
+  (150, 200) with the prior:
+     gd 147/444 true (124.43, 76.99); gn 5/6 true (124.44, 76.99)
+     lm 5/11 true (124.44, 76.99); pso 70/1988 true (124.44, 76.98); mcmc 4150/16604 63.1% true
+  (150, 200) with both:
+     gd 98/297 true (123.62, 77.50); gn 5/6 true (123.63, 77.49)
+     lm 5/11 true (123.63, 77.49); pso 70/1988 true (123.63, 77.49); mcmc 4150/16604 100.0% true
+  (gradient descent stops when a step moves less than 0.001 MN/m, Gauss-Newton likewise, Levenberg-
+  Marquardt also when no damping gives a decrease; the swarm runs its 70 iterations.)
+
+THE PAGE AGAINST THE PORT (Playwright, headless Chromium)
+  140 runs: 5 solvers x 4 variants x 7 starts (the 4 chips and (163.7, 48.2), (57.3, 141.9),
+  (201.4, 187.6)). Largest difference between the page's numbers and this script's, path points in
+  MN/m (and Phi, relative), the whole swarm, every MCMC chain state:
+     gd 0.0e+00, gn 0.0e+00, lm 0.0e+00, pso 0.0e+00, mcmc 7.1e-14
+  iteration counts, forward-run counts and acceptances identical: True
+  the page's f1, f2, r at 1,681 grid points against numpy: 0.0e+00 (relative)
+  the page's data: f1 = 3.192648158423, f2 = 7.765780140287, r = 2.040000000000 (port: 3.192648158423, 7.765780140287, 2.040000000000)
+  script errors: none
+
+THE PAGE LIVE (672 px)
+  after the intro playing: True; clock runs: True; keyboard stand-ins: 11
+  click 'gradient descent': solver gd, start chip 0, mode shape 0, prior 0, still playing True
+  click 'Gauss-Newton': solver gn, start chip 0, mode shape 0, prior 0, still playing True
+  click 'Levenberg-Marquardt': solver lm, start chip 0, mode shape 0, prior 0, still playing True
+  click 'particle swarm': solver pso, start chip 0, mode shape 0, prior 0, still playing True
+  click 'MCMC sampling': solver mcmc, start chip 0, mode shape 0, prior 0, still playing True
+  click '(210, 30)': solver mcmc, start chip 0, mode shape 0, prior 0, still playing True
+  click '(40, 200)': solver mcmc, start chip 1, mode shape 0, prior 0, still playing True
+  click '(100, 40)': solver mcmc, start chip 2, mode shape 0, prior 0, still playing True
+  click '(150, 200)': solver mcmc, start chip 3, mode shape 0, prior 0, still playing True
+  click 'mode shape': solver mcmc, start chip 3, mode shape 1, prior 0, still playing True
+  click 'prior': solver mcmc, start chip 3, mode shape 1, prior 1, still playing True
+  click on the map: start chip -1 (none), start [159.7, 100.3] MN/m, still playing True
+  click on open ground pauses, as in every figure: True
+  arrow key in the solver group chooses: gn; status: Gauss-Newton from (159.7, 100.3) on frequencies and mode shape, with the prior: 4 iterations, 5 forward runs, ends at k1 = 123.6, k2 = 77.5 MN/m (the true side).
+  restart returns to the tour: True; frames per second while 16,000 samples are drawn: 60 (headless, software)
+  script errors: none
+
+OVERLAPS (engine.js ?overlap)
+  the poster and every 0.25 s of the tour up to it: clean (common.still raises otherwise)
+  every state through ?view=SOLVER-START-DATA: 80 chip states and 4 clicked starts, each at
+  5 moments (before the run, its start, 35% and 70% through, after it): 420 frames, 0 with collisions
+  script errors: none
+
+THE PAGE
+  W = 1000, H = 700, POSTER_T = 4.3 s: his default, Levenberg-Marquardt from (210, 30) on the
+  frequencies, converged on the twin. The tour: Levenberg-Marquardt, Gauss-Newton, gradient descent, the
+  swarm and MCMC from (210, 30) on the frequencies; MCMC and Levenberg-Marquardt with the mode shape;
+  Levenberg-Marquardt and MCMC with the prior; then again. One iteration every 0.40 s (Levenberg-
+  Marquardt), 0.45 s (Gauss-Newton), 0.024 s (gradient descent), 0.10 s (swarm); MCMC 1,500 steps a second.
+  A chip or a click on the map chooses (the tour stops); restart returns to it; paused or with less
+  motion, the chosen run shows complete. Keyboard: two radio groups and two toggles; a status line.
+  page 105,472 bytes; still 90,850 bytes

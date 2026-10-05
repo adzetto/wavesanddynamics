@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure 6: Finite element model updating, a nonlinear inverse problem</title>
+<style>
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:500;font-display:block;src:url(../fonts/cmu-serif-500-italic.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:normal;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-roman.woff2) format("woff2")}
+@font-face{font-family:"CMU Serif";font-style:italic;font-weight:700;font-display:block;src:url(../fonts/cmu-serif-700-italic.woff2) format("woff2")}
+@font-face{font-family:"Figure Math";font-style:normal;font-weight:500;font-display:block;src:url(../fonts/figure-math.woff2) format("woff2")}
+html,body{margin:0;padding:0;background:#fff;}
+.fig{position:relative;width:100%;}
+.fig canvas{display:block;width:100%;height:auto;cursor:pointer;}
+.ctl{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;opacity:.6;transition:opacity .16s cubic-bezier(.2,0,.38,.9);}
+.fig:hover .ctl,.ctl:focus-within{opacity:1;}
+@media (hover:none){.ctl{opacity:.85;}}
+/* the site's tokens (site/parts/theme.py), written out: the frame is a document of its own.
+   ring --line-strong, glyph --ink, hover --surface, pressed --line, focus --focus */
+.ctl button{position:relative;box-sizing:border-box;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid #8A857C;
+  background:#fff;color:#27221C;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+  transition:background-color .12s cubic-bezier(.2,0,.38,.9);}
+.ctl button svg{width:15px;height:15px;fill:currentColor;}
+.ctl #rs svg{fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;}
+@media (hover:hover){.ctl button:hover{background:#F6F3EF;}}
+.ctl button:active{background:#D7D2CA;}
+.ctl button:focus-visible{outline:2px solid #043052;outline-offset:2px;}
+/* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){.ctl{right:4px;bottom:4px;}.ctl button{width:24px;height:24px;}.ctl button svg{width:13px;height:13px;}}
+/* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){display:none;}
+</style>
+</head>
+<body>
+<div class="fig">
+  <canvas id="c" role="img" aria-label="A map of the misfit between measured and computed natural frequencies over the two storey stiffnesses of a two-storey shear building: a long curved valley holds two pairs that fit the data exactly, the true building and its twin. Gradient descent, Gauss-Newton, Levenberg-Marquardt, a particle swarm and MCMC sampling run on it from a chosen start, beside their misfit against the number of forward-model runs and a table of iterations; adding the measured mode shape or a prior reshapes the map."></canvas>
+  <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+</div>
+<script>
+const W = 1000, H = 700;
+const DATA = {"mass":100000.0,"lo":20.0,"hi":220.0,"truek":[120.0,80.0],"noise":[0.003,-0.004,0.02],"sf":0.003,"sr":0.05,"sp":0.35,"kp":100.0,"starts":[[210.0,30.0],[40.0,200.0],[100.0,40.0],[150.0,200.0]],"npart":28,"niter":70,"burn":150,"keep":4000,"psd":5.0,"levels":[-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5],"maps":[{"n":[[13,13],[20,20],[23,23],[48],[54],[72],[82],[101],[117],[130],[141],[73]],"q":"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"},{"n":[[],[11],[21],[31],[40],[55],[72],[93],[127],[127],[142],[73]],"q":"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"},{"n":[[],[],[11],[27],[53],[70],[82],[103],[117],[131],[141],[73]],"q":"yIY2SN2GNkjWhlJIUYa/SHeFR0nMhJlJkYSZSb2EY0kAhSxJ1oWkSLiGO0gXjrtDgY6qQ5yOrUOxjrtDmY7yQy2OX0RjjMJFdYnJR7iGjUlfhPBKdILtS5mBSkz1gIBMUYCaTBuAj0wAgHtM+n9ETDKA10uogE5LeoGPSnGC0EmFgw9J+YWLR/WI70XWi5REIY0NRBSOvEMetAcyA7X0Mae1/jEBtiIyE7Y9MhS2WTLktaoyZbUYM7+0hTPOsw00pbEfNe6uVDZ+pKo6g6BfPDed3j0imlw/ZpZRQY+SgEPUjsJFuIbTSuGCFE3agCZOQH/kTt19ak86fZhPsXyyTw18t0/Xe61PnnuST4B7d09ne0FPbnvTTrl7L04ufIxN2XzMTL598kvAfhhLyX9LSvWAc0l0gnNIi4WNRiyJiEQKj4ZBK5wYOyyhtDhwpck2tKkLNburTDSnraQzd68UMyyxnTLFskAyDbQJMkO8Zi7dvVMuJb9oLqG/gi7/v6UuRMDTLmfACi9twEEvUMCTLxbA5S/FvzYwyr72MDC96zHluhgzybeFNES0CDblqus5YabXO5ih+T0bnRtAHJiqQu6SjEUTjm1IRIRyTrSB8k+SfyFRA31rUuF6VlPrea5T9Xj3UzZ4IVR3dztU7nY/VIF2NlQUdhxUvXXyU3x1u1NIdWlTMXUYUy91qlJCdT1ScHW1UbB1LFEAdqRQ2nZ3T/93L05TeehMxXqqS198akpLfglJbYCcR8WCJEZVhaJE/4ciQ4WLPUGujxU/KJTXPL+YmzrMnLI4UaAaN7ujnzXupk8066kpM+esGDLJryYxc7JcMDm1oy+ttxcvBrqsLii8aS7PxtApUcjGKbTJyin8yt8pDcwCKgPNOCqwzXQqQs7GKpTOGCuyzk4rwc6FK7nO8iuKzl8sJc7oLJrNcC3LzBQu2cu4LsjKXC9syRswu8f2MITD5TK4vu40urLQOd2sRDzOpu8+XaF+QSaeGEPems1EiJedRlaUbUhBjg1MmYHkU4F+tVW7eztX63koWG143FjudoFZi3UJWil0fFr8cspa63H+WtpwGVsAcBlbQG8CW51u2Fr4bY9ahW09Wh5tz1nRbEdZoGyjWI9sAFiabEFXwGyBVgVtp1VhbcxU4m3XU3pu4VInb+tRpHAbUH5yL06bdERM7nZfSn55ekh6fHJGrn9tRE6DR0Kuh9c/X4xcPWKR1TqBll44aZseNv+fIDR6pE4yvqixMMysSC/asAAu57TcLL646St6vB8rG8CAKoTDECq4xtEp4dO8I5zWtSMs2cUjhNvrI6bdJiSS33okEOHaJGTiVSVc494l9+NmJjLkuCZY5Aona+RcJ2vkySda5BsoLuSIKO7j9iib42Mpw+I9KozhMysa4CksEd5VLcvbgi4W2ckv89UsMVvP5TM2vz06lLdVPYmzCj+ir79A4Kt0QkWoKUT3o0tGrJ+ISJebxkpUlzpNmJN3T3iPB1Jpg8JZXH9PXDN7zl6Sd9JgVXX3YTNz9mJHccVjXG95ZKdt/2Tya2dlWGqqZdpox2WSZ8BlS2aUZR5lQ2UpZNhkTmNQZIZioGPrYeFiYGHrYf1g2mDGYMlfsGCdXsBgVV3yYA1cS2GqWsVhR1lpYslXEWOBVuFjHlXNZLtT0mVYUvJm9VAraJJPfmkvTutqzExxbGpLFG4ESuRvj0i0cS5HoHPMRad1Z0Tkd+5CInqGQbF8+j9cf24+6IRjO/yKRDgskUs1XJeEMjmdEjAXo9Ito6jiK0quGyq7s5coLLlEJ7i+HiZ+wZ8lQ8QsJQnHyCS0yXQkX8wvJO7O+SNi0dMj1tO8I/HfoBvM5IobmemRGxTutRtY8vYbSvZTHPP5zRw5/WId//8NHv//EyqG/WorefroLCn3Zi5O8wgwQO+pMY7qeTPW0/I7Qc4UPhnJG0BXw3RC1b3NRNK4CkfSs2NJBa5ETF6oQU/bolhSS52nVVWYv1gSkylcR45cXzOD3Wb5fU9qo3ilbS92F2/yc1hwEXHacUtuLXOga090LGk1ddNm7HV6ZHl2WGLQdjZg+XZLXvF2VV3adl9ctXaFW4h2nlpLdtBZBnb1WK11NlhRdXdX5XS4Vmd0FFbsc3BVXnPMVL1yQlQicq1TY3ErU6NwulLkb0lSCm/oUS9ullFVbUhRX2zWUHRqk1BtaH5QS2aaUA1k5lDQYVhRrl/yUYxds1JpW5tTR1mrVCVX0lUeVTBX/FKkWPVQP1rvTgJc6EzeXfJK6F/1SAhiCkdfZBNF02YlQ35pLkFEbEE/JW9dPT1ycDtwdYs52nieN198uTXkf+kzoIMRMkCHXDAXi6Eu7o76LKqScyuBlvQpPZqUKPmdSCfQoQUmi6XfJEepzCMDrcwivrDeIXq0ASFRuDEgKLxyH/+/xR7ywyUe5MeWHfLLFh3kz6oc1tNOHOTXAhzx28gb5N+hG1TwpBA2+JcQ//+rEP//VD1V9RFBf+xERE/kXEfG3FhKoNVVTaHObVAJyIVTz8GeVlm+bVj7uj1aubcNXGG0+V3RrethIKcvZhKhPWqlmrhujJQXc7iGJ32SfzWC13u/hG14+oYedQuJBnLgihRuDI1YaueOiGi6j7hmfpADZSmRTmPFkZlhUpIAYMiSZl4uk8xchJMzW8qTtVn6kzZYGZTTViaUVVUilPJTDJSPUuOTLFGnk8lPVZOBTvaSOk2BkvJL9ZHGSl+RmUmzkG1I7o9cRyOPS0Y/jjpFP41ERD6MR0MXi1hC4Yl+QaaIr0Bch+c/+YU0P5aEgT4Ng+A9foFNPeR/xDwvfk08enznO8V6izv1eEE7JXcGO1V12zqFc706mXGwOslvsjr5bcE6KWzeOlhqCTuIaEM7uGaKO+hk4DsYY0U8R2GxPJJfMz3CXbw9DVxTPlha+T6jWK4/71ZnQFVVLUG7UwNCIlLNQwpPzUR5TdVF8ksMSPVIdEoORhRNM0PlT21A/FKnPflVMTssWcA4llxVNhtgATTyY6Ex5GdYLw1sFC1RcOUqzHS9KGN5qib5fbgkqoLaIlyHGyEojHAf9ZDkHfmVZhzhmgwbyZ/OGcykpRjrqY8XJa+OFnq0oRXruckUd78EFDnFUBMXy7ESENEmEiXXrxFU3U0RoOP/EOvpxxBR8KQQFf50Av//cQL//61eXPgGYv7wcGXP6fVo0OKWbAHcUXBg1Sl0vc42eBvIe3yOwjaA6bwohCu3UYgvscyMCqy/kFGmOZXTjuinR4k0rESE+68lf7OzWHoJt8J1DrpjccO8025Bvl9snr/raerAd2ciwh5lOcPGYj3EiGAhxUte8cUNXKvG61lIx8lXz8fCVTvIu1OQyLVRz8jJT/XI3k0DybtL+Mi1SdDIrkeJyMJFKcjXQ6vH60EMxxtAVsZLPoDFezyGxMY6eMMROUbCdzcEwd41nb9fNCm+4TKQvGMxzroAMAS5mS4Ktzot6rTyK8GyriptsIMpFK5jKKCrUCcQqUkmZqZPJaCjYiS/oIUjy524IsWa/CGtl1MhlpS5IGKRLSAUjrEfqopJH0CH9R7Xg7MeUYCGHuh8bR5+eWceFHZ1Hqpylh5cb8seDWwUH79ocB+MZeEfWGJjIEBf9iBEXJkhY1lRIoFWGSO7U+8jEVHdJGZO2CXXS+wmR0kOKNNGPCl7RIQqIkLXK+Q/Ri2nPb8uhTtUMGM5BzJEN7wzRzUkNbwzrjYiMjE4pDDJOSUvajuyLR49QCzvPskqv0BjKaNCACiWRKImr0jyIwNNWiGZUdUeZlZqHFVbIhqIYO4X3WXcFWlr5hMRcRQS7nZdEOh8yA7hglsNLIkBDK6PwApmlpkJcJ2GCLGkjQdErKgGDbTcBSi8JAWxxIAEi83xA7fWeAM24BUD6+nJAtbzkwIT/nQCWEIbALxCAAD//wAA///LroT7+bEN9zm1jvKTuP/tDbx86ZK/y+ROw//fNMcX20TLG9MG0lzKmdmkwUfhM6s19bGk6PrLnv//JxH//zcQdP3UDnn5cQ0x9SIM2vDhCl7ssAnI54gI/uJvBxTeYAb12GAFu9NvBGbOigPayLcCTsPwAYu9PAHJt5YA67EAAPSrAAANUn4AS04LAY9KoQEKR0UCoEMHAwBA1wOIPLgELDmnBfc1pgbhMrgH5S/bCAMtEAo9KlgLkyexDAUlFA6hIpMPRyAZERQexhLgG3wU0BlSFskXOBjeFUoa8hNsHCISnR5rEPYguw5lIx8N+SWNC6QoDgpqK58ISy5AB0cx8QV7NKYEyTdrAxg7SgKdPi8BPUIjAA=="},{"n":[[],[],[],[28],[40],[54],[72],[95],[126],[126],[142],[73]],"q":"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"}],"fits":[[124.84668,76.73876],[153.47752,62.42334]],"post":{"k0":100.0,"dk":0.25,"p":[[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1e-06,1e-06,2e-06,3e-06,6e-06,1e-05,1.7e-05,2.7e-05,4.4e-05,6.9e-05,0.000106,0.00016,0.000237,0.000344,0.000492,0.00069,0.000952,0.00129,0.00172,0.00227,0.00294,0.00375,0.00471,0.00585,0.00716,0.00865,0.01033,0.01218,0.01419,0.01636,0.01866,0.02106,0.02353,0.02603,0.02854,0.03102,0.03342,0.03571,0.03787,0.03986,0.04165,0.04323,0.04457,0.04568,0.04654,0.04716,0.04753,0.04766,0.04758,0.04728,0.04679,0.04613,0.04531,0.04436,0.04329,0.04213,0.04088,0.03958,0.03824,0.03686,0.03548,0.03409,0.0327,0.03134,0.03,0.0287,0.02743,0.02621,0.02503,0.0239,0.02282,0.02179,0.02081,0.01988,0.019,0.01817,0.01739,0.01666,0.01597,0.01533,0.01473,0.01416,0.01364,0.01316,0.0127,0.01229,0.0119,0.01155,0.01123,0.01093,0.01066,0.01041,0.01019,0.01,0.00982,0.00967,0.00953,0.00942,0.00933,0.00925,0.0092,0.00916,0.00914,0.00914,0.00915,0.00918,0.00923,0.0093,0.00939,0.00949,0.00961,0.00975,0.00991,0.01009,0.01028,0.0105,0.01074,0.011,0.01128,0.01158,0.01191,0.01226,0.01263,0.01303,0.01346,0.01391,0.01439,0.0149,0.01544,0.016,0.0166,0.01722,0.01788,0.01856,0.01927,0.02001,0.02078,0.02157,0.02239,0.02324,0.0241,0.02499,0.02588,0.0268,0.02772,0.02864,0.02956,0.03048,0.03139,0.03227,0.03314,0.03397,0.03476,0.0355,0.03619,0.03681,0.03737,0.03784,0.03823,0.03852,0.03871,0.03879,0.03876,0.03861,0.03834,0.03795,0.03744,0.0368,0.03604,0.03517,0.03418,0.03309,0.0319,0.03063,0.02927,0.02786,0.02638,0.02487,0.02333,0.02178,0.02022,0.01868,0.01717,0.01569,0.01426,0.01288,0.01157,0.01033,0.00917,0.00809,0.00709,0.00618,0.00534,0.00459,0.00392,0.00332,0.0028,0.00234,0.00194,0.0016,0.00131,0.00106,0.000853,0.000682,0.00054,0.000425,0.000331,0.000256,0.000196,0.000149,0.000112,8.4e-05,6.2e-05,4.6e-05,3.3e-05,2.4e-05,1.7e-05,1.2e-05,8e-06,6e-06,4e-06,3e-06,2e-06,1e-06,1e-06,1e-06,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1e-06,1e-06,2e-06,4e-06,7e-06,1.3e-05,2.4e-05,4.1e-05,7e-05,0.000115,0.000187,0.000296,0.00046,0.0007,0.00104,0.00153,0.00219,0.00309,0.00428,0.00582,0.00779,0.01025,0.01327,0.01691,0.02122,0.02624,0.03198,0.03843,0.04556,0.05328,0.06152,0.07014,0.079,0.08793,0.09675,0.10526,0.11329,0.12066,0.1272,0.13278,0.13728,0.14062,0.14275,0.14366,0.14337,0.14191,0.13937,0.13583,0.13141,0.12623,0.12043,0.11413,0.10746,0.10056,0.09355,0.08652,0.07957,0.07279,0.06624,0.05998,0.05405,0.04848,0.04329,0.03849,0.03408,0.03005,0.02639,0.0231,0.02014,0.0175,0.01515,0.01308,0.01125,0.00965,0.00825,0.00704,0.00598,0.00507,0.00429,0.00362,0.00305,0.00256,0.00214,0.00179,0.00149,0.00124,0.00103,0.000853,0.000705,0.000582,0.000479,0.000393,0.000322,0.000263,0.000215,0.000175,0.000142,0.000115,9.3e-05,7.5e-05,6.1e-05,4.9e-05,3.9e-05,3.1e-05,2.5e-05,2e-05,1.6e-05,1.3e-05,1e-05,8e-06,6e-06,5e-06,4e-06,3e-06,2e-06,2e-06,1e-06,1e-06,1e-06,1e-06,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1e-06,1e-06,2e-06,4e-06,7e-06,1.2e-05,2.1e-05,3.4e-05,5.6e-05,8.9e-05,0.00014,0.000214,0.000322,0.000474,0.000686,0.000974,0.00136,0.00186,0.00251,0.00334,0.00436,0.00562,0.00712,0.0089,0.01098,0.01335,0.01604,0.01902,0.02229,0.02581,0.02956,0.03348,0.03753,0.04165,0.04577,0.04983,0.05377,0.05753,0.06104,0.06426,0.06714,0.06964,0.07175,0.07343,0.07469,0.07552,0.07593,0.07594,0.07556,0.07484,0.07378,0.07244,0.07084,0.06902,0.06702,0.06487,0.0626,0.06024,0.05783,0.0554,0.05295,0.05052,0.04812,0.04577,0.04347,0.04125,0.03911,0.03704,0.03507,0.03319,0.0314,0.0297,0.0281,0.02659,0.02516,0.02382,0.02257,0.02139,0.02029,0.01927,0.01831,0.01742,0.01659,0.01582,0.01511,0.01444,0.01383,0.01326,0.01273,0.01225,0.0118,0.01139,0.01102,0.01067,0.01035,0.01006,0.0098,0.00956,0.00935,0.00916,0.00898,0.00883,0.0087,0.00859,0.00849,0.00841,0.00834,0.0083,0.00826,0.00825,0.00824,0.00825,0.00827,0.00831,0.00836,0.00843,0.00851,0.0086,0.0087,0.00882,0.00895,0.00909,0.00925,0.00942,0.0096,0.00979,0.01,0.01022,0.01045,0.01069,0.01095,0.01122,0.01149,0.01178,0.01208,0.01239,0.0127,0.01302,0.01335,0.01368,0.01401,0.01435,0.01468,0.01501,0.01534,0.01566,0.01597,0.01627,0.01656,0.01682,0.01707,0.01729,0.01749,0.01766,0.01779,0.0179,0.01796,0.01798,0.01796,0.0179,0.01779,0.01763,0.01743,0.01717,0.01687,0.01652,0.01613,0.01568,0.0152,0.01468,0.01412,0.01353,0.01291,0.01227,0.01161,0.01094,0.01026,0.00958,0.0089,0.00823,0.00757,0.00693,0.0063,0.00571,0.00514,0.0046,0.0041,0.00363,0.00319,0.00279,0.00242,0.00209,0.00179,0.00153,0.00129,0.00109,0.000909,0.000754,0.00062,0.000507,0.000411,0.000331,0.000264,0.000209,0.000165,0.000128,9.9e-05,7.6e-05,5.8e-05,4.4e-05,3.3e-05,2.4e-05,1.8e-05,1.3e-05,9e-06,7e-06,5e-06,3e-06,2e-06,2e-06,1e-06,1e-06,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1e-06,1e-06,3e-06,5e-06,1e-05,1.7e-05,3.1e-05,5.3e-05,8.9e-05,0.000146,0.000235,0.000371,0.000572,0.000866,0.00128,0.00187,0.00267,0.00374,0.00515,0.00696,0.00926,0.01211,0.01558,0.01974,0.02462,0.03025,0.03664,0.04374,0.05152,0.05986,0.06866,0.07776,0.08699,0.09616,0.10507,0.11353,0.12133,0.12831,0.1343,0.13918,0.14285,0.14526,0.14637,0.14621,0.14481,0.14225,0.13863,0.13407,0.1287,0.12266,0.1161,0.10915,0.10195,0.09464,0.08732,0.08009,0.07305,0.06627,0.05981,0.0537,0.04798,0.04266,0.03777,0.03329,0.02921,0.02553,0.02223,0.01928,0.01666,0.01434,0.01231,0.01052,0.00897,0.00762,0.00646,0.00546,0.0046,0.00386,0.00323,0.0027,0.00225,0.00187,0.00155,0.00128,0.00106,0.000873,0.000718,0.000588,0.000481,0.000393,0.00032,0.00026,0.000211,0.000171,0.000138,0.000111,8.9e-05,7.2e-05,5.7e-05,4.6e-05,3.7e-05,2.9e-05,2.3e-05,1.8e-05,1.4e-05,1.1e-05,9e-06,7e-06,6e-06,4e-06,3e-06,3e-06,2e-06,2e-06,1e-06,1e-06,1e-06,1e-06,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]],"split":[0.5,0.99996,0.74109,0.99998]},"poster":4.3,"params":[["two-storey shear building, floors of 100 t; measured ",{"m":"f_{1}"},", ",{"m":"f_{2}"}," 0.3% high and 0.4% low, mode ratio ",{"m":"r = \\phi_{2}/\\phi_{1}"}," 2% high; ",{"m":"\\sigma"}," 0.3% and 5%"],["prior 100 MN/m ",{"m":"\\pm"}," 35%; swarm of 28 particles, 70 iterations; Metropolis MCMC, 4 chains of 4,150 steps; random seed ",{"m":"1000k_{1} + k_{2}"}," of the start"]]};
+/* numfig engine: the shared runtime of the figures redrawn from numerical
+   models (tools/numfig/README.md). build_html() in common.py inlines it after
+   `const W = ..., H = ...;` and the figure's DATA, and before the figure's own
+   script, which defines draw() and may define POSTER_T and reset().
+
+   Same frame as his animations (content/anim/fig*.html): a canvas W by H in
+   drawing units, scaled to the width it is given; pause, restart, a click on
+   the canvas toggles; paused while off screen. In the guide's page the pause
+   and restart are the page's, in a row under the frame (HOSTED, below).
+   Unlike them the type is
+   Computer Modern (CMU Serif, published in ../fonts/), and a reader who asks
+   for less motion, or the print still (?still), gets the figure complete at
+   POSTER_T instead of the empty first frame. */
+
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+/* CMU Serif, then Figure Math (Latin Modern Math's symbols, content/fonts-cmu/
+   README.txt) for the signs CMU does not carry: every glyph in Computer Modern */
+const SERIF = '"CMU Serif", "Figure Math", "Latin Modern Roman", "Latin Modern Math", serif';
+const STILL = /[?&]still\b/.test(location.search);
+const CHECK = /[?&]overlap\b/.test(location.search);   // ?still&overlap: report ink that collides
+const AT = /[?&]t=([\d.]+)/.exec(location.search);   // ?still&t=2.5: one moment, to look at
+const REDUCED =matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* the palette: the site's inks and blues (site/parts/theme.py) and one
+   crimson. Blue is the structure and the primary data, crimson is the one
+   thing the eye should follow, grey is guides. The crimson is matched to the
+   blue in CIELAB lightness (accent L* 37 = blue, amber L* 50) at hue 20, so
+   neither side of a comparison shouts; the names accent/amber/wash are the
+   roles, kept from the first palette so no figure had to change. */
+const C = {
+  ink: '#27221C', body: '#544F48', muted: '#6F6A64', guide: '#8A857C',
+  rule: '#D7D2CA', grid: '#ECE8E2',
+  navy: '#043052', blue: '#095A94', sky: '#5B8DB8', mist: '#A9C3DA',
+  steel: '#E3EBF2', steel2: '#C9D7E4',
+  accent: '#A7203A', amber: '#D14457', wash: '#F9EEEE',
+};
+
+let t = 0, last = null, visible = true;
+let playing = !REDUCED && !STILL;
+cv.style.aspectRatio = W + ' / ' + H;
+
+/* ---------------------------------------------------------------- time */
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, s) => a + (b - a) * s;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+/* progress of a step of the intro that starts at t0 and lasts dur, eased */
+const seg = (t0, dur, e = easeInOut) => e(clamp((t - t0) / dur));
+
+/* Motion's spring (motion.dev, MIT; the spring() of motion 12.43.0 alone,
+   tools/numfig/motion-spring.min.js). settle(t0, visual, bounce) is the
+   progress of a spring let go at t0 that is where it is going after `visual`
+   seconds and then settles, sampled at t: a pure function of the clock like
+   seg(), so any moment can be drawn exactly. For things that ARRIVE: a label
+   or a panel settling into place, a marker gliding to a new point. Strokes
+   drawing themselves keep seg() (manim's smooth). bounce 0 unless the thing
+   is a physical object that would overshoot.
+   The MIT License (MIT). Copyright (c) 2024 Motion (https://motion.dev) B.V. */
+(()=>{var G=(e,r,o)=>o>r?r:o<e?e:o;var R=()=>{};var D=e=>e*1e3,S=e=>e/1e3;var W=(e,r,o=10)=>{let a="",s=Math.max(Math.round(r/o),2);for(let c=0;c<s;c++)a+=Math.round(e(c/(s-1))*1e4)/1e4+", ";return`linear(${a.substring(0,a.length-2)})`};function I(e){let r=0,o=50,a=e.next(r);for(;!a.done&&r<2e4;)r+=o,a=e.next(r);return r>=2e4?1/0:r}function z(e,r=100,o){let a=o({...e,keyframes:[0,r]}),s=Math.min(I(a),2e4);return{type:"keyframes",ease:c=>a.next(s*c).value/r,duration:S(s)}}var n={stiffness:100,damping:10,mass:1,velocity:0,duration:800,bounce:.3,visualDuration:.3,restSpeed:{granular:.01,default:2},restDelta:{granular:.005,default:.5},minDuration:.01,maxDuration:10,minDamping:.05,maxDamping:1};function K(e,r){return e*Math.sqrt(1-r*r)}var U=12;function Z(e,r,o){let a=o;for(let s=1;s<U;s++)a=a-e(a)/r(a);return a}var q=.001;function J({duration:e=n.duration,bounce:r=n.bounce,velocity:o=n.velocity,mass:a=n.mass}){let s,c;R(e<=D(n.maxDuration),"Spring duration must be 10 seconds or less","spring-duration-limit");let m=1-r;m=G(n.minDamping,n.maxDamping,m),e=G(n.minDuration,n.maxDuration,S(e)),m<1?(s=f=>{let g=f*m,d=g*e,E=g-o,v=K(f,m),h=Math.exp(-d);return q-E/v*h},c=f=>{let d=f*m*e,E=d*o+o,v=Math.pow(m,2)*Math.pow(f,2)*e,h=Math.exp(-d),i=K(Math.pow(f,2),m);return(-s(f)+q>0?-1:1)*((E-v)*h)/i}):(s=f=>{let g=Math.exp(-f*e),d=(f-o)*e+1;return-q+g*d},c=f=>{let g=Math.exp(-f*e),d=(o-f)*(e*e);return g*d});let u=5/e,A=Z(s,c,u);if(e=D(e),isNaN(A))return{stiffness:n.stiffness,damping:n.damping,duration:e};{let f=Math.pow(A,2)*a;return{stiffness:f,damping:m*2*Math.sqrt(a*f),duration:e}}}var _=["duration","bounce"],$=["stiffness","damping","mass"];function H(e,r){return r.some(o=>e[o]!==void 0)}function Q(e){let r={velocity:n.velocity,stiffness:n.stiffness,damping:n.damping,mass:n.mass,isResolvedFromDuration:!1,...e};if(!H(e,$)&&H(e,_))if(r.velocity=0,e.visualDuration){let o=e.visualDuration,a=2*Math.PI/(o*1.2),s=a*a,c=2*G(.05,1,1-(e.bounce||0))*Math.sqrt(s);r={...r,mass:n.mass,stiffness:s,damping:c}}else{let o=J({...e,velocity:0});r={...r,...o,mass:n.mass},r.isResolvedFromDuration=!0}return r}function B(e=n.visualDuration,r=n.bounce){let o=typeof e!="object"?{visualDuration:e,keyframes:[0,1],bounce:r}:e,{restSpeed:a,restDelta:s}=o,c=o.keyframes[0],m=o.keyframes[o.keyframes.length-1],u={done:!1,value:c},{stiffness:A,damping:f,mass:g,duration:d,velocity:E,isResolvedFromDuration:v}=Q({...o,velocity:-S(o.velocity||0)}),h=E||0,i=f/(2*Math.sqrt(A*g)),x=m-c,p=S(Math.sqrt(A/g)),j=Math.abs(x)<5;a||(a=j?n.restSpeed.granular:n.restSpeed.default),s||(s=j?n.restDelta.granular:n.restDelta.default);let w,P,y,C,k,F;if(i<1)y=K(p,i),C=(h+i*p*x)/y,w=t=>{let l=Math.exp(-i*p*t);return m-l*(C*Math.sin(y*t)+x*Math.cos(y*t))},k=i*p*C+x*y,F=i*p*x-C*y,P=t=>Math.exp(-i*p*t)*(k*Math.sin(y*t)+F*Math.cos(y*t));else if(i===1){w=l=>m-Math.exp(-p*l)*(x+(h+p*x)*l);let t=h+p*x;P=l=>Math.exp(-p*l)*(p*t*l-h)}else{let t=p*Math.sqrt(i*i-1);w=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return m-b*((h+i*p*x)*Math.sinh(T)+t*x*Math.cosh(T))/t};let l=(h+i*p*x)/t,M=i*p*l-x*t,O=i*p*x-l*t;P=V=>{let b=Math.exp(-i*p*V),T=Math.min(t*V,300);return b*(M*Math.sinh(T)+O*Math.cosh(T))}}let N={calculatedDuration:v&&d||null,velocity:t=>D(P(t)),next:t=>{if(!v&&i<1){let M=Math.exp(-i*p*t),O=Math.sin(y*t),V=Math.cos(y*t),b=m-M*(C*O+x*V),T=D(M*(k*O+F*V));return u.done=Math.abs(T)<=a&&Math.abs(m-b)<=s,u.value=u.done?m:b,u}let l=w(t);if(v)u.done=t>=d;else{let M=D(P(t));u.done=Math.abs(M)<=a&&Math.abs(m-l)<=s}return u.value=u.done?m:l,u},toString:()=>{let t=Math.min(I(N),2e4),l=W(M=>N.next(t*M).value,t,30);return t+"ms "+l},toTransition:()=>{}};return N}B.applyToOptions=e=>{let r=z(e,100,B);return e.ease=r.ease,e.duration=D(r.duration),e.type="keyframes",e};globalThis.MotionSpring=B;})();
+const _springs = {};
+function settle(t0, visual, bounce = 0) {
+  const k = visual + ':' + bounce;
+  const g = _springs[k] || (_springs[k] = MotionSpring({ keyframes: [0, 1], visualDuration: visual, bounce }));
+  return t <= t0 ? 0 : g.next((t - t0) * 1000).value;
+}
+
+/* ---------------------------------------------------------------- frame */
+function fit() {
+  const dpr = STILL ? 2 : Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth || W;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(w * H / W * dpr);
+  render();
+}
+function render() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  _inks.length = 0; _segs.length = 0; _knocks.length = 0; _clip = null; _clips.length = 0;
+  draw();
+  if (CHECK) _clashes();
+}
+/* the controls are drawn, not set in a font: crisp at any zoom */
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.2" y="3.2" width="2.5" height="9.6" rx=".7"/><rect x="9.3" y="3.2" width="2.5" height="9.6" rx=".7"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 3.4v9.2c0 .5.5.8.9.5l7.1-4.6c.4-.2.4-.8 0-1L6.1 2.9c-.4-.3-.9 0-.9.5z"/></svg>';
+const pp = document.getElementById('pp');
+/* In the guide's page the frame's own pause and restart give way to the
+   page's row of buttons under the frame (site/parts/docs.py), so no corner
+   of the figure is covered. The page drives the frame with postMessage:
+   {nf: 'toggle'}, {nf: 'restart'}, {nf: 'hello'}; the frame answers every
+   change with {nf: 'state', playing, quiet}. Only a page of this site that
+   holds such a row is listened to. */
+const HOSTED = (() => {
+  try {
+    return parent !== window && parent.location.origin === location.origin && !!frameElement &&
+      !!frameElement.parentElement.querySelector('.anim__bar');
+  } catch (e) { return false; }
+})();
+if (HOSTED) document.documentElement.classList.add('chrome-out');   // before the first frame: no flash
+function _tell() {
+  if (HOSTED) parent.postMessage({ nf: 'state', playing, quiet: _quiet() || STILL }, location.origin);
+}
+function setPlay(p) {
+  playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+  pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
+  _tell();
+}
+const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
+function poster() { t = posterT(); render(); }
+pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+document.getElementById('rs').addEventListener('click', e => {
+  e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
+});
+cv.addEventListener('click', () => { if (!_quiet()) setPlay(!playing); });
+addEventListener('message', e => {
+  const m = e.data;
+  if (!HOSTED || e.source !== parent || e.origin !== location.origin || !m || typeof m.nf !== 'string') return;
+  if (m.nf === 'hello') _tell();
+  else if (_quiet() || STILL) return;
+  else if (m.nf === 'toggle') setPlay(!playing);
+  else if (m.nf === 'restart') document.getElementById('rs').click();
+});
+/* a click in the frame takes the keyboard into it; Space still pages the guide */
+addEventListener('keydown', e => {
+  if (e.key !== ' ' || e.defaultPrevented || e.target !== document.body || !HOSTED) return;
+  e.preventDefault();
+  try { parent.scrollBy({ top: (e.shiftKey ? -.875 : .875) * parent.innerHeight, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (_) {}
+});
+function loop(ts) {
+  if (last === null) last = ts;
+  const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+/* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
+   ornament: it plays once, draws no controls and ignores clicks */
+const _quiet = () => typeof QUIET !== 'undefined' && QUIET === true;   // exactly true: a figure's own QUIET list is not the flag
+function start() {
+  if (STILL || _quiet()) document.querySelector('.ctl').style.display = 'none';
+  if (_quiet()) cv.style.cursor = 'default';
+  setPlay(playing);
+  if (!playing) t = posterT();
+  new ResizeObserver(fit).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  fit();
+  document.documentElement.dataset.ready = '1';      // the still is taken after this
+  if (!STILL) requestAnimationFrame(loop);
+}
+
+/* the figure's script ends with boot(): draw once the type has loaded, so
+   no frame is set in a fallback face and then jumps */
+function boot() {
+  const faces = ['500 16px "CMU Serif"', 'italic 500 16px "CMU Serif"', '700 16px "CMU Serif"'];
+  Promise.all([...faces.map(f => document.fonts.load(f)), document.fonts.load('500 16px "Figure Math"', '≈≤∂∞')])
+    .then(start, start);
+}
+
+/* ---------------------------------------------------------------- check
+   ?overlap (with ?still or ?t=): every run of type drawn in the frame is kept
+   as its ink box (measureText's actual bounds, through the current transform,
+   in drawing units), and every dark stroke as its segments. After the frame,
+   window.__overlaps lists pairs of runs from different labels whose ink
+   meets, and window.__crossings runs a dark stroke passes through; both are
+   outlined in red. Runs of one math() or text() call are one label and never
+   collide with themselves; faint things (alpha < .35) and pale strokes
+   (guides, grids) are left out. common.overlaps() reads the lists. */
+const _inks = [], _segs = [], _knocks = [];
+let _grp = 0, _ord = 0;
+function _white(c) { return typeof c === 'string' && /^(#fff(fff)?|white|rgb\(255, ?255, ?255\))$/i.test(c); }
+function _knock(pts) {                       // a white fill drawn now hides what was drawn before it
+  if (!CHECK || ctx.globalAlpha < .35 || !_white(ctx.fillStyle)) return;   // as visible as a label must be
+  const P = pts.map(([x, y]) => _map(x, y));
+  _knocks.push({ o: ++_ord, x0: Math.min(...P.map(q => q[0])), x1: Math.max(...P.map(q => q[0])),
+                 y0: Math.min(...P.map(q => q[1])), y1: Math.max(...P.map(q => q[1])) });
+}
+let _clip = null, _rect = null;
+const _clips = [];
+if (CHECK) {
+  const fr = ctx.fillRect.bind(ctx);
+  ctx.fillRect = (x, y, w, h) => { _knock([[x, y], [x + w, y + h]]); return fr(x, y, w, h); };
+  // clips are rectangles in these figures (a plot's area): follow save/restore
+  const sv = ctx.save.bind(ctx), rs = ctx.restore.bind(ctx), cl = ctx.clip.bind(ctx), rc = ctx.rect.bind(ctx),
+        bp = ctx.beginPath.bind(ctx);
+  ctx.save = () => { _clips.push(_clip); return sv(); };
+  ctx.restore = () => { _clip = _clips.length ? _clips.pop() : null; return rs(); };
+  ctx.beginPath = () => { _rect = null; return bp(); };
+  ctx.rect = (x, y, w, h) => { const a = _map(x, y), b = _map(x + w, y + h);
+    _rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; return rc(x, y, w, h); };
+  ctx.clip = (...a) => { if (_rect) _clip = _clip ? [Math.max(_clip[0], _rect[0]), Math.max(_clip[1], _rect[1]),
+    Math.min(_clip[2], _rect[2]), Math.min(_clip[3], _rect[3])] : _rect; return cl(...a); };
+}
+function _inside(p, q) {                     // the part of segment pq inside the current clip, or null
+  if (!_clip) return [p, q];
+  const [x0, y0, x1, y1] = _clip, dx = q[0] - p[0], dy = q[1] - p[1];
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, p[0] - x0], [dx, x1 - p[0]], [-dy, p[1] - y0], [dy, y1 - p[1]]]) {
+    if (pp === 0) { if (qq < 0) return null; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return null; if (r > t0) t0 = r; } else { if (r < t0) return null; if (r < t1) t1 = r; }
+  }
+  return t1 > t0 ? [[p[0] + t0 * dx, p[1] + t0 * dy], [p[0] + t1 * dx, p[1] + t1 * dy]] : null;
+}
+function _map(x, y) {
+  const m = ctx.getTransform(), k = W / cv.width;
+  return [(m.a * x + m.c * y + m.e) * k, (m.b * x + m.d * y + m.f) * k];
+}
+function _ink(s, x, y) {
+  const q = ctx.measureText(s);
+  const x0 = x - q.actualBoundingBoxLeft, x1 = x + q.actualBoundingBoxRight;
+  const y0 = y - q.actualBoundingBoxAscent, y1 = y + q.actualBoundingBoxDescent;
+  if (!(x1 > x0 && y1 > y0)) return;
+  const P = [_map(x0, y0), _map(x1, y0), _map(x1, y1), _map(x0, y1)];
+  _inks.push({ s, g: _grp, o: ++_ord, a: ctx.globalAlpha, P,
+               x0: Math.min(...P.map(p => p[0])), x1: Math.max(...P.map(p => p[0])),
+               y0: Math.min(...P.map(p => p[1])), y1: Math.max(...P.map(p => p[1])) });
+}
+function _pale(c) {
+  if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return false;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16) / 255);
+  return .2126 * r + .7152 * g + .0722 * b > .72;
+}
+function _seg(pts, color, width) {
+  if (!CHECK || ctx.globalAlpha < .35 || width < 1 || _pale(color)) return;
+  const o = ++_ord;
+  for (let i = 1; i < pts.length; i++) {
+    const c = _inside(_map(pts[i - 1][0], pts[i - 1][1]), _map(pts[i][0], pts[i][1]));
+    if (c) _segs.push({ o, p: c[0], q: c[1] });
+  }
+}
+function _cuts(sg, b) {                      // does the segment pass through the run's ink, shrunk 1 unit?
+  if (b.P && Math.abs(b.P[0][1] - b.P[1][1]) > .5) {   // rotated type: test against its quadrilateral
+    const [cx, cy] = [b.P.reduce((a, p) => a + p[0], 0) / 4, b.P.reduce((a, p) => a + p[1], 0) / 4];
+    const Q = b.P.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x - (x - cx) / d, y - (y - cy) / d]; });
+    const seg = [sg.p, sg.q, sg.q, sg.p];
+    return _meet(Q, seg, 0);
+  }
+  const x0 = b.x0 + 1, x1 = b.x1 - 1, y0 = b.y0 + 1, y1 = b.y1 - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const [ax, ay] = sg.p, [bx, by] = sg.q, dx = bx - ax, dy = by - ay;
+  let t0 = 0, t1 = 1;
+  for (const [pp, qq] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (qq < 0) return false; continue; }
+    const r = qq / pp;
+    if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t1 - t0 > 1e-6;
+}
+function _meet(A, B, m) {                  // convex quads overlap by more than m (separating axes)
+  for (const Q of [A, B]) for (let i = 0; i < 4; i++) {
+    const [ax, ay] = Q[i], [bx, by] = Q[(i + 1) % 4], nx = ay - by, ny = bx - ax, L = Math.hypot(nx, ny);
+    if (L < 1e-9) continue;
+    const pa = A.map(([x, y]) => (x * nx + y * ny) / L), pb = B.map(([x, y]) => (x * nx + y * ny) / L);
+    if (Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) <= m) return false;
+  }
+  return true;
+}
+function _clashes() {
+  const B = _inks.filter(b => b.a >= .35), hit = [], cross = [];
+  for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+    const p = B[i], q = B[j];
+    if (p.g === q.g) continue;
+    // the same words drawn again in place is a highlight, not a collision
+    if (p.s === q.s && Math.abs(p.x0 - q.x0) < 1.5 && Math.abs(p.y0 - q.y0) < 1.5) continue;
+    const w = Math.min(p.x1, q.x1) - Math.max(p.x0, q.x0), h = Math.min(p.y1, q.y1) - Math.max(p.y0, q.y0);
+    if (w > 1.5 && h > 1.5 && _meet(p.P, q.P, 1)) hit.push([p, q]);
+  }
+  // a stroke through a label, unless a white knockout drawn after the stroke covers the label
+  const hidden = (sg, b) => _knocks.some(k => k.o > sg.o && k.x0 <= b.x0 + 1 && k.x1 >= b.x1 - 1 && k.y0 <= b.y0 + 1 && k.y1 >= b.y1 - 1);
+  for (const b of B) if (_segs.some(sg => _cuts(sg, b) && !hidden(sg, b))) cross.push(b);
+  window.__overlaps = hit.map(([p, q]) => [p.s, q.s, Math.round(p.x0), Math.round(p.y0)]);
+  window.__crossings = cross.map(b => [b.s, Math.round(b.x0), Math.round(b.y0)]);
+  ctx.save(); ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); ctx.globalAlpha = 1;
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(230,0,0,.9)';
+  for (const [p, q] of hit) for (const b of [p, q]) ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = 'rgba(255,120,0,.9)'; ctx.setLineDash([3, 2]);
+  for (const b of cross) ctx.strokeRect(b.x0 - 1, b.y0 - 1, b.x1 - b.x0 + 2, b.y1 - b.y0 + 2);
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------- type
+   text(s, x, y, o): one run in CMU Serif.
+   math(s, x, y, o): TeX-like, a small subset. Latin and Greek letters are
+   italic, digits and signs upright; _x or _{..} a subscript, ^x or ^{..} a
+   superscript; \rm{..} an upright group (units, d in dx, words); the minus
+   sign is U+2212. Returns the width drawn, in drawing units. */
+function font(o) { return `${o.italic ? 'italic ' : ''}${o.bold ? '700' : '500'} ${o.size || 16}px ${o.family || SERIF}`; }
+function text(s, x, y, o = {}) {
+  const { size = 16, color = C.ink, align = 'left', base = 'alphabetic', rot = 0, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ ...o, size }); ctx.fillStyle = color;
+  ctx.textAlign = align; ctx.textBaseline = base;
+  _grp++;
+  if (rot) { ctx.translate(x, y); ctx.rotate(rot); ctx.fillText(s, 0, 0); if (CHECK) _ink(s, 0, 0); }
+  else { ctx.fillText(s, x, y); if (CHECK) _ink(s, x, y); }
+  const w = ctx.measureText(s).width; ctx.restore(); return w;
+}
+/* lower-case Greek in math is TeX's math italic (cmmi), not CMU's text italic
+   (whose theta is open like a vartheta and whose rho curls): Unicode's
+   mathematical italic letters, which Figure Math carries from Latin Modern
+   Math. TeX's pairs stay apart: \epsilon is the lunate one, \phi the straight
+   one, \vartheta, \varrho, \varpi the variants. */
+const _MI = cp => String.fromCodePoint(cp);
+const MACROS = {
+  alpha: _MI(0x1D6FC), beta: _MI(0x1D6FD), gamma: _MI(0x1D6FE), delta: _MI(0x1D6FF),
+  epsilon: _MI(0x1D716), varepsilon: _MI(0x1D700), zeta: _MI(0x1D701), eta: _MI(0x1D702),
+  theta: _MI(0x1D703), vartheta: _MI(0x1D717), iota: _MI(0x1D704), kappa: _MI(0x1D705),
+  lambda: _MI(0x1D706), mu: _MI(0x1D707), nu: _MI(0x1D708), xi: _MI(0x1D709), pi: _MI(0x1D70B),
+  varpi: _MI(0x1D71B), rho: _MI(0x1D70C), varrho: _MI(0x1D71A), sigma: _MI(0x1D70E),
+  varsigma: _MI(0x1D70D), tau: _MI(0x1D70F), upsilon: _MI(0x1D710), phi: _MI(0x1D719),
+  varphi: _MI(0x1D711), chi: _MI(0x1D712), psi: _MI(0x1D713), omega: _MI(0x1D714),
+  Gamma: 'Γ', Delta: 'Δ',
+  Theta: 'Θ', Lambda: 'Λ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  partial: '∂', infty: '∞', cdot: '⋅', times: '×', approx: '≈', ll: '≪', gg: '≫', leq: '≤',
+  geq: '≥', neq: '≠', pm: '±', to: '→', propto: '∝', sim: '∼', deg: '°', ',': ' ',
+  ' ': ' ', quad: ' ',
+};
+const _GREEK = { 0x3D1: 0x1D717, 0x3D5: 0x1D719, 0x3D6: 0x1D71B, 0x3F1: 0x1D71A, 0x3F5: 0x1D716 };
+function _mathItalic(ch) {                 // α..ω and the variant symbols, as math italic
+  const c = ch.codePointAt(0);
+  if (ch.length === 1 && c >= 0x3B1 && c <= 0x3C9) return String.fromCodePoint(c - 0x3B1 + 0x1D6FC);
+  return _GREEK[c] ? String.fromCodePoint(_GREEK[c]) : null;
+}
+function _runs(s) {
+  const out = []; let i = 0;
+  const group = () => {
+    if (s[i] === '{') { let d = 1, j = i + 1; while (j < s.length && d) { if (s[j] === '{') d++; else if (s[j] === '}') d--; j++; } const g = s.slice(i + 1, j - 1); i = j; return g; }
+    return s[i++];
+  };
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '_' || c === '^') { i++; out.push({ kind: c === '_' ? 'sub' : 'sup', runs: _runs(group()) }); }
+    else if (s.startsWith('\\rm', i)) {
+      i += 3; out.push({ kind: 'rm', s: group().replace(/\\ /g, ' ').replace(/\\,/g, ' ') });
+    }
+    else if (s.startsWith('\\sqrt', i)) { i += 5; out.push({ kind: 'sqrt', runs: _runs(group()) }); }
+    else if (c === '\\') {
+      const m = /^\\([A-Za-z]+|.)/.exec(s.slice(i)); i += m[0].length;
+      if (/^[A-Za-z]/.test(m[1]) && s[i] === ' ') i++;        // TeX eats the space after a word macro
+      out.push({ kind: 'ch', s: MACROS[m[1]] === undefined ? m[1] : MACROS[m[1]] });
+    }
+    else { out.push({ kind: 'ch', s: c }); i++; }
+  }
+  return out;
+}
+function _mathDraw(runs, x, y, size, color, go) {
+  let w = 0;
+  for (const r of runs) {
+    if (r.kind === 'ch' || r.kind === 'rm') {
+      // math italic Greek is slanted already: set upright, so nothing slants it twice
+      const gk = r.kind === 'ch' ? (_mathItalic(r.s) || (/[\u{1D6E2}-\u{1D71B}]/u.test(r.s) ? r.s : null)) : null;
+      const it = !gk && r.kind === 'ch' && /[A-Za-z]/.test(r.s);
+      const s = gk || r.s.replace(/-/g, '−');
+      // Figure Math first for it: CMU Serif carries one of these letters,
+      // U+1D703 (theta), and draws it upright
+      ctx.font = font({ size, italic: it, family: gk ? '"Figure Math", ' + SERIF : null });
+      if (go) { ctx.fillStyle = color; ctx.fillText(s, x + w, y); if (CHECK && s.trim()) _ink(s, x + w, y); }
+      w += ctx.measureText(s).width + (it || gk ? size * .04 : 0);
+    } else if (r.kind === 'sqrt') {
+      ctx.font = font({ size });
+      const rw = ctx.measureText('√').width;
+      if (go) { ctx.fillStyle = color; ctx.fillText('√', x + w, y); if (CHECK) _ink('√', x + w, y); }
+      const iw = _mathDraw(r.runs, x + w + rw, y, size, color, go);
+      if (go) {
+        ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = size * .055; ctx.beginPath();
+        ctx.moveTo(x + w + rw * .92, y - size * .8); ctx.lineTo(x + w + rw + iw + size * .05, y - size * .8);
+        ctx.stroke(); ctx.restore();
+      }
+      w += rw + iw + size * .1;
+    } else {
+      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
+    }
+  }
+  return w;
+}
+function math(s, x, y, o = {}) {
+  const { size = 17, color = C.ink, align = 'left', base = 'alphabetic', alpha = 1, rot = 0 } = o;
+  const runs = _runs(s);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.textAlign = 'left'; ctx.textBaseline = base;
+  const w = _mathDraw(runs, 0, 0, size, color, false); _grp++;
+  const dx = align === 'center' ? -w / 2 : align === 'right' ? -w : 0;
+  ctx.translate(x, y); if (rot) ctx.rotate(rot);
+  _mathDraw(runs, dx, 0, size, color, true);
+  ctx.restore(); return w;
+}
+/* the label of a panel, as the caption calls it: (a), (b) ... */
+function panel(letter, x, y, o = {}) { return text(`(${letter})`, x, y, { size: 19, bold: true, ...o }); }
+
+/* ---------------------------------------------------------------- strokes
+   line(pts, o): a polyline [[x,y],...]; o.progress draws its first share by
+   arc length (a stroke drawing itself, as manim's Create does). */
+function line(pts, o = {}) {
+  const { color = C.ink, width = 1.6, dash = null, progress = 1, alpha = 1, fill = null, close = false } = o;
+  if (progress <= 0 || pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  if (progress >= 1) _seg(close ? [...pts, pts[0]] : pts, color, width);
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  if (progress >= 1) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); if (close) ctx.closePath(); }
+  else {
+    let L = 0; const seg_ = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg_.push(d); L += d; }
+    let left = L * progress;
+    for (let i = 1; i < pts.length && left > 0; i++) {
+      const d = seg_[i - 1], s = d > left ? left / d : 1;
+      ctx.lineTo(lerp(pts[i - 1][0], pts[i][0], s), lerp(pts[i - 1][1], pts[i][1], s)); left -= d;
+    }
+  }
+  if (fill && progress >= 1) { ctx.fillStyle = fill; ctx.fill(); if (CHECK) _knock(pts); }
+  ctx.stroke(); ctx.restore();
+}
+function arrow(x1, y1, x2, y2, o = {}) {
+  const { color = C.ink, width = 1.6, head = 10, alpha = 1, both = false, dash = null } = o;
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  _seg([[x1, y1], [x2, y2]], color, width);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - Math.cos(a) * head * .6, y2 - Math.sin(a) * head * .6); ctx.stroke();
+  ctx.setLineDash([]);
+  const tip = (x, y, a) => {       // a TikZ stealth tip
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - head * Math.cos(a - .38), y - head * Math.sin(a - .38));
+    ctx.lineTo(x - head * .62 * Math.cos(a), y - head * .62 * Math.sin(a));
+    ctx.lineTo(x - head * Math.cos(a + .38), y - head * Math.sin(a + .38)); ctx.closePath(); ctx.fill();
+  };
+  tip(x2, y2, a); if (both) tip(x1, y1, a + Math.PI);
+  ctx.restore();
+}
+function dot(x, y, r = 4, o = {}) {
+  const { color = C.ink, fill = color, width = 1.4, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); ctx.restore();
+}
+/* a pin support under (x, y): a triangle on a hatched ground, as TikZ draws it */
+function pin(x, y, o = {}) {
+  const { s = 16, color = C.ink, alpha = 1, roller = false } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.fillStyle = '#fff'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s * .7, y + s); ctx.lineTo(x + s * .7, y + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  let g = y + s;
+  if (roller) { for (const dx of [-s * .4, s * .4]) { ctx.beginPath(); ctx.arc(x + dx, g + 3, 3, 0, 2 * Math.PI); ctx.stroke(); } g += 6; }
+  ctx.beginPath(); ctx.moveTo(x - s, g); ctx.lineTo(x + s, g); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = -s; k < s; k += 4.5) { ctx.beginPath(); ctx.moveTo(x + k + 4, g); ctx.lineTo(x + k, g + 5); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 2 * Math.PI); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* a fixed (clamped) end at x, facing dir = +1 (wall on the left) or -1 */
+function fixedEnd(x, y, o = {}) {
+  const { h = 30, dir = 1, color = C.ink, alpha = 1 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = color; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - h / 2); ctx.lineTo(x, y + h / 2); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = -h / 2; k < h / 2; k += 4.5) { ctx.beginPath(); ctx.moveTo(x, y + k + 4); ctx.lineTo(x - dir * 5, y + k); ctx.stroke(); }
+  ctx.restore();
+}
+/* a dimension line |<- label ->| between x1 and x2 at height y */
+function dim(x1, x2, y, label, o = {}) {
+  const { color = C.ink, alpha = 1, size = 17 } = o;
+  arrow(x1, y, x2, y, { color, width: 1.1, head: 7, both: true, alpha });
+  line([[x1, y - 6], [x1, y + 6]], { color, width: 1, alpha }); line([[x2, y - 6], [x2, y + 6]], { color, width: 1, alpha });
+  if (label) {
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.font = font({ size }); ctx.restore();
+    const w = math(label, 0, -1e4, { size, alpha: 0 });
+    // the knockout covers the label's whole ink, superscripts to subscripts and the
+    // slash's tail (baseline y + .34 size; ink from .95 size above it to .45 below)
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.globalAlpha *= alpha; ctx.fillRect((x1 + x2) / 2 - w / 2 - 4, y - size * .62, w + 8, size * 1.42); ctx.restore();
+    math(label, (x1 + x2) / 2, y + size * .34, { size, align: 'center', color, alpha });
+  }
+}
+
+/* ---------------------------------------------------------------- axes
+   axes(o) draws a pgfplots axis: a full box, ticks pointing in, numeric
+   tick labels, labels in math, and returns {X, Y, inside} to map data to
+   the canvas. o = {x, y, w, h, xlim, ylim, xticks, yticks, xlabel, ylabel,
+   xfmt, yfmt, grid, progress, alpha, ylog}. */
+function axes(o) {
+  const { x, y, w, h, xlim, ylim, xticks = [], yticks = [], xlabel = '', ylabel = '',
+          xfmt = v => fmt(v), yfmt = v => fmt(v), grid = false, progress = 1, alpha = 1,
+          box = true, tickSize = 15, labelSize = 17 } = o;
+  const X = v => x + (v - xlim[0]) / (xlim[1] - xlim[0]) * w;
+  const Y = v => y + h - (v - ylim[0]) / (ylim[1] - ylim[0]) * h;
+  if (progress > 0) {
+    const a = alpha * clamp(progress * 1.4);
+    if (grid) {
+      for (const v of xticks) line([[X(v), y], [X(v), y + h]], { color: C.grid, width: 1, alpha: a });
+      for (const v of yticks) line([[x, Y(v)], [x + w, Y(v)]], { color: C.grid, width: 1, alpha: a });
+    }
+    const frame = box ? [[x, y + h], [x + w, y + h], [x + w, y], [x, y], [x, y + h]] : null;
+    if (box) line(frame, { color: C.ink, width: 1.3, progress, alpha });
+    else { line([[x, y + h], [x + w, y + h]], { color: C.ink, width: 1.3, progress, alpha }); line([[x, y + h], [x, y]], { color: C.ink, width: 1.3, progress, alpha }); }
+    for (const v of xticks) {
+      line([[X(v), y + h], [X(v), y + h - 5]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[X(v), y], [X(v), y + 5]], { color: C.ink, width: 1.1, alpha: a });
+      math(xfmt(v), X(v), y + h + tickSize + 6, { size: tickSize, align: 'center', alpha: a });
+    }
+    for (const v of yticks) {
+      line([[x, Y(v)], [x + 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      if (box) line([[x + w, Y(v)], [x + w - 5, Y(v)]], { color: C.ink, width: 1.1, alpha: a });
+      math(yfmt(v), x - 8, Y(v) + tickSize * .35, { size: tickSize, align: 'right', alpha: a });
+    }
+    if (xlabel) math(xlabel, x + w / 2, y + h + tickSize + labelSize + 16, { size: labelSize, align: 'center', alpha: a });
+    if (ylabel) math(ylabel, x - (o.ylabelGap || 48), y + h / 2, { size: labelSize, align: 'center', rot: -Math.PI / 2, alpha: a });
+  }
+  const inside = f => { ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); f(); ctx.restore(); };
+  return { X, Y, inside };
+}
+function fmt(v) {
+  if (Math.abs(v) < 1e-12) return '0';
+  const s = Math.abs(v) >= 100 || Number.isInteger(v) ? String(Math.round(v)) : String(+v.toPrecision(3));
+  return s.replace('-', '−');
+}
+
+/* ---------------------------------------------------------------- colour
+   diverging(v), v in [-1, 1]: navy, white, the warm accent, for a signed
+   field (displacement, pressure). seq(v), v in [0, 1]: white to navy. The
+   LUTs, 256 entries of r, g, b, colour an ImageData without a call per pixel. */
+const _hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function _ramp(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255 * (stops.length - 1), k = Math.min(stops.length - 2, Math.floor(u)), s = u - k;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = Math.round(lerp(stops[k][c], stops[k + 1][c], s));
+  }
+  return lut;
+}
+/* blue and crimson arms matched stop for stop in CIELAB lightness (19, 43, 75),
+   so a value and its negative weigh the same */
+const DIVERGING = _ramp(['#043052', '#2E6A9E', '#9CBBD6', '#FFFFFF', '#DEABAB', '#B03F4D', '#651020'].map(_hex));
+const SEQ = _ramp(['#FFFFFF', '#C9D7E4', '#5B8DB8', '#095A94', '#043052'].map(_hex));
+function _lutc(lut, u) { const i = Math.round(clamp(u) * 255) * 3; return `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; }
+const diverging = v => _lutc(DIVERGING, (v + 1) / 2);
+const seq = v => _lutc(SEQ, v);
+
+/* ---------------------------------------------------------------- controls
+   uiChip(x, y, w, h, label, state, alpha): a control drawn in the figure, as
+   Figure 18b's chips are: white with a grey edge; the one chosen navy with
+   white type; under the pointer steel with a navy edge; pressed steel2; off
+   (unavailable) pale. Its edge is a line(), which the overlap check sees.
+   state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
+function uiChip(x, y, w, h, label, st = {}, a = 1) {
+  if (st.off) st = { off: true };                    // unavailable: no hover, no press
+  const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
+  const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
+  line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
+  text(label, x + w / 2, y + h / 2 + 5, { size: 15, align: 'center', alpha: a,
+    color: st.on ? '#fff' : st.off ? C.guide : st.hover ? C.ink : C.body });
+}
+
+/* ---------------------------------------------------------------- data
+   b64f32(s): a Float32Array from base64, for arrays too long for JSON. */
+function b64f32(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
+function b64i8(s) { const b = atob(s), u = new Int8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = (b.charCodeAt(i) << 24) >> 24; return u; }
+
+const D = DATA;
+const POSTER_T = D.poster;
+/* ================================================================ the model
+   His two-storey shear building: floors of m = 100 t, storey stiffnesses k1
+   (ground) and k2 (top) in MN/m. The 2 x 2 eigenproblem in closed form:
+   mu = (T -+ R)/2, T = k1 + 2 k2, R = sqrt(k1^2 + 4 k2^2), with lambda =
+   (10^6/m) mu, the smaller root as 2 k1 k2/(T + R); phi2/phi1 = (k1 + R)/(2 k2).
+   The same code, operation for operation, as sp_inv_update.py's port, which
+   checks this page's numbers. */
+const LO = D.lo, HI = D.hi, S = 1e6 / D.mass, TWO_PI = 2 * Math.PI;
+const SF = D.sf, SR = D.sr, SPR = D.sp, KP = D.kp;
+let NEV = 0;                               // forward runs of the run being computed
+function modal(k1, k2) {
+  const R = Math.sqrt(k1 * k1 + 4 * k2 * k2), T = k1 + 2 * k2;
+  const mu2 = (T + R) / 2, mu1 = 2 * k1 * k2 / (T + R);
+  return [Math.sqrt(S * mu1) / TWO_PI, Math.sqrt(S * mu2) / TWO_PI, (k1 + R) / (2 * k2), mu1, mu2, R];
+}
+const MT = modal(D.truek[0], D.truek[1]);
+const DF1 = MT[0] * (1 + D.noise[0]), DF2 = MT[1] * (1 + D.noise[1]), DR = MT[2] * (1 + D.noise[2]);
+function resid(k1, k2, o, jac) {
+  NEV++;
+  const q = modal(k1, k2), f1 = q[0], f2 = q[1], r = q[2], mu1 = q[3], mu2 = q[4], R = q[5];
+  const e = [(f1 - DF1) / DF1 / SF, (f2 - DF2) / DF2 / SF];
+  if (o.mode) e.push((r - DR) / DR / SR);
+  if (o.prior) { e.push((k1 - KP) / KP / SPR); e.push((k2 - KP) / KP / SPR); }
+  if (!jac) return e;
+  // eigenvalue sensitivities (Fox and Kapoor), in closed form
+  const a1 = k1 / R, a2 = 4 * k2 / R;
+  const c1 = f1 / (2 * mu1) / DF1 / SF, c2 = f2 / (2 * mu2) / DF2 / SF;
+  const J = [[c1 * ((1 - a1) / 2), c1 * (1 - a2 / 2)], [c2 * ((1 + a1) / 2), c2 * (1 + a2 / 2)]];
+  if (o.mode) { const cr = 1 / DR / SR; J.push([cr * (1 + a1) / (2 * k2), cr * (2 / R - r / k2)]); }
+  if (o.prior) { J.push([1 / KP / SPR, 0]); J.push([0, 1 / KP / SPR]); }
+  return [e, J];
+}
+function phiOf(e) { let s = 0; for (let k = 0; k < e.length; k++) s += e[k] * e[k]; return s; }
+const clampT = (a, b) => [Math.max(LO, Math.min(HI, a)), Math.max(LO, Math.min(HI, b))];
+function normalEq(J, e) {
+  let a = 0, b = 0, c = 0, g0 = 0, g1 = 0;
+  for (let k = 0; k < J.length; k++) {
+    a += J[k][0] * J[k][0]; b += J[k][0] * J[k][1]; c += J[k][1] * J[k][1];
+    g0 += J[k][0] * e[k]; g1 += J[k][1] * e[k];
+  }
+  return [a, b, c, g0, g1];
+}
+function solve2(a, b, c, r0, r1) { const det = a * c - b * b; if (Math.abs(det) < 1e-300) return null; return [(c * r0 - b * r1) / det, (a * r1 - b * r0) / det]; }
+function dist(p, q) { const dx = p[0] - q[0], dy = p[1] - q[1]; return Math.sqrt(dx * dx + dy * dy); }
+
+/* ================================================================ the solvers (his) */
+function runLocal(kind, start, o) {
+  const maxit = kind === 'gd' ? 400 : kind === 'gn' ? 60 : 80;
+  NEV = 0;
+  let t = clampT(start[0], start[1]), ej = resid(t[0], t[1], o, true), e = ej[0], J = ej[1], phi = phiOf(e);
+  const path = [t], hist = [phi], evals = [NEV];
+  let it = 0, step = 1, mu = null;
+  for (;;) {
+    const ne = normalEq(J, e), a = ne[0], b = ne[1], c = ne[2], g0 = ne[3], g1 = ne[4];
+    if (kind === 'gd') {
+      const G0 = 2 * g0, G1 = 2 * g1, gg = G0 * G0 + G1 * G1;
+      let s = Math.min(step * 2, 1e6), nt, nf;
+      for (let k = 0; k < 40; k++) {
+        nt = clampT(t[0] - s * G0, t[1] - s * G1); nf = phiOf(resid(nt[0], nt[1], o));
+        if (nf <= phi - 1e-4 * s * gg) break;
+        s /= 2;
+      }
+      step = s;
+      const moved = dist(nt, t);
+      if (nf < phi) { t = nt; ej = resid(t[0], t[1], o, true); e = ej[0]; J = ej[1]; phi = phiOf(e); }
+      it++; path.push(t); hist.push(phi); evals.push(NEV);
+      if (moved < 1e-3 || it >= maxit) break;
+    } else if (kind === 'gn') {
+      const d = solve2(a, b, c, -g0, -g1);
+      if (!d) break;
+      const nt = clampT(t[0] + d[0], t[1] + d[1]), mv = dist(nt, t);
+      t = nt; ej = resid(t[0], t[1], o, true); e = ej[0]; J = ej[1]; phi = phiOf(e);
+      it++; path.push(t); hist.push(phi); evals.push(NEV);
+      if (mv < 1e-3 || it >= maxit) break;
+    } else {
+      if (mu === null) mu = 1e-2 * Math.max(a, c);
+      let acc = false, mv = 0, nt, nf;
+      for (let k = 0; k < 20; k++) {
+        const d = solve2(a * (1 + mu), b, c * (1 + mu), -g0, -g1);
+        if (d) { nt = clampT(t[0] + d[0], t[1] + d[1]); nf = phiOf(resid(nt[0], nt[1], o)); if (nf < phi) { acc = true; break; } }
+        mu *= 3;
+      }
+      if (acc) { mv = dist(nt, t); t = nt; ej = resid(t[0], t[1], o, true); e = ej[0]; J = ej[1]; phi = phiOf(e); mu = Math.max(mu / 4, 1e-12); }
+      it++; path.push(t); hist.push(phi); evals.push(NEV);
+      if (!acc || mv < 1e-3 || it >= maxit) break;
+    }
+  }
+  return {kind, path, hist, evals, it};
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const seedOf = s => 1000 * Math.floor(s[0] + .5) + Math.floor(s[1] + .5);
+function runPso(start, o) {
+  const rnd = mulberry32(seedOf(start)), P = [];
+  NEV = 0;
+  let gbest = null, gphi = Infinity;
+  for (let p = 0; p < D.npart; p++) {
+    const x = [LO + (HI - LO) * rnd(), LO + (HI - LO) * rnd()], v = [(rnd() - .5) * 40, (rnd() - .5) * 40];
+    const f = phiOf(resid(x[0], x[1], o));
+    P.push({x, v, b: x.slice(), bf: f});
+    if (f < gphi) { gphi = f; gbest = x.slice(); }
+  }
+  const path = [gbest.slice()], hist = [gphi], evals = [NEV], swarm = [P.flatMap(q => q.x)];
+  for (let it = 0; it < D.niter; it++) {
+    for (const q of P) {
+      for (let dd = 0; dd < 2; dd++) {
+        let vv = .68 * q.v[dd] + 1.5 * rnd() * (q.b[dd] - q.x[dd]);
+        vv = vv + 1.5 * rnd() * (gbest[dd] - q.x[dd]);
+        q.v[dd] = Math.max(-40, Math.min(40, vv));
+      }
+      q.x = clampT(q.x[0] + q.v[0], q.x[1] + q.v[1]);
+      const f = phiOf(resid(q.x[0], q.x[1], o));
+      if (f < q.bf) { q.bf = f; q.b = q.x.slice(); }
+      if (f < gphi) { gphi = f; gbest = q.x.slice(); }
+    }
+    path.push(gbest.slice()); hist.push(gphi); evals.push(NEV); swarm.push(P.flatMap(q => q.x));
+  }
+  return {kind: 'pso', path, hist, evals, it: D.niter, swarm};
+}
+function runMcmc(start, o) {
+  const rnd = mulberry32(seedOf(start));
+  const randn = () => { const u = Math.max(rnd(), 1e-12), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TWO_PI * v); };
+  NEV = 0;
+  const ch = [start.slice(), [40, 200], [200, 40], [60, 60]].map(x => ({x, f: 0}));
+  for (const c of ch) c.f = phiOf(resid(c.x[0], c.x[1], o));
+  const n = D.burn + D.keep, tr = new Float64Array((n + 1) * 8), acc = [0, 0, 0, 0];
+  const put = j => ch.forEach((c, i) => { tr[j * 8 + 2 * i] = c.x[0]; tr[j * 8 + 2 * i + 1] = c.x[1]; });
+  put(0);
+  let side = 0;
+  for (let it = 1; it <= n; it++) {
+    ch.forEach((c, i) => {
+      const y = [c.x[0] + D.psd * randn(), c.x[1] + D.psd * randn()];
+      if (y[0] < LO || y[0] > HI || y[1] < LO || y[1] > HI) return;
+      const fy = phiOf(resid(y[0], y[1], o));
+      if (Math.log(rnd() + 1e-300) < -(fy - c.f) / 2) { c.x = y; c.f = fy; acc[i]++; }
+    });
+    put(it);
+    if (it > D.burn) for (const c of ch) if (c.x[0] < 2 * c.x[1]) side++;
+  }
+  return {kind: 'mcmc', trace: tr, n, acc, evals: NEV, share: side / (4 * D.keep)};
+}
+/* for the check file: one run as plain numbers */
+function __solve(kind, k1, k2, mode, prior) {
+  const o = {mode: !!mode, prior: !!prior}, s = [k1, k2];
+  const r = kind === 'pso' ? runPso(s, o) : kind === 'mcmc' ? runMcmc(s, o) : runLocal(kind, s, o);
+  if (kind === 'mcmc') return {trace: Array.from(r.trace), acc: r.acc, evals: r.evals, share: r.share};
+  return {path: r.path, hist: r.hist, evals: r.evals, it: r.it, swarm: r.swarm || null};
+}
+
+/* ================================================================ runs, scenes, the tour */
+const SOLVERS = ['gd', 'gn', 'lm', 'pso', 'mcmc'];
+const SNAME = {gd: 'gradient descent', gn: 'Gauss-Newton', lm: 'Levenberg-Marquardt', pso: 'particle swarm', mcmc: 'MCMC sampling'};
+const RUNS = new Map();
+function getRun(kind, start, mode, prior) {
+  const key = kind + '|' + start[0] + '|' + start[1] + '|' + (mode ? 1 : 0) + (prior ? 1 : 0);
+  let r = RUNS.get(key);
+  if (!r) {
+    const o = {mode: !!mode, prior: !!prior};
+    r = kind === 'pso' ? runPso(start, o) : kind === 'mcmc' ? runMcmc(start, o) : runLocal(kind, start, o);
+    RUNS.set(key, r);
+  }
+  return r;
+}
+const runOf = (sc, kind) => getRun(kind || sc.solver, sc.start, sc.mode, sc.prior);
+/* time on screen: one iteration every PACE seconds; MCMC at RATE steps a second */
+const PACE = {gd: .024, gn: .45, lm: .40, pso: .10}, RATE = 1500;
+const dur = r => r.kind === 'mcmc' ? r.n / RATE : r.it * PACE[r.kind];
+function prog(r, u) {                      // where a run is, u seconds after it started
+  if (r.kind === 'mcmc') { const n = u <= 0 ? 0 : Math.min(r.n, Math.floor(u * RATE)); return {k: n, s: 0, done: n >= r.n}; }
+  if (u <= 0) return {k: 0, s: 0, done: false};
+  const st = PACE[r.kind], k = Math.floor(u / st);
+  return k >= r.it ? {k: r.it, s: 0, done: true} : {k, s: (u - k * st) / st, done: false};
+}
+const variant = sc => (sc.mode ? 1 : 0) + (sc.prior ? 2 : 0);
+/* the tour, when the reader has chosen nothing: his default (Levenberg-Marquardt from
+   (210, 30)), the other solvers, then the mode shape and the prior added */
+const TOUR = [['lm', 0, 0], ['gn', 0, 0], ['gd', 0, 0], ['pso', 0, 0], ['mcmc', 0, 0],
+              ['mcmc', 1, 0], ['lm', 1, 0], ['lm', 0, 1], ['mcmc', 0, 1]];
+const T_START = .1, PRE_NEW = .5, PRE_SAME = .25, HOLD = 1.6, HOLD_MC = 2.2;
+let SCHED = null;
+function schedule() {
+  if (SCHED) return SCHED;
+  const steps = []; let off = 0;
+  TOUR.forEach(([kind, m, p], j) => {
+    const sc = {solver: kind, si: 0, start: D.starts[0], mode: m, prior: p};
+    const q = TOUR[(j + TOUR.length - 1) % TOUR.length];
+    const pre = j === 0 || q[1] !== m || q[2] !== p ? PRE_NEW : PRE_SAME, d = dur(runOf(sc));
+    const len = pre + d + (kind === 'mcmc' ? HOLD_MC : HOLD);
+    steps.push({sc, off, pre, d, len}); off += len;
+  });
+  return SCHED = {steps, period: off};
+}
+function tourScene(time) {
+  const Sd = schedule(), N = Sd.steps.length;
+  if (time < T_START) return {...Sd.steps[0].sc, t0: T_START, pre: Sd.steps[0].pre, prev: null, tour: 0};
+  const c = Math.floor((time - T_START) / Sd.period), tau = time - T_START - c * Sd.period;
+  let j = 0; while (j + 1 < N && Sd.steps[j + 1].off <= tau) j++;
+  const st = Sd.steps[j], prev = c === 0 && j === 0 ? null : {...Sd.steps[(j + N - 1) % N].sc, u: 1e9};
+  return {...st.sc, t0: T_START + c * Sd.period + st.off, pre: st.pre, prev, tour: j};
+}
+let PICK = null;                           // the reader's scene, once chosen
+const scene = () => PICK || tourScene(t);
+
+/* ================================================================ layout */
+const MX = 92, MY = 146, MS = 420;         // (a): the map's plot square
+const KX = k => MX + (k - LO) / (HI - LO) * MS, KY = k => MY + MS - (k - LO) / (HI - LO) * MS;
+const CBX = MX + MS + 16, CBW = 12;        // the colour bar
+const RX = 616, RX1 = 980;                 // the right column
+const BX = 690, BY = 146, BW = 290, BH = 176;   // (b)
+const TY = 404;                            // the table's top rule
+const ROW1 = 10, ROW2 = 52, CHH = 30;      // the chip rows
+const LEV = D.levels, NL = LEV.length;
+/* the bands of the map: SEQ (white to navy) from high misfit to low */
+const BAND = LEV.map((_, j) => seq(lerp(.70, .05, j / (NL - 1))));
+const lab = t0 => settle(t0, .28), rise = s => 5 * (1 - s);
+function tw(s, size) { ctx.save(); ctx.font = font({size}); const w = ctx.measureText(s).width; ctx.restore(); return w; }
+let LAY = null;
+function layout() {                         // the chips, measured once the type has loaded
+  if (LAY) return LAY;
+  const L = {solver: [], start: [], opt: []};
+  let x = 98;
+  for (const s of SOLVERS) { const w = Math.round(tw(SNAME[s], 15) + 26); L.solver.push({x, y: ROW1, w, h: CHH}); x += w + 8; }
+  x = 98;
+  for (const s of D.starts) { const w = Math.round(tw('(' + s[0] + ', ' + s[1] + ')', 15) + 26); L.start.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
+  x += 40;
+  L.add = x - 10;
+  for (const s of ['mode shape', 'prior']) { const w = Math.round(tw(s, 15) + 26); L.opt.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
+  return LAY = L;
+}
+
+/* ================================================================ the map, drawn once per size */
+function b64u16(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Uint16Array(u.buffer); }
+const MAPS = D.maps.map(m => {
+  const q = b64u16(m.q), out = []; let i = 0;
+  for (const cnt of m.n) {
+    const rings = [];
+    for (const c of cnt) { const r = new Float64Array(2 * c); for (let j = 0; j < 2 * c; j++) r[j] = LO + q[i++] / 65535 * (HI - LO); rings.push(r); }
+    out.push(rings);
+  }
+  return out;
+});
+const OFF = {};
+function mapImage(v) {
+  const px = Math.max(8, Math.round(MS * cv.width / W)), key = v + ':' + px;
+  if (OFF[key]) return OFF[key];
+  for (const k in OFF) if (!k.endsWith(':' + px)) delete OFF[k];
+  const c = document.createElement('canvas'); c.width = c.height = px;
+  const g = c.getContext('2d'), f = px / (HI - LO);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, px, px);
+  for (let j = NL - 1; j >= 0; j--) {
+    g.beginPath();
+    for (const r of MAPS[v][j]) {
+      for (let i = 0; i < r.length; i += 2) { const x = (r[i] - LO) * f, y = px - (r[i + 1] - LO) * f; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.closePath();
+    }
+    g.fillStyle = BAND[j]; g.fill('evenodd');
+  }
+  return OFF[key] = c;
+}
+
+/* ================================================================ drawing the runs */
+const CASE = 4.4;                          // white casing under a path
+function pathLine(pts, a, width = 2.2) {
+  if (pts.length < 2) return;
+  line(pts, {color: '#fff', width: CASE, alpha: a});
+  line(pts, {color: C.accent, width, alpha: a});
+}
+function marker(x, y, a, r = 6) { dot(x, y, r, {color: '#fff', fill: C.accent, width: 1.8, alpha: a}); }
+function startRing(s, a) {
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.accent; ctx.lineWidth = 1.6; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.arc(KX(s[0]), KY(s[1]), 9.5, 0, 2 * Math.PI); ctx.stroke(); ctx.restore();
+}
+function drawLocal(sc, r, u, a) {
+  const p = prog(r, u), P = r.path, run0 = sc.t0 + sc.pre;
+  const pts = []; for (let j = 0; j <= p.k; j++) pts.push([KX(P[j][0]), KY(P[j][1])]);
+  let cur = pts[pts.length - 1];
+  if (!p.done && u > 0) {
+    const g = r.kind === 'gd' ? p.s : settle(run0 + p.k * PACE[r.kind], .3);
+    const nx = P[p.k + 1];
+    cur = [lerp(cur[0], KX(nx[0]), g), lerp(cur[1], KY(nx[1]), g)];
+    pts.push(cur);
+  }
+  startRing(P[0], a);
+  pathLine(pts, a, r.kind === 'gd' ? 1.8 : 2.2);
+  if (r.kind !== 'gd') for (let j = 1; j <= p.k; j++) dot(KX(P[j][0]), KY(P[j][1]), 2.6, {color: C.accent, fill: C.accent, width: .8, alpha: a});
+  marker(cur[0], cur[1], a);
+}
+function drawSwarm(sc, r, u, a) {
+  const p = prog(r, u), X = r.swarm, k = p.k, s = p.done ? 0 : u > 0 ? p.s : 0;
+  const at = (j, i) => [KX(X[j][2 * i]), KY(X[j][2 * i + 1])];
+  for (let i = 0; i < D.npart; i++) {
+    const pts = []; for (let j = Math.max(0, k - 5); j <= k; j++) pts.push(at(j, i));
+    let cur = pts[pts.length - 1];
+    if (s > 0 && k < r.it) { const nx = at(k + 1, i); cur = [lerp(cur[0], nx[0], s), lerp(cur[1], nx[1], s)]; pts.push(cur); }
+    if (pts.length > 1) line(pts, {color: C.sky, width: 1.1, alpha: a * .8});
+    dot(cur[0], cur[1], 2.8, {color: C.navy, fill: C.navy, width: .8, alpha: a});
+  }
+  const g = r.path[k];
+  marker(KX(g[0]), KY(g[1]), a);
+}
+function drawChains(sc, r, u, a) {
+  const p = prog(r, u), n = p.k, T = r.trace;
+  ctx.save(); ctx.globalAlpha *= a * .2; ctx.fillStyle = C.accent;
+  for (let j = D.burn + 1; j <= n; j++) for (let c = 0; c < 4; c++) ctx.fillRect(KX(T[j * 8 + 2 * c]) - 1.1, KY(T[j * 8 + 2 * c + 1]) - 1.1, 2.2, 2.2);
+  ctx.restore();
+  startRing([T[0], T[1]], a);
+  for (let c = 0; c < 4; c++) marker(KX(T[n * 8 + 2 * c]), KY(T[n * 8 + 2 * c + 1]), a, 4.6);
+}
+function drawRun(sc, u, a) {
+  if (a <= 0) return;
+  const r = runOf(sc);
+  if (r.kind === 'mcmc') drawChains(sc, r, u, a);
+  else if (r.kind === 'pso') drawSwarm(sc, r, u, a);
+  else drawLocal(sc, r, u, a);
+}
+
+/* ================================================================ (a) the map */
+function cross(x, y, a) {
+  for (const [c, w] of [['#fff', 4.6], [C.ink, 2]]) {
+    line([[x - 6, y - 6], [x + 6, y + 6]], {color: c, width: w, alpha: a});
+    line([[x + 6, y - 6], [x - 6, y + 6]], {color: c, width: w, alpha: a});
+  }
+}
+function ring(x, y, a) {
+  dot(x, y, 6.5, {color: '#fff', fill: null, width: 4, alpha: a});
+  dot(x, y, 6.5, {color: C.ink, fill: null, width: 1.7, alpha: a});
+}
+function knock(x, y, w, h, a) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); ctx.restore(); }
+function tag(s, x, y, a, o = {}) {        // a label on the map, on a white knockout
+  const size = o.size || 16, w = o.math ? math(s, 0, -1e4, {size, alpha: 0}) : tw(s, size);
+  const x0 = o.align === 'right' ? x - w : o.align === 'center' ? x - w / 2 : x;
+  knock(x0 - 4, y - size * .82, w + 8, size * 1.18, a);
+  if (o.math) math(s, x0, y, {size, color: o.color || C.ink, alpha: a});
+  else text(s, x0, y, {size, color: o.color || C.ink, alpha: a});
+}
+function mapPanel(sc, u) {
+  const a0 = seg(.04, .3);
+  // the bands: the map of the variant shown, cross-faded from the one before
+  const v = variant(sc), pv = sc.prev ? variant(sc.prev) : v, xf = pv !== v ? seg(sc.t0, .45) : 1;
+  ctx.save(); ctx.globalAlpha = a0;
+  if (xf < 1) ctx.drawImage(mapImage(pv), MX, MY, MS, MS);
+  ctx.globalAlpha = a0 * xf; ctx.drawImage(mapImage(v), MX, MY, MS, MS);
+  ctx.restore();
+  const A = axes({x: MX, y: MY, w: MS, h: MS, xlim: [LO, HI], ylim: [LO, HI], xticks: [50, 100, 150, 200], yticks: [50, 100, 150, 200],
+                  xlabel: '\\rm{storey 1 stiffness }k_{1}\\rm{ (MN/m)}', ylabel: '\\rm{storey 2 stiffness }k_{2}\\rm{ (MN/m)}',
+                  tickSize: 16, labelSize: 17, ylabelGap: 50, progress: seg(0, .35)});
+  A.inside(() => {
+    // the fold line k1 = 2 k2: a building and its twin lie mirrored across it
+    line([[KX(40), KY(20)], [KX(220), KY(110)]], {color: C.guide, width: 1.2, dash: [5, 4], progress: seg(.25, .35)});
+    // the design values the prior pulls toward
+    const pa = (sc.prior ? 1 : 0) * (sc.prev && !sc.prev.prior ? seg(sc.t0, .3) : 1);
+    const pp = sc.prev && sc.prev.prior && !sc.prior ? 1 - seg(sc.t0, .3) : 0;
+    const da = Math.max(pa, pp);
+    if (da > 0) line([[KX(100) - 5, KY(100) - 5], [KX(100) + 5, KY(100) - 5], [KX(100) + 5, KY(100) + 5], [KX(100) - 5, KY(100) + 5]], {color: C.ink, width: 1.5, close: true, fill: '#fff', alpha: da});
+    // the runs: the one before fading out, the one shown
+    if (sc.prev) drawRun(sc.prev, sc.prev.u, 1 - seg(sc.t0, .25));
+    drawRun(sc, u, seg(sc.t0, .2) * seg(.3, .2));
+    // the true building and the two exact fits of the measured frequencies
+    const ma = lab(.3);
+    ring(KX(D.fits[1][0]), KY(D.fits[1][1]), ma);
+    cross(KX(D.truek[0]), KY(D.truek[1]), ma);
+  });
+  // labels, each on its knockout, over whatever passed beneath
+  const la = lab(.42);
+  tag('true', KX(D.truek[0]) - 10, KY(D.truek[1]) - 15, la, {align: 'center'});
+  tag('twin', KX(D.fits[1][0]) + 2, KY(D.fits[1][1]) + 27, la, {align: 'center'});
+  const fa = lab(.5), fx = KX(186), fy = KY(93);
+  ctx.save(); ctx.translate(fx, fy); ctx.rotate(-Math.atan(.5));
+  const fw = math('k_{1} = 2k_{2}', 0, -1e4, {size: 15, alpha: 0});
+  knock(-fw / 2 - 4, -26, fw + 8, 19, fa);
+  math('k_{1} = 2k_{2}', -fw / 2, -11, {size: 15, color: C.body, alpha: fa});
+  ctx.restore();
+  if (sc.prior || (sc.prev && sc.prev.prior)) {
+    const da = sc.prior ? (sc.prev && !sc.prev.prior ? seg(sc.t0, .3) : 1) : 1 - seg(sc.t0, .3);
+    tag('design', KX(100) - 12, KY(100) + 5, da * la, {align: 'right'});
+  }
+  // the colour bar: the bands, log scale
+  const ca = lab(.3), y0 = MY, y1 = MY + MS, lo = -1.5, hi = 5;
+  const Yc = l => y1 - (l - lo) / (hi - lo) * (y1 - y0);
+  ctx.save(); ctx.globalAlpha *= ca;
+  for (let j = 0; j < NL; j++) { const top = Yc(LEV[j]), bot = j ? Yc(LEV[j - 1]) : y1; ctx.fillStyle = BAND[j]; ctx.fillRect(CBX, top, CBW, bot - top); }
+  ctx.restore();
+  line([[CBX, y0], [CBX + CBW, y0], [CBX + CBW, y1], [CBX, y1]], {color: C.ink, width: 1, close: true, alpha: ca});
+  for (let l = -1; l <= 4; l++) {
+    line([[CBX + CBW, Yc(l)], [CBX + CBW + 4, Yc(l)]], {color: C.ink, width: 1, alpha: ca});
+    math(l === 0 ? '1' : l === 1 ? '10' : '10^{' + l + '}', CBX + CBW + 7, Yc(l) + 5, {size: 15, alpha: ca});
+  }
+  math('\\Phi', CBX + CBW / 2, y0 - 9, {size: 16, align: 'center', alpha: ca});
+}
+
+/* ================================================================ (b) misfit against cost */
+const STYLE = {gd: {color: C.sky, dash: null}, gn: {color: C.blue, dash: [6, 4]}, lm: {color: C.navy, dash: null}, pso: {color: C.navy, dash: [1.5, 3.5]}};
+const l10 = Math.log10;
+function convPanel(sc, u) {
+  const A = axes({x: BX, y: BY, w: BW, h: BH, xlim: [0, 4.4], ylim: [-8, 5], xticks: [0, 1, 2, 3, 4], yticks: [-8, -4, 0, 4],
+                  xfmt: v => v === 0 ? '1' : v === 1 ? '10' : '10^{' + v + '}', yfmt: v => v === 0 ? '1' : '10^{' + v + '}',
+                  tickSize: 16, labelSize: 17, progress: seg(.05, .35)});
+  const ca = seg(.35, .4), la = clamp(seg(.05, .35) * 1.4);
+  text('forward-model runs', BX + BW / 2, BY + BH + 49, {size: 17, align: 'center', alpha: la});
+  math('\\Phi', BX - 52, BY + BH / 2 + 6, {size: 17, align: 'center', alpha: la});
+  A.inside(() => {
+    for (const kind of ['gd', 'gn', 'lm', 'pso']) {
+      const r = runOf(sc, kind), on = kind === sc.solver, pts = [];
+      const p = on ? prog(r, u) : {k: r.hist.length - 1, s: 0, done: true};
+      for (let j = 0; j <= p.k; j++) pts.push([A.X(l10(r.evals[j])), A.Y(Math.max(-9, l10(Math.max(r.hist[j], 1e-30))))]);
+      if (on && !p.done && u > 0 && p.k + 1 < r.hist.length) {
+        const g = kind === 'gd' || kind === 'pso' ? p.s : settle(sc.t0 + sc.pre + p.k * PACE[kind], .3), q = pts[pts.length - 1];
+        pts.push([lerp(q[0], A.X(l10(r.evals[p.k + 1])), g), lerp(q[1], A.Y(Math.max(-9, l10(Math.max(r.hist[p.k + 1], 1e-30)))), g)]);
+      }
+      if (on) {
+        if (pts.length > 1) line(pts, {color: C.accent, width: 2.4, alpha: seg(sc.t0, .2)});
+        if (kind === 'gn' || kind === 'lm') for (const q of pts.slice(0, p.k + 1)) dot(q[0], q[1], 2.4, {color: C.accent, fill: C.accent, width: .8});
+      } else if (pts.length > 1) line(pts, {color: STYLE[kind].color, width: 1.7, dash: STYLE[kind].dash, progress: ca});
+    }
+  });
+}
+/* ================================================================ (b) for MCMC: the posterior of k1 */
+function postPanel(sc, u) {
+  const r = runOf(sc), v = variant(sc), ex = D.post.p[v], k0 = D.post.k0, dk = D.post.dk;
+  const p = prog(r, u), n = p.k, T = r.trace, NB = 40, h0 = 100, h1 = 180, bw = (h1 - h0) / NB;
+  const cnt = new Float64Array(NB); let m = 0;
+  for (let j = D.burn + 1; j <= n; j++) for (let c = 0; c < 4; c++) { const b = Math.floor((T[j * 8 + 2 * c] - h0) / bw); m++; if (b >= 0 && b < NB) cnt[b]++; }
+  // the y range: the exact peak and the finished histogram's, so nothing moves as samples arrive
+  if (!r.ymax) {
+    const fin = new Float64Array(NB);
+    for (let j = D.burn + 1; j <= r.n; j++) for (let c = 0; c < 4; c++) { const b = Math.floor((T[j * 8 + 2 * c] - h0) / bw); if (b >= 0 && b < NB) fin[b]++; }
+    const hmax = Math.max(...fin) / (4 * D.keep * bw), emax = Math.max(...ex);
+    r.ymax = Math.ceil(Math.max(hmax, emax) * 1.3 / .02) * .02;
+  }
+  const ym = r.ymax, step = ym > .16 ? .05 : ym > .08 ? .04 : .02;
+  const yt = []; for (let y = 0; y <= ym + 1e-9; y += step) yt.push(+y.toFixed(2));
+  const A = axes({x: BX, y: BY, w: BW, h: BH, xlim: [h0, h1], ylim: [0, ym], xticks: [100, 120, 140, 160, 180], yticks: yt,
+                  yfmt: y => y === 0 ? '0' : y.toFixed(2), xlabel: 'k_{1}\\rm{ (MN/m)}', ylabel: 'p(k_{1}\\,|\\,d)\\rm{ (m/MN)}', ylabelGap: 62,
+                  tickSize: 16, labelSize: 17, progress: seg(.05, .35)});
+  A.inside(() => {
+    if (m > 0) for (let b = 0; b < NB; b++) {
+      const hgt = cnt[b] / (m * bw); if (hgt <= 0) continue;
+      const x0 = A.X(h0 + b * bw), x1 = A.X(h0 + (b + 1) * bw), y = A.Y(hgt);
+      line([[x0, A.Y(0)], [x0, y], [x1, y], [x1, A.Y(0)]], {color: C.accent, width: 1, fill: C.wash, alpha: seg(sc.t0, .2)});
+    }
+    const pts = ex.map((v_, i) => [A.X(k0 + i * dk), A.Y(v_)]);
+    line(pts, {color: C.navy, width: 2.2, progress: seg(sc.t0, .4)});
+  });
+  // the key, as the family draws one
+  const ka = lab(sc.t0 + .1), kw = 196, kx = BX + BW - kw - 8, ky = BY + 8;
+  line([[kx, ky], [kx + kw, ky], [kx + kw, ky + 28], [kx, ky + 28]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: ka});
+  line([[kx + 10, ky + 14], [kx + 34, ky + 14]], {color: C.navy, width: 2.2, alpha: ka});
+  text('exact', kx + 41, ky + 19, {size: 15, alpha: ka});
+  line([[kx + 96, ky + 21], [kx + 96, ky + 8], [kx + 116, ky + 8], [kx + 116, ky + 21]], {color: C.accent, width: 1, fill: C.wash, alpha: ka});
+  text('samples', kx + 123, ky + 19, {size: 15, alpha: ka});
+}
+
+/* ================================================================ the table */
+const n0 = v => Math.round(v).toLocaleString('en-US');
+function outcome(r) { const e = r.path[r.path.length - 1]; return e[0] < 2 * e[1] ? 'true' : 'twin'; }
+function table(sc, u) {
+  const ta = lab(.45), cx = [RX + 34, 836, 900, RX1];
+  line([[RX, TY], [RX1, TY]], {color: C.ink, width: 1.3, alpha: ta});
+  text('solver', cx[0], TY + 18, {size: 16, color: C.body, alpha: ta});
+  text('iterations', cx[1], TY + 18, {size: 16, color: C.body, align: 'right', alpha: ta});
+  text('runs', cx[2], TY + 18, {size: 16, color: C.body, align: 'right', alpha: ta});
+  text('ends at', cx[3], TY + 18, {size: 16, color: C.body, align: 'right', alpha: ta});
+  line([[RX, TY + 26], [RX1, TY + 26]], {color: C.ink, width: .8, alpha: ta});
+  SOLVERS.forEach((kind, i) => {
+    const y = TY + 48 + i * 24, r = runOf(sc, kind), on = kind === sc.solver;
+    const p = on ? prog(r, u) : {k: kind === 'mcmc' ? r.n : r.it, done: true};
+    const col = on ? C.accent : C.ink;
+    if (kind === 'mcmc') { for (let q = 0; q < 3; q++) dot(RX + 6 + q * 9, y - 5, 2, {color: on ? C.accent : C.navy, fill: on ? C.accent : C.navy, width: .6, alpha: ta}); }
+    else line([[RX, y - 5], [RX + 26, y - 5]], {color: on ? C.accent : STYLE[kind].color, width: on ? 2.4 : 1.7, dash: on ? null : STYLE[kind].dash, alpha: ta});
+    text(SNAME[kind], cx[0], y, {size: 16, color: col, alpha: ta});
+    const it = kind === 'mcmc' ? p.k : p.done ? r.it : Math.min(r.it, p.k + (u > 0 ? 1 : 0));
+    const ev = kind === 'mcmc' ? (p.done ? r.evals : null) : r.evals[it];
+    text(n0(it), cx[1], y, {size: 16, color: col, align: 'right', alpha: ta});
+    if (ev !== null) text(n0(ev), cx[2], y, {size: 16, color: col, align: 'right', alpha: ta});
+    if (p.done) text(kind === 'mcmc' ? Math.round(100 * r.share) + '% true' : outcome(r), cx[3], y, {size: 16, color: col, align: 'right', alpha: ta});
+  });
+  line([[RX, TY + 158], [RX1, TY + 158]], {color: C.ink, width: 1.3, alpha: ta});
+}
+/* the measured data and the model at the current estimate */
+function dataBlock(sc, u) {
+  const a = lab(.55), y = TY + 186, r = runOf(sc);
+  const f3 = v => v.toFixed(3), x1 = RX + 78, x2 = RX + 196, x3 = RX + 306;
+  text('measured', RX, y, {size: 16, color: C.body, alpha: a});
+  math('f_{1} = ' + f3(DF1) + '\\rm{ Hz}', x1, y, {size: 16, alpha: a});
+  math('f_{2} = ' + f3(DF2) + '\\rm{ Hz}', x2, y, {size: 16, alpha: a});
+  math('r = ' + DR.toFixed(2), x3, y, {size: 16, color: sc.mode ? C.ink : C.guide, alpha: a});
+  if (r.kind === 'mcmc') {          // the samples' share on the true side of the fold, and the exact one
+    if (!prog(r, u).done) return;
+    text('true side', RX, y + 24, {size: 16, color: C.body, alpha: a});
+    text('sampled ' + Math.round(100 * r.share) + '%', x1, y + 24, {size: 16, color: C.accent, alpha: a});
+    text('exact ' + (100 * D.post.split[variant(sc)]).toFixed(1) + '%', x2, y + 24, {size: 16, color: C.navy, alpha: a});
+    return;
+  }
+  const p = prog(r, u), k = p.done || u <= 0 ? p.k : p.k + (settle(sc.t0 + sc.pre + p.k * (PACE[r.kind] || 0), .3) > .5 ? 1 : 0);
+  const e = r.path[Math.min(k, r.path.length - 1)], q = modal(e[0], e[1]), y2 = y + 24;
+  text('model', RX, y2, {size: 16, color: C.body, alpha: a});
+  math('f_{1} = ' + f3(q[0]) + '\\rm{ Hz}', x1, y2, {size: 16, color: C.accent, alpha: a});
+  math('f_{2} = ' + f3(q[1]) + '\\rm{ Hz}', x2, y2, {size: 16, color: C.accent, alpha: a});
+  math('r = ' + q[2].toFixed(2), x3, y2, {size: 16, color: C.accent, alpha: a});
+}
+/* the building, as TikZ draws a shear frame */
+function frame(cx, gy, a) {
+  const w = 54, h = 30;
+  line([[cx - 42, gy], [cx + 42, gy]], {width: 1.8, alpha: a});
+  ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = cx - 38; x <= cx + 42; x += 7) { ctx.moveTo(x, gy); ctx.lineTo(x - 5, gy + 6); }
+  ctx.stroke(); ctx.restore();
+  for (let s = 0; s < 2; s++) {
+    const y0 = gy - s * h, y1 = gy - (s + 1) * h;
+    line([[cx - w / 2, y0], [cx - w / 2, y1]], {width: 1.5, alpha: a});
+    line([[cx + w / 2, y0], [cx + w / 2, y1]], {width: 1.5, alpha: a});
+    line([[cx - w / 2 - 4, y1], [cx + w / 2 + 4, y1]], {color: C.navy, width: 3.2, alpha: a});
+    math('k_{' + (s + 1) + '}', cx + w / 2 + 9, y0 - h / 2 + 5, {size: 15, alpha: a});
+    math('m', cx - w / 2 - 11, y1 + 5, {size: 15, align: 'right', alpha: a});
+  }
+}
+
+/* ================================================================ chips */
+let HOVER = null, DOWN = null;             // {g, i}: the chip under the pointer, the one pressed
+const isH = (g, i) => HOVER && HOVER.g === g && HOVER.i === i, isD = (g, i) => DOWN && DOWN.g === g && DOWN.i === i;
+function chips(sc) {
+  const L = layout(), a = lab(.1);
+  text('solver', L.solver[0].x - 10, ROW1 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
+  SOLVERS.forEach((s, i) => { const c = L.solver[i]; uiChip(c.x, c.y, c.w, c.h, SNAME[s], {on: sc.solver === s, hover: isH('solver', i), down: isD('solver', i)}, a); });
+  text('start', L.start[0].x - 10, ROW2 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
+  D.starts.forEach((s, i) => { const c = L.start[i]; uiChip(c.x, c.y, c.w, c.h, '(' + s[0] + ', ' + s[1] + ')', {on: sc.si === i, hover: isH('start', i), down: isD('start', i)}, a); });
+  text('add', L.add, ROW2 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
+  ['mode shape', 'prior'].forEach((s, i) => { const c = L.opt[i]; uiChip(c.x, c.y, c.w, c.h, s, {on: i ? !!sc.prior : !!sc.mode, hover: isH('opt', i), down: isD('opt', i)}, a); });
+}
+
+/* ================================================================ draw */
+function draw() {
+  const sc = scene(), u = t - sc.t0 - sc.pre;
+  chips(sc);
+  frame(930, 92, lab(.2));
+  sub_('a', 18, 128, 'misfit of the measured data', lab(.04));
+  if (!STILL) text('click the map to start there', MX + MS, 128, {size: 15, color: C.muted, align: 'right', alpha: lab(.5)});
+  mapPanel(sc, u);
+  if (sc.solver === 'mcmc') {
+    const ba = lab(.06); sub_('b', RX - 4, 128, 'posterior of', ba);
+    math('k_{1}', RX + 31 + tw('posterior of ', 17), 128, {size: 17, color: C.body, alpha: ba});
+    postPanel(sc, u);
+  }
+  else { sub_('b', RX - 4, 128, 'misfit against cost', lab(.06)); convPanel(sc, u); }
+  table(sc, u);
+  dataBlock(sc, u);
+  const pa = lab(.6);
+  mixed(D.params[0], 18, H - 34, {size: 14, color: C.muted, alpha: pa});
+  mixed(D.params[1], 18, H - 13, {size: 14, color: C.muted, alpha: pa});
+  place();
+}
+/* runs of words (text) and of symbols ({m: ...}, math), set one after the other */
+function mixed(parts, x, y, o) { let cx = x; for (const q of parts) cx += typeof q === 'string' ? text(q, cx, y, o) : math(q.m, cx, y, o); return cx - x; }
+function sub_(l, x, y, words, a) { panel(l, x, y, {alpha: a}); text(words, x + 35, y, {size: 17, color: C.body, alpha: a}); }
+
+/* ================================================================ the reader's hand */
+const FIG = document.querySelector('.fig');
+function shown() { return scene(); }
+function choose(ch) {
+  const cur = shown(), u = t - cur.t0 - cur.pre;
+  const next = {solver: cur.solver, si: cur.si, start: cur.start, mode: cur.mode, prior: cur.prior, ...ch};
+  const prev = {solver: cur.solver, si: cur.si, start: cur.start, mode: cur.mode, prior: cur.prior, u};
+  const vchg = variant(prev) !== variant(next);
+  next.pre = vchg ? PRE_NEW : PRE_SAME; next.prev = prev;
+  next.t0 = playing ? t : t - next.pre - dur(runOf(next)) - 2;
+  PICK = next;
+  if (!playing) render();
+  sync(); say();
+}
+function reset() { PICK = null; HOVER = DOWN = null; sync(); }
+/* ?view=SOLVER-START-DATA preselects a state (the overlap check runs every one):
+   SOLVER gd, gn, lm, pso or mcmc; START 0 to 3 or k1_k2; DATA f, fm, fp or fmp */
+(() => {
+  const m = /[?&]view=([a-z]+)-([\d._]+)-(f[mp]*)/.exec(location.search);
+  if (!m || !SOLVERS.includes(m[1])) return;
+  const st = m[2].includes('_') ? m[2].split('_').map(Number) : D.starts[+m[2]];
+  if (!st) return;
+  PICK = {solver: m[1], si: m[2].includes('_') ? -1 : +m[2], start: st, mode: m[3].includes('m') ? 1 : 0, prior: m[3].includes('p') ? 1 : 0,
+          t0: T_START, pre: PRE_NEW, prev: null};
+})();
+const KB = {solver: [], start: [], opt: []};
+let said = null, PLACED = '';
+function say() {
+  if (!said) return;
+  const sc = shown(), r = runOf(sc), where = '(' + sc.start.map(v => +v.toFixed(1)).join(', ') + ')';
+  const data = 'frequencies' + (sc.mode ? ' and mode shape' : '') + (sc.prior ? ', with the prior' : '');
+  if (r.kind === 'mcmc') said.textContent = 'MCMC from ' + where + ' on ' + data + ': ' + Math.round(100 * r.share) + ' percent of 16,000 samples on the true side of the fold.';
+  else { const e = r.path[r.path.length - 1]; said.textContent = SNAME[r.kind] + ' from ' + where + ' on ' + data + ': ' + r.it + ' iterations, ' + n0(r.evals[r.evals.length - 1]) + ' forward runs, ends at k1 = ' + e[0].toFixed(1) + ', k2 = ' + e[1].toFixed(1) + ' MN/m (' + (outcome(r) === 'twin' ? 'the twin' : 'the true side') + ').'; }
+}
+function sync() {
+  const sc = shown();
+  KB.solver.forEach((b, i) => { b.setAttribute('aria-checked', String(SOLVERS[i] === sc.solver)); b.tabIndex = SOLVERS[i] === sc.solver ? 0 : -1; });
+  KB.start.forEach((b, i) => { b.setAttribute('aria-checked', String(sc.si === i)); b.tabIndex = sc.si === i || (sc.si < 0 && i === 0) ? 0 : -1; });
+  KB.opt.forEach((b, i) => b.setAttribute('aria-pressed', String(!!(i ? sc.prior : sc.mode))));
+}
+function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+const inMap = (X, Y) => X >= MX && X <= MX + MS && Y >= MY && Y <= MY + MS;
+function place() {                         // the keyboard's stand-ins sit on the chips they choose
+  if (STILL || !LAY || !KB.solver.length) return;
+  const key = String(cv.clientWidth);
+  if (key === PLACED) return;
+  PLACED = key;
+  const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
+  const put = (b, c) => { b.style.left = px(c.x - 3); b.style.top = px(c.y - 6); b.style.width = px(c.w + 6); b.style.height = px(c.h + 12);
+    b.style.setProperty('--ix', px(3)); b.style.setProperty('--iy', px(6)); };   // the ring hugs the drawn chip
+  KB.solver.forEach((b, i) => put(b, LAY.solver[i])); KB.start.forEach((b, i) => put(b, LAY.start[i])); KB.opt.forEach((b, i) => put(b, LAY.opt[i]));
+}
+if (!STILL) {
+  document.head.insertAdjacentHTML('beforeend', '<style>.nfm{position:absolute;box-sizing:border-box;margin:0;padding:0;' +
+    'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden;font:inherit}' +
+    '.nfm:focus{outline:none}.nfm::after{content:"";position:absolute;inset:var(--iy,4px) var(--ix,2px)}' +
+    '.nfm:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}</style>');
+  const ctl = FIG.querySelector('.ctl');
+  const group = (label, role) => { const g = document.createElement('div'); if (role) g.setAttribute('role', role); g.setAttribute('aria-label', label); FIG.insertBefore(g, ctl); return g; };
+  const gS = group('Solver', 'radiogroup'), gT = group('Starting point', 'radiogroup'), gO = group('Data added to the misfit', 'group');
+  const roving = (list, i, pick) => e => {
+    const d = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key], n = list.length;
+    const j = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : d ? (i + d + n) % n : -1;
+    if (j < 0) return;
+    e.preventDefault(); list[j].focus(); pick(j);
+  };
+  const mk = (g, list, gname, label, role, onPick) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'nfm'; b.textContent = label;
+    if (role) b.setAttribute('role', role);
+    b.setAttribute('aria-label', label);
+    const i = list.length;
+    b.addEventListener('click', ev => { ev.stopPropagation(); onPick(i); });
+    b.addEventListener('pointerenter', () => { HOVER = {g: gname, i}; if (!playing) render(); });
+    b.addEventListener('pointerleave', () => { HOVER = DOWN = null; if (!playing) render(); });
+    b.addEventListener('pointerdown', () => { DOWN = {g: gname, i}; if (!playing) render(); });
+    b.addEventListener('pointerup', () => { DOWN = null; if (!playing) render(); });
+    b.addEventListener('pointercancel', () => { HOVER = DOWN = null; if (!playing) render(); });
+    g.appendChild(b); list.push(b);
+    return b;
+  };
+  SOLVERS.forEach(s => mk(gS, KB.solver, 'solver', SNAME[s], 'radio', i => choose({solver: SOLVERS[i]})));
+  D.starts.forEach(s => mk(gT, KB.start, 'start', 'start at k1 = ' + s[0] + ', k2 = ' + s[1] + ' MN/m', 'radio', i => choose({si: i, start: D.starts[i]})));
+  ['add the measured mode shape', 'add the prior toward the design values'].forEach(s => mk(gO, KB.opt, 'opt', s, null,
+    i => choose(i ? {prior: shown().prior ? 0 : 1} : {mode: shown().mode ? 0 : 1})));
+  KB.solver.forEach((b, i) => b.addEventListener('keydown', roving(KB.solver, i, j => choose({solver: SOLVERS[j]}))));
+  KB.start.forEach((b, i) => b.addEventListener('keydown', roving(KB.start, i, j => choose({si: j, start: D.starts[j]}))));
+  said = document.createElement('div'); said.setAttribute('role', 'status');
+  said.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none';
+  FIG.appendChild(said);
+  sync();
+  /* a click on the map chooses a start there (on a chip's start if within 10 units);
+     a click on the chips' rows or the map never also pauses */
+  cv.addEventListener('pointermove', e => { const [X, Y] = toUnits(e); cv.style.cursor = inMap(X, Y) ? 'crosshair' : Y < ROW2 + CHH + 10 ? 'default' : ''; });
+  FIG.addEventListener('click', e => {
+    if (e.target !== cv) return;
+    const [X, Y] = toUnits(e);
+    if (inMap(X, Y)) {
+      const k1 = LO + (X - MX) / MS * (HI - LO), k2 = LO + (MY + MS - Y) / MS * (HI - LO);
+      const near = D.starts.findIndex(s => Math.hypot(KX(s[0]) - X, KY(s[1]) - Y) < 10);
+      if (near >= 0) choose({si: near, start: D.starts[near]});
+      else choose({si: -1, start: [Math.round(k1 * 10) / 10, Math.round(k2 * 10) / 10]});
+      e.stopPropagation();
+    } else if (Y < ROW2 + CHH + 10) e.stopPropagation();
+  }, true);
+}
+boot();
+</script>
+</body>
+</html>

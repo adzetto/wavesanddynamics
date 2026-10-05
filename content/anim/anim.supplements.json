@@ -9,6 +9,8 @@
  "signal-processing-system-identification-and-optimization": {
   "supplement-sp-cover": "nf-sp-cover.html",
   "supplement-opt-types": "nf-sp-opt-types.html",
-  "supplement-opt-global": "nf-sp-opt-global.html"
+  "supplement-opt-global": "nf-sp-opt-global.html",
+  "supplement-inv-reg": "nf-sp-inv-reg.html",
+  "supplement-inv-iter": "nf-sp-inv-iter.html"
  }
 }

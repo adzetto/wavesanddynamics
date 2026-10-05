@@ -1,0 +1,64 @@
+Figure 5, solving by iterating (semi-convergence): check of tools/numfig/sp_inv_iter.py
+
+MODEL (his page iterative-solvers-animation.html, the same numbers)
+  Figure 4's problem (sp_inv_lib; see sp_inv_reg.check.txt): N = 64, Gaussian blur s = 0.045, m a bump and a
+  block; d = Gm + e with noise draw 1 (numpy default_rng seed 1) at 0.1, 1 and 10 % of max Gm; delta = sigma sqrt(N).
+  Landweber: m_k = m_(k-1) + omega G^T (d - G m_(k-1)), m_0 = 0, omega = 1/s_1^2 = 1.0181743004; in closed form
+  m_k = sum f_i (u_i^T d / s_i) v_i, f_i = 1 - (1 - omega s_i^2)^k (computed as -expm1(k log1p(-omega s_i^2))).
+  CGLS: 50 iterations from m_0 = 0 (Hestenes-Stiefel form, no reorthogonalization), run for real.
+  Effective filter of an iterate: f_i = s_i (v_i^T m_k) / (u_i^T d).
+
+GRID
+  Landweber's curves pass through 699 integer iterates: every k to 100, then 600 log-spaced k (rounded) to
+  10^8; the iterate the reader picks (any integer k) is the page's own sum, its marker exactly on the curve's
+  formula. The discrepancy stop is the first integer k with |G m_k - d| <= delta (bisection over integers); the
+  best k minimizes the true error over every k to 5,000, then k growing by 0.05 %, then every k within 0.2 %.
+  CGLS: every iteration 1 to 50.
+
+VALIDATION
+  1. Landweber's closed form against the iteration itself (up to k = 25,000), at k = 1, 2, 10, 100, 1,000, 10,000,
+     25,000 and at each level's discrepancy and best k (where within reach):
+     0.1%: largest difference 3.7e-14 of max|m_k| (k checked: 1, 2, 10, 100, 349, 1,000, 10,000, 23,588, 25,000)
+       1%: largest difference 2.2e-13 of max|m_k| (k checked: 1, 2, 10, 32, 100, 177, 1,000, 10,000, 25,000)
+      10%: largest difference 5.2e-13 of max|m_k| (k checked: 1, 2, 10, 23, 100, 1,000, 10,000, 25,000)
+  2. CGLS against scipy.sparse.linalg.lsqr (LSQR, the same Krylov iterates in exact arithmetic; atol = btol =
+     conlim = 0, iter_lim = k) and against the exact Krylov solution, argmin |Gx - d| over
+     span{G^T d, (G^T G) G^T d, ...}, by Golub-Kahan bidiagonalization with full reorthogonalization:
+     0.1%: CGLS = LSQR within 1e-10 up to k = 15, = exact Krylov up to k = 15 (largest difference there 2.3e-11); at k = 50 they differ by 5.3e-04 (LSQR) and 2.1e+06 (Krylov):
+       1%: CGLS = LSQR within 1e-10 up to k = 15, = exact Krylov up to k = 15 (largest difference there 3.6e-11); at k = 50 they differ by 1.0e-01 (LSQR) and 1.5e+07 (Krylov):
+      10%: CGLS = LSQR within 1e-10 up to k = 14, = exact Krylov up to k = 14 (largest difference there 1.2e-11); at k = 50 they differ by 9.8e-04 (LSQR) and 1.9e+07 (Krylov):
+     past about 15 iterations rounding destroys the orthogonality of the Krylov basis (Lanczos in floating
+     point), and CGLS, LSQR and exact arithmetic part. The curves drawn are CGLS as it runs in double precision.
+     0.1%: CGLS best k = 29 (14.14 %), exact Krylov best k = 21 (14.14 %); CGLS and exact Krylov differ by 2e-09 at the discrepancy stop k = 16, 6e-01 at k = 29.
+       1%: CGLS best k = 14 (17.24 %), exact Krylov best k = 14 (17.24 %); CGLS and exact Krylov differ by 1e-15 at the discrepancy stop k = 7, 2e-12 at k = 14.
+      10%: CGLS best k = 6 (23.62 %), exact Krylov best k = 6 (23.62 %); CGLS and exact Krylov differ by 4e-16 at the discrepancy stop k = 2, 6e-16 at k = 6.
+  3. CGLS's filter factors s_i (v_i^T m_k) / (u_i^T d) against the Ritz polynomial 1 - prod_j (1 - s_i^2 / theta_j),
+     theta_j the squared singular values of the Golub-Kahan bidiagonal B_k (k <= 12): largest difference 2.7e-13.
+     CGLS's own recursion residual against |d - G m_k| by a matrix-vector product: 8.7e-14 (relative).
+  4. The page (its Landweber filter and synth(), CGLS from its stored SVD coefficients) against numpy in 33 states:
+     iterate 1.7e-15 of max|m_k|, residual 2.6e-14, norm 6.0e-16, error 6.6e-16 (relative), filter
+     factors 4.3e-14.
+
+SEMI-CONVERGENCE: ITERATIONS TO THE LOWEST ERROR AND TO THE DISCREPANCY STOP (error in brackets)
+  noise draw | Landweber: discrepancy stop  lowest error | CGLS: discrepancy stop  lowest error | best Tikhonov
+  0.1%  1   |    349 (16.43 %)   23,588 (14.20 %) |  16 (16.40 %)   29 (14.14 %) | 14.10 %
+  0.1%  2   |    940 (16.06 %)   13,278 (14.82 %) |  20 (15.50 %)   30 (14.83 %) | 14.97 %
+  0.1%  3   |    777 (16.24 %)   19,783 (14.83 %) |  18 (16.23 %)   30 (14.63 %) | 14.99 %
+    1%  1   |     32 (18.36 %)      177 (17.25 %) |   7 (18.14 %)   14 (17.24 %) | 17.42 %
+    1%  2   |     56 (17.34 %)      166 (16.60 %) |  10 (17.13 %)   13 (16.60 %) | 16.69 %
+    1%  3   |     85 (17.27 %)      162 (17.10 %) |  12 (17.27 %)   13 (17.19 %) | 17.28 %
+   10%  1   |      2 (29.31 %)       23 (23.12 %) |   2 (26.71 %)    6 (23.62 %) | 23.81 %
+   10%  2   |      3 (27.47 %)       21 (24.22 %) |   2 (27.43 %)    5 (24.38 %) | 24.70 %
+   10%  3   |     14 (23.88 %)       16 (23.83 %) |   5 (24.41 %)    4 (24.08 %) | 24.63 %
+  His page says CGLS needs about ten iterations where Landweber needs a couple of hundred: at 1 % noise (his
+  default) it is 14, 13, 13 against 177, 166, 162 for the three draws. The ratio grows as the noise falls
+  (0.1 %: 29 against 23,588) and shrinks as it rises (10 %: 6 against 23).
+
+DISPLAY
+  W x H = 1000 x 740. Untouched (1 % noise): Landweber runs from k = 1 at 0.8 decades of k a second (every k an
+  integer), pauses 1.4 s at its discrepancy stop (k = 32), runs on to 10^8 (10 s in all) and holds 1.2 s; then
+  CGLS the same, 0.2 s an iteration, pausing at k = 7; then again. POSTER_T = 0.6 + log10(32)/0.8 + 0.7 =
+  3.1814 s: Landweber paused at its discrepancy stop. Controls: solver and
+  noise chips, the iteration slider (log k for Landweber, k for CGLS), 'iterate' (his Play: the iterations run
+  on from the one shown), 'discrepancy principle' (his Stop at discrepancy principle). Query keys: m=lw|cgls,
+  k, nz, run.

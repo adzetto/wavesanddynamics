@@ -1,0 +1,83 @@
+Figure 4, undoing a blur (an ill-posed inverse problem): check of tools/numfig/sp_inv_reg.py
+
+MODEL (his page inverse-regularization-animation.html, the same numbers)
+  N = 64 cells, x_i = (i + 1/2)/N; G_ij = exp(-(x_i - x_j)^2/(2 s^2)) / (s sqrt(2 pi)) / N, s = 0.045.
+  m(x) = exp(-((x - 0.28)/0.07)^2) + 0.75 [0.58 < x < 0.8] at the cells: |m| = 3.672853, max Gm = 0.737936.
+  d = Gm + e, e = sigma z, sigma = level max|Gm| = 7.3794e-04, 7.3794e-03, 7.3794e-02 for
+  levels 0.1%, 1%, 10%; z standard normal, numpy default_rng seeds (1, 2, 3) (draws 1, 2, 3),
+  |z| = 6.8650, 7.7808, 8.5487 (expected sqrt(64) = 8). The noise level of the discrepancy principle is
+  delta = sigma sqrt(N) = 8 sigma, the expected |e|, as his pages take it.
+  Estimates: m = sum_i f_i (u_i^T d / s_i) v_i with numpy's SVD G = U diag(s) V^T (LAPACK gesdd, float64):
+  none f = 1; truncated SVD f_i = [i <= k]; Tikhonov f_i = s_i^2 / (s_i^2 + alpha^2). Residual, norm and error from
+  the coefficients: |Gm - d| = |(1 - f) U^T d|, |m| = |f U^T d / s|, error |m - m_true| / |m_true|.
+
+GRID AND PARAMETERS
+  The problem is discrete by definition (his 64 cells); there is no mesh to converge. The strength slider spans
+  log10(alpha / s_1) = -7 to 1 (his range, alpha = 9.9103e-08 to 9.9103); the L-curve is drawn
+  through 321 strengths (40 per decade), the estimate for any strength the reader sets is the page's own sum
+  (7. below). Discrepancy alpha: brentq on log10 alpha (xtol 1e-14); best alpha: bounded minimization of the
+  true error (xatol 1e-12 in log10 alpha); corner: the maximum of the closed-form curvature, refined from 4001
+  strengths. Truncated SVD: every k from 1 to 64.
+
+VALIDATION
+  1. Singular values against 60-digit arithmetic (mpmath; G is symmetric positive definite, so its singular
+     values are its eigenvalues). numpy against the exact eigenvalues of the float64 matrix: relative
+     difference 1.1e-15 for i <= 24, 1.5e-11 for i <= 40, 7.3e-06 for i <= 56; the last
+     ones are rounding: s_62, s_63, s_64 = 5.874e-16, 1.277e-16, 5.730e-17 (numpy) against 5.938e-16, 1.345e-16,
+     3.630e-17 (exact). Condition number s_1/s_64: 5.358e+16 for the exact matrix of the formula,
+     2.730e+16 for its float64 entries, 1.729e+16 from numpy's SVD. All exceed 1/eps = 4.50e+15:
+     in double precision G is numerically singular, so the unregularized solution is not even computable; the
+     figure's is numpy's, and its exact value would be larger still (s_64 is 3 times smaller).
+     s_1 = 0.9910348676 (exact 0.9910348676); s_i falls below eps s_1 = 2.20e-16 at i = 63 (exact values).
+  2. Tikhonov through the SVD filter against an independent solver, the stacked least squares
+     [G; alpha I] m = [d; 0] by scipy.linalg.lstsq (complete orthogonal factorization, gelsy), at the
+     discrepancy, best and corner alphas of all nine data sets: largest difference 7.8e-13 of max|m|.
+  3. Tikhonov at the discrepancy alpha (1 %, draw 1) against 60-digit arithmetic, (G^T G + alpha^2 I) m = G^T d
+     with the float64 G and d (mpmath lu_solve): largest difference 2.9e-15 of max|m|.
+  4. The discrepancy principle: |G m - d| by a matrix-vector product at alpha_DP against delta, all nine sets:
+     largest relative difference 5.1e-14.
+  5. The L-curve curvature in closed form against finite differences of (ln |Gm - d|, ln |m|) on 4001
+     strengths (1 %, draw 1): largest difference 4.2e-04 (curvature at the corner 14.354); the corner at
+     alpha = 1.40933e-02 (closed form, refined) and 1.40634e-02 (finite differences, grid).
+  6. Truncated SVD at k_DP against numpy's pseudo-inverse with the cut between s_k and s_k+1, all nine sets:
+     largest difference 8.4e-16 of max|m|.
+  7. The page (its est() and synth(), float64 V, s, U^T d from DATA) against numpy in 24 reader's states
+     (Tikhonov at the discrepancy, best and corner alphas and at both ends of the slider, truncated SVD at k_DP
+     and k = 40, no regularization, for three data sets): estimate 7.8e-16 of max|m|, residual 2.9e-16,
+     norm 3.8e-16, error 3.6e-16 (relative); the unregularized estimate 1.4e-16 of its max.
+
+HADAMARD'S THIRD CONDITION (1 % noise)
+  Draws 1 and 2 differ by |d_1 - d_2| / |d_1| = 2.15 %. The unregularized estimates: max|m| = 1.707e+13, 3.412e+13, 2.713e+13,
+  |m| = 6.490e+13, 1.347e+14, 9.685e+13 for draws 1, 2, 3 (the truth: |m| = 3.673, max 1);
+  |m_1 - m_2| / |m_true| = 4.886e+13: a 2.15 % change of the data moves the solution by 4.9e+13 times the
+  solution itself. Tikhonov at each draw's discrepancy alpha: |m_1 - m_2| / |m_true| = 4.87 %.
+  (The unregularized estimate's residual by a matrix-vector product is 1.83e-02, rounding at its scale; the
+  closed form says 0.)
+
+THE PICARD PLOT
+  0.1%: sigma = 7.379e-04; the noise-free coefficients |u_i^T G m| exceed sigma up to i = 24 (24 of the first 24)
+    1%: sigma = 7.379e-03; the noise-free coefficients |u_i^T G m| exceed sigma up to i = 17 (16 of the first 17)
+   10%: sigma = 7.379e-02; the noise-free coefficients |u_i^T G m| exceed sigma up to i = 14 (12 of the first 14)
+
+NUMBERS (relative error |m - m_true| / |m_true| in brackets)
+  noise draw | Tikhonov: discrepancy  best (needs the truth)  L-curve corner | TSVD: k_DP  k_best
+  0.1%  1   | 2.3063e-02 (15.94 %)  4.2922e-03 (14.10 %)  1.1038e-03 (16.92 %) | 18 (16.55 %)  23 (15.12 %)
+  0.1%  2   | 1.7455e-02 (15.55 %)  8.1989e-03 (14.97 %)  1.3749e-03 (25.56 %) | 21 (16.27 %)  24 (14.65 %)
+  0.1%  3   | 1.5928e-02 (15.74 %)  6.4088e-03 (14.99 %)  1.4980e-03 (20.53 %) | 20 (16.43 %)  24 (14.80 %)
+    1%  1   | 8.6953e-02 (17.63 %)  6.1638e-02 (17.42 %)  1.4093e-02 (23.14 %) | 14 (18.29 %)  17 (16.88 %)
+    1%  2   | 6.9437e-02 (16.82 %)  5.2220e-02 (16.69 %)  1.6351e-02 (18.81 %) | 17 (17.56 %)  19 (17.53 %)
+    1%  3   | 5.6131e-02 (17.32 %)  6.4699e-02 (17.28 %)  1.8439e-02 (21.71 %) | 17 (17.23 %)  17 (17.23 %)
+   10%  1   | 3.1837e-01 (27.47 %)  1.7202e-01 (23.81 %)  1.0747e-01 (26.25 %) |  9 (27.63 %)  17 (24.26 %)
+   10%  2   | 2.5006e-01 (25.74 %)  1.7767e-01 (24.70 %)  1.2759e-01 (25.98 %) |  9 (27.09 %)  13 (24.89 %)
+   10%  3   | 1.6092e-01 (25.29 %)  2.0316e-01 (24.63 %)  1.2731e-01 (27.35 %) | 14 (24.85 %)  14 (24.85 %)
+
+DISPLAY
+  W x H = 1000 x 740. Untouched, the figure tours: 0.6 s at the discrepancy alpha (1 %, draw 1) while the intro
+  draws, Tikhonov swept once (12 s, a cosine in log10 alpha from alpha_DP, stronger first), held 1.8 s, no
+  regularization for 6 s with a new noise draw every 1.2 s (Hadamard), truncated SVD swept once (12 s, k from
+  k_DP, fewer terms first) and held 1.8 s; then again. POSTER_T = 13.5 s: the sweep done, held at alpha_DP.
+  Controls: method, noise level and noise draw chips, 'animate' (a new draw every 1.2 s, his Animate noise),
+  the strength slider (Tikhonov alpha, log; truncated SVD k), 'sweep' (his Play sweep), 'discrepancy
+  principle', 'L-curve corner'. No regularization draws (b) on its own scale (10^12, 10^13, 10^14 for the three
+  levels). An estimate outside (b)'s axes is clipped and its max stated; an L-curve point outside (c) is stated
+  with its norm. Query keys: m=none|tsvd|tik, nz, dr, a or u, k, sw, an.

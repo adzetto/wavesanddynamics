@@ -1,5 +1,7 @@
-"""The cover of the signal processing document: input, system, output, and the
-system identified from them by estimation and optimization.
+"""Input, system, output, and the system identified from them by estimation and
+optimization: Figure 2 of the signal processing document, at the head of its
+section "Signal Processing and System Identification" (until 5 Oct 2026 the
+document's cover, which is now sp_foundations.py's).
 
 One problem, end to end, with the resonator of sp_model (f_n = 1 Hz,
 zeta = 0.1): a swept sine (0.3 to 1.7 Hz in 12 s) drives it; its output is
@@ -226,7 +228,9 @@ def build():
         dt=DT, T=T, fn=SM.FN, zeta=SM.ZETA, x=common.f32(x), ym=common.f32(ym),
         path=np.round(path, 7).tolist(), contours=contours, fl=list(FL), zl=list(ZL),
     )
-    title = "Input, system, output, and the system identified from them"
+    # since 5 Oct 2026 the guide's Figure 2, at the head of its section "Signal Processing and
+    # System Identification"; the cover is now the shared foundations (sp_foundations.py)
+    title = "Figure 2: Signal processing and system identification on one problem"
     aria = ("A swept sine enters a damped resonator and its output is measured with noise. Gradient descent on "
             "the squared error between the measured output and a model's output walks across the contours of "
             "that error, from a first guess to the estimated natural frequency and damping ratio, while the "

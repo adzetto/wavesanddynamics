@@ -1,4 +1,5 @@
-"""Figure 3 of the signal processing document: convex versus nonconvex
+"""Figure 8 of the signal processing document (his Figure 3; renumbered on the page
+since 5 Oct 2026, when figures were added before it): convex versus nonconvex
 optimization landscapes.
 
 His caption: "Convex versus nonconvex optimization landscapes. In the convex
@@ -181,7 +182,7 @@ def build():
         params=(r"\rm{gradient descent }w_{k+1} = w_k - \eta f" "′" r"(w_k)\rm{, 20 steps from }w_0 = \pm 1.6\rm{;   (a) }"
                 r"f = 0.9(w - 0.2)^2 - 0.3\rm{, }\eta\ = 0.2\rm{;   (b) }f = (w^2 - 1)^2 - 0.3w\rm{, }\eta\ = 0.03"),
     )
-    title = "Figure 3: Convex versus nonconvex optimization landscapes"
+    title = "Figure 8: Convex versus nonconvex optimization landscapes"
     aria = ("Two curves with gradient descent run on each from a start on the left and a start on the right. "
             "On the convex bowl both runs step down to the same, global minimum. On the tilted double well the "
             "run started on the left stops in the higher, local minimum, 0.60 above the global one that the run "
@@ -220,7 +221,7 @@ def validate(r):
     # nonconvexity of (b): f'' < 0 on |w| < 1/sqrt(3)
     L = []
     say = L.append
-    say("Figure 3, convex versus nonconvex optimization landscapes: check of tools/numfig/sp_landscape.py")
+    say("Figure 8, convex versus nonconvex optimization landscapes: check of tools/numfig/sp_landscape.py")
     say("")
     say("MODEL")
     say("  (a) f(w) = 0.9 (w - 0.2)^2 - 0.3: convex, f'' = 1.8 everywhere; one minimum, w* = 0.2, f* = -0.3.")

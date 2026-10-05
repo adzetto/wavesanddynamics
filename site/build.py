@@ -1332,8 +1332,9 @@ def add_supplementary_figures(body, slug):
             sys.exit(f"doc/{slug}.html: supplement {spec['key']} has no printed frame")
         image = (f'src="{html.escape(still["src"])}" width="{still["w"]}" '
                  f'height="{still["h"]}" alt="{html.escape(anim["title"])}"')
-        return preview._animated(
-            anim, image, f'<figcaption>{preview._figno(html.escape(spec["caption"]))}</figcaption>')
+        # a caption is plain text, but for a subscript or superscript (ACO<sub>R</sub>)
+        cap = re.sub(r"&lt;(/?)(sub|sup)&gt;", r"<\1\2>", html.escape(spec["caption"]))
+        return preview._animated(anim, image, f'<figcaption>{preview._figno(cap)}</figcaption>')
 
     # a figure "in_text" stands where a block of new text marks it,
     # <!--figure:key-->, so a new passage reads as one: its paragraphs, its

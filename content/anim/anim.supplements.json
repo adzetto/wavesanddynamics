@@ -5,5 +5,10 @@
  "machine-learning-the-complete-picture-and-guide-5": {
   "supplement-feature-selection": "nf-ml-feature-selection.html",
   "supplement-forecasting": "nf-ml-forecasting.html"
+ },
+ "signal-processing-system-identification-and-optimization": {
+  "supplement-sp-cover": "nf-sp-cover.html",
+  "supplement-opt-types": "nf-sp-opt-types.html",
+  "supplement-opt-global": "nf-sp-opt-global.html"
  }
 }

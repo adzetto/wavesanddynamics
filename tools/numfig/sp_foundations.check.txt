@@ -1,0 +1,97 @@
+nf-sp-foundations: the signal processing guide's cover (his animation "Different problems,
+shared inference and fitting tools"), check of tools/numfig/sp_foundations.py
+
+Five small examples, one in each of his nodes, computed here with fixed seeds; the page draws
+their numbers (DATA) and computes nothing but the drawing (normal densities and ellipses from
+the closed forms below).
+
+1. SIGNAL PROCESSING: an adaptive line enhancer
+  s(n) = 1 sin(2 pi n / 30) + 0.6 sin(2 pi n / 11.7 + 0.7), x(n) = s(n) + v(n), v white Gaussian, sigma = 0.35
+  (input SNR 7.4 dB, seed 3). An FIR predictor of M = 96 taps, delay D = 1:
+  y(n) = w(n)^T [x(n-1) ... x(n-96)], NLMS from w = 0, mu = 0.15; y(n) is the cleaned signal.
+  240 samples drawn, the filter's output sample by sample.
+  CHECK 1: the filter learnt against the Wiener filter, w_o = R^-1 p from the input's exact
+    autocorrelation r(k) = sum A^2/2 cos(2 pi k / P) + sigma^2 delta(k), p_j = r(j + D). Their responses at
+    each tone, W(e^{iw}) = sum w_k e^{-iw(k + D)}, the NLMS filter's after n = 2000 (steady state),
+    mean of 400 runs (seeds 1000 on), with standard errors:
+    period 30: 1.0002 +0.0021i (+- 0.0045, 0.0045) against 0.9949 -0.0004i (+1.2 and +0.6 standard errors);
+      after the 240 samples drawn, 0.9964: the filter has nearly converged.
+    period 11.7: 0.9886 +0.0025i (+- 0.0035, 0.0036) against 0.9859 -0.0006i (+0.8 and +0.9 standard errors);
+      after the 240 samples drawn, 0.9739: the filter has nearly converged.
+  CHECK 2: the single tone ALE gain (Widrow and Stearns), G = (M A^2/4) / (sigma^2 + M A^2/4), against
+    the Wiener filter's response at each tone, W(e^{iw}) = sum w_k e^{-iw(k + D)}:
+    period 30: |W| = 0.9949, arg W = -0.0004 rad, closed form G = 0.9949 (-4.1e-06)
+    period 11.7: |W| = 0.9859, arg W = -0.0006 rad, closed form G = 0.9860 (-1.2e-04)
+  CHECK 3: the error of the cleaned signal, E (y - s)^2, against theory: the Wiener residual
+    J_s = sigma_s^2 - p^T R^-1 p = 0.00508 plus the NLMS excess mu/(2 - mu) (J_s + sigma^2) =
+    0.01034: 0.01542. Measured over n = 120 to 239: 0.01575 (400 runs, +2%: the filter is still converging
+    early in that window),
+    0.01323 in the run drawn; the noise it removes: sigma^2 = 0.1225 (9.7 dB less).
+    rms error of the run drawn, by window: n 0 to 29: 0.507, n 30 to 59: 0.282, n 60 to 119: 0.171, n 120 to 239: 0.115
+
+2. SYSTEM IDENTIFICATION: least squares FIR from input and output data
+  The resonator of Figure 1 (sp_model, f_n = 1 Hz, zeta = 0.1) sampled at 8 Hz, its first M = 24 taps,
+  h_k = r^k sin(k theta), r = 0.924465, theta = 0.781461 rad (Figure 2's unknown system, shorter).
+  Input white Gaussian (unit variance), output measured with white noise 5.0 dB below it (seed 7).
+  h estimated by least squares from the first N samples, N = 30, 39, 52, 68, 89, 116, 152, 200, 262, 344, 450, 591, 774, 1015, 1331, 1745, 2288, 3000.
+  CHECK 1: h_k against the impulse response of its recursion h_k = 2 r cos(theta) h_k-1 - r^2 h_k-2 (+ r sin(theta) at k = 1): 3.4e-16;
+    against sp_model.h(k / f_s), the continuous impulse response sampled: 2.2e-16.
+  CHECK 2: the estimate by lstsq (SVD) against the normal equations (Cholesky) and QR: 7.3e-15.
+  CHECK 3: the estimate's error against theory, E |h_N - h|^2 = sigma^2 tr((U^T U)^-1), over 2000 noise draws (same input):
+    N = 116: 0.28674 +- 0.00204 against 0.28885 (-1.0 standard errors)
+    N = 3000: 0.00789 +- 0.00005 against 0.00794 (-1.1 standard errors)
+    relative error of the estimates drawn: N 30: 0.867, N 68: 0.523, N 152: 0.291, N 344: 0.157, N 774: 0.082, N 1745: 0.060, N 3000: 0.053
+
+3. MACHINE LEARNING: kernel ridge regression, the points arriving one by one
+  y_i = sin(2 pi x_i) + e_i, x_i uniform on [0.02, 0.98], e_i ~ N(0, 0.2^2), 20 points, seed 44: the first seed from 1
+  for which no gap between the points (and the ends) is wider than 0.12 and the fit's error never rises
+  by more than 0.03 from one point to the next. The seed is chosen for the picture, a fit that improves
+  steadily as the points arrive; the choice is a display decision and is stated here.
+  f_n(x) = k(x)^T (K + lambda I)^-1 y, RBF kernel exp(-(a - b)^2 / (2 l^2)), l = 0.14, lambda = 0.04 = (0.2)^2 / 1^2;
+  drawn on 101 points of [0, 1]; before the first point the fit is the prior mean, 0.
+  CHECK 1: against scikit-learn's KernelRidge, every n: 2.3e-14.
+  CHECK 2: against scikit-learn's GaussianProcessRegressor (the same kernel fixed, noise 0.04), its posterior mean: 2.7e-15.
+  rms error of the fit against sin(2 pi x): n = 0: 0.704, n = 2: 0.527, n = 5: 0.487, n = 10: 0.230, n = 15: 0.194, n = 20: 0.161
+
+4. ESTIMATION THEORY: a normal mean, the conjugate posterior
+  x_i ~ N(theta, 1^2), theta = 0.7 (unknown to the estimator), prior N(-1, 0.8^2), 20 data, seed 1;
+  posterior N(mu_n, tau_n^2), 1/tau_n^2 = 1/tau_0^2 + n/sigma^2, mu_n = tau_n^2 (mu_0/tau_0^2 + sum x_i/sigma^2).
+  mu_n: n = 0: -1.000, 1: -0.202, 5: 0.463, 10: 0.665, 20: 0.6116; tau_n: 0.800 to 0.2154;
+  the 95% interval at n = 20, [0.189, 1.034], holds theta: True.
+  CHECK 1: against the posterior computed on a grid (prior x likelihood, 160,001 points on [-8, 8], trapezoid rule), its mean and standard deviation at n = 1, 5, 20: 1.1e-16.
+  CHECK 2: the batch formula against updating one datum at a time: 1.7e-16.
+  CHECK 3: calibration. With theta drawn from the prior, 100,000 times, the 95% interval at n = 20 holds theta
+    in 94.92% of them (95% expected, standard error 0.07%).
+
+5. OPTIMIZATION: gradient descent on a least squares objective
+  A line y = w_1 + w_2 x fitted to 30 points (x uniform on [-3, 5.4], y = 0.8 + 0.5 x + N(0, 0.3^2), seed 1):
+  J(w) = |X w - y|^2 / (2 N), a quadratic; its Hessian X^T X / N has eigenvalues 0.7405 and 7.6485 (condition 10.33),
+  its shallow axis at -11.2 deg. w_{k+1} = w_k - eta grad J(w_k), eta = 1.6 / lambda_max = 0.2092, 28 steps from
+  w_0 = w* - 2.2 v_shallow + 0.5 v_steep = (-1.2836, 1.4281) to (0.75842, 0.51496);
+  w* = (0.77781, 0.51113). Distance to w*: k = 0: 2.2561, k = 1: 1.8833, k = 2: 1.5815, k = 4: 1.1240, k = 8: 0.5724, k = 16: 0.1489, k = 28: 0.0198
+  CHECK 1: w* (normal equations) against numpy.polyfit: 7.8e-16; the last iterate is 2.0e-02 from it.
+  CHECK 2: the rate. The error obeys e_k+1 = (I - eta H) e_k, so it shrinks by max |1 - eta lambda_i| = 0.845099
+    per step once the steep mode has died out; measured over the last step: 0.845099 (-1.2e-10).
+  CHECK 3: the contours drawn, J = J* + c for c = 1.25 J(w_0) x 0.42^j, j = 0 .. 5, are the ellipses
+    w* + V diag(sqrt(2 c / lambda)) (cos f, sin f); J evaluated from the data on 97 points of each: 3.3e-15 (relative).
+  The plane is drawn at one scale for w_1 and w_2, so each step meets the contours at right angles
+  as drawn.
+
+PAGE
+  The arrays the page decodes (float32: the noisy input, the filter's output, the 21 fits) against the model's: 1.1e-07.
+  Other numbers travel as JSON rounded to 5 decimals (the estimates, the posterior's mean and spread,
+  the iterates, the Hessian's eigenvectors).
+
+DISPLAY AND CLOCK
+  One loop for the five examples: from t = 0.55 s each takes its steps over 5.6 s, holds 2.2 s,
+  glides home in 0.8 s (its trail fading) and rests 0.3 s: a loop of 8.9 s.
+  Steps: the filter's 240 samples at an even pace (42.9 per second; n has no unit, so no slowing is claimed);
+  18 estimates as N grows geometrically; 20 points; 20 data; 28 iterations; each step a Motion spring glide
+  between the states computed here (the states are exact; the glides only carry the eye from one to
+  the next). The still (print, reduced motion): t = 7.15 s, every example converged.
+  Crimson marks the current estimate where it is a point: the filter's newest output sample, the
+  posterior mean, the iterate.
+
+OVERLAP (engine ?overlap, common.overlaps; common.still also samples every 0.25 s up to the poster)
+  672 px: moments still, t=0.2, t=0.45, t=0.7, t=1, t=1.3, t=2, t=3, t=4.5, t=6, t=7.15, t=8.65, t=9.05, t=9.35, t=9.85, t=11.95, t=24.85: none
+  360 px: moments still, t=0.2, t=0.45, t=0.7, t=1, t=1.3, t=2, t=3, t=4.5, t=6, t=7.15, t=8.65, t=9.05, t=9.35, t=9.85, t=11.95, t=24.85: none

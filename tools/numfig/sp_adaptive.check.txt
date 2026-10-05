@@ -1,4 +1,4 @@
-Figure 2, adaptive filtering used for system identification: check of tools/numfig/sp_adaptive.py
+Figure 3, adaptive filtering used for system identification: check of tools/numfig/sp_adaptive.py
 
 MODEL
   Unknown system: the resonator of Figure 1 (f_n = 1 Hz, zeta = 0.1) sampled at

@@ -1,0 +1,115 @@
+Figure 7, six types of optimization problem: check of tools/numfig/sp_opt_types.py
+
+THE FIGURE
+  His animation (six scenes, traits, methods, a note each) redrawn: one plot that shows one scene at
+  a time, six chips to choose it, the tour stepping through all six (8 s each, 48 s a round), and
+  beside the plot his four characteristics (i) to (iv), the one that applies marked (a fifth line,
+  one or two objectives, marks the multi-objective scene), with the methods that solve each problem
+  (the one drawn with its key). Every moving thing is a solver's own iterate, computed here; the
+  page's random numbers in his version (the swarm, the Pareto candidates) are seeded runs here.
+
+1  CONVEX: f(x) = (x - x*)^T A (x - x*)/2, A = R diag(1, 6) R^T (R turns 30 degrees), x* = (0.8, 0.5)
+   A = [[2.250000, -2.165064], [-2.165064, 4.750000]]; eigenvalues 1.000000000000, 6.000000000000
+   gradient descent, eta = 0.2, 25 steps from (-3.5, 1.7), (3.4, 3.3), (-1.4, -3.5)
+   a. the iterates against the closed form x_k - x* = (I - eta A)^k (x_0 - x*): largest difference 8.9e-16
+   b. the error shrinks by max|1 - eta l| = 0.800000 per step at worst (the shallow direction, 1 - 0.2 x 1);
+      the runs' last ratios |e_25|/|e_24| = 0.800000, 0.800000, 0.800000
+   c. all three reach the one minimum: |x_25 - x*| = 0.0118, 0.0138, 0.0148 (from 4 to 5 away)
+
+2  LINEAR PROGRAM (his): maximize 3 x1 + 2 x2, x1 <= 3.5, x1 + x2 <= 4, x1 + 3 x2 <= 6, x >= 0
+   the tableau simplex from the origin (Dantzig's rule) visits (0, 0) -> (3.5, 0) -> (3.5, 0.5)
+   objective 11.5; the final reduced costs [0.0, 0.0, 1.0, 2.0, 0.0] are all >= 0: optimal
+   a. scipy.optimize.linprog (HiGHS): x = (3.5, 0.5), value 11.5;
+      its duals [1.0, 2.0, 0.0] against the tableau's [1.0, 2.0, 0.0];
+      b^T y = 11.5 = c^T x (strong duality)
+   b. every vertex of the polygon (the 5 feasible crossings of two constraint lines) and its value:
+      (0, 0) 0, (0, 2) 4, (3, 1) 11, (3.5, 0) 10.5, (3.5, 0.5) 11.5
+      the largest, 11.5, at (3.5, 0.5): the optimum is a vertex
+   c. the central path: the maximizer of c^T x/mu + sum log(slack) by Newton's method, mu = inf (analytic
+      centre (0.884205, 0.706227)) down to 1e-3 over 111 values. On the path the duality
+      gap b^T l - c^T x with l = mu/slack equals 5 mu exactly (5 inequalities): largest relative difference
+      6.9e-06, dual residual |A^T l - c| <= 1.9e-07; at mu = 1e-3 the path is
+      1.12e-03 from the vertex. Dots at mu = 10, 1, 0.1, 0.01, 0.001.
+
+3  NONCONVEX, LOCAL: Styblinski-Tang, f(x) = sum_i (x_i^4 - 16 x_i^2 + 5 x_i)/2 on [-5, 5]^2
+   one coordinate's critical points, the roots of 4x^3 - 32x + 5, in closed form (trigonometric):
+   -2.903534027771 (minimum), 0.156731256780 (the barrier), 2.746802770991 (minimum); numpy's roots differ by
+   5.8e-16. Four minima: f = -78.332331 (global), -64.195612 twice, -50.058893
+   a. the textbook minimum (Surjanovic and Bingham; Jamil and Yang): x_i = -2.903534, f = -39.16616 per
+      coordinate: f(-2.903534, -2.903534) = -78.33233141 against the closed form's -78.33233141
+   b. a grid of 2001 x 2001 points: its lowest point (-2.905, -2.905), f = -78.332257 (>= -78.332331)
+   c. gradient descent, eta = 0.01, from (0.9, 4.6): x_30 = (2.746001, 2.746820), f = -50.058884;
+      8.0e-04 from the local minimum (2.746803, 2.746803), 28.2734 above the global one;
+      the error's last ratio 0.707491 against 1 - eta f''(x*) = 0.707304 (linear convergence)
+
+4  NONCONVEX, GLOBAL: particle swarm, 16 particles, w = 0.7298, c1 = c2 = 1.49618, |v| <= 2.0,
+   40 iterations, seed 4: the first seed of 0 to 199 whose best particle stays outside the
+   global minimum's basin for the first 5 iterations and that still ends at the global minimum (its first
+   best: (3.019, -3.255), f = -60.606). The best enters the global basin at iteration 7, is
+   within 1e-2 of the minimum from iteration 28; at the end 14 of 16 particles are within 0.3 of it.
+   a. the final best (-2.90589970, -2.90391247), f = -78.3322320838: 2.4e-03 from the closed
+      form's minimum, f above it by 9.9e-05
+   b. an independent global method, scipy's differential evolution (seed 1, polished): (-2.90353382,
+      -2.90353420), f = -78.3323314075
+   c. robustness: 178 of 200 seeds end within 1e-2 of the global minimum, 109 of them with a
+      first best already in its basin; the other 22 end in a local one (a swarm is likely, not certain,
+      to find it)
+
+5  CONSTRAINED: f of 1 subject to x1 + x2 <= -2.5; F_mu = f + mu max(0, x1 + x2 - (-2.5))^2
+   the KKT point in closed form: x* = xq - l A^-1 a, l = (a^T xq - b)/(a^T A^-1 a) = 2.012334015490:
+   x* = (-1.519236253227, -0.980763746773), f(x*) = 3.823434629431
+   a. scipy's SLSQP (ftol 1e-14): (-1.519236252280, -0.980763747720); 1.3e-09 from the closed form
+   b. Newton's method on each F_mu, warm started (the penalty method as it runs) against the closed form
+      (A + 2 mu a a^T) x = A xq + 2 mu b a: largest difference 5.0e-15; Newton steps per mu:
+      [1, 1, 1, 1] (F_mu is quadratic on the infeasible side, where every x(mu) lies)
+      mu =   0.1: x(mu) = (+0.164211, +0.094068), |x(mu) - x*| = 1.997e+00 = |xq - x*|/(1 + 2 mu a^T A^-1 a) = 1.997e+00; multiplier 2 mu (a^T x - b) = 0.551656
+      mu =     1: x(mu) = (-1.033706, -0.670767), |x(mu) - x*| = 5.761e-01 = |xq - x*|/(1 + 2 mu a^T A^-1 a) = 5.761e-01; multiplier 2 mu (a^T x - b) = 1.591054
+      mu =    10: x(mu) = (-1.459411, -0.942567), |x(mu) - x*| = 7.098e-02 = |xq - x*|/(1 + 2 mu a^T A^-1 a) = 7.098e-02; multiplier 2 mu (a^T x - b) = 1.960426
+      mu =   100: x(mu) = (-1.513112, -0.976853), |x(mu) - x*| = 7.267e-03 = |xq - x*|/(1 + 2 mu a^T A^-1 a) = 7.267e-03; multiplier 2 mu (a^T x - b) = 2.007020
+      (the multipliers tend to l = 2.012334; the error falls as 1/mu: an exterior penalty never quite gets there)
+
+6  MULTI-OBJECTIVE: f1 = x1, f2 = g (1 - sqrt(x1/g)), g = 1 + (x2 + x3)/2, 0 <= x <= 1 (ZDT1's construction)
+   For a given f1 = x1, f2 = g - sqrt(x1 g) grows with g (its derivative 1 - sqrt(x1/g)/2 > 0), so the Pareto
+   set is x2 = x3 = 0 and the exact front f2 = 1 - sqrt(f1), 0 <= f1 <= 1. Both objectives are convex (f2 is g,
+   affine, minus a geometric mean, concave), the box is convex: (i) convex, (ii) nonlinear, (iii) constrained.
+   NSGA-II as Deb et al. (2002): 40 candidates, 40 generations, SBX (p = 0.9, eta = 15), polynomial
+   mutation (p = 1/3, eta = 20), binary tournaments on front and crowding distance, seed 1.
+   a. the final candidates against the exact front: 40 of 40 non-dominated; f2 - (1 - sqrt(f1))
+      at most 0.0283, median 0.0086
+   b. hypervolume (reference (1, 1)): 0.64064; the exact front's is 2/3 = 0.66667, and the best any 40 points on
+      it can reach is 0.65562 (optimized): the final set holds 97.72% of that
+   c. the non-dominated candidates of every generation by brute force (no other candidate as good in both and
+      better in one) against the fast sort: the same in all 41 generations
+   d. pymoo's own NSGA-II (0.6, an independent implementation; the same problem, 40 candidates, 40
+      generations, seed 1): hypervolume 0.64812 by pymoo's HV, 0.64812 by this file's; its
+      largest gap to the front 0.0131
+
+THE PAGE
+  closed forms in the page against numpy: f of 1 and 5 at 5 points 0.0e+00 (relative), the
+  Styblinski-Tang f 0.0e+00, the penalty's x(mu) at 9 values of mu 4.0e-15; the level sets drawn in
+  scene 5 (42 arcs for mu = 0.1, 1, 10, 100): F_mu on them equals the level within 8.5e-15 (relative),
+  0 points on the wrong side of the line, the arcs' ends on it within 2.7e-15
+  overlap check (engine.js ?overlap) in 427 states: the tour every 0.25 s over its 48 s, each
+  scene from its start at 12 moments, every chip hovered and pressed in every scene, and every scene
+  chosen from every other at 0.05, 0.15 and 0.3 s: 0 with a collision
+  live page: script errors 0, console errors or warnings 0; after 1.6 s t = 1.78, playing
+  True; a click on chip 4 shows scene 4 and the figure keeps playing (True), aria-checked
+  ['false', 'false', 'false', 'true', 'false', 'false']; 0.5 s later its clock is at 0.55 s; ArrowRight moves to scene 5 ('constrained'), ArrowDown
+  (two on, wrapping) to scene 1; paused, a chip shows its scene complete (True) and stays paused;
+  the tour wraps from scene 6 to scene 1; restart returns to the tour at t = 0 ([True, True, True]); a click on the
+  canvas away from the chips pauses (playing False); ?view=5 starts on scene 5. A chip's hit area at
+  672 px: 129.0 x 29.6 CSS px. All as expected: True
+  page 118.9 KB, still 82.3 KB; common.still's own check (the poster and every
+  0.25 s up to it): clean
+
+DISPLAY
+  W = 1000, H = 640. One scene every 8 s: its solver starts 0.5 s in and is done by about 4.5 s, its labels
+  by 5 s; POSTER_T = 5.6 s shows the first scene complete (with ?view=N, scene N). The intro: the box and the
+  first landscape draw in 0.45 s, the chips and the characteristics arrive by 0.4 s, gradient descent starts at
+  0.5 s. Between iterates a marker glides (a Motion spring, for the eye; the iterates themselves are exact):
+  descent one step every 0.16 s (scene 1) or 0.13 s (scene 3), the swarm and NSGA-II one iteration or
+  generation every 0.1 s, the simplex one pivot per 1 s and 0.7 s, the penalty one mu every 0.95 s (log mu
+  glides between them; the page draws F_mu's level sets and x(mu) in closed form at every moment). NSGA-II
+  replaces candidates, it does not move them: a survivor stays put, one dropped fades, a new one appears.
+  The landscape stays from scene 3 into scene 4 (the tour's order). Chips choose a scene (the tour goes on from
+  it; paused, it shows complete); keyboard: a radio group, arrows move. ?view=N (1 to 6) starts on scene N.

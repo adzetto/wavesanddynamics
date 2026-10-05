@@ -1,4 +1,5 @@
-"""Figure 2 of the signal processing document: adaptive filtering used for
+"""Figure 3 of the signal processing document (his Figure 2; renumbered on the page
+since 5 Oct 2026, when figures were added before it): adaptive filtering used for
 system identification.
 
 His caption: "Adaptive filtering used for system identification. The same
@@ -302,7 +303,7 @@ def build():
         params=(r"\rm{unknown system: the resonator of Figure 1 sampled at %g Hz, its first %d samples;   white input, noise %g dB below }"
                 r"d(n)\rm{;   NLMS, }\mu\rm{ = %g}" % (FS, M, SNR_DB, MU)),
     )
-    title = "Figure 2: Adaptive filtering used for system identification"
+    title = "Figure 3: Adaptive filtering used for system identification"
     aria = ("A block diagram: the same input drives an unknown system and an adaptive filter, and the "
             "error between their outputs updates the filter. Inside the filter's box its 48 coefficients, "
             "computed by a real NLMS run, grow from zero onto the unknown system's; the learning curve falls "
@@ -353,7 +354,7 @@ def validate(q):
 
     L = []
     say = L.append
-    say("Figure 2, adaptive filtering used for system identification: check of tools/numfig/sp_adaptive.py")
+    say("Figure 3, adaptive filtering used for system identification: check of tools/numfig/sp_adaptive.py")
     say("")
     say("MODEL")
     say(f"  Unknown system: the resonator of Figure 1 (f_n = {SM.FN:g} Hz, zeta = {SM.ZETA:g}) sampled at")

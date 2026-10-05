@@ -1,0 +1,127 @@
+Figure 9, global optimization algorithms: check of tools/numfig/sp_opt_global.py
+
+MODEL
+  f(x) = 0.04 |x|^2 - sum_i a_i exp(-|x - c_i|^2 / (2 s_i^2)) on -4 <= x_1, x_2 <= 4, seven wells:
+    c = (+2.2, -1.8), a = 2.10, s = 0.95
+    c = (-1.4, +1.1), a = 1.10, s = 0.80
+    c = (-2.7, -2.5), a = 1.00, s = 0.65
+    c = (+2.5, +2.4), a = 0.95, s = 0.70
+    c = (+0.3, -2.9), a = 0.70, s = 0.45
+    c = (-3.0, +3.0), a = 0.75, s = 0.55
+    c = (+0.5, +0.7), a = 0.50, s = 0.40
+  Budget: 400 evaluations of f for each algorithm, counted by a wrapper around f (every point
+  asked for is one evaluation). GA, PSO and ACO_R start from the same 20 uniform random points;
+  SA starts at the first of them. Seed: numpy SeedSequence(15).spawn(5), one stream for the start
+  and one for each algorithm (default_rng). Points stepped outside the square are mirrored back
+  in (GA, SA, ACO_R); PSO's walls absorb (the particle stops on the wall, that velocity component
+  is set to zero).
+  (a) GA: 20 per generation, binary tournament selection (with replacement), BLX-alpha crossover
+      (alpha = 0.5, probability 0.9), Gaussian mutation (probability 0.25 per child,
+      sigma = 0.6), the 2 best parents replace the 2 worst children: 19 generations.
+  (b) PSO: 20 particles, global best, v <- w v + c1 r1 (p - x) + c2 r2 (g - x), w = 0.7298,
+      c1 = c2 = 1.49618 (Clerc and Kennedy's constriction, chi = 0.7298 with phi = 4.1); first
+      velocities uniform in +-0.8: 19 iterations.
+  (c) SA: Gaussian proposals, sigma = 1; Metropolis acceptance, exp(-df / T) for uphill moves;
+      T_k = 2 a^k, a = 0.98279358, from 2 to 0.002 over 399 proposals.
+  (d) ACO_R (Socha and Dorigo 2008): archive k = 20 solutions sorted by f; rank weights
+      w_l = exp(-(l - 1)^2 / (2 q^2 k^2)) / (q k sqrt(2 pi)), q = 0.5; each ant picks one archive
+      solution l with probability w_l / sum w and samples N(s_l, sigma_l) in each coordinate,
+      sigma_l = xi sum_e |s_e - s_l| / (k - 1), xi = 0.85; m = 2 ants per iteration, then the archive
+      keeps the best k: 190 iterations. (The paper's optional rotation of the
+      coordinate system for correlated variables is not used.)
+
+THE OBJECTIVE'S MINIMA, FOUND INDEPENDENTLY OF THE ALGORITHMS
+  Dense grid, 1601 x 1601 points (spacing 0.0050); every grid point lower than its eight
+  neighbours refined by Newton's method with the exact gradient and Hessian:
+    global x = (+2.1264966626, -1.7398973660), f = -1.787575287515, |grad f| = 1.4e-16, Hessian eigenvalues 2.3721, 2.3946
+    local  x = (-1.3373770064, +1.0508465210), f = -0.978899038042, |grad f| = 1.0e-16, Hessian eigenvalues 1.7709, 1.7901
+    local  x = (+0.4274351959, -2.7555537368), f = -0.549794837039, |grad f| = 3.6e-16, Hessian eigenvalues 1.8431, 3.4333
+    local  x = (+0.4323201209, +0.6866775767), f = -0.548853583348, |grad f| = 1.4e-16, Hessian eigenvalues 2.5198, 3.1957
+    local  x = (+2.3989665779, +2.3026156180), f = -0.489006371895, |grad f| = 3.5e-16, Hessian eigenvalues 1.9019, 1.9786
+    local  x = (-2.6101683134, -2.4167959580), f = -0.476285351181, |grad f| = 4.2e-16, Hessian eigenvalues 2.3221, 2.4051
+    local  x = (-2.8867638781, +2.8836837195), f = -0.068362391764, |grad f| = 2.4e-16, Hessian eigenvalues 2.0585, 2.4785
+  All 7 have a positive definite Hessian: they are minima. The global one lies 0.8087 below the next.
+  Grid convergence: the grid's lowest value against f*
+      201 x 201   (h = 0.04000): -1.7870551830, above f* by 5.20e-04
+      401 x 401   (h = 0.02000): -1.7875250489, above f* by 5.02e-05
+      801 x 801   (h = 0.01000): -1.7875606639, above f* by 1.46e-05
+     1601 x 1601  (h = 0.00500): -1.7875726070, above f* by 2.68e-06
+     3201 x 3201  (h = 0.00250): -1.7875740776, above f* by 1.21e-06
+  scipy differential_evolution (seed 1, polished): f = -1.787575287515 at (+2.1264966666, -1.7398973639),
+    against Newton: 6.7e-16 in f, 4.5e-09 in x.
+  scipy shgo (Sobol, 512 points, 3 iterations): f = -1.787575287515 at (+2.1264968204, -1.7398973355),
+    against Newton: 3.1e-14 in f, 1.6e-07 in x.
+  A local method (BFGS) from 2000 uniform random starts reaches the global minimum from 31.8% of them;
+    the others stop in a local minimum: 27.3%, 3.9%, 10.5%, 12.3%, 9.8%, 4.4%.
+
+THE RUNS SHOWN (seed 15)
+  GA   : 400 evaluations; best f = -1.7875364874 at (+2.129537, -1.744737); f - f* = 3.88e-05; distance to the global minimizer 5.72e-03
+  PSO  : 400 evaluations; best f = -1.7867004885 at (+2.099996, -1.745601); f - f* = 8.75e-04; distance to the global minimizer 2.71e-02
+  SA   : 400 evaluations; best f = -1.7803634734 at (+2.059740, -1.698887); f - f* = 7.21e-03; distance to the global minimizer 7.83e-02
+  ACO_R: 400 evaluations; best f = -1.7875752838 at (+2.126550, -1.739912); f - f* = 3.70e-09; distance to the global minimizer 5.58e-05
+  The best of the 20 shared starting points, f = -0.9322 at (-1.409, +0.830), lies in the basin
+  of the local minimum at (-1.337, +1.051) (f = -0.9789), the second deepest; so does SA's start,
+  (-0.793, +1.496), f = -0.6159 (basin 1, counting the minima above from 0). 5 of the 20 lie higher up on
+  the global well's slopes. First evaluation below the second lowest minimum (that is, low in the global well):
+    GA 29, PSO 69, SA 82, ACO_R 73 (evaluation number).
+
+ROBUSTNESS: THE SAME SETTINGS, 200 SEEDS (0 to 199)
+  GA   : ends in the global minimum's basin in 95.0% of seeds, within 0.1 of it in 94.0%; median distance 3.6e-03; evaluations [400]
+  PSO  : ends in the global minimum's basin in 89.5% of seeds, within 0.1 of it in 87.5%; median distance 1.8e-02; evaluations [400]
+  SA   : ends in the global minimum's basin in 96.5% of seeds, within 0.1 of it in 59.0%; median distance 8.3e-02; evaluations [400]
+  ACO_R: ends in the global minimum's basin in 98.5% of seeds, within 0.1 of it in 95.0%; median distance 5.9e-05; evaluations [400]
+  All four in the global basin: 83.0% of seeds. The best starting point lies outside the
+  global basin for 46 seeds; for 18 of them all four still end in it. Seed 15, shown, is one of
+  these, chosen so that the figure shows the search for the global well.
+
+THE MECHANISMS AGAINST CLOSED FORMS (pooled over the 200 seeds)
+  GA tournament (size 2, with replacement): for distinct values P(winner has rank r) = (2 (N - r) - 1) / N^2,
+    r = 0 the best: 0.0975 for rank 0. But a child neither crossed nor mutated (probability 0.1 x 0.75) is a
+    copy of its parent, and 2319 of the 3800 populations hold equal values, where the first contestant wins
+    a tie; the exact probabilities, every one of the N^2 pairs enumerated for each population, give
+    rank 0 0.0969, rank 9 0.0527, rank 19 0.00251; observed over 76000 tournaments 0.0945,
+    0.0538 and 0.00267; largest deviation over the 20 ranks 2.18 standard errors.
+  SA Metropolis rule: 69600 uphill proposals; accepted 0.1316, expected mean exp(-df/T) 0.1320
+    (-0.50 standard errors); by temperature:
+      T in [0.5, 2.1): accepted 0.6285, expected 0.6285 (9643 proposals)
+      T in [0.05, 0.5): accepted 0.1219, expected 0.1226 (23290 proposals)
+      T in [0, 0.05): accepted 0.0070, expected 0.0073 (36667 proposals)
+  ACO_R rank weights (q = 0.5, k = 20): p_1 = 0.08069, p_20 = 0.01327 in closed form; chosen
+    over 76000 ants 0.08055 and 0.01251; largest deviation 2.25 standard errors.
+  ACO_R kernel widths: sigma_l recomputed term by term against the run's: 0.0e+00.
+
+THE IMPLEMENTATIONS ON TEXTBOOK TEST FUNCTIONS (the same settings, 400 evaluations, seeds 0 to 99)
+  Himmelblau, f = (x^2 + y - 11)^2 + (x + y^2 - 7)^2: four minima, f = 0 (textbook)
+    GA   : best f median 5.3e-04; within 0.05 of a textbook minimizer in 94% of seeds
+    PSO  : best f median 3.0e-03; within 0.05 of a textbook minimizer in 98% of seeds
+    SA   : best f median 8.5e-02; within 0.05 of a textbook minimizer in 49% of seeds
+    ACO_R: best f median 3.3e-05; within 0.05 of a textbook minimizer in 81% of seeds
+  Rastrigin, f = 20 + sum (x_i^2 - 10 cos 2 pi x_i): f = 0 at the origin (textbook), 81 local
+  minima in the square, the nearest four at f = 0.995 (a harder test at this budget)
+    GA   : best f median 5.6e-01; within 0.05 of a textbook minimizer in 50% of seeds
+    PSO  : best f median 9.6e-01; within 0.05 of a textbook minimizer in 43% of seeds
+    SA   : best f median 1.0e+00; within 0.05 of a textbook minimizer in 24% of seeds
+    ACO_R: best f median 9.7e-01; within 0.05 of a textbook minimizer in 35% of seeds
+
+THE PAGE'S OWN NUMBERS (headless Chromium)
+  Best so far curves of (e), computed in the page from the float32 values, against numpy on the same: 0.0e+00.
+  The evaluation holding the best so far, after every n, all four: largest index difference 0.
+  ACO_R kernel widths computed in the page (from float32 positions) against the run's, at iterations
+  0, 100 and 190: largest difference 8.7e-08 in x (9.4e-05 of the largest width; float32 positions).
+  The populations, archives, personal bests and walker positions the page decodes: largest difference 0.
+
+OVERLAP CHECK (engine.js ?overlap)
+  The poster and 23 moments from 0.3 s to 18.3 s (intro, run, rest, fade, restart): 0 labels
+  meeting, 0 strokes through a label. common.still() also checks every 0.25 s up to the poster.
+  Page 118 KB, poster 138 KB.
+
+DISPLAY
+  One shared clock: in each slot every algorithm spends 20 more evaluations (GA: a generation, PSO: an
+  iteration, SA: 20 proposals, ACO_R: 10 iterations of 2 ants), so at every moment all four have used
+  the same budget, counted by n in (e). The first five slots take 1 s each, from the tenth on 0.5 s
+  (a smooth step between): the run takes 13.75 s, rests 2.6 s, fades and starts again.
+  Each curve in (e) is drawn up to its own algorithm's count (GA's children are evaluated one by one
+  as they are born; PSO's swarm all at once on arrival), with the whole run faint behind it.
+  Contours of f every 0.2 from -1.7 to 0.1, then 0.4, 0.7, 1.0 (1632 points after Douglas-Peucker
+  simplification within 0.003, about 0.1 drawing units). Kernels in (d) are 1 sigma ellipses, darker for
+  higher rank weight; the GA's links join each child to its two parents; a dotted segment is a mutation.

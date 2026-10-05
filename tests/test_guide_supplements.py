@@ -150,3 +150,17 @@ def test_a_figure_stands_where_the_new_text_marks_it(tmp_path, monkeypatch):
             json.dumps({"doc": bad}), encoding="utf-8")
         with pytest.raises(SystemExit):
             build.add_supplementary_figures("<p>His words.</p>", "doc")
+
+
+def test_a_caption_may_carry_a_subscript_and_nothing_else(monkeypatch, tmp_path):
+    import json
+    anim = {"src": "../anim/nf-x.html", "title": "X", "w": 1000, "h": 500,
+            "still": {"src": "../anim/nf-x.webp", "w": 1344, "h": 672}}
+    monkeypatch.setattr(build, "ANIM", {"doc": {"k1": anim}})
+    monkeypatch.setattr(build, "ROOT", str(tmp_path))
+    (tmp_path / "content" / "anim").mkdir(parents=True)
+    (tmp_path / "content" / "anim" / "supplements.json").write_text(json.dumps({"doc": [
+        {"key": "k1", "after_paragraph": "His", "caption": "Figure 9. ACO<sub>R</sub>, x<sup>2</sup> <b>no</b>."}]}),
+        encoding="utf-8")
+    out = build.add_supplementary_figures("<p>His words.</p>", "doc")
+    assert "ACO<sub>R</sub>, x<sup>2</sup> &lt;b&gt;no&lt;/b&gt;." in out

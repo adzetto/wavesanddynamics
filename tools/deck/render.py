@@ -47,7 +47,8 @@ The checks (a slide that fails one is not written to content/ unless --force):
               (DECK_PPTX), the check says so, and the slide is written only
               with --force.
   overflow    nothing leaves the page or its box, the body stays clear of the
-              foot, no text sits on other text
+              foot, no text sits on other text, and every word of a figure
+              (fig.py's labels) stays inside its figure's box (FIG_JS)
   legible     text 24 px or larger on the 1920 slide (12 px in the 960 copy),
               the running foot and tick numbers 22 px or larger; a slide may
               lower its own floor with data-min (the map, 20; references, 22)
@@ -193,6 +194,22 @@ html.anim-wait .slide{{visibility:hidden}}</style>
 
 FIG = re.compile(r'<div\s+data-fig="([\w-]+)"([^>]*)>\s*</div>')
 
+# The deck's setting changed on 5 Oct 2026 in two ways that move words a few
+# px: mathtype gives a formula's last italic letter TeX's italic correction
+# when text follows it (mathtype.ITALIC_CORRECTION: "a normal Y and" read
+# "Yand"), and fig.Axes.legend sizes its box from its words measured
+# (fig.MEASURE_LEGENDS: slide 42's words touched the box). A slide printed
+# before keeps the old setting until it is rendered again, so its
+# photograph, its animation and its vector copies keep agreeing: the vector
+# print holds every page to its photograph (VEC_TOL), and a word moved 2 px
+# already fails it. These are the slides either change touches (2, 42 and
+# 65a were rendered with it that day). To bring one up to date, take its
+# label out of the set and render it (his words held as DECK_BRIEF.md
+# section 13 says where his file is not), then print the vectors; when the
+# set is empty, delete it and the two switches' old branches.
+SET_BEFORE = {"7", "10", "15", "23", "24", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
+              "36", "37", "38", "39", "46", "47", "49", "51", "52", "54", "55", "56", "61", "66"}
+
 
 # ------------------------------------------------------------------ labels
 
@@ -233,7 +250,9 @@ def module(label):
 
 
 def slide_body(label, html_path=None, mod=None):
-    """The slide's <section>: its figures computed and put in, his formulas set."""
+    """The slide's <section>: its figures computed and put in, his formulas
+    set, in the deck's setting (a slide in SET_BEFORE in the old one)."""
+    import fig as figlib
     name = html_path or src(label, ".html")
     with open(name, encoding="utf-8") as fh:
         body = fh.read()
@@ -250,8 +269,13 @@ def slide_body(label, html_path=None, mod=None):
             return f"<div {extra}>{out}</div>"
         return out
 
-    body = FIG.sub(fig, body)
-    return mathtype.expand(body)
+    now = str(label) not in SET_BEFORE
+    mathtype.ITALIC_CORRECTION = figlib.MEASURE_LEGENDS = now
+    try:
+        body = FIG.sub(fig, body)
+        return mathtype.expand(body)
+    finally:
+        mathtype.ITALIC_CORRECTION = figlib.MEASURE_LEGENDS = True
 
 
 def assemble(label, html_path=None, mod=None):
@@ -575,6 +599,27 @@ def server():
 
 
 INFO_JS = "() => deckInfo()"
+# A figure's words inside its figure. deck.js holds each piece of text to its
+# own box, and a figure's label (fig.py's .ft, placed on its anchor) is a box
+# of its own, so a label that ran out of its figure, across a panel's edge and
+# into the next (slide 2, 5 Oct 2026), passed. Each label shown at the end
+# must lie inside the box of the figure it belongs to, within FIG_SLACK px.
+FIG_SLACK = 1.5
+FIG_JS = """() => {
+  const out = [];
+  document.querySelectorAll('.slide .fig').forEach(f => {
+    const b = f.getBoundingClientRect();
+    f.querySelectorAll(':scope > .ft').forEach(l => {
+      const cs = getComputedStyle(l);
+      if (l.hidden || cs.display === 'none' || cs.visibility === 'hidden') return;
+      const r = l.getBoundingClientRect();
+      if (r.width < .5) return;
+      const over = Math.max(b.left - r.left, r.right - b.right, b.top - r.top, r.bottom - b.bottom);
+      if (over > %s) out.push([l.textContent.trim().slice(0, 40), Math.round(over * 10) / 10]);
+    });
+  });
+  return out;
+}""" % FIG_SLACK
 # The faces the slide's words are set in (each style and weight of each first
 # family a piece of text asks for), and any of them that is not loaded: a
 # photograph taken with a fallback face is refused. A face no text uses is not
@@ -773,6 +818,9 @@ def shoot(labels, look_only=False, force=False, with_anim=True, anim_only=False,
             master = os.path.join(BUILD, "slides", f"{stem}@2x.png")
             pg.screenshot(path=master, clip={"x": 0, "y": 0, "width": 1920, "height": 1080})
             info = pg.evaluate(INFO_JS)
+            info["problems"] = list(info["problems"]) + [
+                f"a figure's words run out of their figure by {over:g} px: \"{t}\""
+                for t, over in pg.evaluate(FIG_JS)]
             pg.close()
             probs = check(lab, info, words_elsewhere=anim_only)
             if anim_only and not (changed or {}).get(lab):

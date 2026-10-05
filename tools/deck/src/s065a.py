@@ -44,7 +44,10 @@ _prod = norm.pdf(_x, MU0, SD0) * norm.pdf(Z, _x, SDV)
 assert np.allclose(_prod / np.trapezoid(_prod, _x), norm.pdf(_x, MU1, np.sqrt(PK)), atol=1e-9)
 assert abs(K / PM - (1 - K) / R) < 1e-15   # the lever balances
 
-LO, HI = 5.0, 21.0                          # mm: each curve down to 7 % of its peak
+# mm: the prediction from 3.25 SD below its mean, the reading to 3.17 SD above
+# its own, so each curve comes down onto the axis (under 1.5 px over it) as
+# the update's does (5 Oct 2026: at 5 to 21 mm they ended 10 and 12 px up)
+LO, HI = 3.5, 23.5
 
 
 def weigh():
@@ -59,7 +62,8 @@ def weigh():
     ax = f.axes(8, 128, W - 16, base - 128, xlim=(LO, HI), ylim=(0, 0.245), frame=False)
     xs = np.linspace(LO, HI, 1401)
     prior, sensor, post = norm.pdf(xs, MU0, SD0), norm.pdf(xs, Z, SDV), norm.pdf(xs, MU1, SD1)
-    assert max(prior[0], prior[-1], sensor[0], sensor[-1]) < .07 * post.max()
+    px = (base - 128) / 0.245                # px per unit of density
+    assert max(prior[0], prior[-1], sensor[0], sensor[-1], post[0], post[-1]) * px < 1.5
     xa, xf, xb = (float(ax.X(v)) for v in (MU0, MU1, Z))
     # the lever: a beam level on a fulcrum under the update, symmetric about
     # it (its own weight balances), with the precisions 1/P- and 1/R at the
@@ -82,10 +86,13 @@ def weigh():
     ax.plot(xs, sensor, color=C.accent, width=4, dash="14 9", anim=draw(t_curve[Z], 1.0))
     ax.plot(xs, post, color=C.blue, width=4.5, anim=draw(t_curve[MU1], 1.0))
     f.line([(ax.x, base), (ax.x + ax.w, base)], stroke=C.ink, width=2, cap="butt", anim=fade(T_PRED + .2, .4))
-    for X, s, col, m in ((xa, "<m>x̂ₖ⁻</m>", C.navy, MU0), (xf, "<m>x̂ₖ</m>", C.blue, MU1),
-                         (xb, "<m>zₖ</m>", C.accent, Z)):
+    # the prediction's and the update's names stand outward of their ticks,
+    # which are K of the gap apart (34 px), the reading's under its own
+    for X, s, col, m, at, dx in ((xa, "<m>x̂ₖ⁻</m>", C.navy, MU0, "north east", 6),
+                                 (xf, "<m>x̂ₖ</m>", C.blue, MU1, "north west", -6),
+                                 (xb, "<m>zₖ</m>", C.accent, Z, "north", 0)):
         f.line([(X, base), (X, base - 10)], stroke=C.ink, width=2, cap="butt", anim=pop(t_curve[m]))
-        f.text(X, base + 12, s, "north", size=30, color=col, cls="ml", anim=pop(t_curve[m]))
+        f.text(X + dx, base + 12, s, at, size=30, color=col, cls="ml", anim=pop(t_curve[m]))
     # the lever: the beam and the two weights, then the fulcrum sets off from
     # the prediction (0) and rests at K, where the precisions balance
     t_lever = T_GAIN + .3
@@ -100,7 +107,7 @@ def weigh():
     for X, s, a in ((xa, "0", pop(t_lever + .3)), (xf, "<m>K</m>", pop(rest - .1)), (xb, "1", pop(t_lever + .3))):
         f.text(X, ylab, s, "north", size=ls, anim=a)
     # the weights, named: the precisions
-    f.text(xa - r0 - 10, yb - 8, "<m>1/Pₖ⁻</m>", "south east", size=28, color=C.navy, cls="ml",
+    f.text(xa - r0 - 10, yb - 5, "<m>1/Pₖ⁻</m>", "south east", size=28, color=C.navy, cls="ml",
            anim=pop(t_lever + .2))
     f.text(xb + r1 + 10, yb - 8, "<m>1/R</m>", "south west", size=28, color=C.accent, anim=pop(t_lever + .3))
     # the scale clears the curves; the lever stays inside the picture

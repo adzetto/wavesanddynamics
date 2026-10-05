@@ -23,9 +23,17 @@ comparison: render.py checks every slide against his file through it.
 
 Markup inside <m> is kept as written (a tag passes through untouched), so a
 source can force a reading: <m><i>xy</i></m> sets xy as two variables.
+
+A formula that ends in an italic letter and has text after it gets that
+letter's italic correction, as TeX gives it (expand()): a math italic Y, V,
+W, T, P or F leans past its own width, and without the correction its arm
+reached the next word ("a normal Y and gives" read "Yand", 5 Oct 2026). The
+amounts are Latin Modern Math's own (its MATH table, in em).
 """
 
+import functools
 import html as _html
+import os
 import re
 import unicodedata
 
@@ -200,11 +208,58 @@ def typeset(src):
 
 
 M = re.compile(r"<m>(.*?)</m>", re.S)
+FONT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "latinmodern-math-deck.woff2")
+# the italic correction, on (render.py holds a slide printed before it to
+# the old setting until that slide is rendered again: render.SET_BEFORE)
+ITALIC_CORRECTION = True
+
+
+@functools.lru_cache(maxsize=1)
+def italic_corrections():
+    """Each math italic letter's italic correction, in em, from Latin Modern
+    Math's MATH table (the deck's subset carries it): 𝑌 0.209, 𝑉 0.214, 𝑇
+    0.148, 𝑃 0.14, 𝐹 0.134, 𝑓 0.09 ... A letter without one is left out."""
+    from fontTools.ttLib import TTFont
+    ft = TTFont(FONT)
+    info = ft["MATH"].table.MathGlyphInfo.MathItalicsCorrectionInfo
+    by_glyph = {g: v.Value for g, v in zip(info.Coverage.glyphs, info.ItalicsCorrection)}
+    upm = ft["head"].unitsPerEm
+    return {chr(cp): by_glyph[g] / upm for cp, g in ft.getBestCmap().items() if by_glyph.get(g)}
+
+
+# what may stand between a formula and the text after it: closing tags, then
+# spaces (and, after a space, the opening tag of an inline run: "<b>near")
+_TEXT_AFTER = re.compile(r"(?:</[A-Za-z][^>]*>)*(?:(?:\s|&nbsp;|&#160;)+(?:<[A-Za-z][^>]*>)*)?"
+                         r"[A-Za-z0-9(\[\u2018\u201c]")
+_LAST_LETTER = re.compile(r'<span class="mi">(.)</span>$')
+_LAST_ACCENTED = re.compile(r'<span class="(acc [^"]*)"><span class="mi">(.)</span>'
+                            r'((?:<span class="mk">[^<]*</span>)+)</span>$')
+
+
+def _corrected(out, rest):
+    """A typeset formula with TeX's italic correction after its last letter,
+    when that is a math italic letter (not one with a sub- or superscript,
+    which TeX moves instead) and text follows the formula in `rest`."""
+    if not ITALIC_CORRECTION or not _TEXT_AFTER.match(rest):
+        return out
+    ic = italic_corrections()
+    m = _LAST_LETTER.search(out)
+    if m and ic.get(m.group(1)):
+        return (out[:m.start()] + f'<span class="mi" style="margin-right:{ic[m.group(1)]:.3f}em">'
+                f'{m.group(1)}</span>')
+    m = _LAST_ACCENTED.search(out)
+    if m and ic.get(m.group(2)):
+        return (out[:m.start()] + f'<span class="{m.group(1)}" style="margin-right:{ic[m.group(2)]:.3f}em">'
+                f'<span class="mi">{m.group(2)}</span>{m.group(3)}</span>')
+    return out
 
 
 def expand(markup):
-    """Every <m>..</m> in a slide's markup, typeset."""
-    return M.sub(lambda mo: f'<span class="m">{typeset(mo.group(1))}</span>', markup)
+    """Every <m>..</m> in a slide's markup, typeset (with the italic
+    correction where a formula ends in an italic letter and text follows)."""
+    def one(mo):
+        return f'<span class="m">{_corrected(typeset(mo.group(1)), markup[mo.end():mo.end() + 200])}</span>'
+    return M.sub(one, markup)
 
 
 if __name__ == "__main__":

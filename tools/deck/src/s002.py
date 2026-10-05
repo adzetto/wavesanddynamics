@@ -36,9 +36,11 @@ def _curve(ax, dist, lo, hi, color=C.navy, width=2.6, dash=None, n=300):
 def chi():
     """A histogram of 400 draws from a skewed quantity (lognormal) against
     three candidate families fitted to the same draws by maximum likelihood:
-    normal, lognormal, exponential."""
+    normal, lognormal, exponential. His label beside them ends inside the
+    figure, so 12 px inside its panel (5 Oct 2026: at 136 px the curves left
+    "distributions" running across the panel's edge)."""
     f = Fig(W1, 84)
-    pw = 136                                    # the plot; his label beside it
+    pw = 104                                    # the plot; his label beside it
     ax = f.axes(0, 6, pw, 72, xlim=(0, 3.6), ylim=(0, 1.02), frame=False)
     xs = sample(400, stats.lognorm(0.45))
     edges = np.linspace(0, 3.6, 13)
@@ -200,7 +202,8 @@ def propagate():
 
 def demand_capacity(w=W4, h=54, labels=True):
     """Demand S ~ N(70, 8) and capacity R ~ N(100, 10) kN; the shaded area is
-    where the two densities overlap."""
+    where the two densities overlap. The two words stand on the figure's top
+    edge, 2 px over the curves' box."""
     f = Fig(w, h)
     ax = f.axes(4, 22, w - 8, h - 28, xlim=(40, 135), ylim=(0, 0.052), frame=False)
     x = np.linspace(40, 135, 400)
@@ -211,41 +214,46 @@ def demand_capacity(w=W4, h=54, labels=True):
     _base(f, h - 6)
     if labels:
         X, _ = ax.P(70, 0)
-        f.text(X - 30, 18, "demand", "south east", size=LAB)
+        f.text(X - 30, 20, "demand", "south east", size=LAB)
         X, _ = ax.P(100, 0)
-        f.text(X + 30, 18, "capacity", "south west", size=LAB)
+        f.text(X + 30, 20, "capacity", "south west", size=LAB)
     return f.html()
 
 
 # ------------------------------------------------------------------ box 5
+# Every word of a picture stands inside the picture's own box, as his did in
+# his frames (5 Oct 2026: four of them stood up to 14 px over their box's top
+# edge, into the line above). The room comes from the top row of the map,
+# which the column of box 5 sets: its pictures are 18 px taller in all, and
+# the row under it, which stretches to the foot, has that to spare.
 def point_regression():
     """A fitted line read at one x: the prediction Y-hat, one number."""
-    f = Fig(W5, 40)
-    ax = f.axes(8, 3, W5 - 16, 32, xlim=(0, 10), ylim=(0, 10), frame=False)
+    f = Fig(W5, 44)
+    ax = f.axes(8, 7, W5 - 16, 32, xlim=(0, 10), ylim=(0, 10), frame=False)
     ax.plot([0, 10], [6.0, 2.4], color=C.accent, width=2.6)
-    x0 = 5.2
+    x0 = 6.0
     y0 = 6.0 - 0.36 * x0
     ax.vline(x0, color=C.ink, width=1.6, dash="5 4", y0=0, y1=y0)
     ax.mark(x0, y0, r=6.5, color=C.paper, ring=C.accent, ring_w=2.5)
     X, Y = ax.P(0.25, 6.0)
-    f.text(X, Y + 6, "<m>Ŷ</m>", "north west", size=LAB)
+    f.text(X, Y + 3, "<m>Ŷ</m>", "north west", size=LAB)
     X, Y = ax.P(x0, y0)
-    f.text(X + 14, Y - 8, "<m>Ŷ</m>, one value", "south west", size=LAB)
-    _base(f, 36)
+    f.text(X + 14, Y - 7, "<m>Ŷ</m>, one value", "south west", size=LAB)
+    _base(f, 40)
     return f.html()
 
 
 def point_design():
     """A density and one number read from it: the mean (a design value)."""
-    f = Fig(W5, 52)
-    ax = f.axes(8, 7, W5 - 16, 25, xlim=(-3.2, 3.2), ylim=(0, 0.42), frame=False)
+    f = Fig(W5, 66)
+    ax = f.axes(8, 21, W5 - 16, 25, xlim=(-3.2, 3.2), ylim=(0, 0.42), frame=False)
     _curve(ax, stats.norm(), -3.2, 3.2, color=C.sky, width=2.6)
     ax.vline(0, color=C.ink, width=1.6, dash="5 4", y0=0, y1=0.3989)
     ax.mark(0, 0.3989, r=6.5, color=C.paper, ring=C.accent, ring_w=2.5)
     X, Y = ax.P(0, 0.3989)
     f.text(X + 12, Y - 2, "value", "south west", size=LAB)
-    f.text(X, 52, "a design value", "south", size=LAB, cls="b")
-    _base(f, 32)
+    f.text(X, 66, "a design value", "south", size=LAB, cls="b")
+    _base(f, 46)
     return f.html()
 
 
@@ -268,8 +276,8 @@ def point_beta():
 def prob_regression():
     """The chance the true value exceeds a limit: the prediction band of a
     fitted line and the part of it above the limit."""
-    f = Fig(W5, 46)
-    ax = f.axes(8, 3, W5 - 16, 40, xlim=(0, 10), ylim=(0, 10), frame=False)
+    f = Fig(W5, 49)
+    ax = f.axes(8, 6, W5 - 16, 40, xlim=(0, 10), ylim=(0, 10), frame=False)
     x = np.linspace(0, 10, 200)
     mu = 1.6 + 0.28 * x
     sd = 0.7 + 0.07 * x
@@ -288,8 +296,8 @@ def prob_regression():
 
 def prob_exceed():
     """A density and the chance of exceeding a value: the shaded upper tail."""
-    f = Fig(W5, 40)
-    ax = f.axes(8, 3, W5 - 16, 32, xlim=(-3.2, 3.2), ylim=(0, 0.42), frame=False)
+    f = Fig(W5, 50)
+    ax = f.axes(8, 13, W5 - 16, 32, xlim=(-3.2, 3.2), ylim=(0, 0.42), frame=False)
     v = 1.1
     xs = np.linspace(v, 3.2, 120)
     ax.area(xs, stats.norm.pdf(xs), color=C.amber, opacity=0.6)
@@ -299,7 +307,7 @@ def prob_exceed():
     f.text(X - 8, Y, "value", "south east", size=LAB)
     X, Y = ax.P(v, 0.30)
     f.text(X + 8, Y, "<m>P(X>value)</m>", "south west", size=LAB)
-    _base(f, 38)
+    _base(f, 48)
     return f.html()
 
 

@@ -209,7 +209,7 @@ def _chromium():
 _FAKE = """<!doctype html><html><body style="margin:0;background:#fff"><script>
 var t=0;function tell(m){parent.postMessage({deckAnim:m},'*')}
 addEventListener('message',function(e){var m=e.data&&e.data.deckAnim;
-  if(m==='play')t=setTimeout(function(){tell('done')},1000);
+  if(m==='play')t=setTimeout(function(){tell('done')},2500);   // long enough under a loaded machine
   else if(m==='finish'){clearTimeout(t);tell('done')}});
 requestAnimationFrame(function(){tell('ready')});
 </script></body></html>"""

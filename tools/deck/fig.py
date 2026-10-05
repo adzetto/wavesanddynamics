@@ -39,11 +39,16 @@ mark drawn with ghost=True shows only while the slide plays (the 25 tests
 that become their average), and never in the picture.
 """
 
+import functools
 import html as _html
 import json as _json
 import math
+import os
+import re
 
 import numpy as np
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 # ------------------------------------------------------------------ animation
@@ -406,9 +411,84 @@ def num(v, nd=None):
 
 def is_num(s):
     """A tick label that is a number (data), not words."""
-    import re
     plain = _html.unescape(re.sub(r"<[^>]+>", "", s))
     return bool(re.fullmatch(r"[\s0-9.,−+%×·()\-⁰¹²³⁴⁵⁶⁷⁸⁹⁻/]*", plain))
+
+
+@functools.lru_cache(maxsize=None)
+def _face(path):
+    """A font's character map, advance widths and units per em (fontTools)."""
+    from fontTools.ttLib import TTFont
+    ft = TTFont(os.path.join(_ROOT, *path.split("/")))
+    return ft.getBestCmap(), ft["hmtx"].metrics, ft["head"].unitsPerEm
+
+
+CMU = "content/fonts-cmu/cmu-serif-500-roman.woff2"          # a figure's words (.ft)
+LMM = "tools/deck/fonts/latinmodern-math-deck.woff2"          # its maths (.m)
+# a legend's box from its words measured (Axes.legend); render.py holds a
+# slide printed before 5 Oct 2026 to the old guess, half an em a character,
+# until that slide is rendered again (render.SET_BEFORE)
+MEASURE_LEGENDS = True
+
+
+def text_width(s, size=LABEL_PX):
+    """The width in px of a label (HTML, <m>..</m> allowed) as a figure sets
+    it, measured from the fonts' own advance widths: its words in CMU Serif,
+    its maths as mathtype sets it, in Latin Modern Math first (as .m does),
+    each face standing in for what the other lacks. A sub- or superscript is
+    counted at its size (.m's 0.7, .ft sup's 0.72), a stacked pair (.ss) as
+    the wider of the two, an accent's mark not at all; a <br> starts a new
+    line (the widest counts). Kerning is left out: a px or two on a label."""
+    import mathtype
+    lines, out = [], 0.0
+    for k, part in enumerate(re.split(r"<m>(.*?)</m>", s, flags=re.S)):
+        maths = k % 2 == 1
+        if maths:
+            part = mathtype.typeset(part)
+        faces = (_face(LMM), _face(CMU)) if maths else (_face(CMU), _face(LMM))
+        scale, spans, stack = [1.0], [], []   # stack: [widest, current] of each open .ss
+        for tok in re.split(r"(<[^>]+>)", part):
+            if tok.startswith("<"):
+                tag = re.match(r"<(/?)(\w+)([^>]*)>", tok)
+                if not tag:
+                    continue
+                close, name, attrs = tag.groups()
+                if name == "br":
+                    lines.append(out)
+                    out = 0.0
+                elif name in ("sub", "sup"):
+                    if close:
+                        scale.pop()
+                        if stack:                        # one of a stacked pair is done
+                            stack[-1][0] = max(stack[-1][0], stack[-1][1])
+                            stack[-1][1] = 0.0
+                    else:
+                        scale.append(scale[-1] * (0.7 if maths else 0.72))
+                elif name == "span" and not close:
+                    kind = "ss" if 'class="ss"' in attrs else "mk" if 'class="mk"' in attrs else ""
+                    spans.append(kind)
+                    if kind == "ss":
+                        stack.append([0.0, 0.0])
+                elif name == "span" and close and spans:
+                    if spans.pop() == "ss":
+                        out += stack.pop()[0]
+                continue
+            if "mk" in spans:                           # a mark the stylesheet hides or draws
+                continue
+            for ch in _html.unescape(tok):
+                if 0x300 <= ord(ch) <= 0x36F:          # an accent's mark: drawn over its letter
+                    continue
+                w = 0.5
+                for cmap, hmtx, upm in faces:
+                    g = cmap.get(ord(ch))
+                    if g:
+                        w = hmtx[g][0] / upm
+                        break
+                if stack:
+                    stack[-1][1] += w * scale[-1]
+                else:
+                    out += w * scale[-1]
+    return max(lines + [out]) * size
 
 
 def _f(v):
@@ -815,14 +895,20 @@ class Axes:
         """pgfplots' legend: a 1 px ink box, white, inside the axis. entries
         are (label HTML, dict of the line's style: color, width, dash, or
         kind='area'/'mark'). anim= arrives the whole legend, or, a list, its
-        box and then each entry (an entry with what it names)."""
+        box and then each entry (an entry with what it names). The box is as
+        wide as its widest words measured (text_width()), so the padding
+        after them is the padding before the sample (5 Oct 2026: a guess of
+        half an em a character left slide 42's words touching the box)."""
         f = self.f
         box, each = ((anim[0], list(anim[1:])) if isinstance(anim, (list, tuple))
                      else (anim, [anim] * len(entries)))
         if len(each) != len(entries):
             raise ValueError(f"legend: {len(each)} specs for {len(entries)} entries")
-        est_w = max(len(_html.unescape(__import__("re").sub(r"<[^>]+>", "", t))) for t, _ in entries) * size * 0.5
-        bw = pad + sample + 12 + est_w + pad
+        if MEASURE_LEGENDS:
+            words = max(text_width(t, size) for t, _ in entries)
+        else:
+            words = max(len(_html.unescape(re.sub(r"<[^>]+>", "", t))) for t, _ in entries) * size * 0.5
+        bw = pad + sample + 12 + words + pad
         bh = pad * 2 + row * len(entries) - (row - size)
         bx = self.x + self.w - inset - bw if "east" in at else self.x + inset
         by = self.y + inset if "north" in at else self.y + self.h - inset - bh

@@ -60,7 +60,10 @@ X_RIGHT = records(SEEDS[1]) * np.sqrt(var_right(T))
 
 # the figure: two columns (stationary, not), a record panel over a bar panel
 W, H = 976, 622
-BOX_W = 380
+# 396 px a panel: his window labels under the bars ("70–130 s", "140–200 s")
+# stand 20 px apart (at 380 they were 15, a word space; 5 Oct 2026), and the
+# right panel's last tick number still ends inside the figure
+BOX_W = 396
 COLS = (96, 570)                              # left edge of each column's boxes
 TS_Y, TS_H = 48, 244                          # record panels
 BAR_Y, BAR_H = 456, 110                       # variance panels

@@ -293,7 +293,17 @@ A slide is written to `content/` only when all pass:
   the words on the slide are exactly his words, counted. "words that are not his: ..." or "his
   words not on the slide: ..." name them.
 - **overflow**: nothing outside the page, nothing clipped, text inside its own box, the body
-  12 px clear of the foot, no text on other text, every wire found its boxes.
+  12 px clear of the foot, no text on other text, every wire found its boxes, and (since
+  5 Oct 2026) every figure label inside its figure's box, with 1.5 px of slack. Twelve slides
+  render with labels over their boxes today (7, 26, 28, 34, 36, 47, 48, 49, 54, 55, 56, 58):
+  they will be refused at their next full render until those labels move; an `--anim-only`
+  render reports them "as at HEAD" without refusing.
+- **italic correction** (since 5 Oct 2026): `mathtype.py` gives a formula's last math italic
+  letter TeX's italic correction from Latin Modern Math's table when text follows it (Y gets
+  0.209 em). `fig.text_width` measures label widths from the font files (legend boxes use
+  it). Both change how 29 slides set; `render.SET_BEFORE` holds those slides to the old
+  setting until each is rendered again (take a label out of the set, then
+  `render.py <labels> --force` and print the vectors).
 - **legible**: 24 px text (22 px foot and ticks). A slide may lower its own floor with
   `<section class="slide" data-min="22">`; only the map (slide 2, 20) and the reference slides
   (71 to 73, 22) do.

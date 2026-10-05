@@ -50,22 +50,28 @@ its size in decimal MB.
 
 The page (the client's brief, 26 Sep 2026: a fine presenter, a Present
 button, the pages as numbers; Apple's way of doing it). The slide is the
-page: his title over it with the count, the one thing to do, Present, filled
-in the warm accent beside it, and All slides beside that; under the slide a
-capsule with a step either way and "12 / 73"; under that the pages as a row
-of numbers, the one on screen filled, the row scrolling itself to keep it
-in the middle and showing the slide a number stands for when the mouse
-rests on it. Nothing else is on the page.
+page: his title over it, and on the line under the title the count with,
+at its end, the one thing to do, Present, filled in the warm accent, and All
+slides beside it (5 Oct 2026: beside a title as long as the PhD deck's the
+two buttons wrapped onto a row of their own and pushed the numbers below a
+1280 x 800 window); under the slide a capsule with a step either way and
+"12 / 73"; under that the pages as a row of numbers, the one on screen
+filled, the row scrolling itself to keep it in the middle and showing the
+slide a number stands for when the mouse rests on it. Nothing else is on
+the page.
 
 Moving through it. The arrows (either button, the left and right keys, Page
-Up and Page Down, Home and End), a number, or a swipe. The keys are the
-deck's while focus is in it or on nothing in particular, as when the page
-has just opened; a link in the column keeps its own. A step cross-fades,
-200ms, the slide coming up over the one it replaces, and a step taken while
-one is fading starts from where things are (the old slide goes, the new one
-fades). A swipe follows the finger: the slide moves with it, its neighbour
-comes in from the side, and on release the pair finishes the move at the
-speed the finger had, or springs back when the swipe was short and slow;
+Up and Page Down, Home and End), a number, or a swipe. The left and right
+keys are the deck's while focus is in it or on nothing in particular, as
+when the page has just opened; Page Up, Page Down, Home and End only while
+focus is in the deck or it is presenting, so with nothing focused they
+scroll the page as they do on every other page (5 Oct 2026); a link in the
+column keeps its own. A step cross-fades, 200ms, the slide coming up over
+the one it replaces, and a step taken while one is fading starts from where
+things are (the old slide goes, the new one fades). A swipe follows the
+finger: the slide moves with it, its neighbour comes in from the side, and
+on release the pair finishes the move at the speed the finger had, or
+springs back when the swipe was short and slow;
 past the first or the last slide the stage gives a little and returns. The
 next and the previous slide preload, so a step never waits for the
 network. The address keeps the slide (#12), so a slide can be shared and
@@ -76,22 +82,36 @@ its own: #12 is read by the script, so the browser never scrolls the page
 down to a slide it has just shown.
 
 A slide that plays (tools/deck/anim.js, DECK_BRIEF.md "Animated slides")
-plays each time it comes on: its own page, anim/<stem>.html, opens in a
-frame over the picture, unseen and held at its first moment until that
-moment is drawn, then plays; its last moment is the picture, and the frame
-then goes. Leaving the slide takes the frame away with it. Presenting, a
-step on while it plays shows it complete first, as a clicker completes a
-build, and the next step goes on. Under reduced motion nothing plays: the
+plays each time it comes on, from its first moment; its last moment is the
+picture, and the picture never comes first (5 Oct 2026: a step showed the
+finished slide, then blanked it to the first moment and built it again).
+Its own page, anim/<stem>.html, opens in a frame over the picture, held at
+its first moment (?wait) and unseen. The slides either side of the one on
+screen keep theirs ready that way, so a step shows the first moment at
+once, and the slide builds once it has faded up over the one it replaces,
+as a build set to follow the transition. A slide whose frame is not ready
+yet shows none of its picture: the slide it replaces stays (or, with none,
+a white page) until the first moment is drawn, and after 400ms without it
+the picture comes up and the slide does not play this time. A swipe
+brings in its neighbour's first moment too. When it ends the frame goes; a
+slide that is left keeps its frame, unseen and back at its first moment,
+while it is a neighbour, and loses it after. Presenting, a step on while it
+plays shows it complete first, as a clicker completes a build, and the next
+step goes on. Under reduced motion nothing plays and no frame loads: the
 picture is the slide.
 
 Present (the button, P or F) gives the deck the whole screen through the
 Fullscreen API, black round the slide as in a lecture hall, the capsule
-floating over its foot in a dark glass; still for two and a half seconds,
-the capsule and the pointer fade away and come back at the first move. A
-click goes on, or back on the slide's left third, as a projector's clicker
-would; Space goes on too. Escape, or the capsule's close button, ends it.
-Where the browser has no Fullscreen API (an iPhone) the same view fills
-the window instead.
+floating in a dark glass where it covers nothing of his: in the band the
+screen leaves under the slide when that is tall enough (a 16:10 screen),
+else in the top right corner, which every slide of the probability deck
+leaves empty (5 Oct 2026: it sat on his running foot). It comes when the
+pointer moves or Tab brings focus to it, never at a step, so a clicker or
+the keys never call it up; still for two and a half seconds, the capsule
+and the pointer fade away. A click goes on, or back on the slide's left
+third, as a projector's clicker would; Space goes on too. Escape, or the
+capsule's close button, ends it. Where the browser has no Fullscreen API
+(an iPhone) the same view fills the window instead.
 
 All slides (the button, or G) opens every slide as a thumbnail with its
 number and title in a modal <dialog>: focus lands on the slide on screen,
@@ -140,10 +160,14 @@ _PLAY = ('<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">'
 
 CSS = """
 /* ---------- a deck's page: the title, what to do, the presenter ---------- */
-.deck__top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
-  gap:16px 24px;margin:0 0 24px}
+/* his title has the width to itself; the line under it holds the count (and
+   the PDF) and, at its end, the two buttons, so a long title never pushes
+   them onto a row of their own (on a phone they share the width under it) */
+.deck__top{margin:0 0 22px}
 .deck__top h1{margin:0}
-.deck__meta{display:flex;flex-wrap:wrap;align-items:center;gap:0 22px;margin:8px 0 0;
+.deck__sub{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px 24px;margin:8px 0 0}
+.deck__meta{display:flex;flex-wrap:wrap;align-items:center;gap:0 22px;margin:0;
   font:500 15px/1.4 var(--sans);color:var(--muted);font-variant-numeric:tabular-nums}
 /* the deck as one PDF, offered as the site offers a Word file: the icon, the
    words in the link's colour, the size. Its 44px box keeps the target and
@@ -183,10 +207,11 @@ CSS = """
 .deck__cta:focus-visible,.deck__ghost:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 
 /* The stage. The deck is as wide as the window's height lets the slide, the
-   capsule and the numbers be seen whole under the title: 330px is what
-   stands over and under the slide (the title and its line, the capsule's
-   64px with the air over it, the numbers' 52px and the air under them). */
-.deck{position:relative;margin:0;max-width:max(480px,calc((100vh - 330px) * 16 / 9))}
+   capsule and the numbers be seen whole under the title: 350px is what
+   stands over and under the slide (the page's top, the title and the line
+   of buttons under it, the capsule's 68px with the air over it, the
+   numbers' 60px and the air under them). */
+.deck{position:relative;margin:0;max-width:max(480px,calc((100vh - 350px) * 16 / 9))}
 .deck__stage{position:relative;background:#fff;border-radius:var(--r-lg);overflow:hidden;
   box-shadow:0 0 0 1px color-mix(in oklab,var(--ink) 9%,transparent),
     0 2px 4px color-mix(in oklab,var(--ink) 5%,transparent),
@@ -208,6 +233,21 @@ CSS = """
 .deck__list>li>iframe.deck__anim{position:absolute;inset:0;z-index:1;width:100%;height:100%;border:0;
   pointer-events:none;visibility:hidden}
 .deck__list>li>iframe.deck__anim.is-on{visibility:visible}
+/* the neighbours' frames, loaded unseen and held at their first moment, so a
+   step shows that moment at once. A neighbour that holds one is laid out,
+   unseen, for its page to draw; a swipe shows the moment as it brings the
+   slide in, and a slide going away keeps its moment while it fades */
+.deck__list>li>iframe.deck__pre{position:absolute;inset:0;z-index:1;width:100%;height:100%;border:0;
+  pointer-events:none;visibility:hidden}
+.deck.is-live .deck__list>li.pre:not(.on):not(.was):not(.peek){display:block;position:absolute;top:0;left:0;
+  width:100%;visibility:hidden}
+.deck__list>li.peek>iframe.deck__pre.is-ready,.deck__list>li.was>iframe.deck__pre.is-on{visibility:visible}
+/* a slide whose first moment is not drawn yet shows none of its picture,
+   which is its last moment: a white page, or (hold) nothing at all, the
+   slide it replaces staying until the moment is there */
+.deck__list>li.cold{background:#fff}
+.deck__list>li.cold>img{visibility:hidden}
+.deck__list>li.hold{visibility:hidden}
 /* With a script, one slide. The shell marks <html> "js" in <head>, so the
    first paint already shows the first slide alone: the list of every slide
    never flashes up and collapses. */
@@ -292,23 +332,29 @@ html.deck-show{overflow:hidden;scrollbar-gutter:auto}
 .deck.is-show .deck__stage{width:min(100vw,calc(100vh * 16 / 9));border-radius:0;box-shadow:none;
   background:rgb(0 0 0)}
 .deck.is-show .deck__nums{display:none}
-/* the capsule floats over the slide's foot in a dark glass, and goes when
-   the reader is still */
-.deck.is-show .deck__bar{position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom));z-index:4;
-  margin:0;transform:translateX(-50%);color:rgb(255 255 255 / .62);background:rgb(28 28 30 / .66);
+/* the capsule floats in a dark glass where it covers nothing of his: in the
+   top right corner, which his slides leave empty, or (is-low) centred in
+   the band the screen leaves under the slide where that is tall enough;
+   never over the foot. It goes when the reader is still. Its glass is its
+   own: All slides, opened while presenting, keeps the page's buttons */
+.deck.is-show .deck__bar{position:absolute;top:max(16px,env(safe-area-inset-top));
+  right:max(16px,env(safe-area-inset-right));z-index:4;
+  margin:0;color:rgb(255 255 255 / .62);background:rgb(28 28 30 / .66);
   border-color:rgb(255 255 255 / .1);box-shadow:0 12px 30px rgb(0 0 0 / .3);
   -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
   transition:opacity 280ms var(--ease),transform var(--spring-mid)}
-.deck.is-show .deck__btn{color:rgb(255 255 255)}
+.deck.is-show.is-low .deck__bar{top:auto;right:auto;left:50%;bottom:var(--low,24px);transform:translateX(-50%)}
+.deck.is-show .deck__bar .deck__btn{color:rgb(255 255 255)}
 @media (hover:hover){
-  .deck.is-show .deck__btn:not([aria-disabled="true"]):hover{background:rgb(255 255 255 / .12)}
+  .deck.is-show .deck__bar .deck__btn:not([aria-disabled="true"]):hover{background:rgb(255 255 255 / .12)}
 }
-.deck.is-show .deck__btn:not([aria-disabled="true"]):active{background:rgb(255 255 255 / .2)}
-.deck.is-show .deck__btn:focus-visible{outline-color:rgb(255 255 255)}
+.deck.is-show .deck__bar .deck__btn:not([aria-disabled="true"]):active{background:rgb(255 255 255 / .2)}
+.deck.is-show .deck__bar .deck__btn:focus-visible{outline-color:rgb(255 255 255)}
 .deck.is-show .deck__cur{color:rgb(255 255 255)}
 .deck.is-show .deck__exit{display:grid;margin-left:4px;box-shadow:-1px 0 0 rgb(255 255 255 / .12)}
 .deck.is-show.is-idle{cursor:none}
-.deck.is-show.is-idle .deck__bar:not(:focus-within){opacity:0;transform:translate(-50%,10px);pointer-events:none}
+.deck.is-show.is-idle .deck__bar:not(:focus-within){opacity:0;transform:translateY(-10px);pointer-events:none}
+.deck.is-show.is-low.is-idle .deck__bar:not(:focus-within){transform:translate(-50%,10px)}
 @media (prefers-reduced-transparency:reduce){
   .deck.is-show .deck__bar{background:rgb(28 28 30);-webkit-backdrop-filter:none;backdrop-filter:none}
 }
@@ -383,8 +429,10 @@ html.deck-show{overflow:hidden;scrollbar-gutter:auto}
   .deck.is-show .deck__bar{transition:none}
 }
 @media print{
-  .deck__acts,.deck__bar,.deck__nums,.deck__all,.deck__anim{display:none!important}
-  .deck .deck__list>li{display:block!important;position:relative;break-inside:avoid}
+  .deck__pre,.deck__acts,.deck__bar,.deck__nums,.deck__all,.deck__anim{display:none!important}
+  .deck .deck__list>li{display:block!important;position:relative!important;visibility:visible!important;
+    break-inside:avoid}
+  .deck .deck__list>li>img{visibility:visible!important}
   .deck .deck__list>li+li{margin-top:16px}
 }
 """
@@ -437,17 +485,23 @@ function number(k){
 }
 function settle(){
   clearTimeout(fading);fading=0;
-  for(var k=0;k<n;k++)li[k].classList.remove('was','in');
+  for(var k=0;k<n;k++)li[k].classList.remove('was','in','hold');
+  tidy();
 }
+/* the slide on screen comes up over the one it replaces, which goes when
+   the fade is done */
+function arrive(){li[i].classList.add('in');clearTimeout(fading);fading=setTimeout(settle,240)}
 function show(k,push,tell,fade){
   k=Math.max(0,Math.min(n-1,k));
-  settle();
+  settle();clearTimeout(holding);
   var was=li[i];
   was.classList.remove('on');i=k;li[i].classList.add('on');
-  if(fade&&was!==li[i]&&!reduce.matches){
-    was.classList.add('was');li[i].classList.add('in');fading=setTimeout(settle,240);
-  }
-  load(i);load(i+1);load(i-1);sharpen();play(i);
+  var gone=fade&&was!==li[i]&&!reduce.matches;
+  if(gone)was.classList.add('was');
+  load(i);load(i+1);load(i-1);sharpen();
+  var held=play(i);tidy();
+  if(gone){if(held)li[i].classList.add('hold');else arrive()}
+  if(!held)prep();
   prev.setAttribute('aria-disabled',i===0);next.setAttribute('aria-disabled',i===n-1);
   cur.textContent=lab(i);number(i);
   if(push)try{history.replaceState(null,'','#'+lab(i))}catch(e){}
@@ -456,7 +510,7 @@ function show(k,push,tell,fade){
 /* presenting, a step on while the slide plays shows it complete first */
 function go(k){
   finish();k=Math.max(0,Math.min(n-1,k));
-  if(k===i+1&&showing()&&playing&&playing.k===i&&!playing.done){complete();return}
+  if(k===i+1&&showing()&&playing&&playing.k===i&&!playing.done&&playing.ready){complete();return}
   if(k!==i)show(k,1,1,1);
 }
 /* #65a is the slide labelled 65a; a bare number no slide carries is its place */
@@ -469,28 +523,91 @@ function hashed(){
 
 /* ---- a slide that plays ----
    Its page (tools/deck/anim.js) opens in a frame over the picture, held at
-   its first moment (?wait) and unseen until it says it has drawn it; then
-   it plays. At its end it is the picture, and the frame goes; leaving the
-   slide takes it away. Nothing plays under reduced motion. */
-var playing=null;
-function unplay(){if(playing){playing.f.remove();playing=null}}
-function play(k){
-  if(playing&&playing.k===k)return;
-  unplay();
+   its first moment (?wait) and unseen until it says it has drawn it. The
+   slides either side of the one on screen keep their frames that way
+   (deck__pre), so a step shows the first moment at once and plays it (the
+   frame on screen is the deck__anim). A slide whose frame is not ready
+   (cold) shows none of its picture: the slide it replaces stays (hold), or
+   a white page, until 'ready', or for 400ms, after which its picture comes
+   up and it does not play this time. At its end it is the picture, and the
+   frame goes; a slide left keeps its frame, unseen and back at its first
+   moment, while it is a neighbour. Nothing plays, and nothing loads, under
+   reduced motion. */
+var playing=null,pool={},holding=0;
+function frame(k){
+  if(pool[k])return pool[k];
   var src=li[k]&&li[k].getAttribute('data-anim');
-  if(!src||reduce.matches)return;
+  if(!src||reduce.matches)return null;
   var f=document.createElement('iframe');
-  f.className='deck__anim';f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');
+  f.className='deck__pre';f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');
   f.src=src+'?wait';
-  playing={k:k,f:f,done:false};
-  li[k].appendChild(f);
+  li[k].classList.add('pre','cold');li[k].appendChild(f);
+  return pool[k]={k:k,f:f,ready:false,done:false};
 }
-function complete(){try{playing.f.contentWindow.postMessage({deckAnim:'finish'},'*')}catch(e){unplay()}}
+function drop(p){
+  clearTimeout(p.wait);p.f.remove();delete pool[p.k];li[p.k].classList.remove('pre','cold');
+  if(playing===p)playing=null;
+}
+function unplay(){if(playing)drop(playing)}
+/* the frames round the slide on screen: its neighbours' are kept, held at
+   their first moment (one fading out keeps showing until it has gone), and
+   every other one goes */
+function tidy(){
+  for(var k in pool){
+    var p=pool[k],l=li[p.k],on=p.f.classList.contains('is-on'),was=p.f.classList.contains('deck__anim');
+    if(p.k===i)continue;
+    if(playing===p)playing=null;
+    if(l.classList.contains('was')){if(was)p.f.className='deck__pre'+(on?' is-on':'');continue}
+    if(Math.abs(p.k-i)>1){drop(p);continue}
+    if(was||on){
+      clearTimeout(p.wait);p.f.className='deck__pre'+(p.ready?' is-ready':'');
+      if(on)try{p.f.contentWindow.postMessage({deckAnim:'seek',t:0},'*')}catch(x){drop(p)}
+    }
+  }
+}
+function prep(){[i+1,i-1].forEach(function(k){if(k>=0&&k<n)frame(k)})}
+/* the slide on screen plays, at once if its first moment is drawn; returns
+   true while it waits for it */
+function play(k){
+  if(playing&&playing.k===k)return li[k].classList.contains('cold');
+  playing=null;
+  var src=li[k]&&li[k].getAttribute('data-anim');
+  if(!src||reduce.matches)return false;
+  var p=frame(k);
+  playing=p;p.f.className='deck__anim';
+  if(p.ready){start(p,!!list.querySelector('li.was'));return false}
+  holding=setTimeout(function(){if(playing===p&&!p.ready){drop(p);shown()}},400);
+  return true;
+}
+/* its first moment shows at once; it builds once the slide has faded up
+   over the one it replaces (as a build set to follow the transition) */
+function start(p,fade){
+  p.f.classList.add('is-on');li[p.k].classList.remove('cold');clearTimeout(p.wait);
+  p.wait=setTimeout(function(){
+    if(playing===p&&!p.done)try{p.f.contentWindow.postMessage({deckAnim:'play'},'*')}catch(x){}
+  },fade?240:0);
+}
+/* a slide that waited comes up: its first moment, or its picture */
+function shown(){
+  clearTimeout(holding);
+  if(li[i].classList.contains('hold')){li[i].classList.remove('hold');arrive()}
+  prep();
+}
+function complete(){
+  clearTimeout(playing.wait);
+  try{playing.f.contentWindow.postMessage({deckAnim:'finish'},'*')}catch(e){unplay()}
+}
 addEventListener('message',function(e){
-  var m=e.data&&e.data.deckAnim,p=playing;
-  if(!m||!p||e.source!==p.f.contentWindow)return;
-  if(m==='ready'&&!p.done){p.f.classList.add('is-on');e.source.postMessage({deckAnim:'play'},'*')}
-  else if(m==='done'){p.done=true;requestAnimationFrame(function(){if(playing===p)unplay()})}
+  var m=e.data&&e.data.deckAnim,p=null;
+  if(!m)return;
+  for(var k in pool){p=pool[k];if(e.source!==p.f.contentWindow){p=null;continue}break}
+  if(!p)return;
+  if(m==='ready'&&!p.done){
+    p.ready=true;
+    if(p===playing){start(p,li[i].classList.contains('hold'));shown()}
+    else{p.f.classList.add('is-ready');li[p.k].classList.remove('cold')}
+  }
+  else if(m==='done'&&p===playing){p.done=true;requestAnimationFrame(function(){if(playing===p)unplay()})}
 });
 d.classList.add('is-live');
 show(hashed(),0,0);
@@ -506,20 +623,24 @@ d.addEventListener('click',function(e){
 /* The keys belong to the deck while focus is in it or on no control at all
    (the page as it loads): a link or a button elsewhere keeps its own keys,
    and so G, P and F, single letters, never fire from the column or a field
-   (WCAG 2.1.4). No modifier may be held, and the phone's menu must be shut. */
+   (WCAG 2.1.4). Page Up, Page Down, Home and End are the page's own keys:
+   the deck takes them only while focus is in it or it is presenting. No
+   modifier may be held, and the phone's menu must be shut. Presenting, Tab
+   (focus coming to the capsule) brings the capsule back; a step does not. */
 function elsewhere(t){
   return t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||
     (!d.contains(t)&&!!t.closest('a[href],button,summary,[tabindex]'))}
 document.addEventListener('keydown',function(e){
   if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey||root.classList.contains('nav-open'))return;
   if(box&&box.open){grid(e);return}
-  if(showing())wake();
-  if(elsewhere(e.target))return;
   var k=e.key;
-  if(k==='ArrowRight'||k==='PageDown'||(k===' '&&showing()))go(i+1);
-  else if(k==='ArrowLeft'||k==='PageUp')go(i-1);
-  else if(k==='Home')go(0);
-  else if(k==='End')go(n-1);
+  if(k==='Tab'&&showing())wake();
+  if(elsewhere(e.target))return;
+  var ours=showing()||d.contains(e.target);
+  if(k==='ArrowRight'||(k==='PageDown'&&ours)||(k===' '&&showing()))go(i+1);
+  else if(k==='ArrowLeft'||(k==='PageUp'&&ours))go(i-1);
+  else if(k==='Home'&&ours)go(0);
+  else if(k==='End'&&ours)go(n-1);
   else if((k==='g'||k==='G')&&allb&&!allb.hidden){if(!e.repeat)openAll()}
   else if(k==='p'||k==='P'||k==='f'||k==='F'){if(!e.repeat){if(showing())leave();else enter()}}
   else if(k==='Escape'&&showing())leave();
@@ -606,6 +727,7 @@ st.addEventListener('click',function(e){
 var vv=window.visualViewport;
 if(vv)vv.addEventListener('resize',function(){st.classList.toggle('is-zoomed',vv.scale>1.01);sharpen()});
 addEventListener('resize',sharpen);
+addEventListener('resize',function(){perch()});
 
 /* ---- Present ----
    The deck takes the screen through the Fullscreen API where there is one,
@@ -621,18 +743,29 @@ function wake(){
   d.classList.remove('is-idle');clearTimeout(idle);
   idle=setTimeout(function(){if(showing())d.classList.add('is-idle')},2500);
 }
+/* where the capsule floats: centred in the band the screen leaves under the
+   slide, when that holds it with 8px either side (is-low); else in the top
+   right corner (the CSS's), off the slide's foot either way */
+var bar=d.querySelector('.deck__bar');
+function perch(){
+  if(!showing())return;
+  var low=innerHeight-st.getBoundingClientRect().bottom,h=bar.offsetHeight,fits=low>=h+16;
+  d.classList.toggle('is-low',fits);
+  if(fits)d.style.setProperty('--low',Math.round((low-h)/2)+'px');else d.style.removeProperty('--low');
+}
 function enter(){
   if(showing())return;
   if(box&&box.open)box.close();
   d.classList.add('is-show');root.classList.add('deck-show');
-  fit(i);fit(i+1);fit(i-1);sharpen();wake();
+  fit(i);fit(i+1);fit(i-1);sharpen();perch();wake();
   st.focus({preventScroll:true});
   say.textContent='Presenting, slide '+lab(i)+' of '+last;
   if(fsOk){var p=fsOn.call(d);if(p&&p.catch)p.catch(function(){})}
 }
 function done(){
   clearTimeout(idle);
-  d.classList.remove('is-show','is-idle');root.classList.remove('deck-show');
+  d.classList.remove('is-show','is-idle','is-low');d.style.removeProperty('--low');
+  root.classList.remove('deck-show');
   fit(i);fit(i+1);fit(i-1);
   if(showb)showb.focus({preventScroll:true});
 }
@@ -796,10 +929,12 @@ def render(count, up="", *, src=PHD_SRC, title=PHD_TITLE, lede=None, titles=None
         for k, r in enumerate(rows, 1))
     return f"""<div class="wrap deckpage">
  <div class="deck__top">
-  <div><h1>{html.escape(title, quote=False)}</h1><p class="deck__meta">{meta}</p></div>
-  <div class="deck__acts">
-   <button class="deck__ghost" type="button" data-all aria-haspopup="dialog" aria-keyshortcuts="G" title="All slides (G)" hidden>{_ALL}<span>All slides</span></button>
-   <button class="deck__cta" type="button" data-show aria-keyshortcuts="P" title="Present (P)" hidden>{_PLAY}<span>Present</span></button>
+  <h1>{html.escape(title, quote=False)}</h1>
+  <div class="deck__sub"><p class="deck__meta">{meta}</p>
+   <div class="deck__acts">
+    <button class="deck__ghost" type="button" data-all aria-haspopup="dialog" aria-keyshortcuts="G" title="All slides (G)" hidden>{_ALL}<span>All slides</span></button>
+    <button class="deck__cta" type="button" data-show aria-keyshortcuts="P" title="Present (P)" hidden>{_PLAY}<span>Present</span></button>
+   </div>
   </div>
  </div>
  <div class="deck"{' data-vector' if vector else ''}>

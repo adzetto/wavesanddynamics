@@ -28,6 +28,7 @@ html,body{margin:0;padding:0;background:#fff;}
 .ctl button:focus-visible{outline:2px solid #043052;outline-offset:2px;}
 /* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){.ctl{right:4px;bottom:4px;}.ctl button{width:24px;height:24px;}.ctl button svg{width:13px;height:13px;}}
 /* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){display:none;}
+@media print{.ctl{display:none;}}
 </style>
 </head>
 <body>
@@ -141,10 +142,14 @@ function _tell() {
 function setPlay(p) {
   playing = p; pp.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
   pp.setAttribute('aria-label', p ? 'Pause animation' : 'Play animation');
-  _tell();
+  _tell(); if (p) _wake();
 }
 const posterT = () => AT ? parseFloat(AT[1]) : typeof POSTER_T === 'number' ? POSTER_T : 0;
 function poster() { t = posterT(); render(); }
+/* printed alone, the page shows the complete poster frame, not a moment of the intro */
+let _printT = null;
+addEventListener('beforeprint', () => { _printT = t; poster(); });
+addEventListener('afterprint', () => { if (_printT !== null) { t = _printT; _printT = null; render(); } });
 pp.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
 document.getElementById('rs').addEventListener('click', e => {
   e.stopPropagation(); t = 0; if (typeof reset === 'function') reset(); setPlay(true); render();
@@ -164,11 +169,16 @@ addEventListener('keydown', e => {
   e.preventDefault();
   try { parent.scrollBy({ top: (e.shiftKey ? -.875 : .875) * parent.innerHeight, behavior: REDUCED ? 'auto' : 'smooth' }); } catch (_) {}
 });
+/* the loop asks for the next frame only while it draws: a paused figure, or
+   one scrolled out of view, asks for nothing until play or the view wakes it */
+let _raf = 0;
+function _wake() { if (!_raf && !STILL) _raf = requestAnimationFrame(loop); }
 function loop(ts) {
+  _raf = 0;
   if (last === null) last = ts;
   const dt = Math.min((ts - last) / 1000, 0.05); last = ts;
-  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); }
-  requestAnimationFrame(loop);
+  if (playing && visible) { t += dt; if (typeof step === 'function') step(dt); render(); _raf = requestAnimationFrame(loop); }
+  else last = null;
 }
 /* a figure that sets `var QUIET = true` before boot() is an icon or a cover's
    ornament: it plays once, draws no controls and ignores clicks */
@@ -179,10 +189,10 @@ function start() {
   setPlay(playing);
   if (!playing) t = posterT();
   new ResizeObserver(fit).observe(cv);
-  new IntersectionObserver(en => { visible = en[0].isIntersecting; }).observe(cv);
+  new IntersectionObserver(en => { visible = en[0].isIntersecting; if (visible) _wake(); }).observe(cv);
   fit();
   document.documentElement.dataset.ready = '1';      // the still is taken after this
-  if (!STILL) requestAnimationFrame(loop);
+  if (!STILL) _wake();
 }
 
 /* the figure's script ends with boot(): draw once the type has loaded, so
@@ -404,7 +414,7 @@ function _mathDraw(runs, x, y, size, color, go) {
       }
       w += rw + iw + size * .1;
     } else {
-      const sz = size * .7, dy = r.kind === 'sub' ? size * .24 : -size * .38;
+      const sz = Math.max(size * .7, Math.min(size, 12)), dy = r.kind === 'sub' ? size * .24 : -size * .38;
       w += _mathDraw(r.runs, x + w, y + dy, sz, color, go) + size * .04;
     }
   }
@@ -571,13 +581,15 @@ const seq = v => _lutc(SEQ, v);
    Figure 18b's chips are: white with a grey edge; the one chosen navy with
    white type; under the pointer steel with a navy edge; pressed steel2; off
    (unavailable) pale. Its edge is a line(), which the overlap check sees.
-   state: {on, hover, down, off}. Keep its hit area at least 24 CSS px. */
+   state: {on, hover, down, off, size}; size is the label's (15 unless set).
+   Keep its hit area at least 24 CSS px. */
 function uiChip(x, y, w, h, label, st = {}, a = 1) {
-  if (st.off) st = { off: true };                    // unavailable: no hover, no press
+  if (st.off) st = { off: true, size: st.size };                    // unavailable: no hover, no press
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.off ? C.rule : st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], { color: edge, width: 1, fill, close: true, alpha: a });
-  text(label, x + w / 2, y + h / 2 + 5, { size: 15, align: 'center', alpha: a,
+  const sz = st.size || 15;
+  text(label, x + w / 2, y + h / 2 + sz / 3, { size: sz, align: 'center', alpha: a,
     color: st.on ? '#fff' : st.off ? C.guide : st.hover ? C.ink : C.body });
 }
 

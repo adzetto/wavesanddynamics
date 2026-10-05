@@ -54,6 +54,7 @@ html,body{{margin:0;padding:0;background:#fff;}}
 .ctl button:focus-visible{{outline:2px solid #043052;outline-offset:2px;}}
 /* small frames: never under 24 px (WCAG 2.5.8) */@media (max-width:480px){{.ctl{{right:4px;bottom:4px;}}.ctl button{{width:24px;height:24px;}}.ctl button svg{{width:13px;height:13px;}}}}
 /* in the guide's page, the row under the frame plays and restarts (engine.js HOSTED) */.chrome-out .ctl :is(#pp,#rs){{display:none;}}
+@media print{{.ctl{{display:none;}}}}
 </style>
 </head>
 <body>

@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -730,39 +730,41 @@ const vcol = v => signed(v * 2 / 3);               // a value: blue positive, cr
 const RX = k => 196 + 128 * k, RY = 150, RW = 72, RH = 44;
 function rnnPart(st) {
   const sa = lab(0);
-  text('RNN, unrolled in time', 18, 34 + rise(sa), { size: 16, color: C.body, alpha: sa });
+  const tw = text('RNN, unrolled in time', 18, 34 + rise(sa), { size: 17, color: C.body, alpha: sa });
+  // how well it remembers the peak, over new streams
+  math(`\\rm{error}\\ ${D.rms[0].toFixed(2)}\\rm{, 3 units}`, 18 + tw + 28, 34 + rise(sa), { size: 16, color: C.body, alpha: lab(.4) });
   // what the colours of the hidden state mean (its right edge at 935, where the figure's type ends)
   legend(781, 13, 154, [
     [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(1), stroke: C.ink, width: .8, alpha: a }), 'positive value'],
     [(x, y, a) => rect(x - 6, y - 6, 12, 12, { fill: vcol(-1), stroke: C.ink, width: .8, alpha: a }), 'negative value'],
   ], { alpha: lab(.12) });
   const la = lab(.1);
-  text('output', 18, 104, { size: 15, color: C.muted, alpha: la });
-  text('largest so far', 18, 122, { size: 14, color: C.muted, alpha: la });
-  text('hidden state', 18, 177, { size: 15, color: C.muted, alpha: la });
-  text('input', 18, 256, { size: 15, color: C.muted, alpha: la });
-  text('reading', 18, 274, { size: 14, color: C.muted, alpha: la });
+  text('output', 18, 102, { size: 16, color: C.body, alpha: la });
+  text('largest so far', 18, 122, { size: 16, color: C.body, alpha: la });
+  text('hidden state', 18, 177, { size: 16, color: C.body, alpha: la });
+  text('input', 18, 254, { size: 16, color: C.body, alpha: la });
+  text('reading', 18, 274, { size: 16, color: C.body, alpha: la });
   // h0 into the first cell
   arrow(RX(0) - RW / 2 - 40, RY + RH / 2, RX(0) - RW / 2 - 2, RY + RH / 2, { width: 1.4, head: 8, alpha: seg(.1, .3) });
-  math('h_0', RX(0) - RW / 2 - 36, RY + RH / 2 - 9, { size: 15, align: 'left', color: C.body, alpha: seg(.15, .3) });
+  math('h_0', RX(0) - RW / 2 - 36, RY + RH / 2 - 9, { size: 18, align: 'left', color: C.body, alpha: seg(.15, .3) });
   for (let k = 0; k < NT; k++) {
     const cx = RX(k), a = seg(.04 + .05 * k, .32);
     rect(cx - RW / 2, RY, RW, RH, { fill: '#fff', stroke: C.ink, width: 1.4, alpha: a });
-    math('\\rm{tanh}', cx, RY + RH / 2 + 6, { size: 15, align: 'center', color: C.body, alpha: a });
+    math('\\rm{tanh}', cx, RY + RH / 2 + 6, { size: 16, align: 'center', color: C.body, alpha: a });
     // input and output arrows
     arrow(cx, RY + RH + 50 - 16, cx, RY + RH + 2, { width: 1.3, head: 8, alpha: a });
     arrow(cx, RY - 2, cx, RY - 34, { width: 1.3, head: 8, alpha: a });
     const done = st.k > k || (st.k === k && st.p > .15), on = st.k === k && st.p <= 1 && st.fade > 0;
     const va = done ? st.fade : 0;
     // the reading
-    node(cx, RY + RH + 66, 17, { fill: done ? mixHex('#FFFFFF', C.mist, .6 * st.fade) : '#fff', stroke: on ? mixHex(C.ink, C.accent, st.fade) : C.ink, width: on ? lerp(1.3, 2, st.fade) : 1.3, alpha: a });
-    math(D.x[k].toFixed(2), cx, RY + RH + 71, { size: 14, align: 'center', alpha: a });
-    math(`t = ${k + 1}`, cx, RY + RH + 104, { size: 14, align: 'center', color: C.muted, alpha: a });
+    node(cx, RY + RH + 67, 19, { fill: done ? mixHex('#FFFFFF', C.mist, .6 * st.fade) : '#fff', stroke: on ? mixHex(C.ink, C.accent, st.fade) : C.ink, width: on ? lerp(1.3, 2, st.fade) : 1.3, alpha: a });
+    math(D.x[k].toFixed(2), cx, RY + RH + 73, { size: 16, align: 'center', alpha: a });
+    math(`t = ${k + 1}`, cx, RY + RH + 108, { size: 16, align: 'center', color: C.body, alpha: a });
     if (on) rect(cx - RW / 2 - 3, RY - 3, RW + 6, RH + 6, { stroke: C.accent, width: 1.8, alpha: st.fade });
     // the output: the RNN's own answer
     const oa = st.k > k || (st.k === k && st.p > .45) ? st.fade : 0;
-    math(D.rnn[k].y.toFixed(2), cx, RY - 44, { size: 16, align: 'center', alpha: oa });
-    if (k === NT - 1) math(`(\\rm{true}\\ ${D.target[k].toFixed(2)})`, cx + 30, RY - 44, { size: 14, color: C.muted, alpha: oa });
+    math(D.rnn[k].y.toFixed(2), cx, RY - 44, { size: 17, align: 'center', alpha: oa });
+    if (k === NT - 1) math(`(\\rm{true}\\ ${D.target[k].toFixed(2)})`, cx + 32, RY - 44, { size: 16, color: C.body, alpha: oa });
     // the hidden state carried to the next step
     if (k < NT - 1) {
       const x0 = cx + RW / 2, x1 = RX(k + 1) - RW / 2;
@@ -771,7 +773,7 @@ function rnnPart(st) {
     const hx = k < NT - 1 ? (cx + RW / 2 + RX(k + 1) - RW / 2) / 2 : cx + RW / 2 + 28;
     const ha = st.k > k || (st.k === k && st.p > .3) ? st.fade * (st.k === k ? clamp((st.p - .3) / .2) : 1) : 0;
     for (let j = 0; j < 3; j++) rect(hx - 20 + 14 * j, RY + RH / 2 - 22, 12, 12, { fill: vcol(D.rnn[k].h[j]), stroke: C.ink, width: .8, alpha: ha });
-    if (ha > 0) math(`h_{${k + 1}}`, hx, RY + RH / 2 + 22, { size: 14, align: 'center', color: C.body, alpha: ha });
+    if (ha > 0) math(`h_{${k + 1}}`, hx, RY + RH / 2 + 25, { size: 18, align: 'center', color: C.body, alpha: ha });
   }
 }
 
@@ -783,8 +785,8 @@ const XF = 330, XI = 430, XG = 530, XO = 650, XT = 740, XM = 480, OY_ = 470, XR 
 function gateBox(x, sym, lv, v, show, a) {
   rect(x - GW / 2, GY - GH / 2, GW, GH, { fill: '#fff', stroke: C.ink, width: 1.3, alpha: a });
   if (lv !== null && show > 0 && sym !== 'tanh') rect(x - GW / 2 + 1, GY + GH / 2 - 1 - (GH - 2) * clamp(lv), GW - 2, (GH - 2) * clamp(lv), { fill: C.mist, stroke: null, alpha: a * show });
-  math(sym === 'tanh' ? '\\rm{tanh}' : '\\sigma', x, GY - 3, { size: sym === 'tanh' ? 15 : 18, align: 'center', alpha: a });
-  if (v !== null && show > 0) math(num(v), x, GY + 17, { size: 14, align: 'center', color: C.navy, alpha: a * show });
+  math(sym === 'tanh' ? '\\rm{tanh}' : '\\sigma', x, GY - 3, { size: sym === 'tanh' ? 16 : 18, align: 'center', alpha: a });
+  if (v !== null && show > 0) math(num(v), x, GY + 18, { size: 16, align: 'center', color: C.navy, alpha: a * show });
 }
 function opNode(x, y, s, a) {
   node(x, y, 11, { fill: '#fff', width: 1.3, alpha: a });
@@ -792,13 +794,14 @@ function opNode(x, y, s, a) {
 }
 /* a label sitting on a line, on white, as TikZ sets a node on a path */
 function onLine(words, x, y, a, color = C.ink) {
-  const w = text(words, 0, -1e4, { size: 15, alpha: 0 });
-  rect(x - w / 2 - 4, y - 13, w + 8, 18, { fill: '#fff', stroke: null, alpha: a });
-  text(words, x, y, { size: 15, align: 'center', color, alpha: a });
+  const w = text(words, 0, -1e4, { size: 16, alpha: 0 });
+  rect(x - w / 2 - 4, y - 14, w + 8, 19, { fill: '#fff', stroke: null, alpha: a });
+  text(words, x, y, { size: 16, align: 'center', color, alpha: a });
 }
 function lstmPart(st) {
   const sa = lab(.2);
-  text('inside one LSTM cell', 18, 330 + rise(sa), { size: 16, color: C.body, alpha: sa });
+  const tw = text('inside one LSTM cell', 18, 330 + rise(sa), { size: 17, color: C.body, alpha: sa });
+  math(`\\rm{error}\\ ${D.rms[1].toFixed(2)}\\rm{, 1 memory cell}`, 18 + tw + 28, 330 + rise(sa), { size: 16, color: C.body, alpha: lab(.5) });
   // this step's values; the gates move from the last step's openness to this one's,
   // and the printed numbers (always the model's own) switch halfway
   const k = st.k, S = k >= 0 ? D.lstm[k] : null, Pv = k > 0 ? D.lstm[k - 1] : null;
@@ -827,7 +830,7 @@ function lstmPart(st) {
   // output: tanh of the memory times the output gate, out as the new hidden state
   line([[XT, CY], [XT, CY + 22]], { width: 1.3, alpha: pa });
   rect(XT - 27, CY + 22, 54, 26, { fill: '#fff', stroke: C.ink, width: 1.3, alpha: pa });
-  math('\\rm{tanh}', XT, CY + 40, { size: 15, align: 'center', alpha: pa });
+  math('\\rm{tanh}', XT, CY + 40, { size: 16, align: 'center', alpha: pa });
   arrow(XT, CY + 48, XT, OY_ - 12, { width: 1.3, head: 8, alpha: pa });
   line([[XO, GY - GH / 2], [XO, OY_], [XT - 11, OY_]], { width: 1.3, alpha: pa });
   line([[XT + 11, OY_], [XR, OY_], [XR, BY], [880, BY]], { width: 1.5, alpha: pa });
@@ -841,27 +844,23 @@ function lstmPart(st) {
   const na = lab(.3), ny = GY + GH / 2 + 30;
   onLine('forget gate', XF, ny, na); onLine('input gate', XI, ny, na);
   onLine('candidate', XG, ny, na, C.body); onLine('output gate', XO, ny, na);
-  text('memory cell', 600, CY - 14, { size: 15, align: 'center', alpha: na });
-  math('c_{t-1}', 96, CY - 10, { size: 16, align: 'right', alpha: na });
-  math('c_t', 912, CY + 6, { size: 16, alpha: na });
-  math('h_{t-1}', 96, BY - 10, { size: 16, align: 'right', alpha: na });
-  math('h_t', 912, BY + 6, { size: 16, alpha: na });
-  math('x_t', 200, 694, { size: 16, align: 'right', alpha: na });
+  text('memory cell', 600, CY - 14, { size: 16, align: 'center', alpha: na });
+  math('c_{t-1}', 96, CY - 10, { size: 18, align: 'right', alpha: na });
+  math('c_t', 912, CY + 6, { size: 18, alpha: na });
+  math('h_{t-1}', 96, BY - 10, { size: 18, align: 'right', alpha: na });
+  math('h_t', 912, BY + 6, { size: 18, alpha: na });
+  math('x_t', 200, 696, { size: 18, align: 'right', alpha: na });
   // this step's numbers
   if (vis > 0) {
-    math(num(N.cp), 110, CY + 24, { size: 15, color: C.body, alpha: vis });
-    math(`c = ${num(N.c)}`, 822, CY - 12, { size: 16, align: 'right', color: C.accent, alpha: vis });
-    math(`h = ${num(N.h)}`, 850, BY + 28, { size: 15, color: C.body, alpha: vis });
-    math(`\\rm{output}\\ \\ ${N.y.toFixed(2)}`, 850, BY + 52, { size: 16, alpha: vis });
-    math(`x = ${N.x.toFixed(2)}`, 222, 690, { size: 15, color: C.body, alpha: vis });
-    math(`\\rm{step}\\ t = ${N === S ? k + 1 : k}`, 830, 346, { size: 15, align: 'right', color: C.muted, alpha: vis });
+    math(num(N.cp), 110, CY + 25, { size: 16, color: C.body, alpha: vis });
+    math(`c = ${num(N.c)}`, 822, CY - 12, { size: 17, align: 'right', color: C.accent, alpha: vis });
+    math(`h = ${num(N.h)}`, 850, BY + 28, { size: 16, color: C.body, alpha: vis });
+    math(`\\rm{output}\\ \\ ${N.y.toFixed(2)}`, 850, BY + 53, { size: 17, alpha: vis });
+    math(`x = ${N.x.toFixed(2)}`, 222, 690, { size: 16, color: C.body, alpha: vis });
+    math(`\\rm{step}\\ t = ${N === S ? k + 1 : k}`, 830, 346, { size: 16, align: 'right', color: C.body, alpha: vis });
   }
-  // how well each remembers the peak
-  const ea = lab(.5);
-  text(`error, largest reading so far: RNN (3 units) ${D.rms[0].toFixed(2)}, LSTM (1 memory cell) ${D.rms[1].toFixed(2)}`,
-       18, H - 32, { size: 14, color: C.muted, alpha: ea });
-  text('both trained here (PyTorch) on random sensor streams of 12 readings; errors are RMS over 2,000 new streams',
-       18, H - 12, { size: 14, color: C.muted, alpha: ea });
+  // what they learned from, and over what the errors by the titles are measured
+  text('trained on streams of 12 readings; RMS over 2,000 new ones', 18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 
 function draw() {

@@ -33,7 +33,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Four ways to split two years of daily data, each drawn as the series itself coloured by role. A random split scatters test days between training days. A chronological holdout cuts the timeline once into training, validation and test. Expanding window cross-validation trains on all history before each of four validation windows; sliding window cross-validation trains on the 300 days before each; a small gap separates training from validation. Each split shows its error."></canvas>
+  <canvas id="c" role="img" aria-label="Four ways to split two years of daily data, each drawn as the series itself colored by role. A random split scatters test days between training days. A chronological holdout cuts the timeline once into training, validation and test. Expanding window cross-validation trains on all history before each of four validation windows; sliding window cross-validation trains on the 300 days before each; a small gap separates training from validation. Each split shows its error."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
@@ -674,7 +674,7 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 20, { size: 16, align: 'center', alpha: a });
   }
   if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
@@ -699,9 +699,17 @@ const X0 = 150, XW = 700, X = d => X0 + d / NT * XW;
 const RH = 30, [YLO, YHI] = DATA.ylim, Yp = (v, y0) => y0 + RH - 2 - (v - YLO) / (YHI - YLO) * (RH - 4);
 const COL = { tr: C.blue, va: C.accent, te: C.navy, gap: C.guide, off: C.rule };
 const BAND = { tr: C.steel, va: C.wash, te: C.steel2, gap: null, off: null };
-const T0 = .6, DR = .5, TLOOP = T0 + 4 * DR + .9, PER = 1.5;
+/* the four rounds of (c) and (d) arrive together with (a) and (b), all there by 1.5 s; then each round
+   in turn comes to the front for PER seconds, the change cross-faded over .35 s */
+const T0 = .4, DR = .2, TLOOP = T0 + 4 * DR + .9, PER = 2.5;
 const POSTER_T = TLOOP - .2;
 function focus() { if (t < TLOOP) return -1; return Math.floor((t - TLOOP) / PER) % 4; }
+function front(k, before) {          // round k at the front: 1, behind: 0 (before the loop: `before`)
+  if (t < TLOOP) return before;
+  const n = Math.floor((t - TLOOP) / PER), e = easeInOut(clamp((t - TLOOP - n * PER) / .35));
+  const was = n === 0 ? before : (n - 1) % 4 === k ? 1 : 0, now = n % 4 === k ? 1 : 0;
+  return lerp(was, now, e);
+}
 /* one row: the series between day a and b, each stretch drawn in its role's colour over a light band */
 function row(y0, parts, draw, dim = 1) {
   parts.forEach(([a, b, r]) => {
@@ -719,46 +727,46 @@ function draw() {
   const fr = focus();
   const blocks = [['a', 'random split', 58], ['b', 'chronological holdout', 150], ['c', 'expanding window cross-validation', 242], ['d', 'sliding window cross-validation', 418]];
   blocks.forEach(([l, s, y], k) => sub(l, 18, y, s, seg(.05 + .04 * k, .3)));
-  lab('MAE', 900, 58, .3, { size: 14, color: C.muted });
+  lab('MAE', 900, 58, .3, { size: 16, color: C.body });
   // (a) every day a dot, training or test at random
   const ya = 70, da = seg(.1, .6);
   ctx.save(); ctx.globalAlpha = seg(.1, .3); ctx.fillStyle = C.steel; ctx.fillRect(X(0), ya, XW, RH); ctx.restore();
-  for (let d = 0; d < NT * da; d++) { const te = TEST[d] === 1;
-    dot(X(d + .5), Yp(Y[d], ya), te ? 1.6 : 1.1, { color: te ? C.accent : C.blue, fill: te ? C.accent : C.blue, width: .4 }); }
-  lab('test days fall between training days', X0, ya + RH + 18, .5, { size: 14, color: C.muted });
+  for (let d = 0; d < NT * da; d++) { const te = TEST[d] === 1;      // test navy, as in (b) to (d) and Figure 32
+    dot(X(d + .5), Yp(Y[d], ya), te ? 2.2 : 1.1, { color: te ? C.navy : C.blue, fill: te ? C.navy : C.blue, width: .4 }); }
+  lab('test days fall between training days', X0, ya + RH + 19, .5, { size: 16, color: C.body });
   const ma = seg(.7, .3);
-  text(nf(DATA.mae.r, 2), 900, ya + RH / 2 + 5, { size: 15, alpha: ma });
+  text(nf(DATA.mae.r, 2), 900, ya + RH / 2 + 6, { size: 16, alpha: ma });
   // (b) one cut
   const yb = 162, [c1, c2] = DATA.cuts;
   row(yb, [[0, c1, 'tr'], [c1, c2, 'va'], [c2, NT, 'te']], seg(.15, .6));
   [['training 60%', 0, c1, C.blue], ['validation', c1, c2, C.accent], ['test', c2, NT, C.navy]].forEach(([s, a, b, c], k) =>
-    lab(s, (X(a) + X(b)) / 2, yb + RH + 17, .55 + .05 * k, { size: 14, align: 'center', color: c }));
-  text(nf(DATA.mae.bt, 2), 900, yb + RH / 2 + 5, { size: 15, alpha: seg(.75, .3) });
+    lab(s, (X(a) + X(b)) / 2, yb + RH + 18, .55 + .05 * k, { size: 16, align: 'center', color: c }));
+  text(nf(DATA.mae.bt, 2), 900, yb + RH / 2 + 6, { size: 16, alpha: seg(.75, .3) });
   // (c), (d): four rounds each, arriving one after another, then taking turns
   [['exp', 254], ['sld', 430]].forEach(([key, y0], b) => {
     DATA[key].forEach((w, k) => {
-      const y = y0 + k * (RH + 8), on = fr < 0 || fr === k, arrive = settle(T0 + DR * k + .05 * b, .35);
-      lab(`round ${k + 1}`, 18, y + RH / 2 + 5, T0 + DR * k - .1 + .05 * b, { size: 15, alpha: on ? 1 : .45 });
+      const y = y0 + k * (RH + 8), on = front(k, 1), arrive = settle(T0 + DR * k + .05 * b, .35);
+      lab(`round ${k + 1}`, 18, y + RH / 2 + 6, T0 + DR * k - .1 + .05 * b, { size: 16, alpha: .45 + .55 * on });
       if (arrive <= 0) return;
       const tr = [lerp(w.va[0], w.tr[0], arrive), lerp(w.va[0], w.tr[1], arrive)];
-      row(y, splits({ tr: [Math.round(tr[0]), Math.round(tr[1])], va: w.va }), 1, on ? 1 : .35);
-      text(nf(w.mae, 2), 900, y + RH / 2 + 5, { size: 15, alpha: arrive * (on ? 1 : .45), color: fr === k ? C.accent : C.ink });
+      row(y, splits({ tr: [Math.round(tr[0]), Math.round(tr[1])], va: w.va }), 1, .35 + .65 * on);
+      text(nf(w.mae, 2), 900, y + RH / 2 + 6, { size: 16, alpha: arrive * (.45 + .55 * on), color: mix(C.ink, C.accent, front(k, 0)) });
     });
     const m = DATA[key].reduce((s, w) => s + w.mae, 0) / 4, mt = seg(T0 + 4 * DR, .3);
     line([[890, y0 + 4 * (RH + 8) - 2], [950, y0 + 4 * (RH + 8) - 2]], { width: 1, alpha: mt });
-    mlab(`\\rm{mean}\\ ${nf(m, 2)}`, 890, y0 + 4 * (RH + 8) + 16, T0 + 4 * DR, { size: 15 });
+    mlab(`\\rm{mean}\\ ${nf(m, 2)}`, 890, y0 + 4 * (RH + 8) + 17, T0 + 4 * DR, { size: 16 });
   });
-  lab('gap', X(DATA.exp[0].tr[1]) - 2, 254 - 6, T0 + .3, { size: 14, color: C.muted });
+  lab('gap', X(DATA.exp[0].tr[1]) - 2, 254 - 6, T0 + .3, { size: 16, color: C.body });
   // the moving present: where the focused round's validation starts
-  if (fr >= 0) { const xv = X(DATA.exp[fr].va[0]), a = clamp(((t - TLOOP) % PER) / .25);
+  if (fr >= 0) { const u = (t - TLOOP) % PER, xv = X(DATA.exp[fr].va[0]), a = clamp((u - .1) / .25) * (1 - clamp((u - PER + .3) / .25));
     line([[xv, 254], [xv, 430 + 4 * (RH + 8) - 6]], { color: C.accent, width: 1, dash: [4, 3], alpha: .6 * a }); }
   // the time axis
   const ay = 622, axa = seg(.1, .4);
   line([[X0, ay], [X0 + XW, ay]], { width: 1.3, progress: axa });
-  for (let d = 0; d <= 700; d += 100) { line([[X(d), ay], [X(d), ay + 5]], { width: 1, alpha: axa }); text(String(d), X(d), ay + 21, { size: 15, align: 'center', alpha: axa }); }
-  math('\\rm{day}', X0 + XW + 24, ay + 5, { size: 17, alpha: axa });
-  text('two years of daily values: yearly cycle, slow drift, correlated noise; model: trend + yearly cycle, least squares; score: mean absolute error',
-       18, H - 12, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+  for (let d = 0; d <= 700; d += 100) { line([[X(d), ay], [X(d), ay + 5]], { width: 1, alpha: axa }); text(String(d), X(d), ay + 22, { size: 16, align: 'center', alpha: axa }); }
+  math('\\rm{day}', X0 + XW + 10, ay + 6, { size: 17, alpha: axa });
+  text('2 years of daily data; trend + yearly cycle, least squares',
+       18, H - 10, { size: 15, color: C.muted, alpha: seg(.6, .4) });
 }
 boot();
 </script>

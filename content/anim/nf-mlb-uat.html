@@ -33,11 +33,11 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen. The selected number of neurons also shows its exact 1-N-1 architecture with all input and output connections."></canvas>
+  <canvas id="c" role="img" aria-label="Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen. The selected number of neurons also shows its exact 1-N-1 architecture with all input and output connections, each drawn with the width and sign of its fitted weight."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
-const W = 1000, H = 830;
+const W = 1000, H = 680;
 const DATA = {"xs":[0.0,0.00417,0.00833,0.0125,0.01667,0.02083,0.025,0.02917,0.03333,0.0375,0.04167,0.04583,0.05,0.05417,0.05833,0.0625,0.06667,0.07083,0.075,0.07917,0.08333,0.0875,0.09167,0.09583,0.1,0.10417,0.10833,0.1125,0.11667,0.12083,0.125,0.12917,0.13333,0.1375,0.14167,0.14583,0.15,0.15417,0.15833,0.1625,0.16667,0.17083,0.175,0.17917,0.18333,0.1875,0.19167,0.19583,0.2,0.20417,0.20833,0.2125,0.21667,0.22083,0.225,0.22917,0.23333,0.2375,0.24167,0.24583,0.25,0.25417,0.25833,0.2625,0.26667,0.27083,0.275,0.27917,0.28333,0.2875,0.29167,0.29583,0.3,0.30417,0.30833,0.3125,0.31667,0.32083,0.325,0.32917,0.33333,0.3375,0.34167,0.34583,0.35,0.35417,0.35833,0.3625,0.36667,0.37083,0.375,0.37917,0.38333,0.3875,0.39167,0.39583,0.4,0.40417,0.40833,0.4125,0.41667,0.42083,0.425,0.42917,0.43333,0.4375,0.44167,0.44583,0.45,0.45417,0.45833,0.4625,0.46667,0.47083,0.475,0.47917,0.48333,0.4875,0.49167,0.49583,0.5,0.50417,0.50833,0.5125,0.51667,0.52083,0.525,0.52917,0.53333,0.5375,0.54167,0.54583,0.55,0.55417,0.55833,0.5625,0.56667,0.57083,0.575,0.57917,0.58333,0.5875,0.59167,0.59583,0.6,0.60417,0.60833,0.6125,0.61667,0.62083,0.625,0.62917,0.63333,0.6375,0.64167,0.64583,0.65,0.65417,0.65833,0.6625,0.66667,0.67083,0.675,0.67917,0.68333,0.6875,0.69167,0.69583,0.7,0.70417,0.70833,0.7125,0.71667,0.72083,0.725,0.72917,0.73333,0.7375,0.74167,0.74583,0.75,0.75417,0.75833,0.7625,0.76667,0.77083,0.775,0.77917,0.78333,0.7875,0.79167,0.79583,0.8,0.80417,0.80833,0.8125,0.81667,0.82083,0.825,0.82917,0.83333,0.8375,0.84167,0.84583,0.85,0.85417,0.85833,0.8625,0.86667,0.87083,0.875,0.87917,0.88333,0.8875,0.89167,0.89583,0.9,0.90417,0.90833,0.9125,0.91667,0.92083,0.925,0.92917,0.93333,0.9375,0.94167,0.94583,0.95,0.95417,0.95833,0.9625,0.96667,0.97083,0.975,0.97917,0.98333,0.9875,0.99167,0.99583,1.0],"g":[0.08866,0.15973,0.22832,0.29372,0.35527,0.4124,0.46457,0.51132,0.55229,0.5872,0.61585,0.63814,0.65406,0.66369,0.6672,0.66485,0.65697,0.64398,0.62634,0.60459,0.5793,0.55109,0.5206,0.48849,0.4554,0.422,0.3889,0.35671,0.32598,0.29721,0.27087,0.24733,0.2269,0.20981,0.19622,0.1862,0.17973,0.17672,0.177,0.18032,0.18635,0.19472,0.20498,0.21665,0.22919,0.24206,0.25468,0.26648,0.27687,0.28531,0.29126,0.29424,0.29378,0.28951,0.28109,0.26827,0.25087,0.2288,0.20203,0.17065,0.1348,0.09473,0.05076,0.00328,-0.04723,-0.10024,-0.15515,-0.21134,-0.26814,-0.32483,-0.38071,-0.43505,-0.48716,-0.53633,-0.58192,-0.6233,-0.6599,-0.69122,-0.71684,-0.73638,-0.74957,-0.75623,-0.75626,-0.74965,-0.7365,-0.71697,-0.69134,-0.65997,-0.62328,-0.58177,-0.53601,-0.48663,-0.43429,-0.37969,-0.32355,-0.2666,-0.20959,-0.15324,-0.09823,-0.04524,0.00512,0.05228,0.09574,0.13507,0.16992,0.20001,0.22516,0.24526,0.26032,0.27039,0.27565,0.27634,0.27276,0.26531,0.25444,0.24065,0.22447,0.20649,0.1873,0.16752,0.14775,0.12859,0.11061,0.09437,0.08035,0.069,0.06071,0.0558,0.05451,0.05701,0.06339,0.07364,0.08768,0.10535,0.12641,0.15054,0.17734,0.20637,0.23712,0.26903,0.30151,0.33394,0.36569,0.39612,0.42459,0.4505,0.47326,0.49232,0.50719,0.51743,0.52268,0.52263,0.51708,0.50588,0.48901,0.4665,0.43848,0.40518,0.36691,0.32405,0.27706,0.22647,0.17287,0.11691,0.05925,0.000609737,-0.05828,-0.11669,-0.17389,-0.22916,-0.28182,-0.33122,-0.37676,-0.4179,-0.45417,-0.48517,-0.51058,-0.53017,-0.54379,-0.55139,-0.553,-0.54875,-0.53886,-0.52362,-0.50341,-0.47867,-0.44992,-0.41771,-0.38265,-0.3454,-0.3066,-0.26694,-0.2271,-0.18773,-0.14949,-0.11299,-0.07878,-0.04739,-0.01926,0.00522,0.02575,0.0421,0.05412,0.06175,0.06502,0.06403,0.05899,0.05016,0.03789,0.02258,0.0047,-0.01523,-0.03665,-0.05897,-0.08159,-0.10389,-0.12526,-0.1451,-0.16285,-0.17796,-0.18996,-0.19839,-0.2029,-0.20318,-0.19901,-0.19025,-0.17684,-0.1588,-0.13625,-0.10938,-0.07848,-0.04389,-0.00605,0.03455,0.07736,0.12178,0.16718,0.21289,0.25822,0.30251,0.34506],"nets":[{"n":1,"base":0.46713,"v":[-0.26596],"w":[15.89754],"m":[0.18983],"rms":0.30026},{"n":2,"base":0.31004,"v":[-0.4,0.25912],"w":[43.55753,81.67427],"m":[0.26819,0.39854],"rms":0.2371},{"n":3,"base":0.30987,"v":[-0.4,0.37946,-0.21582],"w":[43.58009,47.67473,102.7013],"m":[0.26821,0.40882,0.68364],"rms":0.17681},{"n":4,"base":0.30987,"v":[-0.4,0.37939,-0.4,0.25548],"w":[43.58183,47.68667,47.88587,49.95755],"m":[0.26821,0.40881,0.69794,0.79451],"rms":0.14013},{"n":5,"base":0.51358,"v":[-0.14018,-0.4,0.4,-0.38286,0.25606],"w":[83.34577,46.42916,46.12471,50.2695,49.70205],"m":[0.11082,0.27502,0.40408,0.69933,0.79443],"rms":0.11572},{"n":6,"base":0.51362,"v":[-0.16437,-0.4,0.38868,0.11261,-0.4,0.19573],"w":[65.03179,47.2279,49.18967,107.61224,49.67269,71.92726],"m":[0.11465,0.27909,0.39903,0.5798,0.68838,0.80138],"rms":0.09749},{"n":7,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.19573],"w":[38.95579,33.40041,47.26094,48.8183,107.61858,49.67247,71.93022],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.80138],"rms":0.08311},{"n":8,"base":-0.085,"v":[0.4,-0.26719,-0.4,0.39083,0.11259,-0.4,0.17191,0.20178],"w":[38.95579,33.40036,47.2609,48.81794,107.61727,49.67031,84.84154,75.21475],"m":[0.01444,0.10087,0.27945,0.39886,0.5798,0.68838,0.79866,0.98025],"rms":0.06995},{"n":9,"base":-0.09409,"v":[0.4,-0.25742,-0.4,0.4,0.21374,-0.4,-0.4,0.36826,0.26882],"w":[39.27133,35.93609,46.99091,47.94162,56.36128,38.60789,5.61603,41.74054,55.30448],"m":[0.01381,0.10077,0.27884,0.39949,0.5857,0.68763,0.77361,0.79605,0.97678],"rms":0.05111},{"n":10,"base":-0.09863,"v":[0.4,-0.25252,-0.4,0.4,0.3806,-0.4,-0.4,0.37054,-0.18393,0.4],"w":[39.44007,37.35903,47.04416,47.89785,36.6838,10.61867,33.13672,30.5821,34.58405,28.24446],"m":[0.01351,0.10063,0.27818,0.40037,0.58832,0.62833,0.69337,0.79796,0.89145,0.97984],"rms":0.04356},{"n":11,"base":-0.10896,"v":[0.4,-0.21905,-0.4,0.2725,0.35803,-0.4,0.2864,-0.4,0.4,-0.4,0.3053],"w":[40.1973,46.24486,40.91069,57.33875,44.462,6.5692,42.28099,39.29547,39.21365,6.585,47.72666],"m":[0.0126,0.09857,0.28088,0.37824,0.41733,0.44109,0.58021,0.6873,0.79842,0.82244,0.97559],"rms":0.03306},{"n":12,"base":-0.11367,"v":[0.4,-0.2255,-0.16959,-0.3381,0.36163,0.17804,0.35168,-0.4,-0.4,0.33331,-0.16695,0.39998],"w":[40.16851,45.47677,67.52343,40.47629,39.2516,65.1343,40.04048,8.16774,37.84524,36.06653,38.24303,28.29947],"m":[0.01247,0.09889,0.26041,0.29703,0.38259,0.41987,0.58319,0.59854,0.69135,0.7998,0.89289,0.98036],"rms":0.02495},{"n":13,"base":-0.11411,"v":[0.4,-0.26805,-0.29159,-0.39554,0.4,0.4,-0.16503,0.29475,-0.39997,-0.24471,0.4,-0.21083,0.4],"w":[39.58503,37.53224,46.28712,39.94312,7.67948,33.02679,42.3698,28.1102,29.02055,35.0758,25.57864,30.79521,28.27351],"m":[0.01285,0.10145,0.25927,0.301,0.32753,0.39905,0.49821,0.58588,0.67287,0.71229,0.79717,0.88912,0.97919],"rms":0.01137},{"n":14,"base":-0.07075,"v":[0.4,-0.30085,0.12181,-0.26998,-0.4,0.32511,0.38546,-0.27781,0.39491,-0.4,-0.27205,0.4,-0.20884,0.4],"w":[38.91289,28.63932,33.9283,28.34951,25.19319,25.57594,24.002,22.86652,22.09335,27.83058,33.36469,25.7159,31.09882,28.2697],"m":[0.01533,0.10363,0.18819,0.26286,0.30077,0.37646,0.41405,0.49462,0.58242,0.66985,0.71002,0.79696,0.88926,0.97926],"rms":0.00302}]};
 /* numfig engine: the shared runtime of the figures redrawn from numerical
    models (tools/numfig/README.md). build_html() in common.py inlines it after
@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -745,7 +745,7 @@ function bNow() {
 function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
 
 /* ================================================ the layout */
-const FP = { x: 76, y: 96, w: 540, h: 296 }, EP = { x: 724, y: 96, w: 240, h: 296 };
+const FP = { x: 76, y: 96, w: 500, h: 290 }, EP = { x: 724, y: 96, w: 240, h: 150 };
 /* the chips: a 36 unit pitch (24 CSS px at 672), the row ending over the error plot's right edge */
 const YT = 36, CH = { w: 30, h: 28, gap: 6, y: YT - 19 };
 CH.x = EP.x + EP.w - NMAX * (CH.w + CH.gap) + CH.gap;
@@ -778,19 +778,19 @@ function draw() {
   panel('b', 18, YT, { alpha: lab(.04) });
   text('many neurons added together', 52, YT + rise(la), { size: 17, color: C.body, alpha: la });
   // the number of neurons: the reader's choice
-  text('number of neurons', CH.x - 12, YT, { size: 15, color: C.body, align: 'right', alpha: la });
+  text('number of neurons', CH.x - 12, YT, { size: 16, color: C.body, align: 'right', alpha: la });
   // the chosen number again builds its sum again: no button of its own
   for (let q = 1; q <= NMAX; q++)
     uiChip(CH.x + (q - 1) * (CH.w + CH.gap), CH.y, CH.w, CH.h, String(q),
-           { on: q === st.n, hover: HC === q, down: HD === q }, lab(.08 + .012 * q));
+           { on: q === st.n, hover: HC === q, down: HD === q, size: 16 }, lab(.08 + .012 * q));
   // the fit: the target, the pieces, their sum
   const A = axes({ ...FP, xlim: [0, 1], ylim: [-1.3, 1.3], xticks: [0, .25, .5, .75, 1], yticks: [-1, -.5, 0, .5, 1],
                    xfmt: v => v === .5 ? '0.5' : fmt(v), yfmt: v => v === .5 ? '0.5' : v === -.5 ? '−0.5' : fmt(v),
-                   xlabel: 'x', progress: seg(.1, .35) });
+                   xlabel: 'x', tickSize: 16, progress: seg(.1, .35) });
   const u = builtB(st), done = u >= st.n, hp = done ? HP : -1;
   text(`${st.n} neuron${st.n > 1 ? 's' : ''}`, FP.x, FP.y - 12, { size: 17, alpha: la });
   math(`\\rm{error}\\ \\ ${NETS[st.n - 1].rms.toFixed(3)}`, FP.x + FP.w, FP.y - 12,
-       { size: 15, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
+       { size: 16, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
   A.inside(() => {
     line([[FP.x, A.Y(0)], [FP.x + FP.w, A.Y(0)]], { color: C.rule, width: 1, alpha: seg(.2, .3) });
     for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(D.g[i]); }
@@ -802,12 +802,12 @@ function draw() {
   if (hp >= 0) {
     const nt = NETS[st.n - 1], y = FP.y + FP.h - 14;
     math(`\\rm{neuron}\\ ${hp + 1}:\\ \\ v = ${num(nt.v[hp])},\\ \\ w = ${nt.w[hp].toFixed(1)},\\ \\ m = ${num(nt.m[hp])}`,
-         FP.x + FP.w - 12, y, { size: 15, color: C.accent, align: 'right' });
+         FP.x + FP.w - 12, y, { size: 16, color: C.accent, align: 'right' });
   }
   // the error for every number of neurons, log scale; the one shown glides along it
   const E = axes({ ...EP, xlim: [.5, NMAX + .5], ylim: [-3, 0], xticks: [1, 5, 10, 14], yticks: [-3, -2, -1, 0],
                    yfmt: v => ['0.001', '0.01', '0.1', '1'][v + 3], xlabel: '\\rm{number\\ of\\ neurons}',
-                   ylabel: '\\rm{error}', ylabelGap: 50, grid: true, progress: seg(.12, .35) });
+                   ylabel: '\\rm{error}', ylabelGap: 52, tickSize: 16, grid: true, progress: seg(.12, .35) });
   const ep = [];
   for (let q = 1; q <= NMAX; q++) ep.push([E.X(q), E.Y(LRMS[q - 1])]);
   line(ep, { color: C.blue, width: 1.6, progress: seg(.25, .5) });
@@ -817,48 +817,65 @@ function draw() {
   const q0 = clamp(Math.floor(nq), 1, NMAX - 1), fq = clamp(nq - q0);
   dot(E.X(nq), E.Y(lerp(LRMS[q0 - 1], LRMS[q0], fq)), 5, { color: '#fff', fill: C.accent, width: 1.4, alpha: seg(.4, .25) });
   // the network's formula over the plot, and which line is which under it
-  const lA = lab(.4), ly = FP.y + FP.h + 84;
+  const lA = lab(.4), ly = FP.y + FP.h + 88;
   math('f(x) = c + \\Sigma_{j} v_{j}\\,\\rm{tanh}(w_{j}(x - m_{j}))', FP.x + FP.w / 2, FP.y - 12, { size: 17, align: 'center', alpha: lA });
   const items = [[C.guide, 1.6, [2.5, 3.5], 'target function'], [C.sky, 1.2, null, 'one neuron’s piece'],
                  [C.accent, 1.8, null, 'the piece being added'], [C.blue, 2.4, null, 'their sum']];
-  let lx = FP.x + 22;
-  for (const [col, wd, dash, words] of items) {
-    line([[lx - 14, ly - 5], [lx + 14, ly - 5]], { color: col, width: wd, dash, alpha: lA });
-    lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40;
-  }
-  architecture(st);
-  text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
-  if (!STILL) text(TAP ? 'tap a piece' : 'point at a piece', FP.x + FP.w, HINT.y, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  items.forEach(([col, wd, dash, words], q) => {
+    const lx = FP.x + 22 + (q % 2) * 236, yy = ly + Math.floor(q / 2) * 27;
+    line([[lx - 14, yy - 5], [lx + 14, yy - 5]], { color: col, width: wd, dash, alpha: lA });
+    text(words, lx + 22, yy, { size: 16, alpha: lA });
+  });
+  // the network chosen; at a change of N the last one fades out as the new one fades in
+  if (st.prev) { const fo = 1 - seg(st.t0, BGAP * .7); if (fo > 0) at(st.prev.sw, () => architecture(st.prev, fo, -1)); }
+  architecture(st, st.prev ? seg(st.t0 + BGAP * .5, BGAP * .5) : 1, hp);
+  legend(AR.kx, AR.ky, 214, [
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.6, alpha: a }), 'positive weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.6, alpha: a }), 'negative weight'],
+    [(x, y, a) => { line([[x - 12, y - 4], [x + 12, y - 4]], { color: C.ink, width: .7, alpha: a }); line([[x - 12, y + 3], [x + 12, y + 3]], { color: C.ink, width: 3, alpha: a }); }, 'width: size of weight'],
+  ], { alpha: lab(.5) });
+  text('fitted by least squares to 400 points; error: RMS', 18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
+  if (!STILL) text(TAP ? 'tap a piece' : 'point at a piece', FP.x + FP.w, HINT.y, { size: 15, color: C.muted, align: 'right', alpha: lab(.5) });
   place();
 }
 
-/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output, every connection
-   drawn; a neuron is blue once its piece is added. Its output bias is base + sum(v), since each
-   piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
-const AR = { y: 520, cy: 654, xi: 240, xh: 490, xo: 800, ri: 13, rh: 5, dy: 13 };
-function architecture(st) {
-  const n = st.n, nt = NETS[n - 1], a = lab(.5), built = builtB(st);
-  cv.dataset.architecture = `1-${n}-1`;
-  text(`selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 16, color: C.body, alpha: a });
-  text('input', AR.xi, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text('linear output', AR.xo, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * AR.dy);
+/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output f(x), every
+   connection drawn with its fitted weight: from the input w_j (all positive; width on a log
+   scale, since w runs from 0.5 to 150), to the output v_j (width by |v_j| <= 0.4), blue positive,
+   crimson negative, grey until its neuron's piece is added. Its output bias is c = base + sum(v),
+   since each piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
+const AR = { ty: 330, ly: 357, cy: 516, span: 260, xi: 664, xh: 806, xo: 946, ri: 14, rh: 8, kx: 402, ky: 554 };
+function architecture(st, fa, hp) {
+  const n = st.n, nt = NETS[n - 1], a = lab(.5) * fa, built = builtB(st);
+  if (a <= 0) return;
+  if (fa >= 1) cv.dataset.architecture = `1-${n}-1`;
+  text(`selected architecture, ${3 * n + 1} parameters`, 640, AR.ty, { size: 16, color: C.body, alpha: a });
+  text('input', AR.xi, AR.ly, { size: 16, align: 'center', alpha: a });
+  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.ly, { size: 16, align: 'center', alpha: a });
+  text('linear output', AR.xo, AR.ly, { size: 16, align: 'center', alpha: a });
+  const dy = n > 1 ? Math.min(40, AR.span / (n - 1)) : 0;
+  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * dy);
   for (let j = 0; j < n; j++) {
-    const col = j < built ? C.blue : C.guide;
-    line([[AR.xi + AR.ri, AR.cy], [AR.xh - 8, ys[j]]], { color: col, width: 1, alpha: a * .65 });
-    line([[AR.xh + 8, ys[j]], [AR.xo - AR.ri, AR.cy]], { color: col, width: 1, alpha: a * .65 });
+    const on = j < built, w = nt.w[j], v = nt.v[j];
+    line([[AR.xi + AR.ri, AR.cy], [AR.xh - AR.rh - 1, ys[j]]], on ? { color: w >= 0 ? S_POS : S_NEG, width: .7 + 1.1 * Math.log10(Math.abs(w) / .5), alpha: a * .85 }
+                                                                : { color: C.guide, width: 1, alpha: a * .5 });
+    line([[AR.xh + AR.rh + 1, ys[j]], [AR.xo - AR.ri, AR.cy]], on ? { color: v >= 0 ? S_POS : S_NEG, width: .7 + 2.7 * Math.abs(v) / .4, alpha: a * .85 }
+                                                                : { color: C.guide, width: 1, alpha: a * .5 });
   }
-  for (let j = 0; j < n; j++) dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.1, alpha: a });
+  for (let j = 0; j < n; j++) {
+    dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.2, alpha: a });
+    if (j === hp) dot(AR.xh, ys[j], AR.rh + 4, { color: C.accent, fill: null, width: 1.6, alpha: a });
+  }
   dot(AR.xi, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
   dot(AR.xo, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
-  math('x', AR.xi, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  math('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  // one note over the parameter line, in math so the bias takes a true minus
-  const bias = nt.base + nt.v.reduce((s, v) => s + v, 0);
-  math(`\\rm{output bias}\\ ${bias.toFixed(3)}\\rm{; ${3 * n + 1} fitted parameters; every hidden neuron connects to the input and the output, with the weights of the fit above}`,
-       18, H - 34, { size: 14, color: C.muted, alpha: a });
+  math('x', AR.xi, AR.cy + 5, { size: 17, align: 'center', alpha: a });
+  math('f', AR.xo - 1, AR.cy + 5, { size: 17, align: 'center', alpha: a });
+  // the weights' names, under their fans, and the output bias c, the c of the formula
+  const yl = AR.cy + (ys[n - 1] - AR.cy) / 2 + 30;
+  math('w_{j}', (AR.xi + AR.xh) / 2 - 10, yl, { size: 17, alpha: a });
+  math('v_{j}', (AR.xh + AR.xo) / 2 - 8, yl, { size: 17, alpha: a });
+  const c = nt.base + nt.v.reduce((s, q) => s + q, 0);
+  math(`c = ${num(c, 3)}`, AR.xo, AR.cy + AR.ri + 24, { size: 16, align: 'center', alpha: a });
 }
 
 /* ================================================ the reader's hand: pointer and keyboard */
@@ -983,7 +1000,7 @@ function place() {
   const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
   const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
   KB.cr.forEach((b, q) => {
-    box(b, CH.x + q * (CH.w + CH.gap), CH.y, CH.x + q * (CH.w + CH.gap) + CH.w, CH.y + CH.h);
+    box(b, CH.x + q * (CH.w + CH.gap) - 3, CH.y - 4, CH.x + q * (CH.w + CH.gap) + CH.w + 3, CH.y + CH.h + 4);
     b.setAttribute('aria-checked', String(q + 1 === bs.n)); b.tabIndex = q + 1 === bs.n ? 0 : -1;
   });
 }

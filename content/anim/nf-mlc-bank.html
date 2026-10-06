@@ -674,7 +674,7 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 20, { size: 16, align: 'center', alpha: a });
   }
   if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
@@ -695,17 +695,24 @@ function token(s, cx, cy, o = {}) {
 
 
 const SN = DATA.s, SHOWN = DATA.shown;
-const T0 = .5, READ = .9, GAPS = .5, TL = T0 + 2 * READ + GAPS + 1.0, PER = 3.2;
+const T0 = .5, READ = .9, GAPS = .5, TL = T0 + 2 * READ + GAPS + 1.0, PER = 3.5;
 const POSTER_T = TL - .15;
 const ROWY = [150, 430], SUBY = [34, 300];            // token row and subtitle of (a) and (b)
 function tokenX(toks) {                                // left to right, boxes as wide as their words
   ctx.save(); ctx.font = font({ size: 17 }); const w = toks.map(s => ctx.measureText(s).width + 22); ctx.restore();
   const xs = []; let x = 40; w.forEach(v => { xs.push(x + v / 2); x += v + 12; }); return { xs, w };
 }
-function active() { if (t < TL) return -1; return Math.floor((t - TL) / PER) % 2; }
+/* how much sentence k is in front, 0 to 1: in turn, each for PER seconds, the change cross-faded over
+   .35 s (before the loop both are in front) */
+function bright(k) {
+  if (t < TL) return 1;
+  const n = Math.floor((t - TL) / PER), act = n % 2, e = easeInOut(clamp((t - TL - n * PER) / .35));
+  const was = n === 0 ? 1 : act === k ? 0 : 1, now = act === k ? 1 : 0;
+  return lerp(was, now, e);
+}
 function drawSentence(k, y0) {
   const S = SN[k], toks = S.t, { xs, w } = tokenX(toks), b = toks.indexOf('bank');       // words as he wrote them; the model reads them in lower case
-  const t0 = T0 + k * (READ + GAPS / 2), act = active(), dim = act >= 0 && act !== k ? .4 : 1;
+  const t0 = T0 + k * (READ + GAPS / 2), dim = .4 + .6 * bright(k);
   sub('ab'[k], 18, SUBY[k], `sentence ${k + 1}`, seg(.05 + .05 * k, .3));
   toks.forEach((s, j) => token(s, xs[j], y0, { w: w[j], progress: seg(.08 + .04 * j + .06 * k, .3), fill: j === b ? C.steel : '#fff', stroke: C.ink }));
   // the strongest link to another word is the one the eye should follow
@@ -722,16 +729,16 @@ function drawSentence(k, y0) {
       line(bez([xs[b], top], [(xs[b] + xs[j]) / 2, top - 2 * h], [xs[j], top]), { color: col, width, alpha: al, progress: pr });
     }
     const na = settle(t0 + .3 + .04 * j, .28) * dim;
-    text(nf(v, 2), xs[j], y0 + 38, { size: 15, align: 'center', color: j === best ? C.accent : C.ink, alpha: na });
+    text(nf(v, 2), xs[j], y0 + 39, { size: 16, align: 'center', color: j === best ? C.accent : C.ink, alpha: na });
   });
-  lab('attention from “bank”', xs[toks.length - 1] + w[toks.length - 1] / 2 + 16, y0 + 38, t0 + .45, { size: 14, color: C.muted, alpha: dim });
+  lab('attention from “bank”', xs[toks.length - 1] + w[toks.length - 1] / 2 + 16, y0 + 39, t0 + .45, { size: 16, color: C.body, alpha: dim });
   // the reading: probability of each sense
   const ra = settle(t0 + READ - .1, .35) * dim, by = y0 + 66, bx = 150, bw = 200;
   [['river sense', S.p], ['money sense', 1 - S.p]].forEach(([lb, v], r) => {
     const yy = by + r * 24;
-    text(lb, bx - 10, yy + 13, { size: 15, align: 'right', alpha: ra });
+    text(lb, bx - 10, yy + 14, { size: 16, align: 'right', alpha: ra });
     box(bx, yy, bw * v * clamp(ra * 1.05), 16, { fill: C.mist, stroke: C.blue, width: 1, alpha: ra });
-    text(nf(v, 2), bx + bw * v * clamp(ra * 1.05) + 8, yy + 13, { size: 14, color: C.body, alpha: ra });
+    text(nf(v, 2), bx + bw * v * clamp(ra * 1.05) + 8, yy + 14, { size: 16, color: C.body, alpha: ra });
   });
 }
 function draw() {
@@ -739,30 +746,31 @@ function draw() {
   // ================= (c) the new vector of bank, on the map of Figure 25
   sub('c', 612, 34, 'bank in context', seg(.15, .3));
   const g = axes({ x: 660, y: 64, w: 300, h: 300, xlim: [-1.1, 1.1], ylim: [-1.2, 1.0], xticks: [-1, 0, 1], yticks: [-1, 0, 1],
-    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 30, progress: seg(.05, .4) });
-  const ma = seg(.2, .4), act = active(), bk = DATA.pos[SHOWN.indexOf('bank')];
+    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 34, tickSize: 16, progress: seg(.05, .4) });
+  const ma = seg(.2, .4), bk = DATA.pos[SHOWN.indexOf('bank')];
   g.inside(() => {
     const OFF = { river: [-7, -5, 'right'], loan: [7, -8, 'left'], cat: [-7, -6, 'right'], dog: [7, 5, 'left'] };
     SHOWN.forEach((w, k) => { if (w === 'bank') return; const [x, y] = DATA.pos[k], his = k < 5;
       dot(g.X(x), g.Y(y), his ? 3.8 : 2.4, { color: '#fff', fill: his ? C.blue : C.guide, width: .8, alpha: ma });
-      if (his) { const o = OFF[w]; text(w, g.X(x) + o[0], g.Y(y) + o[1], { size: 15, align: o[2], alpha: ma }); } });
+      if (his) { const o = OFF[w]; text(w, g.X(x) + o[0], g.Y(y) + o[1], { size: 16, align: o[2], alpha: ma }); } });
     dot(g.X(bk[0]), g.Y(bk[1]), 4.5, { color: C.navy, fill: '#fff', width: 1.6, alpha: ma });
     // above right, in the wedge its two arrows leave free (below left sits the dot of "account")
-    text('bank alone', g.X(bk[0]) + 8, g.Y(bk[1]) - 8, { size: 14, color: C.body, alpha: ma });
+    text('bank alone', g.X(bk[0]) + 8, g.Y(bk[1]) - 8, { size: 16, color: C.body, alpha: ma });
     DATA.cpos.forEach((c, k) => {
-      const t0 = T0 + k * (READ + GAPS / 2) + READ - .2, s = settle(t0, .6), on = act < 0 || act === k;
+      const t0 = T0 + k * (READ + GAPS / 2) + READ - .2, s = settle(t0, .6), on = bright(k);
       if (s <= 0) return;
-      const x = lerp(bk[0], c[0], s), y = lerp(bk[1], c[1], s);
-      carrow([[g.X(bk[0]), g.Y(bk[1])], [g.X(x), g.Y(y)]], { color: on ? C.accent : C.guide, width: 1.6, head: 9, alpha: on ? 1 : .5 });
-      dot(g.X(x), g.Y(y), 5, { color: '#fff', fill: on ? C.accent : C.guide, width: 1.2 });
+      const x = lerp(bk[0], c[0], s), y = lerp(bk[1], c[1], s), col = mix(C.guide, C.accent, on);
+      carrow([[g.X(bk[0]), g.Y(bk[1])], [g.X(x), g.Y(y)]], { color: col, width: 1.6, head: 9, alpha: .5 + .5 * on });
+      dot(g.X(x), g.Y(y), 5, { color: '#fff', fill: col, width: 1.2 });
       // named beside its dot, off its own arrow ((a)'s climbs from the lower right, so its name sits above);
       // the name arrives with the dot, so it never passes over "bank alone" on the way
-      text(`bank in (${'ab'[k]})`, g.X(x) + (k ? 12 : 8), g.Y(y) + (k ? 20 : -10), { size: 15, align: k ? 'right' : 'left', color: on ? C.accent : C.muted,
+      text(`bank in (${'ab'[k]})`, g.X(x) + (k ? 12 : 8), g.Y(y) + (k ? 21 : -10), { size: 16, align: k ? 'right' : 'left', color: mix(C.muted, C.accent, on),
         alpha: clamp((s - .55) * 2.5) });
     });
   });
-  text('dots: the words of Figure 25, same map; one attention head on their 4 number vectors, trained on 32 other sentences with “bank”',
-       20, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+  lab('dots: the words of Figure 25, on its map', 810, 450, .5, { size: 16, color: C.body, align: 'center' });
+  text('one attention head, trained on 32 other “bank” sentences',
+       20, H - 12, { size: 15, color: C.muted, alpha: seg(.6, .4) });
 }
 boot();
 </script>

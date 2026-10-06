@@ -188,7 +188,7 @@ function bNow() {
 function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
 
 /* ================================================ the layout */
-const FP = { x: 76, y: 96, w: 540, h: 296 }, EP = { x: 724, y: 96, w: 240, h: 296 };
+const FP = { x: 76, y: 96, w: 500, h: 290 }, EP = { x: 724, y: 96, w: 240, h: 150 };
 /* the chips: a 36 unit pitch (24 CSS px at 672), the row ending over the error plot's right edge */
 const YT = 36, CH = { w: 30, h: 28, gap: 6, y: YT - 19 };
 CH.x = EP.x + EP.w - NMAX * (CH.w + CH.gap) + CH.gap;
@@ -221,19 +221,19 @@ function draw() {
   panel('b', 18, YT, { alpha: lab(.04) });
   text('many neurons added together', 52, YT + rise(la), { size: 17, color: C.body, alpha: la });
   // the number of neurons: the reader's choice
-  text('number of neurons', CH.x - 12, YT, { size: 15, color: C.body, align: 'right', alpha: la });
+  text('number of neurons', CH.x - 12, YT, { size: 16, color: C.body, align: 'right', alpha: la });
   // the chosen number again builds its sum again: no button of its own
   for (let q = 1; q <= NMAX; q++)
     uiChip(CH.x + (q - 1) * (CH.w + CH.gap), CH.y, CH.w, CH.h, String(q),
-           { on: q === st.n, hover: HC === q, down: HD === q }, lab(.08 + .012 * q));
+           { on: q === st.n, hover: HC === q, down: HD === q, size: 16 }, lab(.08 + .012 * q));
   // the fit: the target, the pieces, their sum
   const A = axes({ ...FP, xlim: [0, 1], ylim: [-1.3, 1.3], xticks: [0, .25, .5, .75, 1], yticks: [-1, -.5, 0, .5, 1],
                    xfmt: v => v === .5 ? '0.5' : fmt(v), yfmt: v => v === .5 ? '0.5' : v === -.5 ? '−0.5' : fmt(v),
-                   xlabel: 'x', progress: seg(.1, .35) });
+                   xlabel: 'x', tickSize: 16, progress: seg(.1, .35) });
   const u = builtB(st), done = u >= st.n, hp = done ? HP : -1;
   text(`${st.n} neuron${st.n > 1 ? 's' : ''}`, FP.x, FP.y - 12, { size: 17, alpha: la });
   math(`\\rm{error}\\ \\ ${NETS[st.n - 1].rms.toFixed(3)}`, FP.x + FP.w, FP.y - 12,
-       { size: 15, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
+       { size: 16, color: C.body, align: 'right', alpha: done ? lab(st.t0 + BGAP + buildB(st.n)) : 0 });
   A.inside(() => {
     line([[FP.x, A.Y(0)], [FP.x + FP.w, A.Y(0)]], { color: C.rule, width: 1, alpha: seg(.2, .3) });
     for (let i = 0; i < NX; i++) { pts[i][0] = A.X(XSS[i]); pts[i][1] = A.Y(D.g[i]); }
@@ -245,12 +245,12 @@ function draw() {
   if (hp >= 0) {
     const nt = NETS[st.n - 1], y = FP.y + FP.h - 14;
     math(`\\rm{neuron}\\ ${hp + 1}:\\ \\ v = ${num(nt.v[hp])},\\ \\ w = ${nt.w[hp].toFixed(1)},\\ \\ m = ${num(nt.m[hp])}`,
-         FP.x + FP.w - 12, y, { size: 15, color: C.accent, align: 'right' });
+         FP.x + FP.w - 12, y, { size: 16, color: C.accent, align: 'right' });
   }
   // the error for every number of neurons, log scale; the one shown glides along it
   const E = axes({ ...EP, xlim: [.5, NMAX + .5], ylim: [-3, 0], xticks: [1, 5, 10, 14], yticks: [-3, -2, -1, 0],
                    yfmt: v => ['0.001', '0.01', '0.1', '1'][v + 3], xlabel: '\\rm{number\\ of\\ neurons}',
-                   ylabel: '\\rm{error}', ylabelGap: 50, grid: true, progress: seg(.12, .35) });
+                   ylabel: '\\rm{error}', ylabelGap: 52, tickSize: 16, grid: true, progress: seg(.12, .35) });
   const ep = [];
   for (let q = 1; q <= NMAX; q++) ep.push([E.X(q), E.Y(LRMS[q - 1])]);
   line(ep, { color: C.blue, width: 1.6, progress: seg(.25, .5) });
@@ -260,48 +260,65 @@ function draw() {
   const q0 = clamp(Math.floor(nq), 1, NMAX - 1), fq = clamp(nq - q0);
   dot(E.X(nq), E.Y(lerp(LRMS[q0 - 1], LRMS[q0], fq)), 5, { color: '#fff', fill: C.accent, width: 1.4, alpha: seg(.4, .25) });
   // the network's formula over the plot, and which line is which under it
-  const lA = lab(.4), ly = FP.y + FP.h + 84;
+  const lA = lab(.4), ly = FP.y + FP.h + 88;
   math('f(x) = c + \\Sigma_{j} v_{j}\\,\\rm{tanh}(w_{j}(x - m_{j}))', FP.x + FP.w / 2, FP.y - 12, { size: 17, align: 'center', alpha: lA });
   const items = [[C.guide, 1.6, [2.5, 3.5], 'target function'], [C.sky, 1.2, null, 'one neuron’s piece'],
                  [C.accent, 1.8, null, 'the piece being added'], [C.blue, 2.4, null, 'their sum']];
-  let lx = FP.x + 22;
-  for (const [col, wd, dash, words] of items) {
-    line([[lx - 14, ly - 5], [lx + 14, ly - 5]], { color: col, width: wd, dash, alpha: lA });
-    lx += 24 + text(words, lx + 22, ly, { size: 15, alpha: lA }) + 40;
-  }
-  architecture(st);
-  text('tanh neurons as in (a), switched on one at a time; each network fitted by least squares to 400 points of the target; error: root mean square',
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
-  if (!STILL) text(TAP ? 'tap a piece' : 'point at a piece', FP.x + FP.w, HINT.y, { size: 14, color: C.muted, align: 'right', alpha: lab(.5) });
+  items.forEach(([col, wd, dash, words], q) => {
+    const lx = FP.x + 22 + (q % 2) * 236, yy = ly + Math.floor(q / 2) * 27;
+    line([[lx - 14, yy - 5], [lx + 14, yy - 5]], { color: col, width: wd, dash, alpha: lA });
+    text(words, lx + 22, yy, { size: 16, alpha: lA });
+  });
+  // the network chosen; at a change of N the last one fades out as the new one fades in
+  if (st.prev) { const fo = 1 - seg(st.t0, BGAP * .7); if (fo > 0) at(st.prev.sw, () => architecture(st.prev, fo, -1)); }
+  architecture(st, st.prev ? seg(st.t0 + BGAP * .5, BGAP * .5) : 1, hp);
+  legend(AR.kx, AR.ky, 214, [
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.6, alpha: a }), 'positive weight'],
+    [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.6, alpha: a }), 'negative weight'],
+    [(x, y, a) => { line([[x - 12, y - 4], [x + 12, y - 4]], { color: C.ink, width: .7, alpha: a }); line([[x - 12, y + 3], [x + 12, y + 3]], { color: C.ink, width: 3, alpha: a }); }, 'width: size of weight'],
+  ], { alpha: lab(.5) });
+  text('fitted by least squares to 400 points; error: RMS', 18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
+  if (!STILL) text(TAP ? 'tap a piece' : 'point at a piece', FP.x + FP.w, HINT.y, { size: 15, color: C.muted, align: 'right', alpha: lab(.5) });
   place();
 }
 
-/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output, every connection
-   drawn; a neuron is blue once its piece is added. Its output bias is base + sum(v), since each
-   piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
-const AR = { y: 520, cy: 654, xi: 240, xh: 490, xo: 800, ri: 13, rh: 5, dy: 13 };
-function architecture(st) {
-  const n = st.n, nt = NETS[n - 1], a = lab(.5), built = builtB(st);
-  cv.dataset.architecture = `1-${n}-1`;
-  text(`selected architecture: 1 input → ${n} hidden neuron${n === 1 ? '' : 's'} → 1 output`, FP.x, AR.y, { size: 16, color: C.body, alpha: a });
-  text('input', AR.xi, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  text('linear output', AR.xo, AR.y + 31, { size: 15, align: 'center', alpha: a });
-  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * AR.dy);
+/* the network chosen, as a network: 1 input, N tanh neurons, 1 linear output f(x), every
+   connection drawn with its fitted weight: from the input w_j (all positive; width on a log
+   scale, since w runs from 0.5 to 150), to the output v_j (width by |v_j| <= 0.4), blue positive,
+   crimson negative, grey until its neuron's piece is added. Its output bias is c = base + sum(v),
+   since each piece is v (1 + tanh(...)); it has 3N + 1 fitted weights and biases. */
+const AR = { ty: 330, ly: 357, cy: 516, span: 260, xi: 664, xh: 806, xo: 946, ri: 14, rh: 8, kx: 402, ky: 554 };
+function architecture(st, fa, hp) {
+  const n = st.n, nt = NETS[n - 1], a = lab(.5) * fa, built = builtB(st);
+  if (a <= 0) return;
+  if (fa >= 1) cv.dataset.architecture = `1-${n}-1`;
+  text(`selected architecture, ${3 * n + 1} parameters`, 640, AR.ty, { size: 16, color: C.body, alpha: a });
+  text('input', AR.xi, AR.ly, { size: 16, align: 'center', alpha: a });
+  text(`${n} tanh neuron${n === 1 ? '' : 's'}`, AR.xh, AR.ly, { size: 16, align: 'center', alpha: a });
+  text('linear output', AR.xo, AR.ly, { size: 16, align: 'center', alpha: a });
+  const dy = n > 1 ? Math.min(40, AR.span / (n - 1)) : 0;
+  const ys = Array.from({ length: n }, (_, j) => AR.cy + (j - (n - 1) / 2) * dy);
   for (let j = 0; j < n; j++) {
-    const col = j < built ? C.blue : C.guide;
-    line([[AR.xi + AR.ri, AR.cy], [AR.xh - 8, ys[j]]], { color: col, width: 1, alpha: a * .65 });
-    line([[AR.xh + 8, ys[j]], [AR.xo - AR.ri, AR.cy]], { color: col, width: 1, alpha: a * .65 });
+    const on = j < built, w = nt.w[j], v = nt.v[j];
+    line([[AR.xi + AR.ri, AR.cy], [AR.xh - AR.rh - 1, ys[j]]], on ? { color: w >= 0 ? S_POS : S_NEG, width: .7 + 1.1 * Math.log10(Math.abs(w) / .5), alpha: a * .85 }
+                                                                : { color: C.guide, width: 1, alpha: a * .5 });
+    line([[AR.xh + AR.rh + 1, ys[j]], [AR.xo - AR.ri, AR.cy]], on ? { color: v >= 0 ? S_POS : S_NEG, width: .7 + 2.7 * Math.abs(v) / .4, alpha: a * .85 }
+                                                                : { color: C.guide, width: 1, alpha: a * .5 });
   }
-  for (let j = 0; j < n; j++) dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.1, alpha: a });
+  for (let j = 0; j < n; j++) {
+    dot(AR.xh, ys[j], AR.rh, { color: C.blue, fill: j < built ? C.steel : '#fff', width: 1.2, alpha: a });
+    if (j === hp) dot(AR.xh, ys[j], AR.rh + 4, { color: C.accent, fill: null, width: 1.6, alpha: a });
+  }
   dot(AR.xi, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
   dot(AR.xo, AR.cy, AR.ri, { color: C.blue, fill: '#fff', width: 1.5, alpha: a });
-  math('x', AR.xi, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  math('g', AR.xo, AR.cy + 5, { size: 16, align: 'center', alpha: a });
-  // one note over the parameter line, in math so the bias takes a true minus
-  const bias = nt.base + nt.v.reduce((s, v) => s + v, 0);
-  math(`\\rm{output bias}\\ ${bias.toFixed(3)}\\rm{; ${3 * n + 1} fitted parameters; every hidden neuron connects to the input and the output, with the weights of the fit above}`,
-       18, H - 34, { size: 14, color: C.muted, alpha: a });
+  math('x', AR.xi, AR.cy + 5, { size: 17, align: 'center', alpha: a });
+  math('f', AR.xo - 1, AR.cy + 5, { size: 17, align: 'center', alpha: a });
+  // the weights' names, under their fans, and the output bias c, the c of the formula
+  const yl = AR.cy + (ys[n - 1] - AR.cy) / 2 + 30;
+  math('w_{j}', (AR.xi + AR.xh) / 2 - 10, yl, { size: 17, alpha: a });
+  math('v_{j}', (AR.xh + AR.xo) / 2 - 8, yl, { size: 17, alpha: a });
+  const c = nt.base + nt.v.reduce((s, q) => s + q, 0);
+  math(`c = ${num(c, 3)}`, AR.xo, AR.cy + AR.ri + 24, { size: 16, align: 'center', alpha: a });
 }
 
 /* ================================================ the reader's hand: pointer and keyboard */
@@ -426,7 +443,7 @@ function place() {
   const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
   const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
   KB.cr.forEach((b, q) => {
-    box(b, CH.x + q * (CH.w + CH.gap), CH.y, CH.x + q * (CH.w + CH.gap) + CH.w, CH.y + CH.h);
+    box(b, CH.x + q * (CH.w + CH.gap) - 3, CH.y - 4, CH.x + q * (CH.w + CH.gap) + CH.w + 3, CH.y + CH.h + 4);
     b.setAttribute('aria-checked', String(q + 1 === bs.n)); b.tabIndex = q + 1 === bs.n ? 0 : -1;
   });
 }
@@ -438,7 +455,7 @@ TITLE = ("Figure 18b: Why repeating that computation across many neurons lets a 
 ARIA = ("Networks of 1 to 14 tanh neurons fitted to one wiggly target function: their pieces added one at a "
         "time, and the error falling as neurons are added, from 0.30 with one neuron to 0.003 with fourteen. "
         "The selected number of neurons also shows its exact 1-N-1 architecture with all input and output "
-        "connections.")
+        "connections, each drawn with the width and sign of its fitted weight.")
 
 
 def verify(states):
@@ -476,15 +493,18 @@ def verify(states):
 
 if __name__ == "__main__":
     print("RMS", [round(nt["rms"], 4) for nt in NETS])
-    mc.publish(NAME, TITLE, ARIA, 1000, 830, DATA, JS, look=(0.3, 0.8, 1.6, 3.0, 5.0, 8.0, 12.0, 17.0))
+    mc.publish(NAME, TITLE, ARIA, 1000, 680, DATA, JS, look=(0.3, 0.8, 1.6, 3.0, 5.0, 8.0, 12.0, 17.0))
     TB, BGAP, BHOLD = .35, .45, 4.5
     stepB = lambda n: min(.55, 4.2 / n)
     BD = [BGAP + n * stepB(n) + BHOLD for n in (3, 7, 14)]
     POSTER = TB + BD[0] + BD[1] + BGAP + 14 * stepB(14) + .6
     say("THE PAGE")
-    say(f"  W = 1000, H = 830. POSTER_T = {POSTER:g} s: 14 neurons added up.")
-    say("  Under the plots, the N chosen as a network: its fully connected 1-N-1 topology, a neuron blue once")
-    say("  its piece is added, the output bias base + sum(v) and the 3N + 1 fitted parameters.")
+    say(f"  W = 1000, H = 680. POSTER_T = {POSTER:g} s: 14 neurons added up.")
+    say("  Under the error plot, the N chosen as a network: its fully connected 1-N-1 topology, its output f,")
+    say("  each connection drawn with its fitted weight once its neuron's piece is added (input side w_j, all")
+    say("  positive, width 0.7 + 1.1 log10(w_j / 0.5); output side v_j, width 0.7 + 2.7 |v_j| / 0.4; blue")
+    say("  positive, crimson negative), the output bias c = base + sum(v) and the 3N + 1 fitted parameters.")
+    say("  At a change of N the last network fades out as the new one fades in (0.45 s), as the curves do.")
     say(f"  The page tours 3, 7 and 14 neurons, {sum(BD):g} s a round; a neuron switches on every")
     say("  min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.")
     say("  A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,")
@@ -497,12 +517,15 @@ if __name__ == "__main__":
                    f"t = 60 + {BGAP} + {n * stepB(n) * f}") for n in range(1, NMAX + 1) for f in (.3, .7, 1.2)
                   for hp in ((-1, 0, n - 1) if f > 1 else (-1,))]
         states += [(f"tour, t = {tt:.2f}", f"NSEL = null; HC = 0; HP = -1; t = {tt}") for tt in np.arange(0, 3 * 13, .25)]
+        states += [(f"{a} to {b} neurons, {d:.2f} s in", f"NSEL = {{n: {b}, t0: 60, prev: {{n: {a}, t0: -1e3, sw: 60}}}}; HC = 0; HP = -1; "
+                    f"t = 60 + {d}") for a, b in ((3, 7), (7, 14), (14, 3), (1, 14), (14, 1)) for d in np.arange(0, .61, .05)]
         res, clock = verify(states)
         if abs(clock - POSTER) > 1e-9:
             raise RuntimeError(f"the page's POSTER_T {clock} is not the check file's {POSTER}")
         bad = [(nm, a, c) for nm, a, c in res if a or c]
         say(f"  --verify: {len(res)} states: every number of neurons at 30, 70 and 120 per cent built (finished,")
-        say(f"  with its first and last piece pointed at) and the tour every 0.25 s: {len(bad)} with collisions")
+        say(f"  with its first and last piece pointed at), the tour every 0.25 s and five changes of N every")
+        say(f"  0.05 s through their fade: {len(bad)} with collisions")
         for nm, a, c in bad[:12]:
             say(f"    {nm}: {a[:3]} {c[:3]}")
     mc.check(NAME, L)

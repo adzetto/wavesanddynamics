@@ -33,7 +33,7 @@ html,body{margin:0;padding:0;background:#fff;}
 </head>
 <body>
 <div class="fig">
-  <canvas id="c" role="img" aria-label="Two panels of learning curves: the error of five models, linear, decision tree, k nearest neighbours, random forest and a neural network, as the number of training examples grows from 25 to 6400. For a simple pattern the linear model is best at every size. For a complex pattern no model is clearly best with little data, then k nearest neighbours and the random forest lead, and from a few hundred examples the neural network does. A strip above each panel marks the best model at each size."></canvas>
+  <canvas id="c" role="img" aria-label="Two panels of learning curves: the error of five models, linear, decision tree, k nearest neighbors, random forest and a neural network, as the number of training examples grows from 25 to 6400. For a simple pattern the linear model is best at every size. For a complex pattern no model is clearly best with little data, then k nearest neighbors and the random forest lead, and from a few hundred examples the neural network does. A strip above each panel marks the best model at each size."></canvas>
   <div class="ctl"><button id="pp" type="button" aria-label="Pause animation"></button><button id="rs" type="button" aria-label="Restart animation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button></div>
 </div>
 <script>
@@ -674,7 +674,7 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 20, { size: 16, align: 'center', alpha: a });
   }
   if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
@@ -729,7 +729,7 @@ function panelDraw(p, letter, title) {
   const g = axes({ x: x0, y: PY, w: PW, h: PHh, xlim: [LN[0] - .08, LN[LN.length - 1] + .08], ylim: [0, YM[p]],
     xticks: [Math.log10(25), 2, Math.log10(400), Math.log10(1600), Math.log10(6400)], xfmt: v => String(Math.round(Math.pow(10, v))),
     yticks: p ? [0, .4, .8, 1.2, 1.6] : [0, .2, .4, .6, .8], yfmt: v => v === 0 ? '0' : nf(v, 1),
-    xlabel: '\\rm{training\\ examples}\\ \\ n', ylabel: '\\rm{error\\ (RMSE)}', ylabelGap: 44, progress: seg(.02 + .05 * p, .4), grid: true });
+    xlabel: '\\rm{training\\ examples}\\ \\ n', ylabel: '\\rm{error\\ (RMSE)}', ylabelGap: 46, tickSize: 16, progress: seg(.02 + .05 * p, .4), grid: true });
   // the curves draw themselves as the data grow, one after another
   g.inside(() => M.forEach((k, i) => {
     const st = STY[k], pr = seg(.25 + .06 * i + .04 * p, .45);
@@ -740,22 +740,25 @@ function panelDraw(p, letter, title) {
       markAt(k, X, Y, st, 1); });
   }));
   // the map: which model is best at each size (ties where the best two are within 2 standard errors)
-  const my = PY - 32, mh = 20, mids = LN.map((l, j) => j ? (LN[j - 1] + l) / 2 : LN[0] - .08).concat([LN[LN.length - 1] + .08]);
+  const my = PY - 36, mh = 24, mids = LN.map((l, j) => j ? (LN[j - 1] + l) / 2 : LN[0] - .08).concat([LN[LN.length - 1] + .08]);
   const SHORT = { linear: 'linear', tree: 'tree', knn: 'k-NN', forest: 'forest', mlp: 'MLP' };
   const segs = []; P.win.forEach((w, j) => { const key = w.length > 2 ? 'tie' : w.map(i => M[i]).sort().join('+');
     if (segs.length && segs[segs.length - 1].key === key) segs[segs.length - 1].b = mids[j + 1]; else segs.push({ key, a: mids[j], b: mids[j + 1], w }); });
   const ma = seg(.9, .35), lx = sweepLog(), env = lx === null ? null : envelope(P, lx);
+  let marks = false;
   segs.forEach(s => {
     const xa = g.X(s.a), xb = g.X(s.b), on = env && lx >= s.a && lx < s.b + 1e-9;
     box(xa, my, xb - xa, mh, { fill: s.key === 'tie' ? '#fff' : C.steel, stroke: on ? C.accent : C.rule, width: on ? 1.6 : 1, alpha: ma });
     const lbl = s.key === 'tie' ? 'no clear winner' : s.key.split('+').map(k => SHORT[k]).join(', ');
-    ctx.save(); ctx.font = font({ size: 14 }); const tw = ctx.measureText(lbl).width; ctx.restore();
-    if (tw < xb - xa - 6) text(lbl, (xa + xb) / 2, my + 15, { size: 14, align: 'center', color: s.key === 'tie' ? C.muted : C.ink, alpha: ma });
+    ctx.save(); ctx.font = font({ size: 16 }); const tw = ctx.measureText(lbl).width; ctx.restore();
+    if (tw < xb - xa - 6) text(lbl, (xa + xb) / 2, my + 17, { size: 16, align: 'center', color: s.key === 'tie' ? C.body : C.ink, alpha: ma });
     else { const ks = s.w.map(i => M[i]), sp = 11, x1 = (xa + xb) / 2 - (ks.length - 1) * sp / 2;   // too narrow for words: the legend's marks
-      ks.forEach((k, q) => markAt(k, x1 + q * sp, my + mh / 2, STY[k], ma)); }
+      ks.forEach((k, q) => markAt(k, x1 + q * sp, my + mh / 2, STY[k], ma)); marks = true; }
   });
   const nNow = env ? Math.round(Math.pow(10, lx)) : 0;
-  mlab(env ? `\\rm{best model at}\\ n = ${nNow}` : '\\rm{best model}', x0, my - 7, .95, { size: 14, color: env ? C.accent : C.muted });
+  mlab(env ? `\\rm{best model at}\\ n = ${nNow}` : '\\rm{best model}', x0, my - 8, .95, { size: 16, color: env ? C.accent : C.body });
+  // what a box of several marks says: those models tie there
+  if (marks) lab('several marks: a tie', x0 + PW, my - 8, .95, { size: 16, color: C.body, align: 'right' });
   // the cursor: n grows, the best model changes; then it eases back
   if (env) {
     const X = g.X(lx), Y = g.Y(env.v), a = clamp((t - TS) / .3);
@@ -766,14 +769,14 @@ function panelDraw(p, letter, title) {
 function draw() {
   panelDraw(0, 'a', 'a simple pattern'); panelDraw(1, 'b', 'a complex pattern');
   // legend, inside (a) where the curves leave room
-  const lx = PX[0] + PW - 158, ly = PY + 8, la = seg(.8, .35);
-  box(lx, ly, 150, 104, { fill: '#fff', stroke: C.ink, width: 1, alpha: la });
-  M.forEach((k, i) => { const st = STY[k], y = ly + 19 + i * 19;
-    line([[lx + 10, y - 4], [lx + 40, y - 4]], { color: st.c, width: st.w, dash: st.d, alpha: la });
-    markAt(k, lx + 25, y - 4, st, la);
-    text(NM[k], lx + 50, y + 1, { size: 14, alpha: la }); });
-  text('4 features, noise sd 0.3; error against the true pattern on fresh data, mean ± standard error of 2 to 16 repeats; several marks: no clear winner',
-       18, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+  const lx = PX[0] + PW - 172, ly = PY + 8, la = seg(.8, .35);
+  box(lx, ly, 164, 120, { fill: '#fff', stroke: C.ink, width: 1, alpha: la });
+  M.forEach((k, i) => { const st = STY[k], y = ly + 22 + i * 22;
+    line([[lx + 10, y - 5], [lx + 40, y - 5]], { color: st.c, width: st.w, dash: st.d, alpha: la });
+    markAt(k, lx + 25, y - 5, st, la);
+    text(NM[k], lx + 50, y + 1, { size: 16, alpha: la }); });
+  text('4 features, noise sd 0.3; bars: ± 1 standard error',
+       18, H - 12, { size: 15, color: C.muted, alpha: seg(.6, .4) });
 }
 boot();
 </script>

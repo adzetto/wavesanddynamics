@@ -56,5 +56,10 @@ TIMING (Round 3, 30 Sep 2026: the client asked for the figure slowed down; about
   0.7 s after (c) has learned (was 0.35), its greedy policy walks from the start, again and
   again: 0.56 s a step (was 0.28), at the goal 1.8 s (was 0.9), fading in 0.4 s and out 0.6 s
   (was 0.2 and 0.3), 1.0 s between walks (was 0.5): every 8.28 s (was 4.14 s).
-  Poster (reduced motion, print): 15.43 s (was 7.89), between two walks: the tables
+TIMING (Round 4, 5 Oct 2026: the result first)
+  The page opens on the three learned tables (1, 10 and 300 episodes): they fade in with the frame by
+  0.8 s, and (c)'s policy walks from 1.2 s. After that walk the values fade out in 0.6 s and the
+  learning above plays again from nothing; then the policy walks 2 times, the values fade, and so on:
+  24.81 s a round.
+  Poster (reduced motion, print): 8.98 s, in the opening walk's gap: the tables
   alone, the same frame as before.

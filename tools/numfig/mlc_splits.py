@@ -91,19 +91,30 @@ const SX = 118, CWs = 5.2, GAP = 12, SY = 70, SH = 26;
 const slot = r => SX + r * CWs + (r >= 60 ? GAP : 0) + (r >= 80 ? GAP : 0);    // position in the split strip
 const RANK = new Array(N); PERM.forEach((e, r) => RANK[e] = r);
 const FILL = [C.mist, C.accent, C.navy], STROKE = [C.blue, C.accent, C.navy];
-const T_SH = .55, D_SH = 1.0, T_CV = 1.55, DR = .38, T_LOOP = T_CV + 5 * DR + .9, PER = 1.3;
+/* the split and the five rounds arrive together, all there by 1.5 s; then each round in turn comes to
+   the front for PER seconds, the change cross-faded over .35 s */
+const T_SH = .35, D_SH = 1.0, T_CV = .45, DR = .12, T_LOOP = T_CV + 5 * DR + .9, PER = 2.5;
 const POSTER_T = T_LOOP - .2;
 function focus() { if (t < T_LOOP) return -1; return Math.floor((t - T_LOOP) / PER) % 5; }
+/* round k at the front: 1 (also before the loop, when every round is), 0 behind; foc: how much its
+   score is the one marked */
+function front(k, before) {
+  if (t < T_LOOP) return before;
+  const n = Math.floor((t - T_LOOP) / PER), e = easeInOut(clamp((t - T_LOOP - n * PER) / .35));
+  const was = n === 0 ? before : (n - 1) % 5 === k ? 1 : 0, now = n % 5 === k ? 1 : 0;
+  return lerp(was, now, e);
+}
+const bright = k => front(k, 1), foc = k => front(k, 0);
 function draw() {
   const fr = focus();
   // ================= (a) one split
   sub('a', 18, 36, 'training, validation and test sets', seg(.05, .3));
   const sw = seg(T_SH + .1, .35);
-  text('all 100 labeled examples', SX, SY - 10, { size: 14, color: C.muted, alpha: seg(.1, .3) * clamp(1 - 2 * sw) });   // gone before
-  text('shuffled at random, then split', SX, SY - 10, { size: 14, color: C.muted, alpha: clamp(2 * sw - 1) });       // the next shows
+  text('all 100 labeled examples', SX, SY - 10, { size: 16, color: C.body, alpha: seg(.1, .3) * clamp(1 - 2 * sw) });   // gone before
+  text('shuffled at random, then split', SX, SY - 10, { size: 16, color: C.body, alpha: clamp(2 * sw - 1) });       // the next shows
   for (let e = 0; e < N; e++) {
     const x0 = SX + e * CWs, x1 = slot(RANK[e]);
-    const s = settle(T_SH + .006 * RANK[e], .5), x = lerp(x0, x1, s);
+    const s = settle(T_SH + .004 * RANK[e], .5), x = lerp(x0, x1, s);
     const c = mix(C.steel2, FILL[ROLE[e]], clamp(s * 1.5));
     ctx.save(); ctx.globalAlpha = seg(.03 + e * .003, .2); ctx.fillStyle = c; ctx.fillRect(x + .5, SY, CWs - 1, SH); ctx.restore();
   }
@@ -111,14 +122,14 @@ function draw() {
   [['training 60%', 0, 60], ['validation 20%', 60, 80], ['test 20%', 80, 100]].forEach(([s, a, b], k) => {
     const xa = slot(a), xb = slot(b - 1) + CWs, cx = (xa + xb) / 2;
     line([[xa, SY + SH + 8], [xa, SY + SH + 13], [xb, SY + SH + 13], [xb, SY + SH + 8]], { width: 1, alpha: la });
-    text(s, cx, SY + SH + 32, { size: 15, align: 'center', color: k === 1 ? C.accent : C.ink, alpha: la });
+    text(s, cx, SY + SH + 33, { size: 16, align: 'center', color: k === 1 ? C.accent : C.ink, alpha: la });
   });
-  lab('learns', slot(30), SY + SH + 52, T_SH + .85, { size: 14, color: C.muted, align: 'center' });
-  lab('tunes', (slot(60) + slot(79) + CWs) / 2, SY + SH + 52, T_SH + .9, { size: 14, color: C.muted, align: 'center' });
-  lab('used once, last', (slot(80) + slot(99) + CWs) / 2, SY + SH + 52, T_SH + .95, { size: 14, color: C.muted, align: 'center' });
+  lab('learns', slot(30), SY + SH + 55, T_SH + .85, { size: 16, color: C.body, align: 'center' });
+  lab('tunes', (slot(60) + slot(79) + CWs) / 2, SY + SH + 55, T_SH + .9, { size: 16, color: C.body, align: 'center' });
+  lab('used once, last', (slot(80) + slot(99) + CWs) / 2, SY + SH + 55, T_SH + .95, { size: 16, color: C.body, align: 'center' });
   // the data, by role, and the model fitted on the training 60
   const g = axes({ x: 760, y: 58, w: 212, h: 150, xlim: [0, 10], ylim: [-3, 4], xticks: [0, 5, 10], yticks: [-2, 0, 2, 4],
-    xlabel: 'x', ylabel: 'y', ylabelGap: 30, progress: seg(.1, .4) });
+    xlabel: 'x', ylabel: 'y', ylabelGap: 32, tickSize: 16, progress: seg(.1, .4) });
   const pa = seg(T_SH + .5, .4);
   g.inside(() => {
     line(DATA.xs.map((v, i) => [g.X(v), g.Y(DATA.fit[i])]), { color: C.navy, width: 2, progress: seg(T_SH + .7, .45) });
@@ -126,43 +137,43 @@ function draw() {
       if (r === 2) box(X - 2.8, Y - 2.8, 5.6, 5.6, { stroke: C.navy, width: 1.2, alpha: pa });
       else dot(X, Y, r === 1 ? 3.4 : 2.6, { color: r === 1 ? '#fff' : C.blue, fill: r === 1 ? C.accent : '#fff', width: r === 1 ? .8 : 1.1, alpha: pa }); });
   });
-  mlab(`\\rm{validation\\ RMSE}\\ ${nf(DATA.single.val, 2)}`, 760, 284, T_SH + 1.0, { size: 15 });
+  mlab(`\\rm{validation\\ RMSE}\\ ${nf(DATA.single.val, 2)}`, 760, 286, T_SH + 1.0, { size: 16 });
   // ================= (b) five rounds
   sub('b', 18, 318, '5-fold cross-validation on the 80%', seg(.1, .3));
   const RY = 350, RH = 24, RG = 10, TVX = SX;
   for (let k = 0; k < 5; k++) {
-    const y = RY + k * (RH + RG), ra = seg(T_CV + DR * k - .25, .3), on = fr < 0 || fr === k;
-    lab(`round ${k + 1}`, 18, y + RH / 2 + 5, T_CV + DR * k - .2, { size: 15, alpha: on ? 1 : .45 });
+    const y = RY + k * (RH + RG), ra = seg(T_CV + DR * k - .25, .3), on = bright(k);
+    lab(`round ${k + 1}`, 18, y + RH / 2 + 6, T_CV + DR * k - .2, { size: 16, alpha: .45 + .55 * on });
     for (let j = 0; j < 80; j++) {
       const fold = Math.floor(j / 16), isVal = fold === k, x = TVX + j * CWs + fold * 3;
       const flip = settle(T_CV + DR * k, .3);
-      ctx.save(); ctx.globalAlpha = ra * (on ? 1 : .4);
+      ctx.save(); ctx.globalAlpha = ra * (.4 + .6 * on);
       ctx.fillStyle = isVal ? mix('#A9C3DA', C.accent, flip) : C.mist; ctx.fillRect(x + .5, y, CWs - 1, RH); ctx.restore();
     }
     const tx = TVX + 80 * CWs + 4 * 3 + GAP;
     ctx.save(); ctx.globalAlpha = ra; ctx.fillStyle = C.steel2; ctx.fillRect(tx, y, 20 * CWs, RH); ctx.restore();
     // this round's score, as it arrives
     const s = settle(T_CV + DR * k + .15, .3);
-    if (s > 0) text(nf(DATA.cv[k], 2), tx + 20 * CWs + 16, y + RH / 2 + 5, { size: 15, color: on && fr === k ? C.accent : C.ink, alpha: s * (on ? 1 : .45) });
+    if (s > 0) text(nf(DATA.cv[k], 2), tx + 20 * CWs + 16, y + RH / 2 + 6, { size: 16, color: mix(C.ink, C.accent, foc(k)), alpha: s * (.45 + .55 * on) });
   }
   const tx = TVX + 80 * CWs + 4 * 3 + GAP;
-  lab('test, untouched', tx + 10 * CWs, RY - 8, T_CV, { size: 14, color: C.muted, align: 'center' });
-  lab('RMSE', tx + 20 * CWs + 16, RY - 8, T_CV, { size: 14, color: C.muted });
+  lab('test, untouched', tx + 10 * CWs, RY - 9, T_CV, { size: 16, color: C.body, align: 'center' });
+  lab('RMSE', tx + 20 * CWs + 16, RY - 9, T_CV, { size: 16, color: C.body });
   // the five scores on one axis, their mean, and the test score at the end
   const h = axes({ x: 760, y: RY, w: 212, h: 5 * RH + 4 * RG, xlim: [.5, 5.5], ylim: [.2, .8], xticks: [1, 2, 3, 4, 5], yticks: [.2, .4, .6, .8],
-    xlabel: '\\rm{round}', ylabel: '\\rm{RMSE}', ylabelGap: 35, progress: seg(T_CV - .3, .4), yfmt: v => nf(v, 1) });
+    xlabel: '\\rm{round}', ylabel: '\\rm{RMSE}', ylabelGap: 37, tickSize: 16, progress: seg(T_CV - .3, .4), yfmt: v => nf(v, 1) });
   const ma = seg(T_CV + 5 * DR, .4);
   h.inside(() => {
     if (ma > 0) { ctx.save(); ctx.globalAlpha = .5 * ma; ctx.fillStyle = C.steel; const y0 = h.Y(DATA.mean + DATA.sd), y1 = h.Y(DATA.mean - DATA.sd);
       ctx.fillRect(h.X(.5), y0, h.X(5.5) - h.X(.5), y1 - y0); ctx.restore();
       line([[h.X(.5), h.Y(DATA.mean)], [h.X(5.5), h.Y(DATA.mean)]], { color: C.navy, width: 1.4, dash: [5, 4], progress: ma }); }
     DATA.cv.forEach((v, k) => { const s = settle(T_CV + DR * k + .15, .3); if (s <= 0) return;
-      dot(h.X(k + 1), h.Y(v), 4.5, { color: '#fff', fill: fr === k ? C.accent : C.navy, width: 1.2, alpha: s }); });
+      dot(h.X(k + 1), h.Y(v), 4.5, { color: '#fff', fill: mix(C.navy, C.accent, foc(k)), width: 1.2, alpha: s }); });
   });
-  mlab(`\\rm{mean\\ of\\ the\\ 5\\ rounds}\\ \\ ${nf(DATA.mean, 2)}\\,\\pm\\,${nf(DATA.sd, 2)}`, SX, RY + 5 * RH + 4 * RG + 26, T_CV + 5 * DR + .1, { size: 15 });
-  mlab(`\\rm{test\\ set,\\ scored\\ once\\ at\\ the\\ end}\\ \\ ${nf(DATA.test, 2)}`, SX + 300, RY + 5 * RH + 4 * RG + 26, T_CV + 5 * DR + .3, { size: 15, color: C.navy });
-  text('100 examples, y = 2 sin(0.8 x) + 0.15 x + noise (sd 0.45); model: degree 5 polynomial; score: root mean square error',
-       18, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+  mlab(`\\rm{mean\\ of\\ the\\ 5\\ rounds}\\ \\ ${nf(DATA.mean, 2)}\\,\\pm\\,${nf(DATA.sd, 2)}`, SX, RY + 5 * RH + 4 * RG + 27, T_CV + 5 * DR + .1, { size: 16 });
+  mlab(`\\rm{test\\ set,\\ scored\\ once\\ at\\ the\\ end}\\ \\ ${nf(DATA.test, 2)}`, SX + 300, RY + 5 * RH + 4 * RG + 27, T_CV + 5 * DR + .3, { size: 16, color: C.navy });
+  text('y = 2 sin 0.8x + 0.15x + noise (sd 0.45); degree 5 fit',
+       18, H - 12, { size: 15, color: C.muted, alpha: seg(.6, .4) });
 }
 boot();
 """

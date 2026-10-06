@@ -674,7 +674,7 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 20, { size: 16, align: 'center', alpha: a });
   }
   if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }
@@ -723,9 +723,26 @@ function walk(pts, u) {            // position along a walk at lap time u
   return { p: [lerp(pts[i][0], pts[i + 1][0], f), lerp(pts[i][1], pts[i + 1][1], f)], i: f >= 1 ? i + 1 : i };
 }
 const POSTER_T = L0 + LEAD + 2 * STEP + GLIDE + .12;   // lap 1, three moves made: both panels at work
+/* the table's own action in each state: the one its walks take where they pass (the Q-values of the
+   two equally short routes agree to within 2e-7, so the page's four decimals cannot split them; the walks
+   carry the run's own choice), elsewhere the largest value */
+const ACT = Qt.map(argmax);
+LAPS.forEach(lp => lp.ta.forEach((a, i) => { ACT[lp.tab[i][1] * 5 + lp.tab[i][0]] = a; }));
+const tieWith = s => { const a = ACT[s]; let o = -1; for (let k = 0; k < 4; k++) if (k !== a && Math.abs(Qt[s][k] - Qt[s][a]) < 5e-5) o = k; return o; };
 /* ---- layout */
 const GA = { x: 30, y: 74, s: 170 }, PB = { x: 528, y: 74, s: 170 };
-const TX = 250, TW = [58, 41, 41, 41, 41], TY = 76, RH = 17.2;
+const TX = 240, TW = [62, 46, 46, 46, 46], TY = 76, RH = 27, NR = 11;    // the table: a window of NR of its 25 rows
+/* the window's first row, a real number: centred on the agent's row as it walks, gliding to the next
+   lap's start as that lap fades in */
+const rowOf = c => c[1] * 5 + c[0], top0 = r => clamp(r - (NR - 1) / 2, 0, 25 - NR);
+function tableTop(now) {
+  const lp = LAPS[now.k], pts = lp.tab, n = pts.length - 1;
+  if (now.pre) return top0(rowOf(pts[0]));
+  const s = now.u - LEAD, i = s <= 0 ? 0 : Math.min(n, Math.floor(s / STEP));
+  const r = i >= n ? rowOf(pts[n]) : lerp(rowOf(pts[i]), rowOf(pts[i + 1]), s <= 0 ? 0 : easeInOut(clamp((s - i * STEP) / GLIDE)));
+  if (now.u < FIN && (now.k > 0 || t - L0 >= CYCLE)) return lerp(top0(24), top0(r), easeInOut(now.u / FIN));
+  return top0(r);
+}
 const NX = [752, 810, 868, 918], NY = { in: [262, 328], hid: Array.from({ length: 12 }, (_, i) => 92 + i * 36), out: [220, 272, 324, 376] };
 function glyph(k, x, y, o = {}) { const d = MOVE[k], L = o.L || 7; arrow(x - d[0] * L, y + d[1] * L, x + d[0] * L, y - d[1] * L, { width: 1.4, head: 7, ...o }); }
 function draw() {
@@ -740,40 +757,48 @@ function draw() {
   for (let s = 0; s < 25; s++) {
     const x = s % 5, y = (s / 5) | 0, X = GA.x + x * cs, Y = GA.y + (4 - y) * cs;
     if (s === 24) { box(X, Y, cs, cs, { fill: C.accent, stroke: null, alpha: ga }); continue; }
-    glyph(argmax(Qt[s]), X + cs / 2, Y + cs / 2, { color: C.sky, alpha: ga, L: 8 });
+    glyph(ACT[s], X + cs / 2, Y + cs / 2, { color: C.sky, alpha: ga, L: 8 });
   }
   for (let i = 1; i < 5; i++) { line([[GA.x + i * cs, GA.y], [GA.x + i * cs, GA.y + GA.s]], { color: C.rule, width: 1, alpha: ga });
     line([[GA.x, GA.y + i * cs], [GA.x + GA.s, GA.y + i * cs]], { color: C.rule, width: 1, alpha: ga }); }
   box(GA.x, GA.y, GA.s, GA.s, { width: 1.4, progress: ga });
   if (!now.pre) dot(GA.x + tw.p[0] * cs, GA.y + (5 - tw.p[1]) * cs, 7, { color: '#fff', fill: C.navy, width: 2, alpha: fadeLap });
-  // the table: booktabs rules, one row per state, one column per action
-  const ta = seg(.12, .4), x1 = TX + TW.reduce((a, b) => a + b, 0);
+  // the table: booktabs rules, one row per state, one column per action; NR rows of the 25 show,
+  // the window following the agent's row (a row half out of it is not drawn)
+  const ta = seg(.12, .4), x1 = TX + TW.reduce((a, b) => a + b, 0), r0 = tableTop(now), yb = TY + 4 + NR * RH;
   line([[TX, TY - 18], [x1, TY - 18]], { width: 1.3, progress: ta });
   line([[TX, TY + 2], [x1, TY + 2]], { width: .8, progress: ta });
-  line([[TX, TY + 7 + 25 * RH], [x1, TY + 7 + 25 * RH]], { width: 1.3, progress: ta });
-  math('s', TX + TW[0] / 2, TY - 3, { size: 15, align: 'center', alpha: ta });
+  line([[TX, yb + 3], [x1, yb + 3]], { width: 1.3, progress: ta });
+  math('s', TX + TW[0] / 2, TY - 3, { size: 16, align: 'center', alpha: ta });
   for (let k = 0; k < 4; k++) glyph(k, TX + TW[0] + TW[1] * (k + .5), TY - 8, { alpha: ta, L: 6 });
-  for (let s = 0; s < 25; s++) {
-    const y = TY + 4 + (s + .78) * RH, ra = seg(.2 + s * .012, .3);
-    if (s === srow) { ctx.save(); ctx.globalAlpha = fadeLap; ctx.fillStyle = C.steel; ctx.fillRect(TX, TY + 4 + s * RH, x1 - TX, RH); ctx.restore(); }
-    math(`(${s % 5},\\,${(s / 5) | 0})`, TX + TW[0] / 2, y, { size: 14, align: 'center', alpha: ra, color: C.body });
-    const best = argmax(Qt[s]);
+  ctx.save(); ctx.beginPath(); ctx.rect(TX, TY + 4, x1 - TX, NR * RH); ctx.clip();
+  for (let s = Math.floor(r0); s <= Math.min(24, Math.floor(r0) + NR); s++) {
+    // a row whole in the window is drawn whole; leaving it, the row fades, gone before its ink meets
+    // the rules above (it is .35 of a row out) and below (.22 out)
+    const yr = TY + 4 + (s - r0) * RH, y = yr + .74 * RH, vis = clamp(Math.min((s - r0 + .35) / .2, (NR - .78 - (s - r0)) / .2));
+    const ra = seg(.2 + (s - r0) * .02, .3) * vis;
+    if (ra <= 0) continue;
+    if (s === srow) { ctx.save(); ctx.globalAlpha = fadeLap * vis; ctx.fillStyle = C.steel; ctx.fillRect(TX, yr, x1 - TX, RH); ctx.restore(); }
+    math(`(${s % 5},\\,${(s / 5) | 0})`, TX + TW[0] / 2, y, { size: 16, align: 'center', alpha: ra, color: C.body });
+    const best = ACT[s], tie = tieWith(s);
     for (let k = 0; k < 4; k++) {
-      const cx = TX + TW[0] + TW[1] * (k + .5);
-      text(nf(Qt[s][k], 2), cx, y, { size: 14, align: 'center', alpha: ra, color: s !== 24 && k === best ? C.ink : s === srow ? C.body : C.muted });
-      if (s === srow && s !== 24 && k === best) box(cx - 19, TY + 4 + s * RH + 1, 38, RH - 2, { stroke: C.navy, width: 1.8, alpha: fadeLap });
+      const cx = TX + TW[0] + TW[1] * (k + .5), top = s !== 24 && (k === best || k === tie);
+      text(nf(Qt[s][k], 2), cx, y, { size: 16, align: 'center', alpha: ra, color: top ? C.ink : s === srow ? C.body : C.muted });
+      if (s === srow && s !== 24 && k === best) box(cx - 21, yr + 2, 42, RH - 4, { stroke: C.navy, width: 1.8, alpha: fadeLap * vis });
     }
   }
-  // readout
-  const ra = seg(.45, .3);
+  ctx.restore();
+  lab(`${NR} of its 25 rows`, TX, yb + 27, .6, { size: 16, color: C.body });
+  // readout: the largest value, and the action it picks (two equal values: a tie, the walk's choice)
   if (srow >= 0) {
     mlab(`\\rm{state}\\ \\ s = (${cell[0]},\\,${cell[1]})`, GA.x, 306, .5, { size: 16, alpha: fadeLap });
-    if (srow !== 24) { const b = argmax(Qt[srow]);
-      text(`largest value ${nf(Qt[srow][b], 2)}:  ${WORD[b]}`, GA.x, 330, { size: 16, color: C.body, alpha: fadeLap }); }
+    if (srow !== 24) { const b = ACT[srow], o = tieWith(srow);
+      text(`largest value ${nf(Qt[srow][b], 2)}`, GA.x, 330, { size: 16, color: C.body, alpha: fadeLap });
+      text(o < 0 ? `takes ${WORD[b]}` : `takes ${WORD[b]} (a tie with ${WORD[o]})`, GA.x, 352, { size: 16, color: C.body, alpha: fadeLap }); }
     else text('goal reached', GA.x, 330, { size: 16, color: C.accent, alpha: fadeLap });
   }
-  lab('100 stored numbers,', GA.x, 362, .6, { size: 14, color: C.muted });
-  lab('25 states × 4 actions', GA.x, 380, .6, { size: 14, color: C.muted });
+  lab('100 stored numbers,', GA.x, 392, .6, { size: 16, color: C.body });
+  lab('25 states × 4 actions', GA.x, 413, .6, { size: 16, color: C.body });
   // ================= (b) the plane and the network
   const pc = PB.s / 5, pa = seg(.08, .4), P = v => [PB.x + v[0] * pc, PB.y + (5 - v[1]) * pc];
   box(PB.x + 4 * pc, PB.y, pc, pc, { fill: C.accent, stroke: null, alpha: pa });
@@ -786,12 +811,18 @@ function draw() {
   for (let i = 0; i <= 5; i++) {
     line([[PB.x + i * pc, PB.y + PB.s], [PB.x + i * pc, PB.y + PB.s - 4]], { width: 1, alpha: pa });
     line([[PB.x, PB.y + PB.s - i * pc], [PB.x + 4, PB.y + PB.s - i * pc]], { width: 1, alpha: pa });
-    text(String(i), PB.x + i * pc, PB.y + PB.s + 17, { size: 14, align: 'center', alpha: pa });
-    text(String(i), PB.x - 7, PB.y + PB.s - i * pc + 5, { size: 14, align: 'right', alpha: pa });
+    text(String(i), PB.x + i * pc, PB.y + PB.s + 18, { size: 16, align: 'center', alpha: pa });
+    text(String(i), PB.x - 7, PB.y + PB.s - i * pc + 6, { size: 16, align: 'right', alpha: pa });
   }
-  mlab('x', PB.x + PB.s / 2, PB.y + PB.s + 40, .4, { size: 16, align: 'center' });
-  mlab('y', PB.x - 26, PB.y + PB.s / 2 + 5, .4, { size: 16, align: 'right' });
-  const nw = walk(lp.net, now.u), pos = now.pre ? lp.net[0] : nw.p, A = forward(pos), qo = A[3];
+  mlab('x', PB.x + PB.s / 2, PB.y + PB.s + 42, .4, { size: 17, align: 'center' });
+  mlab('y', PB.x - 26, PB.y + PB.s / 2 + 5, .4, { size: 17, align: 'right' });
+  const nw = walk(lp.net, now.u);
+  let pos = now.pre ? lp.net[0] : nw.p;
+  if (!now.pre && now.u < FIN && (now.k > 0 || t - L0 >= CYCLE)) {   // a new lap: from the last lap's goal, gliding
+    const pl = LAPS[(now.k + LAPS.length - 1) % LAPS.length].net, pe = pl[pl.length - 1], e = easeInOut(now.u / FIN);
+    pos = [lerp(pe[0], pos[0], e), lerp(pe[1], pos[1], e)];
+  }
+  const A = forward(pos), qo = A[3];
   const atGoal = nw.i >= lp.net.length - 1, best = atGoal ? -1 : argmax(qo);
   if (!now.pre) { const [X, Y] = P(pos); dot(X, Y, 7, { color: '#fff', fill: C.navy, width: 2, alpha: fadeLap }); }
   // edges: how much each connection carries for this state, |w a|, in blue (+) or grey (-)
@@ -815,16 +846,20 @@ function draw() {
   for (let k = 0; k < 4; k++) {
     const y = NY.out[k], on = k === best && !now.pre;
     glyph(k, NX[3] + 22, y, { alpha: seg(.4, .3), color: on ? C.navy : C.ink });
-    text(nf(qo[k], 2), NX[3] + 36, y + 5, { size: 14, color: on ? C.ink : C.muted, alpha: seg(.4, .3) });
+    text(nf(qo[k], 2), NX[3] + 36, y + 6, { size: 16, color: on ? C.ink : C.body, alpha: seg(.4, .3) });
   }
   cbar(NX[0] + 20, 518, 110, 8, SIGNED, -1, 1, [-1, 0, 1], '\\rm{activation}', seg(.6, .4), v => v === 0 ? '0' : nf(v, 0));
   if (!now.pre) {
     mlab(`(x,\\,y) = (${nf(pos[0], 2)},\\,${nf(pos[1], 2)})`, PB.x, 306, .5, { size: 16, alpha: fadeLap });
-    const w = nw.i >= lp.net.length - 1 ? 'goal reached' : `largest output ${nf(qo[best], 2)}:  ${WORD[best]}`;
-    text(w, PB.x, 330, { size: 16, color: nw.i >= lp.net.length - 1 ? C.accent : C.body, alpha: fadeLap });
+    if (atGoal) text('goal reached', PB.x, 330, { size: 16, color: C.accent, alpha: fadeLap });
+    else {     // two outputs equal to two decimals: three decimals, and the runner up named
+      const o2 = argmax(qo.map((v, k) => k === best ? -Infinity : v)), close = nf(qo[best], 2) === nf(qo[o2], 2);
+      text(`largest output ${nf(qo[best], close ? 3 : 2)}`, PB.x, 330, { size: 16, color: C.body, alpha: fadeLap });
+      text(close ? `takes ${WORD[best]} (${WORD[o2]} ${nf(qo[o2], 3)})` : `takes ${WORD[best]}`, PB.x, 352, { size: 16, color: C.body, alpha: fadeLap });
+    }
   }
-  lab(`${DATA.npar} learned parameters,`, PB.x, 362, .6, { size: 14, color: C.muted });
-  mlab('\\rm{for any real}\\ (x,\\,y)', PB.x, 380, .6, { size: 14, color: C.muted });
+  lab(`${DATA.npar} learned parameters,`, PB.x, 392, .6, { size: 16, color: C.body });
+  mlab('\\rm{for any real}\\ (x,\\,y)', PB.x, 413, .6, { size: 16, color: C.body });
 }
 const FIELD = []; for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) FIELD.push(forward([(i + .5) / 2, (j + .5) / 2])[3]);
 boot();

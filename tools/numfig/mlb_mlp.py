@@ -131,6 +131,11 @@ say("THE THREE FLOWERS SHOWN (held out)")
 for f in FL:
     say(f"  {iris.target_names[f['sp']]:10s} {np.round(f['raw'], 1).tolist()} cm -> p = {np.round(f['p'], 4).tolist()}")
 say(f"  their probabilities sum to {[round(float(f['p'].sum()), 12) for f in FL]}")
+say("")
+say("THE PAGE")
+say("  a neuron's fill is the value it computes for the flower passing through, in the weights' colours")
+say("  (the key 'neuron value', -1 to 1): a hidden neuron its tanh output, an output neuron its probability,")
+say("  an input neuron half its standardized value (two standard deviations fill it fully).")
 mc.check(NAME, Lc)
 
 S = np.array(snaps)
@@ -173,7 +178,7 @@ function draw() {
   weightsAt(e);
   const la = lab(.08);
   ['input layer', 'hidden layer 1', 'hidden layer 2', 'output layer'].forEach((s, k) =>
-    text(s, LX[k], 44 + rise(lab(.05 * k)), { size: 16, color: C.body, align: 'center', alpha: lab(.05 * k) }));
+    text(s, LX[k], 44 + rise(lab(.05 * k)), { size: 17, color: C.body, align: 'center', alpha: lab(.05 * k) }));
   // the forward pass: which flower, and how far the data has flowed
   let fl = -1, fp = 0, fade = 1;
   if (tt >= T_FW && tt < T_BACK) { fl = Math.floor((tt - T_FW) / FP); fp = tt - T_FW - fl * FP; fade = 1 - easeInOut(clamp((fp - (FP - .3)) / .28)); }
@@ -205,19 +210,19 @@ function draw() {
   // the four measurements, and the flower's values
   D.features.forEach((f, i) => {
     const a = lab(.12 + .04 * i), y = NY[0][i];
-    text(f, LX[0] - R - 12, y - 3 + rise(a), { size: 15, color: C.body, align: 'right', alpha: a });
-    if (F) math(`${F.raw[i].toFixed(1)}\\,\\rm{cm}`, LX[0] - R - 12, y + 16, { size: 15, align: 'right', alpha: layerOn[0] * fade });
+    text(f, LX[0] - R - 12, y - 4 + rise(a), { size: 16, color: C.body, align: 'right', alpha: a });
+    if (F) math(`${F.raw[i].toFixed(1)}\\,\\rm{cm}`, LX[0] - R - 12, y + 17, { size: 16, align: 'right', alpha: layerOn[0] * fade });
   });
   // the three species and their probabilities
   D.names.forEach((s, j) => {
     const a = lab(.3 + .04 * j), y = NY[3][j], x = LX[3] + R + 12;
     const win = F && j === F.p.indexOf(Math.max(...F.p)) && layerOn[3] >= 1;
-    text(s, x, y + 5 + rise(a), { size: 15, color: win ? C.ink : C.body, bold: !!win, alpha: a });
+    text(s, x, y + 5 + rise(a), { size: 16, color: win ? C.ink : C.body, bold: !!win, alpha: a });
     if (F && layerOn[3] > 0) {
-      const p = F.p[j] * easeOut(layerOn[3]), bw = 76 * p, bx = x + 84;
+      const p = F.p[j] * easeOut(layerOn[3]), bw = 72 * p, bx = x + 84;
       rect(bx, y - 6, Math.max(.5, bw), 12, { fill: C.blue, stroke: null, alpha: fade });
-      rect(bx, y - 6, 76, 12, { fill: null, stroke: C.rule, width: 1, alpha: fade });
-      math(F.p[j].toFixed(2), bx + 82, y + 5, { size: 15, alpha: layerOn[3] * fade });
+      rect(bx, y - 6, 72, 12, { fill: null, stroke: C.rule, width: 1, alpha: fade });
+      math(F.p[j].toFixed(2), bx + 78, y + 6, { size: 16, alpha: layerOn[3] * fade });
     }
   });
 
@@ -225,12 +230,12 @@ function draw() {
   const PA = { x: 92, y: 468, w: 330, h: 104 };
   text('prediction error', PA.x, 452 + rise(lab(.3)), { size: 16, color: C.body, alpha: lab(.3) });
   const G = axes({ ...PA, xlim: [0, D.epochs], ylim: [0, 1], xticks: [0, 100, 200, 300], yticks: [0, .5, 1],
-    yfmt: v => v === .5 ? '0.5' : fmt(v), xlabel: '\\rm{epoch}', progress: seg(.2, .35), grid: true });
+    yfmt: v => v === .5 ? '0.5' : fmt(v), xlabel: '\\rm{epoch}', tickSize: 16, progress: seg(.2, .35), grid: true });
   const upto = Math.round(e), pts = [];
   for (let i = 0; i <= upto; i++) pts.push([G.X(i), G.Y(Math.min(1, D.loss[i]))]);
   G.inside(() => line(pts, { color: C.blue, width: 2.2 }));
   if (tt >= T_TR) dot(G.X(e), G.Y(Math.min(1, D.loss[upto])), 3.6, { color: '#fff', fill: C.blue, width: 1.2 });
-  math(`\\rm{cross\\ entropy}\\ \\ ${D.loss[upto].toFixed(3)}`, PA.x + PA.w, 452 + rise(lab(.3)), { size: 15, color: C.blue, align: 'right', alpha: lab(.3) });
+  math(`\\rm{cross\\ entropy}\\ \\ ${D.loss[upto].toFixed(3)}`, PA.x + PA.w, 452 + rise(lab(.3)), { size: 16, color: C.blue, align: 'right', alpha: lab(.3) });
 
   /* what is happening now */
   const SX0 = 500, sa = lab(.35);
@@ -246,8 +251,21 @@ function draw() {
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.6, alpha: a }), 'negative weight'],
     [(x, y, a) => { line([[x - 12, y - 4], [x + 12, y - 4]], { color: C.ink, width: .6, alpha: a }); line([[x - 12, y + 3], [x + 12, y + 3]], { color: C.ink, width: 3, alpha: a }); }, 'width: size of weight'],
   ], { alpha: lab(.4) });
-  text(`iris flowers (Fisher); network 4-5-5-3, tanh, softmax; gradient descent; right: ${D.acc[0]}/120 train, ${D.acc[1]}/30 held out`,
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  { // the key of the neurons' fill: the value each computes, in the weights' colours
+    const ka = lab(.45), x0 = 846, w = 124, y0 = 568;
+    if (ka > 0) {
+      ctx.save(); ctx.globalAlpha *= ka;
+      for (let i = 0; i < w; i++) { ctx.fillStyle = vcol(-1 + 2 * i / (w - 1)); ctx.fillRect(x0 + i, y0, 1.5, 10); }
+      ctx.restore();
+      rect(x0, y0, w, 10, { stroke: C.ink, width: 1, alpha: ka });
+      for (const v of [-1, 0, 1]) { const xx = x0 + (v + 1) / 2 * w;
+        line([[xx, y0 + 10], [xx, y0 + 14]], { color: C.ink, width: 1, alpha: ka });
+        math(fmt(v), xx, y0 + 31, { size: 16, align: 'center', alpha: ka }); }
+      text('neuron value', x0 - 12, y0 + 10, { size: 16, align: 'right', alpha: ka });
+    }
+  }
+  text(`iris, 4-5-5-3 tanh; correct: ${D.acc[0]}/120 train, ${D.acc[1]}/30 held out`,
+       18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """

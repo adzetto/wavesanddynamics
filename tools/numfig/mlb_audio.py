@@ -253,7 +253,7 @@ function draw() {
   /* waveform */
   text('waveform', LX, WAV.y - 12 + rise(la), { size: 16, color: C.body, alpha: la });
   const Aw = axes({ x: LX, y: WAV.y, w: LW, h: WAV.h, xlim: [0, 1], ylim: [-1.1, 1.1], xticks: [0, .2, .4, .6, .8, 1], yticks: [-1, 0, 1],
-    xfmt: () => '', ylabel: '\\rm{pressure}', ylabelGap: 40, progress: seg(0, .35) });
+    xfmt: () => '', ylabel: '\\rm{pressure}', ylabelGap: 42, tickSize: 16, progress: seg(0, .35) });
   if (din > 0) {
     ctx.save(); ctx.globalAlpha *= din * fin; ctx.strokeStyle = C.navy; ctx.lineWidth = 1; ctx.beginPath();
     const n = C_.wmin.length;
@@ -270,24 +270,26 @@ function draw() {
   text('spectrogram', LX, SPC.y - 12 + rise(lab(.1)), { size: 16, color: C.body, alpha: lab(.1) });
   drawImage(I_.spec, SPC.y, SPC.h, u >= SW0 ? cur : 0, fin);
   axes({ x: LX, y: SPC.y, w: LW, h: SPC.h, xlim: [0, 1], ylim: [0, 4], xticks: [0, .2, .4, .6, .8, 1], yticks: [0, 1, 2, 3, 4],
-    xfmt: () => '', ylabel: 'f\\ (\\rm{kHz})', ylabelGap: 34, progress: seg(.05, .35) });
+    xfmt: () => '', ylabel: 'f\\ (\\rm{kHz})', ylabelGap: 36, tickSize: 16, progress: seg(.05, .35) });
   /* the three filters and their maps */
   text('convolution filters', KX, SPC.y + SPC.h + 26 + rise(lab(.18)), { size: 16, color: C.body, alpha: lab(.18) });
   text('local patterns', LX, SPC.y + SPC.h + 26 + rise(lab(.15)), { size: 16, color: C.body, alpha: lab(.15) });
   for (let k = 0; k < 3; k++) {
     const y = MY[k], a = seg(.1 + .04 * k, .35);
     drawImage(I_.maps[k], y, MH, u >= SW0 ? cur : 0, fin);
-    axes({ x: LX, y, w: LW, h: MH, xlim: [0, 1], ylim: [0, 4], xticks: [0, .2, .4, .6, .8, 1], yticks: [],
-      xfmt: k === 2 ? (v => v === 0 ? '0' : v.toFixed(1)) : (() => ''), xlabel: k === 2 ? '\\rm{time}\\ \\ t\\ (\\rm{s})' : '', progress: a });
+    // the same frequency axis as the spectrogram's: ticks at 1 and 3 kHz, the label once for the three
+    axes({ x: LX, y, w: LW, h: MH, xlim: [0, 1], ylim: [0, 4], xticks: [0, .2, .4, .6, .8, 1], yticks: [1, 3],
+      xfmt: k === 2 ? (v => v === 0 ? '0' : v.toFixed(1)) : (() => ''), xlabel: k === 2 ? '\\rm{time}\\ \\ t\\ (\\rm{s})' : '',
+      ylabel: k === 1 ? 'f\\ (\\rm{kHz})' : '', ylabelGap: 36, tickSize: 16, progress: a });
     // the kernel, as a picture of its weights (higher frequency up, as in the spectrogram)
     cells(KX, y + 2, 9, 9, KS, (i, j) => signed(D.kern[k][(8 - i) * 9 + j] / .12 * 2 / 3),
           { alpha: a, gridColor: null, frame: C.ink, frameWidth: 1 });
-    text(D.kn[k], KX + 9 * KS + 12, y + 18 + rise(lab(.2 + .04 * k)), { size: 15, alpha: lab(.2 + .04 * k) });
+    text(D.kn[k], KX + 9 * KS + 12, y + 18 + rise(lab(.2 + .04 * k)), { size: 16, alpha: lab(.2 + .04 * k) });
     // global average pooling: each map becomes one number, its mean
     const pa = u < PL0 ? 0 : clamp((u - PL0) / .3) * fin;
     if (pa > 0) {
       rect(LX, y, LW, MH, { stroke: C.accent, width: 1.6, alpha: pa * (1 - clamp((u - PL0 - .5) / .4)) });
-      math(`\\rm{mean}\\ \\ ${C_.feat[k].toFixed(3)}`, KX + 9 * KS + 12, y + 42, { size: 15, color: mixHex(C.accent, C.body, clamp((u - PL0 - .5) / .4)), alpha: pa });
+      math(`\\rm{mean}\\ \\ ${C_.feat[k].toFixed(3)}`, KX + 9 * KS + 12, y + 43, { size: 16, color: mixHex(C.accent, C.body, clamp((u - PL0 - .5) / .4)), alpha: pa });
     }
   }
   if (sweeping) for (const [y, h] of [[SPC.y, SPC.h], [MY[0], MY[2] + MH - MY[0]]]) {
@@ -302,7 +304,7 @@ function draw() {
   const ea = seg(.3, .35);
   for (let k = 0; k < 3; k++) for (let i = 0; i < 4; i++) {
     const w = D.W1[k][i], a = Math.min(1, Math.abs(w) / 3);
-    line([[KX + 9 * KS + 118, MY[k] + 37], [DX - 9, HY(i)]], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
+    line([[KX + 9 * KS + 126, MY[k] + 37], [DX - 9, HY(i)]], { color: w >= 0 ? S_POS : S_NEG, width: .5 + 2 * a, alpha: (.2 + .5 * a) * ea });
   }
   for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
     const w = D.W2[i][j], a = Math.min(1, Math.abs(w) / 3);
@@ -313,18 +315,18 @@ function draw() {
   for (let j = 0; j < 2; j++) {
     const y = OY(j), a = seg(.36 + .04 * j, .3), win = j === pred && ot >= 1;
     node(OX, y, 11, { fill: mixHex('#FFFFFF', C.blue, ot * fin * C_.p[j]), width: 1.3, alpha: a });
-    text(names[j], OX + 18, y - 4, { size: 15, bold: win, color: win ? C.accent : C.ink, alpha: a });
+    text(names[j], OX + 18, y - 4, { size: 16, bold: win, color: win ? C.accent : C.ink, alpha: a });
     rect(OX + 18, y + 5, 60, 10, { stroke: C.rule, width: .8, alpha: a });
     if (ot > 0) rect(OX + 18, y + 5, Math.max(.4, 60 * C_.p[j] * easeOut(ot)), 10, { fill: win ? C.accent : C.blue, stroke: null, alpha: fin });
-    if (ot > 0) math(C_.p[j].toFixed(2), OX + 84, y + 14, { size: 14, color: win ? C.accent : C.body, alpha: ot * fin });
+    if (ot > 0) math(C_.p[j].toFixed(2), OX + 84, y + 15, { size: 16, color: win ? C.accent : C.body, alpha: ot * fin });
   }
   // what the line colours mean: the weights' signs
-  legend(OX - 70, 436, 158, [
+  legend(OX - 70, 436, 162, [
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_POS, width: 2.2, alpha: a }), 'positive weight'],
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: S_NEG, width: 2.2, alpha: a }), 'negative weight'],
   ], { alpha: lab(.4) });
-  text(`synthetic gearbox sound, 8 kHz; STFT Hann 16 ms, hop 4 ms; dense 3-4-2 trained on 300 clips, ${D.acc[1]}/100 held out right`,
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  text(`synthetic gearbox, 8 kHz; Hann 16 ms; ${D.acc[1]}/100 held out right`,
+       18, H - 10, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """

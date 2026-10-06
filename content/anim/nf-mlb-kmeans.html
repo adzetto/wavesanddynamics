@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -779,7 +779,7 @@ const MR = { circle: 3.9, square: 3.4, triangle: 4.8 };
 function draw() {
   const st = state(), CN = centersNow(st);
   const A = axes({ ...AX, xlim: [-XL, XL], ylim: [-XL, XL], xticks: [-2, -1, 0, 1, 2], yticks: [-2, -1, 0, 1, 2],
-    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 34, progress: seg(0, .35) });
+    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 36, tickSize: 16, progress: seg(0, .35) });
   // the cells' edges, from the centers the points are being assigned to
   A.inside(() => voronoi(CN, (st.it > 0 ? 1 : seg(.5, .3)) * (1 - st.reset) * lab(.45)));
   // trails: where each center has been
@@ -816,7 +816,7 @@ function draw() {
   // the centers
   for (let k = 0; k < 3; k++) {
     const a = settle(.3 + .05 * k, .28);
-    cross(SX(CN[k][0]), SY(CN[k][1]) + rise(a), 8, { color: GRP[k][0], width: 3.2, alpha: a });
+    cross(SX(CN[k][0]), SY(CN[k][1]) + rise(a), 8, { color: C.ink, width: 3.2, alpha: a });
   }
 
   /* the side: what the algorithm is doing, and the sum of squares falling */
@@ -829,17 +829,23 @@ function draw() {
   if (st.it > 0 && st.it <= NIT) words = st.m > 0 ? 'centers move to the mean' : 'points join the nearest center';
   if (st.it > NIT) words = 'no point changes group';
   const done = st.it > NIT && st.reset === 0;
-  if (st.reset > 0) words = 'centers start at random points';
-  const wa = lab(.3);
-  text(done ? 'converged' : `iteration ${st.reset > 0 ? 1 : itShow}`, TX, 108 + rise(wa), { size: 17, bold: done, color: done ? C.accent : C.ink, alpha: wa });
-  text(words, TX, 134 + rise(wa), { size: 16, color: C.body, alpha: wa });
+  const wa = lab(.3), was = clamp(1 - 2 * st.reset), now = clamp(2 * st.reset - 1);
+  if (st.reset > 0) {          // the converged words fade out, then the first iteration's fade in
+    text('converged', TX, 108, { size: 17, bold: true, color: C.accent, alpha: wa * was });
+    text('no point changes group', TX, 134, { size: 16, color: C.body, alpha: wa * was });
+    text('iteration 1', TX, 108, { size: 17, alpha: wa * now });
+    text('centers start at random points', TX, 134, { size: 16, color: C.body, alpha: wa * now });
+  } else {
+    text(done ? 'converged' : `iteration ${itShow}`, TX, 108 + rise(wa), { size: 17, bold: done, color: done ? C.accent : C.ink, alpha: wa });
+    text(words, TX, 134 + rise(wa), { size: 16, color: C.body, alpha: wa });
+  }
   // the sum of squared distances after each move
   const G = axes({ x: TX + 46, y: 190, w: 300, h: 150, xlim: [.5, NIT + .5], ylim: [0, 200],
     xticks: Array.from({ length: NIT }, (_, i) => i + 1), yticks: [0, 50, 100, 150, 200],
-    xlabel: '\\rm{iteration}', ylabel: '', progress: seg(.1, .35), grid: true });
+    xlabel: '\\rm{iteration}', ylabel: '', tickSize: 16, progress: seg(.1, .35), grid: true });
   const shown = st.it === 0 ? 0 : st.it > NIT ? NIT : st.it - 1 + (st.m > .5 ? 1 : 0);
-  const sw = text('sum of squared distances', TX, 174 + rise(la), { size: 15, color: C.body, alpha: la });
-  if (shown > 0) math(D.ju[shown - 1].toFixed(1), TX + sw + 10, 174 + rise(la), { size: 15, color: C.blue, alpha: la * (1 - st.reset) });
+  const sw = text('sum of squared distances', TX, 172 + rise(la), { size: 16, color: C.body, alpha: la });
+  if (shown > 0) math(D.ju[shown - 1].toFixed(1), TX + sw + 10, 172 + rise(la), { size: 16, color: C.blue, alpha: la * (1 - st.reset) });
   const gp = [];
   for (let i = 0; i < shown; i++) gp.push([G.X(i + 1), G.Y(D.ju[i])]);
   const ga = 1 - st.reset;
@@ -851,8 +857,8 @@ function draw() {
     [(x, y, a) => cross(x, y, 6, { color: C.ink, width: 2.6, alpha: a }), 'cluster center'],
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.ink, width: 1.4, dash: [4, 3], alpha: a }), 'path of a center'],
   ], { alpha: lab(.45) });
-  math('\\rm{150 synthetic customers, two standardized features;}\\ K = 3\\rm{; Euclidean distance}', 18, H - 12,
-       { size: 14, color: C.muted, alpha: lab(.5) });
+  text('150 synthetic customers, standardized; Euclidean distance', 18, H - 12,
+       { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 </script>

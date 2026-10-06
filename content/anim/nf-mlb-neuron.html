@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -776,10 +776,10 @@ const POSTER_T = T_IN + simT(4).to + .5;                   // the first neuron o
 function at(sw, f) { const tt = t; t = sw; try { f(); } finally { t = tt; } }
 
 /* ================================================ the network, left */
-const NX = [164, 244, 324, 404], NYC = 212, NG = 46;
-const NR = L => L ? 13 : 12;
+const NX = [174, 254, 334, 414], NYC = 212, NG = 46;
+const NR = L => 15;
 const NY = (L, i) => NYC + (i - (SZ[L] - 1) / 2) * NG;
-const TBL = { name: 96, val: 144 };                        // the inputs' table: names, then values
+const TBL = { name: 100, val: 152 };                        // the inputs' table: names, then values
 function ownEdges(k, s, T0, fa) {                          // the chosen neuron's connections, flowing with its view
   const N = NEU[k];
   if (N.L === 0) {
@@ -803,7 +803,7 @@ function network(st, s, T0, fo) {
   const k = st.k, N = NEU[k];
   ['input', 'hidden 1', 'hidden 2', 'output'].forEach((h, L) => {
     const a = lab(.03 * L);
-    text(h, NX[L], NY(1, 0) - NR(1) - 15 + rise(a), { size: 15, color: C.body, align: 'center', alpha: a });
+    text(h, NX[L], NY(1, 0) - NR(1) - 15 + rise(a), { size: 16, color: C.body, align: 'center', alpha: a });
   });
   // every connection, faint: the chosen neuron's own stand out
   for (let m = 0; m < 3; m++) {
@@ -821,21 +821,21 @@ function network(st, s, T0, fo) {
     const kk = kOf(L, i), a = settle(.03 + .05 * L + .012 * i, S), me = kk === k, r = NR(L);
     const fill = L ? vcol(valAt(s, L, i)) : '#FFFFFF';
     node(NX[L], NY(L, i), r * (.6 + .4 * a), { fill, stroke: C.ink, width: me ? 2.4 : 1.2, alpha: a });
-    if (!L) math(`x_{${i + 1}}`, NX[0] - 1, NY(0, i) + 5, { size: 14, align: 'center', alpha: a });
+    if (!L) math(`x_{${i + 1}}`, NX[0] - 1, NY(0, i) + 2, { size: 18, align: 'center', alpha: a });
     if (me) dot(NX[L], NY(L, i), r + 5, { color: C.navy, fill: null, width: 1.6, alpha: lab(T0) });
     else if (HN === kk) dot(NX[L], NY(L, i), r + 5, { color: C.guide, fill: null, width: 1.2 });
   }
   // the flower's four measurements, a small table beside the input neurons
   D.feat.forEach((f, i) => {
     const a = lab(.08 + .03 * i), y = NY(0, i) + 5, on = k === i;
-    text(f, TBL.name, y + rise(a), { size: 15, color: on ? C.ink : C.body, align: 'right', alpha: a });
-    math(`${D.cm[i]}\\,\\rm{cm}`, TBL.val, y + rise(a), { size: 15, align: 'right', alpha: a });
+    text(f, TBL.name, y + rise(a), { size: 16, color: on ? C.ink : C.body, align: 'right', alpha: a });
+    math(`${D.cm[i]}\\,\\rm{cm}`, TBL.val, y + rise(a), { size: 16, align: 'right', alpha: a });
   });
   D.species.forEach((sp, j) => text(sp, NX[3] + NR(3) + 9, NY(3, j) + 5,
-    { size: 15, color: k === kOf(3, j) ? C.ink : C.body, alpha: lab(.2 + .03 * j) }));
+    { size: 16, color: k === kOf(3, j) ? C.ink : C.body, alpha: lab(.2 + .03 * j) }));
   const fa = lab(.3);
-  text('held out versicolor flower', 18, NY(1, 4) + NR(1) + 32, { size: 15, color: C.body, alpha: fa });
-  if (!STILL) text(TAP ? 'tap any neuron' : 'click any neuron', NX[3] + 84, NY(1, 4) + NR(1) + 32, { size: 14, color: C.muted, align: 'right', alpha: fa });
+  text('held out versicolor flower', 18, NY(1, 4) + NR(1) + 32, { size: 16, color: C.body, alpha: fa });
+  if (!STILL) text(TAP ? 'tap any neuron' : 'click any neuron', NX[3] + 84, NY(1, 4) + NR(1) + 32, { size: 15, color: C.muted, align: 'right', alpha: fa });
 }
 
 /* ================================================ the chosen neuron, right */
@@ -847,10 +847,10 @@ const rowY = (i, n) => YM + (i - (n - 1) / 2) * ROW;
 const EY = 402;                                            // the equations
 function rim(x, y) { const dx = XS - x, dy = YM - y, d = Math.hypot(dx, dy); return [XS - dx / d * RS, YM - dy / d * RS]; }
 function neuronView(k, T0, s, fa) {
-  const N = NEU[k], n = SZ[N.L - 1], T = simT(n), out = N.L === 3;
+  const N = NEU[k], n = SZ[N.L - 1], T = simT(n), out = N.L === 3, xv = N.L === 1 ? 'x' : 'h';
   const la = o => lab(T0 + o) * fa, sk = seg(T0 + .02, .35);
   text(nName(k), XR, 84 + rise(la(0)), { size: 17, color: C.body, alpha: la(0) });
-  text(`from ${LAYER[N.L - 1]}`, XI, rowY(0, n) - 30, { size: 15, color: C.body, align: 'center', alpha: la(.04) });
+  text(`from ${LAYER[N.L - 1]}`, XI, rowY(0, n) - 31, { size: 16, color: C.body, align: 'center', alpha: la(.04) });
   for (let i = 0; i < n; i++) {
     const y = rowY(i, n), w = wAt(s, N.L, i, N.j), x = valAt(s, N.L - 1, i), t1 = T0 + T.f0 + T.fs * i;
     const fl = seg(t1, T.fd), wd = 1.2 + 3 * wfrac(w);
@@ -858,13 +858,13 @@ function neuronView(k, T0, s, fa) {
     // the input times its weight: an arrow growing to the product, in the weight's colour and width
     if (fl > 0) arrow(XW0, y, lerp(XW0 + 12, XW1, fl), y, { color: wcol(w), width: wd, head: 7 + 1.5 * wd, alpha: .92 * fa });
     // the weight, above its line
-    const a = la(.1 + .03 * i), lbl = `w_{${i + 1}} = ${num(w)}`, lw = math(lbl, 0, -1e4, { size: 15, alpha: 0 });
-    if (HOV === i) rect(XWL - lw / 2 - 5, y - 26, lw + 10, 20, { fill: C.steel, stroke: null, alpha: a });
-    math(lbl, XWL, y - 11, { size: 15, align: 'center', color: HOV === i ? C.ink : C.body, alpha: a });
+    const a = la(.1 + .03 * i), lbl = `w_{${i + 1}} = ${num(w)}`, lw = math(lbl, 0, -1e4, { size: 16, alpha: 0 });
+    if (HOV === i) rect(XWL - lw / 2 - 5, y - 29, lw + 10, 23, { fill: C.steel, stroke: null, alpha: a });
+    math(lbl, XWL, y - 12, { size: 16, align: 'center', color: HOV === i ? C.ink : C.body, alpha: a });
     // the input
     const na = settle(T0 + .03 * i, S);
     node(XI, y, 15 * (.6 + .4 * na), { fill: '#fff', alpha: na * fa });
-    math(`x_{${i + 1}}`, XI, y + 6, { size: 16, align: 'center', alpha: na * fa });
+    math(`${xv}_{${i + 1}}`, XI, y + 5, { size: 18, align: 'center', alpha: na * fa });
     math(num(x), XI - 22, y + 6, { size: 16, align: 'right', alpha: la(.08 + .03 * i) });
     // the product arrives, then goes on to the sum
     const tp = t1 + T.fd, [ex, ey] = rim(XP + 23, y);
@@ -876,9 +876,9 @@ function neuronView(k, T0, s, fa) {
   node(XS, YM, RS * (.6 + .4 * sa), { fill: '#fff', alpha: sa * fa });
   math('\\Sigma', XS, YM + 8, { size: 24, align: 'center', alpha: sa * fa });
   arrow(XS, YM + 84, XS, YM + RS + 3, { color: C.ink, width: 1.3, head: 8, alpha: sk * fa });
-  const bl = `b = ${num(bAt(s, N.L, N.j))}`, ba = la(.16), bw = math(bl, 0, -1e4, { size: 15, alpha: 0 });
-  if (HOV === n) rect(XS - bw / 2 - 5, YM + 89, bw + 10, 20, { fill: C.steel, stroke: null, alpha: ba });
-  math(bl, XS, YM + 104, { size: 15, align: 'center', color: HOV === n ? C.ink : C.body, alpha: ba });
+  const bl = `b = ${num(bAt(s, N.L, N.j))}`, ba = la(.16), bw = math(bl, 0, -1e4, { size: 16, alpha: 0 });
+  if (HOV === n) rect(XS - bw / 2 - 5, YM + 88, bw + 10, 22, { fill: C.steel, stroke: null, alpha: ba });
+  math(bl, XS, YM + 104, { size: 16, align: 'center', color: HOV === n ? C.ink : C.body, alpha: ba });
   const bp = seg(T0 + T.tb, .4);
   if (bp > 0 && bp < 1) dot(XS, lerp(YM + 84, YM + RS + 3, bp), 3.6, { color: '#fff', fill: C.ink, width: 1.2, alpha: fa });
   math(out ? `z_{${N.j + 1}}` : 'z', XS + 17, YM - RS - 6, { size: 17, alpha: sa * fa });
@@ -893,7 +893,7 @@ function neuronView(k, T0, s, fa) {
     for (let q = 0; q <= 72; q++) { const z = xl[0] + (xl[1] - xl[0]) * q / 72; pts.push([A.X(z), A.Y(f(z))]); }
     line(pts, { color: C.blue, width: 2.2, progress: seg(T0 + .12, .4), alpha: fa });
   });
-  text(out ? 'softmax' : 'tanh', BOX.x + BOX.w / 2, BOX.y - 10, { size: 15, color: C.body, align: 'center', alpha: la(.2) });
+  text(out ? 'softmax' : 'tanh', BOX.x + BOX.w / 2, BOX.y - 10, { size: 16, color: C.body, align: 'center', alpha: la(.2) });
   arrow(XS + RS + 2, YM, BOX.x - 3, YM, { color: C.ink, width: 1.3, head: 8, alpha: sk * fa });
   const z = zAt(s, k), av = outAt(s, k), zp = seg(T0 + T.tz, .3);
   if (zp > 0 && zp < 1) dot(lerp(XS + RS + 2, BOX.x - 3, zp), YM, 3.6, { color: '#fff', fill: C.ink, width: 1.2, alpha: fa });
@@ -909,11 +909,11 @@ function neuronView(k, T0, s, fa) {
   if (oq > 0 && oq < 1) dot(lerp(BOX.x + BOX.w + 3, XO - RO - 3, oq), YM, 3.6, { color: '#fff', fill: C.ink, width: 1.2, alpha: fa });
   const oa = settle(T0 + .14, S);
   node(XO, YM, RO * (.6 + .4 * oa), { fill: mixHex('#FFFFFF', vcol(av), seg(T0 + T.to, .3)), alpha: oa * fa });
-  text('output', XO, YM - RO - 12, { size: 15, color: C.body, align: 'center', alpha: la(.2) });
+  text('output', XO, YM - RO - 12, { size: 16, color: C.body, align: 'center', alpha: la(.2) });
   math(out ? av.toFixed(3) : num(av), XO, YM + RO + 24, { size: 17, align: 'center', alpha: lab(T0 + T.to) * fa });
   // the same, as equations
   const zl = out ? `z_{${N.j + 1}}` : 'z';
-  const terms = Array.from({ length: n }, (_, i) => `w_{${i + 1}}x_{${i + 1}}`).join(' + ');
+  const terms = Array.from({ length: n }, (_, i) => `w_{${i + 1}}${xv}_{${i + 1}}`).join(' + ');
   const e1 = math(`${zl} = ${terms} + b`, XR, EY, { size: 17, alpha: la(.22) });
   math(`= ${num(z)}`, XR + e1 + 6, EY, { size: 17, alpha: lab(T0 + T.tz) * fa });
   const e2 = out ? '\\rm{output} = \\rm{exp}(' + zl + ') / (\\rm{exp}(z_{1}) + \\rm{exp}(z_{2}) + \\rm{exp}(z_{3}))'
@@ -940,23 +940,23 @@ function inputView(k, T0, s, fa) {
   arrow(IB.x + IB.w + 3, YM, IB.x + IB.w + 3 + (XN - RN - 6 - IB.x - IB.w) * xp, YM, { color: C.ink, width: 1.3, head: 8, alpha: (xp > 0 ? 1 : 0) * fa });
   const na = settle(T0 + SIN.x, S);
   node(XN, YM, RN * (.6 + .4 * na), { fill: mixHex('#FFFFFF', vcol(x / 2), na), alpha: na * fa });
-  math(`x_{${i + 1}}`, XN, YM + 6, { size: 16, align: 'center', alpha: na * fa });
+  math(`x_{${i + 1}}`, XN, YM + 5, { size: 18, align: 'center', alpha: na * fa });
   math(num(x), XN, YM + RN + 22, { size: 17, align: 'center', alpha: la(SIN.x + .1) });
   // handed on along its five weights, one to each neuron of hidden layer 1
-  text('to hidden layer 1', XT, rowY(0, SZ[1]) - 30, { size: 15, color: C.body, align: 'right', alpha: la(.12) });
+  text('to hidden layer 1', XT, rowY(0, SZ[1]) - 31, { size: 16, color: C.body, align: 'right', alpha: la(.12) });
   for (let j = 0; j < SZ[1]; j++) {
     const y = rowY(j, SZ[1]), w = wAt(s, 1, i, j), t1 = T0 + SIN.f0 + SIN.fs * j;
     const fl = seg(t1, SIN.fd), wd = 1.2 + 3 * wfrac(w);
     line([[XN + RN, YM], [XA0 - 4, y]], { color: C.ink, width: 1.1, progress: seg(t1 - .2, .22), alpha: fa });
     line([[XA0, y], [XA1, y]], { color: C.rule, width: 1.2, progress: sk, alpha: fa });
     if (fl > 0) arrow(XA0, y, lerp(XA0 + 12, XA1, fl), y, { color: wcol(w), width: wd, head: 7 + 1.5 * wd, alpha: .92 * fa });
-    const a = la(.14 + .03 * j), lbl = `w = ${num(w)}`, lw = math(lbl, 0, -1e4, { size: 15, alpha: 0 });
-    if (HOV === j) rect(XAL - lw / 2 - 5, y - 26, lw + 10, 20, { fill: C.steel, stroke: null, alpha: a });
-    math(lbl, XAL, y - 11, { size: 15, align: 'center', color: HOV === j ? C.ink : C.body, alpha: a });
+    const a = la(.14 + .03 * j), lbl = `w = ${num(w)}`, lw = math(lbl, 0, -1e4, { size: 16, alpha: 0 });
+    if (HOV === j) rect(XAL - lw / 2 - 5, y - 29, lw + 10, 23, { fill: C.steel, stroke: null, alpha: a });
+    math(lbl, XAL, y - 12, { size: 16, align: 'center', color: HOV === j ? C.ink : C.body, alpha: a });
     math(num(w * x), XPP, y + 6, { size: 16, align: 'center', alpha: lab(t1 + SIN.fd) * fa });
     const ta = settle(T0 + .1 + .03 * j, S);
     node(XT, y, RT * (.6 + .4 * ta), { fill: '#fff', alpha: ta * fa });
-    text(String(j + 1), XT, y + 5, { size: 14, align: 'center', alpha: ta * fa });
+    text(String(j + 1), XT, y + 5, { size: 15, align: 'center', alpha: ta * fa });
   }
   // the same, as an equation
   math(`x_{${i + 1}} = (${D.cm[i]} - ${D.mu[i]}) / ${D.sd[i]} = ${num(x)}`, XR, EY,
@@ -993,7 +993,7 @@ function trainPlot(k, T0, s) {
   const nl = nLines(k), la = lab(.12), R = trange(k), bias = !isIn(k);
   text(isIn(k) ? 'its weights out, during training' : 'its weights during training', TP.x - 70, TP.y - 16 + rise(la), { size: 16, color: C.body, alpha: la });
   const G = axes({ ...TP, xlim: [0, 300], ylim: [R.lo, R.hi], xticks: [0, 100, 200, 300], yticks: R.ticks,
-                   progress: seg(.08, .35) });
+                   tickSize: 16, progress: seg(.08, .35) });
   G.inside(() => {
     line([[TP.x, G.Y(0)], [TP.x + TP.w, G.Y(0)]], { color: C.rule, width: 1 });
     for (let i = 0; i < nl; i++) {
@@ -1008,12 +1008,12 @@ function trainPlot(k, T0, s) {
   const ends = [], ea = lab(T0 + .5);
   for (let i = 0; i < nl; i++) { const y0 = TYv(k, trajOf(k, i, FIN)); ends.push({ i, y0, y: y0 + 5 }); }
   ends.sort((p, q) => p.y - q.y);
-  for (let q = 1; q < ends.length; q++) ends[q].y = Math.max(ends[q].y, ends[q - 1].y + 14);
+  for (let q = 1; q < ends.length; q++) ends[q].y = Math.max(ends[q].y, ends[q - 1].y + 15);
   const over = ends[ends.length - 1].y - (TP.y + TP.h + 8);
   if (over > 0) for (const e of ends) e.y -= over;
   for (const e of ends) {
     if (Math.abs(e.y - 5 - e.y0) > 2) line([[TP.x + TP.w + 2, e.y0], [TP.x + TP.w + 13, e.y - 5]], { color: C.guide, width: .8, alpha: ea });
-    math(lineName(k, e.i), TP.x + TP.w + 16, e.y, { size: 15, color: HOV === e.i ? C.ink : C.body, alpha: ea });
+    math(lineName(k, e.i), TP.x + TP.w + 16, e.y, { size: 16, color: HOV === e.i ? C.ink : C.body, alpha: ea });
   }
   // the epoch shown: a dot on each line
   if (s < FIN) for (let i = 0; i < nl; i++)
@@ -1039,7 +1039,7 @@ function slider(s) {
   // pale with less motion, where the slider shows the epochs instead
   const rp = replaying();
   uiChip(RP.x, RP.y, RP.w, RP.h, rp ? 'stop' : 'replay',
-         { on: rp, hover: HB === 'play' && !REDUCED, down: DOWN && !REDUCED, off: REDUCED }, a);
+         { on: rp, hover: HB === 'play' && !REDUCED, down: DOWN && !REDUCED, off: REDUCED, size: 16 }, a);
 }
 
 function draw() {
@@ -1050,12 +1050,12 @@ function draw() {
   if (fo > 0) at(st.prev.sw, () => view(st.prev.k, st.prev.v0, s, fo));
   view(st.k, T0, s, 1);
   const ep = s === 0 ? 'before training, epoch 0' : s < FIN ? `during training, epoch ${D.eps[s]}` : 'trained, epoch 300';
-  text(ep, 990, 36, { size: 15, color: s < FIN ? C.ink : C.muted, align: 'right', alpha: lab(.1) });
+  text(ep, 990, 36, { size: 16, color: s < FIN ? C.ink : C.muted, align: 'right', alpha: lab(.1) });
   trainPlot(st.k, T0, s);
   slider(s);
   math('\\rm{training:}\\ \\ w ← w - \\eta\\,\\partial L/\\partial w,\\ \\ \\eta\\ = 0.3', XR, EY + 134, { size: 16, color: C.body, alpha: lab(.3) });
-  text('network of Figure 17 (iris, 4-5-5-3, tanh, softmax, 300 epochs of gradient descent); inputs standardized; values rounded',
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  text('network of Figure 17, 300 epochs; values rounded',
+       18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
   place();
 }
 
@@ -1221,24 +1221,24 @@ function place() {
   const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
   KB.nr.forEach((b, k) => {
     const x = NX[NEU[k].L], y = NY(NEU[k].L, NEU[k].j), r = NR(NEU[k].L);
-    box(b, x - r - 3, y - r - 3, x + r + 3, y + r + 3);
+    box(b, x - 19, y - 19, x + 19, y + 19);
     b.setAttribute('aria-checked', String(k === st.k)); b.tabIndex = k === st.k ? 0 : -1;
   });
   const bias = !isIn(st.k), last = bias ? n : n - 1, wt = HOV >= 0 && HOV <= last ? HOV : 0;
   KB.wb.forEach((b, i) => {
     b.hidden = i > last;
     if (i > last) return;
-    if (isIn(st.k)) box(b, XAL - 42, rowY(i, n) - 28, XAL + 42, rowY(i, n) + 5);
-    else if (i < n) box(b, XWL - 42, rowY(i, n) - 28, XWL + 42, rowY(i, n) + 5);
-    else box(b, XS - 36, YM + 86, XS + 36, YM + 108);
+    if (isIn(st.k)) box(b, XAL - 44, rowY(i, n) - 31, XAL + 44, rowY(i, n) + 6);
+    else if (i < n) box(b, XWL - 44, rowY(i, n) - 31, XWL + 44, rowY(i, n) + 6);
+    else box(b, XS - 40, YM + 81, XS + 40, YM + 118);
     const w0 = trajOf(st.k, i, 0), w1 = trajOf(st.k, i, FIN);
     const what = isIn(st.k) ? `weight to hidden layer 1 neuron ${i + 1}` : i < n ? 'weight ' + (i + 1) : 'bias';
     b.setAttribute('aria-label', `${what} of ${nName(st.k)}: ${num(w0)} before training, ${num(w1)} after`);
     b.setAttribute('aria-checked', String(i === HOV)); b.tabIndex = i === wt ? 0 : -1;
   });
-  box(KB.pb, RP.x, RP.y, RP.x + RP.w, RP.y + RP.h);
+  box(KB.pb, RP.x - 2, RP.y - 4, RP.x + RP.w + 2, RP.y + RP.h + 4);
   if (!REDUCED) KB.pb.setAttribute('aria-label', rp ? 'Stop the replay of the training' : 'Replay the training, epoch 0 to 300');
-  box(KB.sl, SL.x0 - 9, SL.y - 16, SL.x1 + 10, SL.y + 16);   // the ring only: the hit band is hitControl's
+  box(KB.sl, SL.x0 - 9, SL.y - 18, SL.x1 + 10, SL.y + 18);   // the ring only: the hit band is hitControl's
   KB.sl.setAttribute('aria-valuenow', String(D.eps[s]));
   const said = isIn(st.k) ? `x = ${num(outAt(s, st.k))}` : NEU[st.k].L === 3 ? outAt(s, st.k).toFixed(3) : num(outAt(s, st.k));
   KB.sl.setAttribute('aria-valuetext', `epoch ${D.eps[s]}: ${nName(st.k)} gives ${said}`);

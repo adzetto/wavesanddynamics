@@ -41,3 +41,14 @@ TIMING (Round 3, 30 Sep 2026: the client asked for the figure slowed down; about
   the four walks repeat every 40.8 s (was 20.9 s). The first move at 1.2 s (was 0.9);
   the intro is unchanged (drawn by 1.0 s). Poster (reduced motion, print): 4.52 s
   (was 2.64), lap 1, three moves made, the same frame as before.
+
+THE PAGE (Round 4, 5 Oct 2026)
+  (a) The table shows 11 of its 25 rows at a time, the window following the agent's row as it walks
+  (and gliding to the next lap's start as that lap fades in); every number set at 16 units.
+  Ties: in states (0,0), (0,1), (1,1), (1,2), (1,3) and (2,3) the two best actions (up and right) lead
+  by equally short routes, and their learned values agree to within 2e-7 (largest gap 1.6e-7, state (1,3)), so
+  the page's four decimals cannot tell them apart. The grid's arrows and the agent take the run's own
+  choice (the walks visit all six states, and carry it); the readout names the tie: 'takes right (a
+  tie with up)'. (b) Two outputs equal to two decimals are printed to three, the runner up named.
+  At a new lap the network's input glides from the last lap's goal to the new start over 0.4 s while
+  the agent fades in, so its neurons, edges and outputs change continuously, never in one frame.

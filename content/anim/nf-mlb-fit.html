@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -720,12 +720,15 @@ const GROW = DMAX * STEP, PER = GROW + HOLD + BACK + REST;
 const POSTER_T = T_GROW + GROW + 2;
 /* the degree the growth has reached, as a real number: whole numbers are the
    least squares fits, in between a blend of two of them */
+/* ro: how much of the readouts (degree, errors) shows. Easing back to degree 0 they fade out
+   before the curves get there, and fade in again as the next growth starts, so the panels never
+   read 'degree 0' under their own names */
 function grown() {
-  if (t < T_GROW) return { u: 0, back: 0 };
-  const c = (t - T_GROW) % PER;
-  if (c < GROW) { const k = Math.floor(c / STEP); return { u: k + easeInOut((c - k * STEP) / STEP), back: 0 }; }
-  if (c < GROW + HOLD) return { u: DMAX, back: 0 };
-  return { u: DMAX, back: easeInOut(clamp((c - GROW - HOLD) / BACK)) };
+  if (t < T_GROW) return { u: 0, back: 0, ro: 1 };
+  const c = (t - T_GROW) % PER, again = t - T_GROW >= PER;
+  if (c < GROW) { const k = Math.floor(c / STEP); return { u: k + easeInOut((c - k * STEP) / STEP), back: 0, ro: again ? easeInOut(clamp(c / .3)) : 1 }; }
+  if (c < GROW + HOLD) return { u: DMAX, back: 0, ro: 1 };
+  return { u: DMAX, back: easeInOut(clamp((c - GROW - HOLD) / BACK)), ro: 1 - easeInOut(clamp((c - GROW - HOLD) / .35)) };
 }
 const AX = { y: 60, w: 262, h: 188 }, X0 = [60, 390, 720];
 const NAMES = ['underfitting', 'good fit', 'overfitting'];
@@ -740,9 +743,9 @@ function draw() {
     const u = Math.min(g.u, DEG[k]), d0 = Math.floor(u), s = u - d0, d1 = Math.min(d0 + 1, DEG[k]);
     const dn = g.back < .5 ? Math.round(u) : 0;
     text(NAMES[k], x, 38 + rise(a), { size: 17, color: C.body, alpha: a });
-    math(`\\rm{degree}\\ ${dn}`, x + AX.w, 38 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
+    math(`\\rm{degree}\\ ${dn}`, x + AX.w, 38 + rise(lab(t0 + .04)), { size: 17, color: C.body, align: 'right', alpha: lab(t0 + .04) * g.ro });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [0, 1], ylim: [-2, 2], xticks: [0, .5, 1],
-      yticks: [-2, -1, 0, 1, 2], xlabel: 'x', ylabel: k ? '' : 'y', ylabelGap: 34, progress: seg(t0, .35),
+      yticks: [-2, -1, 0, 1, 2], xlabel: 'x', ylabel: k ? '' : 'y', ylabelGap: 36, tickSize: 16, progress: seg(t0, .35),
       xfmt: v => v === .5 ? '0.5' : fmt(v) });
     A.inside(() => {
       line([[x, A.Y(0)], [x + AX.w, A.Y(0)]], { color: C.rule, width: 1, alpha: seg(.15 + t0, .3) });
@@ -759,16 +762,16 @@ function draw() {
       if (p > 0) mark('circle', A.X(D.x[i]), A.Y(D.y[i]), 3.6 * (.55 + .45 * p), { fill: C.navy, stroke: '#fff', width: 1, alpha: p });
     }
     // the model's errors at the degree shown
-    const ra = lab(.45 + t0), cx = x + AX.w / 2;
-    math(`\\rm{training\\ error}\\ \\ ${D.train[dn].toFixed(2)}`, cx, 322, { size: 15, align: 'center', color: C.body, alpha: ra });
+    const ra = lab(.45 + t0) * g.ro, cx = x + AX.w / 2;
+    math(`\\rm{training\\ error}\\ \\ ${D.train[dn].toFixed(2)}`, cx, 324, { size: 16, align: 'center', color: C.body, alpha: ra });
     const nv = D.new[dn], bad = dn === DMAX;
-    math(`\\rm{new\\ data\\ error}\\ \\ ${nv < 10 ? nv.toFixed(2) : nv.toFixed(1)}`, cx, 344,
-         { size: 15, align: 'center', color: bad ? C.accent : C.body, alpha: ra });
+    math(`\\rm{new\\ data\\ error}\\ \\ ${nv < 10 ? nv.toFixed(2) : nv.toFixed(1)}`, cx, 348,
+         { size: 16, align: 'center', color: bad ? C.accent : C.body, alpha: ra });
   }
   const la = lab(.55);
-  text('real pattern', X0[0] + AX.w * .25, AX.y + AX.h * (2 - 1.32) / 4 + rise(la), { size: 14, color: C.muted, align: 'center', alpha: la });
-  text(`${D.n} training points, y = sin 2πx + noise (σ = ${D.sigma}); least squares polynomials; errors are RMS, new data ${D.nnew.toLocaleString('en')} points`,
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.6) });
+  text('real pattern', X0[0] + AX.w * .25, AX.y + AX.h * (2 - 1.32) / 4 + rise(la), { size: 16, color: C.body, align: 'center', alpha: la });
+  text(`y = sin 2πx + noise (σ = ${D.sigma}); RMS errors; ${D.nnew.toLocaleString('en')} new points`,
+       18, H - 10, { size: 15, color: C.muted, alpha: lab(.6) });
 }
 boot();
 </script>

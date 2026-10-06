@@ -1,40 +1,87 @@
-nf-mlc-transformer: Figure 24, a transformer on 'The cat sat'
+nf-mlc-transformer: Figure 24, a transformer filling in 'My [MASK] barks at night'
 
 MODEL (mlc_text.tiny_transformer): token embedding (8) + sinusoidal position,
   2 blocks of [2 head scaled dot-product attention -> add and norm -> feed forward
-  (8 -> 16 -> 8, ReLU) -> add and norm], a linear read out of the last position.
-  Trained on every prefix of the 88 sentences (442 examples, 169 words),
-  cross entropy, Adam 0.01, 3000 full batch steps, torch seed 0.
-  final loss 0.6110; next word right 0.778 of the time (the corpus is
-  ambiguous: after 'The cat sat' three words follow).
+  (8 -> 16 -> 8, ReLU) -> add and norm], a linear read out at the masked position.
+  Attention both ways: every token attends to every token of its sentence (only the
+  padding of shorter sentences is masked before the softmax), as in BERT.
+  Trained as BERT is to fill in a masked word: each of the 88 sentences once per word, that
+  word replaced by [MASK] (530 examples, 169 words), cross entropy, Adam 0.01,
+  6000 full batch steps, torch seed 0 (torch 2.14.1+cpu).
+  final loss 0.0415, the corpus's own minimum 0.0414 (each masked sentence's own
+  word frequencies); masked word right 0.977 of the time (the corpus is ambiguous in
+  places: 'The [MASK] ate its food' is cat once and dog once).
 
-CHECK 1: the predicted next word against the corpus's own counts
-  corpus after 'The cat sat': {'on': 7, 'by': 2, 'near': 1} of 10
-  model:  on 0.701, by 0.200, near 0.100, all other words 0.0001
-  (cross entropy is minimised by the empirical frequencies: 0.7, 0.2, 0.1)
-  and after 'The dog sat' (corpus: on 1, by 1): on 0.501, by 0.499
-  so the model has to look back at the subject: in block 1 head 1 'sat' attends
-  to 'cat' with weight 0.806.
+CHECK 1: the predicted word against the corpus's own counts
+  corpus for 'My [MASK] barks at night': dog 1
+  model:  dog 1.000, cat 0.000, all other words 0.0000
+  the word after the gap decides it: 'My [MASK] purrs at night' (corpus: cat 1)
+    gives cat 1.000, dog 0.000
+  where the corpus is split, so is the model: 'The [MASK] ate its food' (corpus: cat 1, dog 1)
+    gives cat 0.504, dog 0.496
+  a sentence not in the corpus: 'The dog [MASK] on the mat' gives sat 1.000, its 0.000
+  [MASK] weighs the words on both sides of it: in block 2 head 1 it puts
+  0.756 on 'barks' (after it), in head 2 0.925 on 'My' (before it); the mean the
+  figure draws: My 0.48, barks 0.38.
 
-CHECK 2: every attention row sums to 1
+CHECK 2: every attention row sums to 1 over all five tokens, none masked
   max |row sum - 1| = 1.2e-07
+  smallest weight 2.9e-10 (a masked score would give exactly 0)
 
 CHECK 3: the input vectors are embedding + position
-  max |x0 - (e + pe)| = 9.6e-08
+  max |x0 - (e + pe)| = 1.0e-07
 
-ATTENTION WEIGHTS (rows: The, cat, sat attending; columns: The, cat, sat)
-  block 1 head 1: [0.001, 0.989, 0.010]  [0.869, 0.016, 0.115]  [0.062, 0.806, 0.131]
-  block 1 head 2: [0.263, 0.380, 0.356]  [0.972, 0.000, 0.028]  [0.388, 0.283, 0.328]
-  block 2 head 1: [0.191, 0.000, 0.809]  [0.000, 1.000, 0.000]  [0.255, 0.000, 0.745]
-  block 2 head 2: [0.002, 0.996, 0.002]  [0.081, 0.021, 0.897]  [0.134, 0.565, 0.301]
+ATTENTION WEIGHTS (rows: My, [MASK], barks, at, night attending; columns the same)
+  block 1 head 1:
+    My      0.001 0.089 0.909 0.001 0.001
+    [MASK]  0.097 0.241 0.381 0.154 0.127
+    barks   0.194 0.055 0.035 0.400 0.316
+    at      0.085 0.169 0.241 0.302 0.202
+    night   0.115 0.266 0.317 0.111 0.192
+  block 1 head 2:
+    My      0.000 0.001 0.012 0.064 0.923
+    [MASK]  0.464 0.220 0.189 0.069 0.057
+    barks   0.513 0.365 0.081 0.032 0.010
+    at      0.589 0.163 0.185 0.035 0.029
+    night   0.737 0.208 0.041 0.009 0.005
+  block 1, mean of 2 heads (drawn: line widths and the table):
+    My      0.00 0.04 0.46 0.03 0.46
+    [MASK]  0.28 0.23 0.29 0.11 0.09
+    barks   0.35 0.21 0.06 0.22 0.16
+    at      0.34 0.17 0.21 0.17 0.12
+    night   0.43 0.24 0.18 0.06 0.10
+  block 2 head 1:
+    My      0.003 0.155 0.829 0.009 0.004
+    [MASK]  0.034 0.151 0.756 0.024 0.035
+    barks   0.458 0.019 0.018 0.094 0.411
+    at      0.246 0.003 0.005 0.295 0.451
+    night   0.304 0.000 0.000 0.071 0.625
+  block 2 head 2:
+    My      0.317 0.647 0.014 0.021 0.001
+    [MASK]  0.925 0.075 0.000 0.000 0.000
+    barks   0.671 0.133 0.069 0.090 0.037
+    at      0.974 0.023 0.002 0.002 0.000
+    night   0.992 0.006 0.001 0.001 0.000
+  block 2, mean of 2 heads (drawn: line widths and the table):
+    My      0.16 0.40 0.42 0.01 0.00
+    [MASK]  0.48 0.11 0.38 0.01 0.02
+    barks   0.56 0.08 0.04 0.09 0.22
+    at      0.61 0.01 0.00 0.15 0.23
+    night   0.65 0.00 0.00 0.04 0.31
 
 VECTORS (8 numbers per token)
-  x0 The  -0.22 -1.81 -0.32 +1.16 +0.71 +1.44 -0.37 +0.76
-  x0 cat  +1.79 +1.68 +0.90 +1.51 -0.03 +2.94 +0.27 +2.59
-  x0 sat  +0.82 +0.03 +0.02 +2.13 +0.34 +1.24 -1.22 +0.17
-  x1 The  -1.25 -1.66 +1.03 +1.67 +1.42 -0.95 -0.66 -0.18
-  x1 cat  +1.92 +0.34 -0.14 -0.09 -2.35 +1.30 -0.74 +0.38
-  x1 sat  -0.17 +0.68 +0.91 +1.58 +1.06 -1.66 -2.03 -0.79
-  x2 The  -5.66 +0.90 +3.33 +4.43 +4.77 -0.37 -2.45 -0.96
-  x2 cat  +3.85 +1.58 -2.18 +0.29 -5.83 +5.45 +0.70 -0.18
-  x2 sat  +0.33 +3.28 +1.52 +4.09 +3.83 -2.85 -6.61 +0.90
+  x0 My      -0.71 +3.40 +0.38 +1.90 -0.83 +3.59 +0.06 +1.49
+  x0 [MASK]  +0.70 +0.24 +0.72 +0.93 +1.02 +2.97 -0.62 -0.54
+  x0 barks   -0.04 -1.55 -0.09 +0.77 +1.81 -0.57 +0.75 +0.52
+  x0 at      +1.78 -1.48 +2.11 +2.41 -1.65 +1.45 +0.46 +0.38
+  x0 night   -0.52 -1.55 +2.10 +1.57 -3.07 +1.96 +1.32 +1.88
+  x1 My      +0.00 +1.95 -0.05 -0.79 -0.84 +1.22 -1.60 -0.38
+  x1 [MASK]  +1.58 +0.00 +0.58 -0.34 +0.38 +1.24 -1.74 -1.70
+  x1 barks   +0.39 -1.36 -0.40 +0.84 +0.73 -1.39 -0.64 +1.99
+  x1 at      +1.07 -0.52 +1.87 +0.98 -2.19 -1.36 -0.04 +0.31
+  x1 night   -0.96 -1.14 +2.25 +1.07 -1.73 -0.00 +0.10 +0.94
+  x2 My      +0.75 +8.23 -2.19 -4.98 -1.38 -1.71 -0.74 +2.35
+  x2 [MASK]  +6.96 +0.70 +0.65 -2.25 +1.22 +3.69 -5.16 -6.45
+  x2 barks   -1.66 +1.31 -4.33 +3.72 +7.28 -4.30 -3.79 +1.79
+  x2 at      -1.53 -0.49 -0.34 +6.14 +3.92 -7.61 -1.43 +1.29
+  x2 night   -2.45 -4.08 +3.63 +7.40 +2.38 -5.74 -1.36 -0.11

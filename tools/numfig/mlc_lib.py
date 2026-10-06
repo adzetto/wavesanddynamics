@@ -89,7 +89,7 @@ function cbar(x, y, w, h, lut, lo, hi, ticks, label, a = 1, fmtv = v => nf(v, 1)
   for (const v of ticks) {
     const xx = x + (v - lo) / (hi - lo) * w;
     line([[xx, y + h], [xx, y + h + 4]], { width: 1, alpha: a });
-    text(fmtv(v), xx, y + h + 19, { size: 15, align: 'center', alpha: a });
+    text(fmtv(v), xx, y + h + 20, { size: 16, align: 'center', alpha: a });
   }
   if (label) math(label, x - 12, y + h - 1, { size: 16, align: 'right', alpha: a });
 }

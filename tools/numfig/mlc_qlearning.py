@@ -111,6 +111,10 @@ T0, DUR = .75, (3.8, 5.0, 6.2)       # learning starts; (a) 1, (b) 10, (c) 300 e
 UPD, AREST, AFADE = .45, .7, .8      # (a): its rewarding update eases in; its agent rests, then fades
 WAIT = .7                            # (c) learned, until its first greedy walk
 LEAD, STEP, REST, FOUT, GAP = .4, .56, 1.8, .6, 1.0   # a greedy walk: fade in, a step, at the goal, fade, gap
+# Round 4 (5 Oct 2026, the audit): the result first. The page opens on the three learned tables, as
+# the caption describes them, (c)'s policy walking from OPEN; after one walk the values fade (FADE)
+# and the learning plays again at the Round 3 pace, then the policy walks NB times, and again.
+OPEN, FADE, NB = 1.2, .6, 2
 nroute = len(path) - 1
 lap = LEAD + nroute * STEP + REST + FOUT + GAP
 say("")
@@ -123,7 +127,12 @@ say(f"  its 300 in {DUR[2]} s (was 3.1): the three finish {DUR[1] - DUR[0]:.1f} 
 say(f"  {WAIT} s after (c) has learned (was 0.35), its greedy policy walks from the start, again and")
 say(f"  again: {STEP} s a step (was 0.28), at the goal {REST} s (was 0.9), fading in {LEAD} s and out {FOUT} s")
 say(f"  (was 0.2 and 0.3), {GAP} s between walks (was 0.5): every {lap:.2f} s (was 4.14 s).")
-say(f"  Poster (reduced motion, print): {T0 + DUR[2] + WAIT + lap - GAP / 2:.2f} s (was 7.89), between two walks: the tables")
+say("TIMING (Round 4, 5 Oct 2026: the result first)")
+say(f"  The page opens on the three learned tables (1, 10 and 300 episodes): they fade in with the frame by")
+say(f"  0.8 s, and (c)'s policy walks from {OPEN} s. After that walk the values fade out in {FADE} s and the")
+say(f"  learning above plays again from nothing; then the policy walks {NB} times, the values fade, and so on:")
+say(f"  {FADE + T0 + DUR[2] + WAIT + NB * lap:.2f} s a round.")
+say(f"  Poster (reduced motion, print): {OPEN + lap - GAP / 2:.2f} s, in the opening walk's gap: the tables")
 say("  alone, the same frame as before.")
 
 # ------------------------------------------------------------------ data
@@ -131,7 +140,7 @@ code = np.array([rec[1] * 4 + rec[2] for rec in log])
 DATA = {"tr": common.i8(code), "n": len(log), "v300": [float(v) for v in V300]}
 
 JS = (f"const T0 = {T0}, DUR = {list(DUR)}, UPD = {UPD}, AREST = {AREST}, AFADE = {AFADE}, WAIT = {WAIT}, "
-      f"LEAD = {LEAD}, STEP = {STEP}, REST = {REST}, FOUT = {FOUT}, GAP = {GAP};"
+      f"LEAD = {LEAD}, STEP = {STEP}, REST = {REST}, FOUT = {FOUT}, GAP = {GAP}, OPEN = {OPEN}, FADE = {FADE}, NB = {NB};"
       + r"""
 const S = 56, GX = [30, 360, 690], GY = 78;
 const TR = b64i8(DATA.tr), NS = DATA.n;
@@ -166,8 +175,20 @@ for (let i = 0, s = 0; i < 24 && s !== 24; i++) { const a = AM[NS * 25 + s], x =
 
 const EPIS = [1, 10, 300];
 const TL = T0 + DUR[2] + WAIT, LAP = LEAD + (ROUTE.length - 1) * STEP + REST + FOUT + GAP;
-const POSTER_T = TL + LAP - GAP / 2;      // between two walks: the table alone, complete
 const ASTEP = DUR[0] / ENDS[1];           // (a): one step of its episode
+/* the clocks. The page opens on what was learned, the three tables as the caption describes them and
+   (c)'s policy walking from OPEN; after that walk the values fade and the learning plays again from
+   nothing, then the policy walks NB times, a fade, the learning again. tv is the time on the learning's
+   own clock (T0: it starts; T0 + DUR[p]: panel p has learned; TL: (c)'s first walk), vf how much of
+   the values shows */
+const SHOW = OPEN + LAP, RP = TL + NB * LAP, CYC = FADE + RP;
+function clockV() {
+  if (t < SHOW) return { tv: TL + Math.max(0, t - OPEN), vf: 1 };
+  const c = (t - SHOW) % CYC;
+  return c < FADE ? { tv: TL + LAP, vf: 1 - easeInOut(c / FADE) } : { tv: c - FADE, vf: 1 };
+}
+const POSTER_T = OPEN + LAP - GAP / 2;    // in the opening walk's gap: the tables alone, complete
+function atv(tv, f) { const tt = t; t = tv; try { return f(); } finally { t = tt; } }
 
 const cx = (p, s) => GX[p] + (s % 5 + .5) * S, cy = s => GY + (4 - ((s / 5) | 0) + .5) * S;
 /* continuous episodes done -> step index */
@@ -211,18 +232,17 @@ function cellArrow(x, y, a, col, alpha) {
   const L = 12, dx = MOVE[a][0], dy = -MOVE[a][1];
   arrow(x - dx * L, y - dy * L, x + dx * L, y + dy * L, { color: col, width: 1.8, head: 9, alpha });
 }
-function drawGrid(p) {
-  const x0 = GX[p], pa = seg(.04 + .06 * p, .4);
-  const c = clockC(p), done = Math.floor(c + 1e-9), k = kAt(c), j = Math.floor(k), f = k - j;
-  const va = seg(T0 - .05, .3);
+function drawGrid(p, tv, vf) {
+  const x0 = GX[p], pa = seg(.04 + .06 * p, .4), vin = seg(.3, .45);   // the frame, and the values, arriving
   for (let s = 0; s < 25; s++) {
     const X = x0 + (s % 5) * S, Y = GY + (4 - ((s / 5) | 0)) * S;
     if (s === 24) { box(X, Y, S, S, { fill: C.accent, stroke: null, progress: seg(.2 + .06 * p, .3) }); continue; }
-    const V = cellV(p, s, j, f), a = AM[j * 25 + s];
+    const [V, a, va] = atv(tv, () => { const c = clockC(p), k = kAt(c), j = Math.floor(k);
+      return [cellV(p, s, j, k - j), AM[j * 25 + s], seg(T0 - .05, .3) * vin * vf]; });
     if (V > 0) box(X, Y, S, S, { fill: lutc(SEQ, V), stroke: null, alpha: va });
     const dark = V > 0 && lutDark(SEQ, V), col = dark ? '#fff' : C.ink;
-    if (V > 0) cellArrow(X + S / 2, Y + S * .4, a, col, va);
-    if (Math.abs(V) >= .005) text(nf(V, 2), X + S / 2, Y + S - 8, { size: 14, align: 'center', color: V < 0 ? C.muted : col, alpha: va });
+    if (V > 0) cellArrow(X + S / 2, Y + S * .38, a, col, va);
+    if (Math.abs(V) >= .005) text(nf(V, 2), X + S / 2, Y + S - 7, { size: 16, align: 'center', color: V < 0 ? C.body : col, alpha: va });
   }
   // the lattice over the fills
   ctx.save(); ctx.globalAlpha = pa;
@@ -230,14 +250,14 @@ function drawGrid(p) {
     line([[x0, GY + i * S], [x0 + 5 * S, GY + i * S]], { color: C.rule, width: 1 }); }
   ctx.restore();
   box(x0, GY, 5 * S, 5 * S, { width: 1.4, progress: pa });
-  const n = Math.min(done, EPIS[p]);
+  const n = Math.min(atv(tv, () => Math.floor(clockC(p) + 1e-9)), EPIS[p]);
   sub('abc'[p], x0 - 12, 36, `after ${n} episode${n === 1 ? '' : 's'}`, seg(.1 + .05 * p, .3));
-  lab('start', x0 + S / 2, GY + 5 * S + 20, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
+  lab('start', x0 + S / 2, GY + 5 * S + 21, .35 + .05 * p, { size: 16, color: C.body, align: 'center' });
   // named above its square, as 'start' is below its own: the agent comes to rest inside it
-  lab('goal', x0 + 4.5 * S, GY - 10, .35 + .05 * p, { size: 14, color: C.muted, align: 'center' });
+  lab('goal', x0 + 4.5 * S, GY - 10, .35 + .05 * p, { size: 16, color: C.body, align: 'center' });
 }
 /* (a): the agent walking its first episode; its route stays, faint, under the fills */
-function drawWalker(route) {
+function drawWalker(route, vf) {
   const c = clockC(0); if (t < T0 - .3) return;
   const k = kAt(c), j = Math.min(Math.floor(k), ENDS[1]), f = j >= ENDS[1] ? 0 : k - j;
   const trail = [];
@@ -249,7 +269,7 @@ function drawWalker(route) {
     else { ax = lerp(ax, nx, e); ay = lerp(ay, ny, e); trail.push([ax, ay]); }
   }
   const fade = 1 - seg(T0 + DUR[0] + AREST, AFADE);
-  if (route) { for (const r of openRoute(trail, j, f)) line(r, { color: C.sky, width: 2, alpha: .75 - .35 * (1 - fade) }); return; }
+  if (route) { for (const r of openRoute(trail, j, f)) line(r, { color: C.sky, width: 2, alpha: (.75 - .35 * (1 - fade)) * vf }); return; }
   if (fade > 0) dot(ax, ay, 7.5, { color: '#fff', fill: C.navy, width: 2, alpha: seg(T0 - .3, .3) * fade });
 }
 /* (c): the learned policy walking from the start, over and over */
@@ -263,12 +283,14 @@ function drawGreedy() {
   if (alpha > 0) dot(ax, ay, 7.5, { color: '#fff', fill: C.navy, width: 2, alpha });
 }
 function draw() {
-  drawWalker(true);
-  for (let p = 0; p < 3; p++) drawGrid(p);
-  drawWalker(false); drawGreedy();
+  const { tv, vf } = clockV(), vin = seg(.3, .45);
+  atv(tv, () => drawWalker(true, vf * vin));
+  for (let p = 0; p < 3; p++) drawGrid(p, tv, vf);
+  atv(tv, () => { drawWalker(false, vf); drawGreedy(); });
   const fa = seg(.6, .5);
-  cbar(GX[2] + 5 * S - 150, H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
-  text('reward +1 at the goal, −0.02 per step;  α = 0.5,  γ = 0.95,  ε from 0.5 to 0.2', 18, H - 16, { size: 14, color: C.muted, alpha: fa });
+  // the colour bar under (c), clear of the corner where a frame opened alone keeps its buttons
+  cbar(GX[2], H - 42, 150, 10, SEQ, 0, 1, [0, .5, 1], '\\rm{value}\\ \\ \\rm{max}_{a}\\,Q(s,a)', fa, v => nf(v, 1));
+  text('+1 at the goal, −0.02 a step; α = 0.5, γ = 0.95, ε 0.5 to 0.2', 18, H - 14, { size: 15, color: C.muted, alpha: fa });
 }
 boot();
 """)

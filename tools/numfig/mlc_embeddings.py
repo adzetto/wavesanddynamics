@@ -83,11 +83,12 @@ DATA = {"five": FIVE, "shown": T.SHOWN, "cols": COLS, "groups": GROUPS, "cum": c
 JS = r"""
 const FIVE = DATA.five, SHOWN = DATA.shown, COLS = DATA.cols, NW = SHOWN.length, NF = DATA.its.length;
 const CUM = b64i8(DATA.cum), POS = b64f32(DATA.pos), VEC = b64f32(DATA.vec);
-const T0 = .55, DC = 1.4, T1 = T0 + DC + .1, DG = 2.4, TL = T1 + DG + .5, PER = 2.4;
+const T0 = .3, DC = .9, T1 = T0 + DC + .05, DG = 2.4, TL = T1 + DG + .5, PER = 3.5;
 const POSTER_T = T1 + DG + .3;
 // labels that would sit on a neighbour or on a dot; river's on its left, off the lines to its nearest (boat, water);
-// water's on its left, off the dot of stream; loan's level with its dot, off the line to its nearest above
-const LABEL_OFF = { kitten: [-7, -6, 'right'], puppy: [7, 15], boat: [7, 15], fish: [-7, 5, 'right'], account: [-7, 5, 'right'], credit: [7, 16],
+// water's on its left, off the dot of stream; loan's level with its dot, off the line to its nearest above;
+// kitten and puppy share a spot: both names on its left, one above the other, away from cat
+const LABEL_OFF = { kitten: [-7, -6, 'right'], puppy: [-7, 15, 'right'], boat: [7, 15], fish: [-7, 5, 'right'], account: [-7, 5, 'right'], credit: [7, 16],
                     river: [-7, -6, 'right'], dog: [10, 5], water: [-7, -6, 'right'], loan: [9, 5] };
 const XL = [-1.1, 1.1], YL = [-1.2, 1.0];                   // equal scales: distance on the map is honest
 /* the descent's clock: iteration number at time t, then the frame pair around it */
@@ -104,7 +105,7 @@ function focusWord() { if (t < TL) return -1; return Math.floor((t - TL) / PER) 
 const MX = v => 590 + (v - XL[0]) / (XL[1] - XL[0]) * 370, MY = v => 64 + 370 - (v - YL[0]) / (YL[1] - YL[0]) * 370;
 function labelBox(k, it) {
   const w = SHOWN[k], [x, y] = posOf(k, it), off = LABEL_OFF[w] || [7, -6], X = MX(x) + off[0], Y = MY(y) + off[1];
-  ctx.save(); ctx.font = font({ size: k < 5 ? 16 : 14 }); ctx.textAlign = off[2] || 'left'; const q = ctx.measureText(w); ctx.restore();
+  ctx.save(); ctx.font = font({ size: k < 5 ? 17 : 15 }); ctx.textAlign = off[2] || 'left'; const q = ctx.measureText(w); ctx.restore();
   return [X - q.actualBoundingBoxLeft, Y - q.actualBoundingBoxAscent, X + q.actualBoundingBoxRight, Y + q.actualBoundingBoxDescent];
 }
 let ARR = null;
@@ -130,6 +131,11 @@ function arrivals() {
       D[s].forEach(([X, Y, r], j) => { if (j !== k && Math.hypot(Math.max(a[0] - X, 0, X - a[2]), Math.max(a[1] - Y, 0, Y - a[3])) < r + 2) L = it; }); });
     if (L >= 14) A[k] = Math.max(A[k], L + .25);
   }
+  for (let k = 0; k < NW; k++) {                        // and a name stays 2 units clear of the frame and its ticks
+    let L = -1;
+    S.forEach((it, s) => { const a = B[s][k]; if (a[0] < 597 || a[2] > 953 || a[1] < 71 || a[3] > 427) L = it; });
+    if (L >= 14) A[k] = Math.max(A[k], L + .25);
+  }
   return (ARR = A);
 }
 function draw() {
@@ -144,36 +150,36 @@ function draw() {
   FIVE.forEach((w, i) => {
     const y = AY + i * RHa;
     if (i === fw) { ctx.save(); ctx.globalAlpha = fa; ctx.fillStyle = C.steel; ctx.fillRect(18, y, colX(11) + CWa - 18, RHa); ctx.restore(); }
-    text(w, AX - 10, y + RHa / 2 + 5, { size: 15, align: 'right', alpha: seg(.1 + .04 * i, .3) });
+    text(w, AX - 10, y + RHa / 2 + 6, { size: 16, align: 'right', alpha: seg(.1 + .04 * i, .3) });
     COLS.forEach((c, j) => {
       const n = CUM[(Math.min(kr, DATA.ncum) * 5 + i) * COLS.length + j], X = colX(j);
       box(X, y, CWa, RHa, { fill: n > 0 ? lutc(SEQ, Math.sqrt(n / DATA.cmax)) : null, stroke: C.rule, width: 1, alpha: ga });
-      if (n > 0) text(String(n), X + CWa / 2, y + RHa / 2 + 5, { size: 14, align: 'center', color: lutDark(SEQ, Math.sqrt(n / DATA.cmax)) ? '#fff' : C.ink, alpha: ga });
+      if (n > 0) text(String(n), X + CWa / 2, y + RHa / 2 + 6, { size: 16, align: 'center', color: lutDark(SEQ, Math.sqrt(n / DATA.cmax)) ? '#fff' : C.ink, alpha: ga });
     });
   });
-  COLS.forEach((c, j) => text(c, colX(j) + CWa / 2 + 4, AY - 8, { size: 14, rot: -Math.PI / 3.2, alpha: seg(.15 + .015 * j, .3), color: C.body }));
+  COLS.forEach((c, j) => text(c, colX(j) + CWa / 2 + 4, AY - 8, { size: 15, rot: -Math.PI / 3.2, alpha: seg(.15 + .015 * j, .3), color: C.body }));
   for (let g = 0; g < 3; g++) box(colX(4 * g), AY, 4 * CWa, 5 * RHa, { width: 1.2, alpha: ga });
-  if (t < T0 + DC + .6) text(`reading sentence ${Math.max(0, Math.min(DATA.ncum, Math.ceil(kread)))} of ${DATA.ncum}`, AX, AY + 5 * RHa + 22, { size: 14, color: C.muted, alpha: seg(T0 - .1, .3) * (1 - seg(T0 + DC + .3, .3)) });
-  else lab('a few of the 169 columns', AX, AY + 5 * RHa + 22, T0 + DC + .4, { size: 14, color: C.muted });
+  if (t < T0 + DC + .6) text(`reading sentence ${Math.max(0, Math.min(DATA.ncum, Math.ceil(kread)))} of ${DATA.ncum}`, AX, AY + 5 * RHa + 23, { size: 16, color: C.body, alpha: seg(T0 - .1, .3) * (1 - seg(T0 + DC + .3, .3)) });
+  else lab('a few of the 169 columns', AX, AY + 5 * RHa + 23, T0 + DC + .4, { size: 16, color: C.body });
   // ================= (b) the vectors
   sub('b', 18, 334, 'word vectors, 4 numbers each', seg(.12, .3));
   const BX = 100, BY = 354, CB = 52, RB = 27, ba = seg(T1 - .15, .3);
   FIVE.forEach((w, r) => {
     const y = BY + r * (RB + 5), v = vecOf(r, it);
     if (r === fw) { ctx.save(); ctx.globalAlpha = fa; ctx.fillStyle = C.steel; ctx.fillRect(18, y - 2, BX + 4 * CB + 12 - 18, RB + 4); ctx.restore(); }
-    text(w, BX - 10, y + RB / 2 + 5, { size: 15, align: 'right', alpha: seg(.15 + .04 * r, .3) });
+    text(w, BX - 10, y + RB / 2 + 6, { size: 16, align: 'right', alpha: seg(.15 + .04 * r, .3) });
     for (let c = 0; c < 4; c++) {
       const X = BX + c * CB, u = clamp(v[c] / 1.6, -1, 1);
       box(X, y, CB, RB, { fill: signed(u), stroke: '#fff', width: 1, alpha: ba });
-      text(nf(v[c], 2), X + CB / 2, y + RB / 2 + 5, { size: 14, align: 'center', color: lutDark(SIGNED, (u + 1) / 2) ? '#fff' : C.ink, alpha: ba });
+      text(nf(v[c], 2), X + CB / 2, y + RB / 2 + 6, { size: 16, align: 'center', color: lutDark(SIGNED, (u + 1) / 2) ? '#fff' : C.ink, alpha: ba });
     }
     box(BX, y, 4 * CB, RB, { width: 1, alpha: ba });
   });
-  if (t >= T1 - .2) text(it >= 400 ? 'after 400 steps of gradient descent' : `gradient descent, step ${Math.round(it)}`, BX, BY + 5 * (RB + 5) + 16, { size: 14, color: C.muted, alpha: ba });
+  if (t >= T1 - .2) text(it >= 400 ? 'after 400 steps of gradient descent' : `gradient descent, step ${Math.round(it)}`, BX, BY + 5 * (RB + 5) + 18, { size: 16, color: C.body, alpha: ba });
   // ================= (c) the map
   sub('c', 520, 34, 'embedding space', seg(.18, .3));
   const g = axes({ x: 590, y: 64, w: 370, h: 370, xlim: XL, ylim: YL, xticks: [-1, -.5, 0, .5, 1], yticks: [-1, -.5, 0, .5, 1],
-    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 36, progress: seg(.05, .4) });
+    xlabel: '\\rm{dimension\\ 1}', ylabel: '\\rm{dimension\\ 2}', ylabelGap: 40, tickSize: 16, progress: seg(.05, .4) });
   const P = SHOWN.map((w, k) => posOf(k, it)), pa = seg(T1 - .2, .3), ARV = arrivals();
   g.inside(() => {
     // the pairs the text names: cat and dog, bank and loan
@@ -190,18 +196,18 @@ function draw() {
       dot(X, Y, mine ? 4.6 : 3, { color: '#fff', fill: on ? C.accent : mine ? C.navy : C.guide, width: 1, alpha: pa });
       const off = LABEL_OFF[w] || [7, -6];
       const fade = ARV[k] > 200 ? seg(T1 + DG, .3) : clamp((it - ARV[k]) / 16);   // a name free only at the end fades in then
-      text(w, X + off[0], Y + off[1], { align: off[2] || 'left', size: mine ? 16 : 14, color: on ? C.accent : mine ? C.ink : C.muted, alpha: pa * fade });
+      text(w, X + off[0], Y + off[1], { align: off[2] || 'left', size: mine ? 17 : 15, color: on ? C.accent : mine ? C.ink : C.body, alpha: pa * fade });
     });
   });
   // cosines: the pairs at rest, the focused word's nearest in the loop
-  const cy0 = 524;
+  const cy0 = 510;
   if (fw < 0) { const ca = seg(T1 + DG - .05, .35);
-    math(`\\rm{cos}(\\rm{cat},\\,\\rm{dog}) = ${nf(DATA.cd, 2)}`, 590, cy0, { size: 15, alpha: ca });
-    math(`\\rm{cos}(\\rm{bank},\\,\\rm{loan}) = ${nf(DATA.bl, 2)}`, 748, cy0, { size: 15, alpha: ca }); }
+    math(`\\rm{cos}(\\rm{cat},\\,\\rm{dog}) = ${nf(DATA.cd, 2)}`, 590, cy0, { size: 16, alpha: ca });
+    math(`\\rm{cos}(\\rm{bank},\\,\\rm{loan}) = ${nf(DATA.bl, 2)}`, 752, cy0, { size: 16, alpha: ca }); }
   else { const w = FIVE[fw], nn = DATA.near[w];
-    text(`nearest to ${w}:`, 590, cy0, { size: 15, color: C.body, alpha: fa });
-    math(nn.map(([v, c]) => `\\rm{${v}}\\ ${nf(c, 2)}`).join(',\\ \\ '), 718, cy0, { size: 15, alpha: fa }); }
-  text('88 short sentences, 169 words; counts within 4 words, positive PMI, 4 dimensions; map: vectors scaled to length 1', 20, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .4) });
+    const nw = text(`nearest to ${w}:`, 590, cy0, { size: 16, color: C.body, alpha: fa });
+    math(nn.map(([v, c]) => `\\rm{${v}}\\ ${nf(c, 2)}`).join(',\\ \\ '), 590 + nw + 10, cy0, { size: 16, alpha: fa }); }
+  text('88 sentences, 169 words; window 4; positive PMI; 4 dimensions', 20, H - 12, { size: 15, color: C.muted, alpha: seg(.6, .4) });
 }
 boot();
 """

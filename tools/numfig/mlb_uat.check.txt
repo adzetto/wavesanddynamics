@@ -27,9 +27,12 @@ CHECK: tanh(u) = 2 sigma(2u) - 1, so these are the sigmoid networks of the earli
   RMS 0.1768, 0.0831, 0.0030 for N = 3, 7, 14; these give 0.1768, 0.0831, 0.0030
 
 THE PAGE
-  W = 1000, H = 830. POSTER_T = 21 s: 14 neurons added up.
-  Under the plots, the N chosen as a network: its fully connected 1-N-1 topology, a neuron blue once
-  its piece is added, the output bias base + sum(v) and the 3N + 1 fitted parameters.
+  W = 1000, H = 680. POSTER_T = 21 s: 14 neurons added up.
+  Under the error plot, the N chosen as a network: its fully connected 1-N-1 topology, its output f,
+  each connection drawn with its fitted weight once its neuron's piece is added (input side w_j, all
+  positive, width 0.7 + 1.1 log10(w_j / 0.5); output side v_j, width 0.7 + 2.7 |v_j| / 0.4; blue
+  positive, crimson negative), the output bias c = base + sum(v) and the 3N + 1 fitted parameters.
+  At a change of N the last network fades out as the new one fades in (0.45 s), as the curves do.
   The page tours 3, 7 and 14 neurons, 24.55 s a round; a neuron switches on every
   min(0.55, 4.2/N) s, the fit is held 4.5 s; the error plot's marker glides to the N shown.
   A chip or a marker of the error plot chooses N (the click stops before the engine's pause; paused,
@@ -37,5 +40,6 @@ THE PAGE
   piece of a finished sum (or tapping it) names its neuron: v, w and m. With less motion, the sum at once.
   Keyboard: a radio group of 1 to 14 neurons. Touch: a tap, or a finger run along the chips, chooses.
   overlap check (engine.js ?overlap) at the poster and every 0.25 s up to it: clean (common.still)
-  --verify: 226 states: every number of neurons at 30, 70 and 120 per cent built (finished,
-  with its first and last piece pointed at) and the tour every 0.25 s: 0 with collisions
+  --verify: 291 states: every number of neurons at 30, 70 and 120 per cent built (finished,
+  with its first and last piece pointed at), the tour every 0.25 s and five changes of N every
+  0.05 s through their fade: 0 with collisions

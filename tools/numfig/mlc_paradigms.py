@@ -177,7 +177,7 @@ function diamond(x, y, r, alpha) {
 }
 function feat(k, y0, prog) {
   return axes({ x: px(k), y: y0, w: PW, h: PH, xlim: [0, 10], ylim: [0, 10], xticks: [0, 5, 10], yticks: [0, 5, 10],
-    xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 30, progress: prog });
+    xlabel: 'x_{1}', ylabel: 'x_{2}', ylabelGap: 34, tickSize: 16, progress: prog });
 }
 function fillRegions(g, polys, alpha, stroke = true) {
   polys.forEach((p, k) => { if (p.length < 3) return;
@@ -211,7 +211,7 @@ function numberSpots(g) {
   const cand = [];
   for (const r of [17, 19, 21, 23, 25, 28]) for (let d = -180; d < 180; d += 15) cand.push([r + Math.abs(d) / 10, r, d * Math.PI / 180]);
   cand.sort((u, v) => u[0] - v[0]);
-  ctx.save(); ctx.font = font({ size: 15 }); ctx.textAlign = 'center';
+  ctx.save(); ctx.font = font({ size: 16 }); ctx.textAlign = 'center';
   const M = [1, 2, 3].map(n => ctx.measureText(String(n))); ctx.restore();
   NUMS = KM.map((st, k) => {
     const c = st.c.map(q => [g.X(q[0]), g.Y(q[1])]), edges = [], placed = [];
@@ -263,10 +263,11 @@ function draw() {
     if (use) diamond(g.X(q[0]), g.Y(q[1]), 7, qa); });
   box(px(0), PY2, PW, PH, { width: 1.3, alpha: seg(.25, .3) });
   const pr = softmax(DATA.sm[DATA.sm.length - 1], q), kq = pr.indexOf(Math.max(...pr));
-  if (!use) text(`gradient descent, iteration ${it}`, px(0), RY, { size: 14, color: C.muted, alpha: seg(T0, .3) });
-  else { text('new point:', px(0), RY, { size: 15, color: C.body, alpha: qa });
-    mark(kq, px(0) + 82, RY - 5, { r: 5.5, alpha: qa });
-    math(`p = ${nf(pr[kq], 2)}`, px(0) + 100, RY, { size: 15, alpha: qa }); }
+  // the status lines start under the tick labels, so (c)'s ends clear of the frame's corner buttons
+  if (!use) text(`gradient descent, iteration ${it}`, px(0) - 30, RY, { size: 16, color: C.body, alpha: seg(T0, .3) });
+  else { const nw = text('new point:', px(0) - 30, RY, { size: 16, color: C.body, alpha: qa });
+    mark(kq, px(0) - 30 + nw + 14, RY - 5, { r: 5.5, alpha: qa });
+    math(`p = ${nf(pr[kq], 2)}`, px(0) - 30 + nw + 32, RY, { size: 16, alpha: qa }); }
   // ================= (b) unsupervised
   sub('b', 348, 36, 'unsupervised learning', seg(.12, .3));
   title('unlabeled data', 1, PY1 - 10, .25);
@@ -285,24 +286,24 @@ function draw() {
     DATA.X.forEach((p, i) => dot(g.X(p[0]), g.Y(p[1]), 3.2, { color: '#fff', fill: C.body, width: .8, alpha: .5 * pb }));
     // each centroid's number: its step's spot, clear of the points (numberSpots), gliding with it
     const NP = numberSpots(g), ke = Math.min(KM.length - 1, ki + 1), ge = easeInOut(clamp((kf - .35) / .55));
-    cNow.forEach((c, j) => { const X = g.X(c[0]), Y = g.Y(c[1]);         // a centroid: pgfplots' otimes mark
-      dot(X, Y, 8.5, { color: C.ink, fill: '#fff', width: 1.4, alpha: pb });
-      line([[X - 4.6, Y - 4.6], [X + 4.6, Y + 4.6]], { width: 1.6, alpha: pb }); line([[X - 4.6, Y + 4.6], [X + 4.6, Y - 4.6]], { width: 1.6, alpha: pb });
+    cNow.forEach((c, j) => { const X = g.X(c[0]), Y = g.Y(c[1]);         // a centroid: an ink cross on a white halo, as in Figure 15
+      for (const [cc, wd] of [['#fff', 6], [C.ink, 2.8]]) {
+        line([[X - 6, Y - 6], [X + 6, Y + 6]], { color: cc, width: wd, alpha: pb }); line([[X - 6, Y + 6], [X + 6, Y - 6]], { color: cc, width: wd, alpha: pb }); }
       const p0 = NP[ki][j], p1 = NP[ke][j], a0 = Math.atan2(p0[1], p0[0]);   // round the mark, never across it
       let da = Math.atan2(p1[1], p1[0]) - a0; da -= 2 * Math.PI * Math.round(da / (2 * Math.PI));
       const rr = lerp(Math.hypot(p0[0], p0[1]), Math.hypot(p1[0], p1[1]), ge), aa = a0 + ge * da;
-      text(String(j + 1), X + rr * Math.cos(aa), Y + rr * Math.sin(aa) + 5, { size: 15, align: 'center', alpha: pb }); });
+      text(String(j + 1), X + rr * Math.cos(aa), Y + rr * Math.sin(aa) + 5, { size: 16, align: 'center', alpha: pb }); });
     if (use) diamond(g.X(q[0]), g.Y(q[1]), 7, qa); });
   box(px(1), PY2, PW, PH, { width: 1.3, alpha: seg(.3, .3) });
   const cF = KM[KM.length - 1].c, dq = cF.map(c => Math.hypot(c[0] - q[0], c[1] - q[1])), gq = dq.indexOf(Math.min(...dq));
-  if (!use) text(`k-means, update ${Math.min(KM.length - 1, Math.round(ks))}`, px(1), RY, { size: 14, color: C.muted, alpha: seg(T0, .3) });
-  else text(`new point: group ${gq + 1}`, px(1), RY, { size: 15, color: C.body, alpha: qa });
+  if (!use) text(`k-means, update ${Math.min(KM.length - 1, Math.round(ks))}`, px(1) - 30, RY, { size: 16, color: C.body, alpha: seg(T0, .3) });
+  else text(`new point: group ${gq + 1}`, px(1) - 30, RY, { size: 16, color: C.body, alpha: qa });
   // ================= (c) reinforcement
   sub('c', 678, 36, 'reinforcement learning', seg(.16, .3));
   title('rewards from its own actions', 2, PY1 - 10, .3);
   const ep = Math.floor(u * 300 * 1.0001), R = DATA.ret;
   g = axes({ x: px(2), y: PY1, w: PW, h: PH, xlim: [0, 300], ylim: [-1.5, 1], xticks: [0, 100, 200, 300], yticks: [-1, 0, 1],
-    xlabel: '\\rm{episode}', ylabel: '\\rm{total\\ reward}', ylabelGap: 36, progress: seg(.15, .4) });
+    xlabel: '\\rm{episode}', ylabel: '\\rm{total\\ reward}', ylabelGap: 40, tickSize: 16, progress: seg(.15, .4) });
   g.inside(() => { line([[g.X(0), g.Y(0)], [g.X(300), g.Y(0)]], { color: C.rule, width: 1 });
     for (let i = 0; i < Math.min(ep, 300); i++) dot(g.X(i + .5), g.Y(R[i]), 1.7, { color: C.navy, fill: C.navy, width: .5 }); });
   modelBox(2, 'agent', .4);
@@ -326,8 +327,8 @@ function draw() {
     ax = gx0 + (lerp(A % 5, B % 5, f) + .5) * cs; ay = gy0 + (4 - lerp((A / 5) | 0, (B / 5) | 0, f) + .5) * cs;
     aA = clamp(lu / .2) * (1 - clamp((lu - lap + .25) / .25)); }
   if (aA > 0) dot(ax, ay, 5.5, { color: '#fff', fill: C.navy, width: 1.6, alpha: aA });
-  if (!use) text(`Q-learning, episode ${Math.min(ep, 300)}`, px(2), RY, { size: 14, color: C.muted, alpha: seg(T0, .3) });
-  else text('follows its strategy', px(2), RY, { size: 15, color: C.body, alpha: qa });
+  if (!use) text(`Q-learning, episode ${Math.min(ep, 300)}`, px(2) - 30, RY, { size: 16, color: C.body, alpha: seg(T0, .3) });
+  else text('follows its strategy', px(2) - 30, RY, { size: 16, color: C.body, alpha: qa });
   // the loop closes: from the strategy, through its actions, back to its rewards
   const xl = px(2) + PW + 30, loop = [[gx0 + 5 * cs + 6, gy0 + 2.5 * cs], [xl, gy0 + 2.5 * cs], [xl, PY1 + PH / 2], [px(2) + PW + 6, PY1 + PH / 2]];
   const la = seg(.5, .45);

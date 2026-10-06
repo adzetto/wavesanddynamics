@@ -7,7 +7,7 @@ MODEL
   N(0, 1/64) after, last layer x 0.1; cross-entropy; full batch gradient descent, learning rate 0.05, 4000 epochs (seed 2).
 
 CHECK 1: back propagation against central differences (40 random weights, h = 1e-6)
-  largest relative error: 5.1e-06 at the start, 4.1e-05 at the end
+  largest relative error: 5.1e-06 at the start, 7.0e-06 at the end
 
 CHECK 2: gradient descent on a smooth loss with a small step never raises it
   training loss rose in 0 of 4000 epochs (largest rise 0.0e+00); 0.6976 -> 0.1391

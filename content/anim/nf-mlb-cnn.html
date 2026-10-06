@@ -651,10 +651,10 @@ function cross(x, y, r, o = {}) {
     line([[x - r, y + r], [x + r, y - r]], { color: c, width: w, alpha });
   }
 }
-/* a legend inside the axes: a thin box, white fill, serif 15. rows are
+/* a legend inside the axes: a thin box, white fill, serif 16. rows are
    [draw(x, y, alpha), words, asMath] with the key drawn at (x, y) */
 function legend(x, y, w, rows, o = {}) {
-  const { alpha = 1, rowH = 22, size = 15 } = o;
+  const { alpha = 1, rowH = 24, size = 16 } = o;
   if (alpha <= 0) return;
   const h = rows.length * rowH + 10;
   ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
@@ -765,12 +765,23 @@ function draw() {
 
   /* pixels */
   const ga = seg(0, .3);
+  { // zero padding 1: a ring of zero cells round the image, dashed, where the window hangs at the edges
+    const x0 = PIX.x - PIX.s, y0 = PIX.y - PIX.s, n = 10 * PIX.s;
+    ctx.save(); ctx.globalAlpha *= ga; ctx.strokeStyle = C.guide; ctx.lineWidth = .8; ctx.setLineDash([2, 2]); ctx.beginPath();
+    ctx.rect(x0, y0, n, n);                     // the ring's outer edge, then its cells' edges
+    for (let q = 1; q < 10; q++) {
+      ctx.moveTo(x0 + q * PIX.s, y0); ctx.lineTo(x0 + q * PIX.s, y0 + PIX.s); ctx.moveTo(x0 + q * PIX.s, y0 + 9 * PIX.s); ctx.lineTo(x0 + q * PIX.s, y0 + n);
+      ctx.moveTo(x0, y0 + q * PIX.s); ctx.lineTo(x0 + PIX.s, y0 + q * PIX.s); ctx.moveTo(x0 + 9 * PIX.s, y0 + q * PIX.s); ctx.lineTo(x0 + n, y0 + q * PIX.s);
+    }
+    ctx.stroke(); ctx.restore();
+    text('zero padding', PIX.x + 60, y0 + n + 22, { size: 16, color: C.body, align: 'center', alpha: lab(.15) });
+  }
   grid(PIX.x, PIX.y, 8, PIX.s, (i, j) => din > 0 ? mixHex('#FFFFFF', grey(Dg.img[i][j]), din * fin) : null, ga);
   /* learned filters */
   for (let f = 0; f < NF; f++) {
     const a = seg(.06 + .04 * f, .3);
     grid(FILT.x, FILT.y[f], 3, FILT.s, (i, j) => wcol(D.filt[f][i * 3 + j]), a);
-    text(String(f + 1), FILT.x - 8, FILT.y[f] + 22, { size: 14, color: C.muted, align: 'right', alpha: a });
+    text(String(f + 1), FILT.x - 9, FILT.y[f] + 23, { size: 16, color: C.body, align: 'right', alpha: a });
   }
   /* feature maps and pooled maps */
   const pk = pbl < 0 ? -1 : Math.min(16, pbl + 1);                       // pooled blocks known
@@ -832,23 +843,23 @@ function draw() {
   for (let j = 0; j < 10; j++) {
     const a = seg(.34 + .01 * j, .3), y = OY(j), win = j === pred && otf >= 1;
     node(OUT.x, y, OUT.r, { fill: otf >= 1 ? mixHex('#FFFFFF', mixHex('#FFFFFF', C.blue, Dg.p[j]), fin) : '#FFFFFF', width: 1.2, alpha: a });
-    math(String(j), OUT.x + 20, y + 5, { size: 15, color: win ? mixHex(C.body, C.accent, fin) : C.body, alpha: a });
+    math(String(j), OUT.x + 19, y + 6, { size: 16, color: win ? mixHex(C.body, C.accent, fin) : C.body, alpha: a });
     const bw = 80 * Dg.p[j] * easeOut(otf);
     rect(OUT.x + 34, y - 5, 80, 10, { stroke: C.rule, width: .8, alpha: a });
     if (otf > 0) rect(OUT.x + 34, y - 5, Math.max(.4, bw), 10, { fill: win ? C.accent : C.blue, stroke: null, alpha: fin });
-    if (otf > 0 && Dg.p[j] >= .005) math(Dg.p[j].toFixed(2), OUT.x + 120, y + 5, { size: 14, color: win ? C.accent : C.body, alpha: fin * otf });
+    if (otf > 0 && Dg.p[j] >= .005) math(Dg.p[j].toFixed(2), OUT.x + 120, y + 6, { size: 16, color: win ? C.accent : C.body, alpha: fin * otf });
   }
   /* the prediction */
   const pa = u < PR0 ? 0 : clamp((u - PR0) / PRD) * fin;
   text('predicted', 870, 150 + rise(pa), { size: 16, color: C.body, alpha: pa });
   text(String(pred), 870, 196 + rise(pa), { size: 40, color: C.accent, alpha: pa });
-  text(`true label ${Dg.label}`, 870, 226 + rise(pa), { size: 15, color: C.muted, alpha: pa });
+  text(`true label ${Dg.label}`, 870, 226 + rise(pa), { size: 16, color: C.body, alpha: pa });
 
   /* stage names, his words */
   const sl = [['pixels', PIX.x + 60], ['learned filters', FILT.x + 18], ['feature maps', MAPS.x + 44], ['pooling', POOL.x + 22],
               ['flatten', FLAT.x + 5], ['dense neurons', DEN.x], ['class probabilities', OUT.x + 70]];
-  sl.forEach(([s, x], k) => { const a = lab(.12 + .04 * k); text(s, x, 368 + rise(a), { size: 15, color: C.body, align: 'center', alpha: a }); });
-  line([[18, 386], [982, 386]], { color: C.rule, width: 1, alpha: lab(.3) });
+  sl.forEach(([s, x], k) => { const a = lab(.12 + .04 * k); text(s, x, 362 + rise(a), { size: 16, color: C.body, align: 'center', alpha: a }); });
+  line([[18, 378], [982, 378]], { color: C.rule, width: 1, alpha: lab(.3) });
 
   /* the arithmetic of one filter position, and of one pooling block */
   const ca = lab(.35);
@@ -857,16 +868,19 @@ function draw() {
   else if (u >= SF0 && u < SEND) q = 7;
   else if (u >= SEND) q = bk;
   const cr = q >= 0 ? Math.floor(q / 8) : 0, cc_ = q >= 0 ? q % 8 : 0, cv = q >= 0 ? fin : 0;
-  text('filter 1 at the window', 24, 414 + rise(ca), { size: 16, color: C.body, alpha: ca });
-  const CS = 34, gx = 24, gy = 424;
-  const pv = (i, j) => { const rr = cr + i - 1, cc = cc_ + j - 1; return rr < 0 || rr > 7 || cc < 0 || cc > 7 ? 0 : Dg.img[rr][cc]; };
+  text('filter 1 at the window', 24, 404 + rise(ca), { size: 16, color: C.body, alpha: ca });
+  const CS = 38, gx = 24, gy = 414;
+  const pad = (i, j) => { const rr = cr + i - 1, cc = cc_ + j - 1; return rr < 0 || rr > 7 || cc < 0 || cc > 7; };
+  const pv = (i, j) => pad(i, j) ? 0 : Dg.img[cr + i - 1][cc_ + j - 1];
   cells(gx, gy, 3, 3, CS, (i, j) => q >= 0 ? mixHex('#FFFFFF', grey(pv(i, j)), .45 * cv) : null, { alpha: ca, gridColor: C.rule });
   cells(gx + 3 * CS + 34, gy, 3, 3, CS, (i, j) => mixHex('#FFFFFF', wcol(D.filt[0][i * 3 + j]), .55), { alpha: ca, gridColor: C.rule });
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-    if (q >= 0) math(String(pv(i, j)), gx + j * CS + CS / 2, gy + i * CS + CS / 2 + 5, { size: 14, align: 'center', alpha: cv * ca });
-    math(num(D.filt[0][i * 3 + j], 1), gx + 3 * CS + 34 + j * CS + CS / 2, gy + i * CS + CS / 2 + 5, { size: 14, align: 'center', alpha: ca });
+    // a cell of the padding: dashed, its zero in grey
+    if (q >= 0 && pad(i, j)) rect(gx + j * CS + 3, gy + i * CS + 3, CS - 6, CS - 6, { stroke: C.guide, width: .8, dash: [2, 2], alpha: cv * ca });
+    if (q >= 0) math(String(pv(i, j)), gx + j * CS + CS / 2, gy + i * CS + CS / 2 + 6, { size: 16, align: 'center', color: pad(i, j) ? C.guide : C.ink, alpha: cv * ca });
+    math(num(D.filt[0][i * 3 + j], 1), gx + 3 * CS + 34 + j * CS + CS / 2, gy + i * CS + CS / 2 + 6, { size: 16, align: 'center', alpha: ca });
   }
-  math('\\times', gx + 3 * CS + 17, gy + 1.5 * CS + 5, { size: 17, align: 'center', alpha: ca });
+  math('\\times', gx + 3 * CS + 17, gy + 1.5 * CS + 6, { size: 17, align: 'center', alpha: ca });
   const tx = gx + 6 * CS + 50;
   math('\\rm{sum\\ of\\ products} + b', tx, gy + 22, { size: 16, color: C.body, alpha: ca });
   if (q >= 0) {
@@ -875,18 +889,18 @@ function draw() {
   }
   // pooling: the block holding that position, shown once the sweep reaches it
   const px0 = 640;
-  text('pooling, one 2 × 2 block', px0, 414 + rise(ca), { size: 16, color: C.body, alpha: ca });
+  text('pooling, one 2 × 2 block', px0, 404 + rise(ca), { size: 16, color: C.body, alpha: ca });
   const pr0 = Math.floor(pb / 4) * 2, pc0 = (pb % 4) * 2;
   const pvis = pbl >= pb ? fin : 0;
   cells(px0, gy + 15, 2, 2, CS, (i, j) => pvis > 0 ? mixHex('#FFFFFF', act(Dg.a[0][(pr0 + i) * 8 + pc0 + j]), .35 * pvis) : null, { alpha: ca, gridColor: C.rule });
   let mx = -1, mi = 0; for (let i = 0; i < 4; i++) { const v = Dg.a[0][(pr0 + (i >> 1)) * 8 + pc0 + (i & 1)]; if (v > mx) { mx = v; mi = i; } }
   if (pvis > 0) {
-    for (let i = 0; i < 4; i++) math(num(Dg.a[0][(pr0 + (i >> 1)) * 8 + pc0 + (i & 1)], 1), px0 + (i & 1) * CS + CS / 2, gy + 15 + (i >> 1) * CS + CS / 2 + 5, { size: 14, align: 'center', alpha: pvis * ca });
+    for (let i = 0; i < 4; i++) math(num(Dg.a[0][(pr0 + (i >> 1)) * 8 + pc0 + (i & 1)], 1), px0 + (i & 1) * CS + CS / 2, gy + 15 + (i >> 1) * CS + CS / 2 + 6, { size: 16, align: 'center', alpha: pvis * ca });
     rect(px0 + (mi & 1) * CS, gy + 15 + (mi >> 1) * CS, CS, CS, { stroke: C.accent, width: 2, alpha: pvis * ca });
-    math(`\\rm{max} = ${num(mx, 1)}`, px0 + 2 * CS + 16, gy + 15 + CS + 5, { size: 16, color: C.accent, alpha: pvis * ca });
+    math(`\\rm{max} = ${num(mx, 1)}`, px0 + 2 * CS + 16, gy + 15 + CS + 6, { size: 17, color: C.accent, alpha: pvis * ca });
   }
-  text(`scikit-learn digits, 8 × 8 pixels; 3 learned 3 × 3 filters, 2 × 2 max pooling, 16 dense ReLU, 10 softmax; held out accuracy ${D.acc[1]}/360`,
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  text(`scikit-learn digits; dense 16 ReLU; ${D.acc[1]}/360 held out right`,
+       18, H - 10, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 /* data flowing along the dense connections: each line drawn from its start by p */
 function flowLines(x0, Y0, n0, x1, Y1, n1, p) {

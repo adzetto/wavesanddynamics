@@ -13,7 +13,8 @@ counts(), ppmi(), factorise(): word vectors from co-occurrence (Figure 25): the
     converges to the best rank 4 approximation (SVD, Eckart and Young).
 sense_head(): one scaled dot-product attention head on those vectors, trained
     to tell the two senses of "bank" apart (Figure 26).
-tiny_transformer(): a two block transformer trained to predict the next word
+tiny_transformer(): a two block transformer, attention both ways, trained to
+    fill in a masked word from the words on both sides of it, as BERT is
     (Figure 24).
 """
 import re
@@ -203,18 +204,33 @@ def sense_head(E, vocab, lam=1e-3, steps=1500, lr=0.03, seed=0):
 
 
 # ---------------------------------------------------------------------- the transformer (Figure 24)
-def tiny_transformer(d=8, heads=2, ff=16, blocks=2, steps=3000, lr=0.01, seed=0):
+MASK = "[MASK]"
+
+
+def masked_examples():
+    """Every sentence once per word, that word replaced by MASK: [(tokens, position, word)]."""
+    return [(s[:i] + [MASK] + s[i + 1:], i, s[i]) for _, s in sentences() for i in range(len(s))]
+
+
+def tiny_transformer(d=8, heads=2, ff=16, blocks=2, steps=6000, lr=0.01, seed=0):
     """A two block transformer encoder (Vaswani et al. 2017, post norm:
     attention, add and norm, feed forward, add and norm), sinusoidal positions,
-    trained to predict the next word of every prefix of every sentence from
-    the prefix's last position; attention within a prefix runs both ways.
-    Returns the model, the vocabulary, the position table and training numbers."""
+    trained as BERT is (Devlin et al. 2019) to fill in a masked word: every
+    sentence once per word, that word replaced by the token MASK, and the word
+    read from the output at its position. Attention runs both ways: every token
+    attends to every token of its sentence (only the padding is masked), so the
+    words after the gap can count as much as those before it. 6000 full batch
+    steps: the loss settles at the corpus's own minimum (the cross entropy of
+    each masked sentence's own word frequencies).
+    Returns the model, the vocabulary (MASK is token V, after the V words), the
+    position table and training numbers."""
     import torch
     torch.manual_seed(seed)
     sents = [t for _, t in sentences()]
     vocab = sorted({w for s in sents for w in s})
     ix = {w: i for i, w in enumerate(vocab)}
     V = len(vocab)
+    ix[MASK] = V
     Lmax = max(len(s) for s in sents)
     pe = np.zeros((Lmax, d))
     pos = np.arange(Lmax)[:, None]
@@ -229,13 +245,13 @@ def tiny_transformer(d=8, heads=2, ff=16, blocks=2, steps=3000, lr=0.01, seed=0)
             self.n1, self.n2 = torch.nn.LayerNorm(d), torch.nn.LayerNorm(d)
             self.f1, self.f2 = torch.nn.Linear(d, ff), torch.nn.Linear(ff, d)
 
-        def forward(self, x, mask):
+        def forward(self, x, keep):                 # keep[b, j]: position j is a word, not padding
             B, L, _ = x.shape
             dk = d // heads
             sp = lambda z: z.view(B, L, heads, dk).transpose(1, 2)
             q, k, v = sp(self.q(x)), sp(self.k(x)), sp(self.v(x))
             s = q @ k.transpose(-1, -2) / np.sqrt(dk)
-            s = s.masked_fill(~mask[:, None, None, :], -1e9)
+            s = s.masked_fill(~keep[:, None, None, :], -1e9)
             a = torch.softmax(s, -1)
             h = (a @ v).transpose(1, 2).reshape(B, L, d)
             x = self.n1(x + self.o(h))
@@ -245,36 +261,37 @@ def tiny_transformer(d=8, heads=2, ff=16, blocks=2, steps=3000, lr=0.01, seed=0)
     class Model(torch.nn.Module):
         def __init__(self):
             super().__init__()
-            self.emb = torch.nn.Embedding(V, d)
+            self.emb = torch.nn.Embedding(V + 1, d)                            # the V words and MASK
             self.blocks = torch.nn.ModuleList([Block() for _ in range(blocks)])
             self.out = torch.nn.Linear(d, V)
 
-        def forward(self, ids, lens):
+        def forward(self, ids, lens, at):                                       # at: the masked position
             B, L = ids.shape
-            mask = torch.arange(L)[None, :] < lens[:, None]
+            keep = torch.arange(L)[None, :] < lens[:, None]
             x = self.emb(ids) + PE[:L]
             trace, atts = [x], []
             for b in self.blocks:
-                x, a = b(x, mask)
+                x, a = b(x, keep)
                 trace.append(x)
                 atts.append(a)
-            return self.out(x[torch.arange(B), lens - 1]), trace, atts
+            return self.out(x[torch.arange(B), at]), trace, atts
 
-    X, Y, Ls = [], [], []
-    for s in sents:
-        for n in range(1, len(s)):
-            X.append([ix[w] for w in s[:n]] + [0] * (Lmax - n))
-            Y.append(ix[s[n]])
-            Ls.append(n)
-    X, Y, Ls = torch.tensor(X), torch.tensor(Y), torch.tensor(Ls)
+    X, Y, Ls, A = [], [], [], []
+    for toks, i, w in masked_examples():
+        X.append([ix[q] for q in toks] + [0] * (Lmax - len(toks)))
+        Y.append(ix[w])
+        Ls.append(len(toks))
+        A.append(i)
+    X, Y, Ls, A = torch.tensor(X), torch.tensor(Y), torch.tensor(Ls), torch.tensor(A)
     model = Model()
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     for _ in range(steps):
-        loss = torch.nn.functional.cross_entropy(model(X, Ls)[0], Y)
+        loss = torch.nn.functional.cross_entropy(model(X, Ls, A)[0], Y)
         opt.zero_grad()
         loss.backward()
         opt.step()
     with torch.no_grad():
-        logits = model(X, Ls)[0]
+        logits = model(X, Ls, A)[0]
         acc = float((logits.argmax(1) == Y).float().mean())
-    return model, vocab, pe, {"loss": float(loss), "acc": acc, "examples": len(Y), "V": V}
+        loss = float(torch.nn.functional.cross_entropy(logits, Y))
+    return model, vocab, pe, {"loss": loss, "acc": acc, "examples": len(Y), "V": V}

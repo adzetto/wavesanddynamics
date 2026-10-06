@@ -92,9 +92,9 @@ function draw() {
   PANELS.forEach((p, k) => {
     const x = X0[k], t0 = .05 * k;
     text(p.name, x, 40 + rise(lab(t0)), { size: 17, color: C.body, alpha: lab(t0) });
-    math(p.formula, x + AX.w, 40 + rise(lab(t0 + .04)), { size: 16, color: C.body, align: 'right', alpha: lab(t0 + .04) });
+    math(p.formula, x + AX.w, 40 + rise(lab(t0 + .04)), { size: 17, color: C.body, align: 'right', alpha: lab(t0 + .04) });
     const A = axes({ x, y: AX.y, w: AX.w, h: AX.h, xlim: [-4.4, 4.4], ylim: p.ylim, xticks: [-4, -2, 0, 2, 4],
-      yticks: p.yticks, yfmt: p.yfmt, grid: true, xlabel: 'z', progress: seg(t0, .35), ylabelGap: 40 });
+      yticks: p.yticks, yfmt: p.yfmt, grid: true, xlabel: 'z', tickSize: 16, progress: seg(t0, .35), ylabelGap: 40 });
     A.inside(() => {
       const zr = seg(.2 + t0, .3);
       line([[A.X(0), AX.y], [A.X(0), AX.y + AX.h]], { color: C.rule, width: 1.1, alpha: zr });
@@ -113,13 +113,13 @@ function draw() {
     });
     if (pa > 0) {                     // the readout, on white so the guides pass behind it
       const y = p.f(z), s1 = `z = ${num(z)}`, s2 = `${p.out} = ${num(y, p.dig)}`;
-      const w = Math.max(math(s1, 0, -1e4, { size: 15, alpha: 0 }), math(s2, 0, -1e4, { size: 15, alpha: 0 }));
-      rect(x + 6, AX.y + 30, w + 12, 45, { fill: '#fff', stroke: null, alpha: pa });
-      math(s1, x + 12, AX.y + 47, { size: 15, color: C.body, alpha: pa });
-      math(s2, x + 12, AX.y + 68, { size: 15, color: C.accent, alpha: pa });
+      const w = Math.max(math(s1, 0, -1e4, { size: 16, alpha: 0 }), math(s2, 0, -1e4, { size: 16, alpha: 0 }));
+      rect(x + 6, AX.y + 29, w + 12, 49, { fill: '#fff', stroke: null, alpha: pa });
+      math(s1, x + 12, AX.y + 47, { size: 16, color: C.body, alpha: pa });
+      math(s2, x + 12, AX.y + 70, { size: 16, color: C.accent, alpha: pa });
     }
   });
-  math('\\rm{one input}\\ z\\rm{, swept from \u22123.6 to 3.6 and back, drives all three}', 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  math('\\rm{one input}\\ z\\rm{, swept between \u22123.6 and 3.6, drives all three}', 18, H - 10, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """

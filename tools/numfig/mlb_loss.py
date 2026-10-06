@@ -171,8 +171,7 @@ DATA = {
     # the first fields are within 0.01 of 1/2 and would lose their shape on a fixed scale
     "p": common.i8((S - 0.5) / SC[:, None, None] * 127), "sc": SC,
     "xt": Xt, "yt": yt, "trAcc": [tra[K], tra[-1]], "vaAcc": [vaa[K], vaa[-1]],
-    "vmin": va[K], "params": (f"two circles, {FLIP:.0%} of labels flipped; {NTR} training, {NVA} validation points; "
-                              f"network 2-{H}-{H}-2 (tanh); full batch gradient descent"),
+    "vmin": va[K], "params": f"{FLIP:.0%} of labels flipped; {NTR} training, {NVA} validation points",
 }
 
 JS = r"""
@@ -253,7 +252,7 @@ function draw() {
   /* loss */
   const A = axes({ ...LA, xlim: [0, D.epochs], ylim: [0, 1.2], xticks: [0, 1000, 2000, 3000, 4000],
     yticks: [0, .2, .4, .6, .8, 1, 1.2], yfmt: v => v === 0 ? '0' : v.toFixed(1), grid: true,
-    xlabel: '\\rm{epoch}', ylabel: '\\rm{loss}', ylabelGap: 44, progress: seg(0, .35) });
+    xlabel: '\\rm{epoch}', ylabel: '\\rm{loss}', ylabelGap: 46, tickSize: 16, progress: seg(0, .35) });
   const xk = A.X(D.kmin), oa = seg(.55, .3);
   A.inside(() => {
     ctx.save(); ctx.globalAlpha = .55 * oa; ctx.fillStyle = C.wash; ctx.fillRect(xk, LA.y, LA.x + LA.w - xk, LA.h); ctx.restore();
@@ -268,7 +267,7 @@ function draw() {
   const ca = lab(.55);
   if (ca > 0) {
     const cx = A.X(e), o = { color: C.ink, width: 1, alpha: .5 * ca };
-    ctx.save(); ctx.font = font({ size: 15 }); const q = ctx.measureText('overfitting begins'); ctx.restore();
+    ctx.save(); ctx.font = font({ size: 16 }); const q = ctx.measureText('overfitting begins'); ctx.restore();
     const b0 = xk + 8 - q.actualBoundingBoxLeft - 3, b1 = xk + 8 + q.actualBoundingBoxRight + 3;
     if (ka > 0 && cx > b0 && cx < b1) {
       line([[cx, LA.y], [cx, ky - q.actualBoundingBoxAscent - 3]], o);
@@ -277,9 +276,9 @@ function draw() {
     dot(cx, A.Y(valAt(D.tr, e)), 3.6, { color: '#fff', fill: C.blue, width: 1.2, alpha: ca });
     dot(cx, A.Y(valAt(D.va, e)), 3.6, { color: '#fff', fill: C.accent, width: 1.2, alpha: ca });
   }
-  text('overfitting begins', xk + 8, ky, { size: 15, color: C.accent, alpha: ka });
+  text('overfitting begins', xk + 8, ky, { size: 16, color: C.accent, alpha: ka });
   dot(xk, A.Y(D.vmin), 4, { color: '#fff', fill: C.accent, width: 1.3, alpha: ka });
-  legend(LA.x + 12, LA.y + LA.h - 66, 164, [
+  legend(LA.x + 12, LA.y + LA.h - 70, 172, [
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.blue, width: 2.4, alpha: a }), 'training loss'],
     [(x, y, a) => line([[x - 12, y], [x + 12, y]], { color: C.accent, width: 2.4, alpha: a }), 'validation loss'],
   ], { alpha: lab(.3) });
@@ -290,14 +289,23 @@ function draw() {
   paintField(fieldAt(e), ma);
   boundary(field, seg(.3, .3));
   const M = axes({ ...MA, xlim: [-GR, GR], ylim: [-GR, GR], xticks: [-2, 0, 2], yticks: [-2, 0, 2],
-    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 30, progress: seg(.04, .35) });
+    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 34, tickSize: 16, progress: seg(.04, .35) });
   M.inside(() => {
     for (let i = 0; i < D.yt.length; i++) {
       const p = settle(.14 + .003 * i, .24), c = D.yt[i] ? [C.navy, '#fff'] : ['#fff', C.navy];
       if (p > 0) mark('circle', M.X(D.xt[i][0]), M.Y(D.xt[i][1]), 3.3 * (.55 + .45 * p), { fill: c[0], stroke: c[1], width: D.yt[i] ? .9 : 1.2, alpha: p });
     }
   });
-  text(D.params, 18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  // the key of the model panel: the training points' labels and the region the model gives class 1
+  const kk = lab(.5), ky2 = MA.y + MA.h + 82;
+  let kx = MA.x - 4;
+  mark('circle', kx + 5, ky2 - 5, 4, { fill: '#fff', stroke: C.navy, width: 1.2, alpha: kk });
+  kx += 18 + text('class 0', kx + 16, ky2, { size: 16, alpha: kk }) + 22;
+  mark('circle', kx + 5, ky2 - 5, 4, { fill: C.navy, stroke: '#fff', width: .9, alpha: kk });
+  kx += 18 + text('class 1', kx + 16, ky2, { size: 16, alpha: kk }) + 22;
+  rect(kx - 2, ky2 - 13, 14, 14, { fill: C.steel2, stroke: C.ink, width: 1, alpha: kk });
+  text('predicted class 1', kx + 20, ky2, { size: 16, alpha: kk });
+  text(D.params, 18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """
@@ -307,8 +315,8 @@ ARIA = (f"A real training run of a small neural network over {EPOCHS} epochs. Le
         f"falls throughout, the validation loss falls to its lowest point at epoch {K} and then rises, "
         "and a dashed line marks where overfitting begins. Right: the model's two class regions at the "
         "epoch a cursor has reached; the boundary is smooth near the lowest validation loss and later "
-        "bends around single mislabelled training points, memorizing them.")
+        "bends around single mislabeled training points, memorizing them.")
 
 if __name__ == "__main__":
     print(f"validation minimum at epoch {K}: {va[K]:.4f}; end {va[-1]:.4f}; memorized {kept} flipped labels")
-    mc.publish(NAME, TITLE, ARIA, 1000, 440, DATA, JS, look=(0.3, 0.6, 1.2, 2.5, 4.5, 6.5, 8.1, 10.0, 11.2))
+    mc.publish(NAME, TITLE, ARIA, 1000, 490, DATA, JS, look=(0.3, 0.6, 1.2, 2.5, 4.5, 6.5, 8.1, 10.0, 11.2))

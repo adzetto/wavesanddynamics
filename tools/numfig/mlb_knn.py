@@ -155,7 +155,7 @@ const D0 = Array.from(ND), I0 = Array.from(NI), R3 = D0[2];
 const rNow = () => R3 * (1 - Math.pow(1 - clamp((t - T_S) / R_DUR), 2));      // eases out onto the third
 const tFound = k => T_S + R_DUR * (1 - Math.sqrt(1 - D0[k] / R3));            // when the circle reaches it
 const T_VOTE = tFound(2) + .12, POSTER_T = T_VOTE + 1.2;
-const T_TOUR = POSTER_T + 3, GL = 1.3, RST = 1.3, HOME = 4.2;
+const T_TOUR = POSTER_T + 3, GL = 1.3, RST = 2.6, HOME = 4.2;
 const WAY = [D.star, D.A, D.B, D.star];
 const TPER = 3 * GL + 2 * RST + HOME;
 function starPos() {
@@ -179,7 +179,7 @@ function draw() {
   ctx.globalAlpha = seg(.25, .35); ctx.imageSmoothingEnabled = true;
   const cw = AX.w / (GRN - 1); ctx.drawImage(reg, AX.x - cw / 2, AX.y - cw / 2, AX.w + cw, AX.h + cw); ctx.restore();
   const A = axes({ ...AX, xlim: [-XL, XL], ylim: [-XL, XL], xticks: [-2, -1, 0, 1, 2], yticks: [-2, -1, 0, 1, 2],
-    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 34, progress: seg(0, .35) });
+    xlabel: 'x_1', ylabel: 'x_2', ylabelGap: 36, tickSize: 16, progress: seg(0, .35) });
 
   // the star's K nearest now; in the search, only those the circle has reached
   nearest(sp[0], sp[1]);
@@ -209,7 +209,7 @@ function draw() {
     const i = NI[k], x = SX(D.x[i][0]), y = SY(D.x[i][1]), a = settle(inSearch ? tFound(k) : -1, .22);
     mark('circle', x, y, 10, { fill: null, stroke: C.ink, width: 1.3, alpha: a });
     const ux = x - cx, uy = y - cy, n = Math.hypot(ux, uy) || 1;
-    text(String(k + 1), x + ux / n * 19, y + uy / n * 19 + 5, { size: 15, bold: true, align: 'center', alpha: a });
+    text(String(k + 1), x + ux / n * 20, y + uy / n * 20 + 6, { size: 16, bold: true, align: 'center', alpha: a });
   }
   // the vote and the star's colour
   let no = 0; for (let k = 0; k < 3; k++) if (D.y[NI[k]] === 0) no++;
@@ -246,8 +246,8 @@ function draw() {
     [(x, y, a) => mark('square', x, y, 4.2, { fill: K.purple, stroke: K.purpleEdge, width: 1.1, alpha: a }), 'purple class'],
     [(x, y, a) => mark('star', x, y, 9, { fill: '#fff', stroke: C.ink, width: 1.3, alpha: a }), 'new patient'],
   ], { alpha: lg });
-  math(`\\rm{${NP} synthetic patients with known labels, two standardized features; Euclidean distance;}\\ K = 3`,
-       18, H - 12, { size: 14, color: C.muted, alpha: lab(.5) });
+  text(`${NP} synthetic patients, standardized; Euclidean distance`,
+       18, H - 12, { size: 15, color: C.muted, alpha: lab(.5) });
 }
 boot();
 """

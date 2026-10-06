@@ -121,7 +121,7 @@ function bars(pi, chosen, hi, a0, was = -1, lo = 0) {
     const cx = AG.x + 82 + k * 64, h = Hm * pi[k];
     const on = Math.max(k === chosen ? hi : 0, k === was ? lo : 0);
     box(cx - bw / 2, base - h, bw, h, { fill: on > 0 ? mix('#A9C3DA', '#043052', on) : C.mist, stroke: C.blue, width: 1.2, alpha: a0 });
-    text(nf(pi[k], 3), cx, base - h - 7, { size: 14, align: 'center', alpha: a0 });
+    text(nf(pi[k], 3), cx, base - h - 7, { size: 16, align: 'center', alpha: a0 });
     const d = MOVE[k], L = 9;
     arrow(cx - d[0] * L, base + 21 + d[1] * L, cx + d[0] * L, base + 21 - d[1] * L, { width: 1.5, head: 8, alpha: a0 });
   }
@@ -130,9 +130,9 @@ function bars(pi, chosen, hi, a0, was = -1, lo = 0) {
 function tag(s, x, y, o = {}) {
   const { color = C.ink, alpha = 1, isMath = false } = o;
   if (alpha <= 0) return;
-  ctx.save(); ctx.font = font({ size: 15 }); const w = (isMath ? math(s, 0, -1e4, { size: 15, alpha: 0 }) : ctx.measureText(s).width) + 14; ctx.restore();
-  box(x - w / 2, y - 12, w, 24, { fill: '#fff', stroke: color, width: 1.2, alpha });
-  if (isMath) math(s, x, y + 5, { size: 15, align: 'center', color, alpha }); else text(s, x, y + 5, { size: 15, align: 'center', color, alpha });
+  ctx.save(); ctx.font = font({ size: 16 }); const w = (isMath ? math(s, 0, -1e4, { size: 16, alpha: 0 }) : ctx.measureText(s).width) + 14; ctx.restore();
+  box(x - w / 2, y - 13, w, 26, { fill: '#fff', stroke: color, width: 1.2, alpha });
+  if (isMath) math(s, x, y + 6, { size: 16, align: 'center', color, alpha }); else text(s, x, y + 6, { size: 16, align: 'center', color, alpha });
 }
 function draw() {
   const { i, u, lap, out } = clockNow(), st = ST[i], prev = i > FIRST ? ST[i - 1] : null;
@@ -174,8 +174,8 @@ function draw() {
     box(X, Y, CS, CS, { fill: x === 4 && y === 4 ? C.accent : '#fff', stroke: C.rule, width: 1, alpha: ga });
   }
   box(GX0, GY0, 5 * CS, 5 * CS, { width: 1.3, progress: ga });
-  lab('goal', GX0 + 4.5 * CS, GY0 - 8, .45, { size: 14, color: C.accent, align: 'center' });
-  lab('start', GX0 + .5 * CS, GY0 + 5 * CS + 17, .45, { size: 14, color: C.body, align: 'center' });
+  lab('goal', GX0 + 4.5 * CS, GY0 - 8, .45, { size: 16, color: C.accent, align: 'center' });
+  lab('start', GX0 + .5 * CS, GY0 + 5 * CS + 17, .45, { size: 16, color: C.body, align: 'center' });
   const trail = [[gx(ST[0].s), gy(ST[0].s)]];
   for (let k = 0; k < i; k++) trail.push([gx(ST[k].s2), gy(ST[k].s2)]);
   let ax = gx(st.s), ay = gy(st.s);
@@ -207,8 +207,8 @@ function draw() {
     if (upd > 0 && upd < 1) { const q = easeInOut(upd) * (loop.length - 1), k = Math.min(loop.length - 2, Math.floor(q)), f = q - k;
       dot(lerp(loop[k][0], loop[k + 1][0], f), lerp(loop[k][1], loop[k + 1][1], f), 4.5, { color: C.navy, fill: C.navy, alpha: Math.sin(Math.PI * upd) }); }
   }
-  text('the grid world of Figure 30, the end of its first episode: reward +1 at the goal, −0.02 per step, ε = 0.5',
-       20, H - 14, { size: 14, color: C.muted, alpha: seg(.6, .5) });
+  text('grid world of Figure 30: +1 at the goal, −0.02 a step; ε = 0.5',
+       20, H - 12, { size: 15, color: C.muted, alpha: seg(.6, .5) });
 }
 boot();
 """)

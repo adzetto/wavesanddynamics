@@ -369,18 +369,18 @@ function sub(letter, x, y, words, a) {     // a panel's letter and its subtitle 
   panel(letter, x, y, { alpha: a });
   text(words, x + 35, y, { size: 17, color: C.body, alpha: a });
 }
-/* a legend as the family draws one: a thin box, white fill, serif 15; items [mark(x, y, a), tex] in rows */
+/* a legend as the family draws one: a thin box, white fill, serif 16; items [mark(x, y, a), tex] in rows */
 function legend(x, y, rows, a, o = {}) {
   if (a <= 0) return;
   const rh = o.rh || 21, pad = 9, gap = o.gap || 18, mk = 30;
-  const mw = s => math(s, 0, -1e4, { size: 15, alpha: 0 });
+  const mw = s => math(s, 0, -1e4, { size: 16, alpha: 0 });
   const widths = rows.map(r => r.reduce((s, it) => s + mk + 4 + mw(it[1]), 0) + gap * (r.length - 1));
   const w = Math.max(...widths) + 2 * pad, h = rows.length * rh + 6;
   const x0 = o.right ? x - w : x;
   line([[x0, y], [x0 + w, y], [x0 + w, y + h], [x0, y + h]], { color: C.ink, width: 1, fill: '#fff', close: true, alpha: a });
   rows.forEach((r, j) => {
     let cx = x0 + pad; const cy = y + 3 + rh * j + rh / 2;
-    for (const [mark, words] of r) { mark(cx + 13, cy, a); cx += mk + math(words, cx + mk + 4, cy + 5, { size: 15, alpha: a }) + 4 + gap; }
+    for (const [mark, words] of r) { mark(cx + 13, cy, a); cx += mk + math(words, cx + mk + 4, cy + 5.5, { size: 16, alpha: a }) + 4 + gap; }
   });
   return { x: x0, y, w, h };
 }
@@ -400,7 +400,7 @@ function redraw() { if (!playing) render(); }
 function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
 const ctlById = id => UI.list.find(c => c.id === id);
 const ctlAt = (X, Y) => UI.list.find(c => !c.off() && X >= c.hit[0] && X <= c.hit[2] && Y >= c.hit[1] && Y <= c.hit[3]) || null;
-function drawChip(c, a) { uiChip(c.x, c.y, c.w, c.h, c.label(), { on: c.on(), off: c.off(), hover: UI.hov === c.id, down: UI.down === c.id }, a); }
+function drawChip(c, a) { uiChip(c.x, c.y, c.w, c.h, c.label(), { on: c.on(), off: c.off(), hover: UI.hov === c.id, down: UI.down === c.id, size: 16 }, a); }
 function drawSlider(c, a) {
   const off = c.off(), u = clamp(c.get()), hx = lerp(c.x0, c.x1, u);
   line([[c.x0, c.y], [c.x1, c.y]], { color: C.rule, width: 3, alpha: a });
@@ -412,8 +412,12 @@ function drawSlider(c, a) {
 const sliderU = (c, X) => clamp((X - c.x0) / (c.x1 - c.x0));
 if (!STILL) {
   const css = document.createElement('style');
+  /* a stand-in covers its control's whole hit area (24 CSS px at least at the page's 672 px); its
+     focus ring hugs the drawn chip, 3 units outside it (::after, set by placeKeys) */
   css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
-    'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
+    'outline:none;color:transparent;font:inherit;overflow:visible}' +
+    '.nfk::after{content:"";position:absolute;left:var(--l,0);top:var(--t,0);right:var(--r,0);bottom:var(--b,0);pointer-events:none}' +
+    '.nfk:focus-visible::after{outline:2px solid #095A94;outline-offset:2px}';
   document.head.appendChild(css);
   cv.style.touchAction = 'pan-y pinch-zoom';
   cv.addEventListener('pointerdown', e => {
@@ -512,8 +516,16 @@ function placeKeys(stamp) {
   const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
   for (const k of UI.kb) {
     const c = ctlById(k.id), el = k.el;
-    const [x0, y0, x1, y1] = c.kind === 'slider' ? [c.x0 - 10, c.y - 14, c.x1 + 10, c.y + 14] : [c.x, c.y, c.x + c.w, c.y + c.h];
+    // the ring's box (the chip, or the slider's track) inside the stand-in, which is the hit area,
+    // never less than 36 units (24 CSS px at the page's width) either way
+    const [r0, s0, r1, s1] = c.kind === 'slider' ? [c.x0 - 10, c.y - 14, c.x1 + 10, c.y + 14] : [c.x, c.y, c.x + c.w, c.y + c.h];
+    let [x0, y0, x1, y1] = c.hit;
+    if (x1 - x0 < 36) { const m = (x0 + x1) / 2; x0 = m - 18; x1 = m + 18; }
+    if (y1 - y0 < 36) { const m = (y0 + y1) / 2; y0 = m - 18; y1 = m + 18; }
+    x0 = Math.min(x0, r0); y0 = Math.min(y0, s0); x1 = Math.max(x1, r1); y1 = Math.max(y1, s1);
     el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0);
+    el.style.setProperty('--l', px(r0 - x0)); el.style.setProperty('--t', px(s0 - y0));
+    el.style.setProperty('--r', px(x1 - r1)); el.style.setProperty('--b', px(y1 - s1));
     el.setAttribute('aria-label', c.aria ? c.aria() : c.label());
     if (c.off()) el.setAttribute('aria-disabled', 'true'); else el.removeAttribute('aria-disabled');
     if (c.kind === 'slider') { el.setAttribute('aria-valuenow', String(Math.round(100 * clamp(c.get())))); el.setAttribute('aria-valuetext', c.valueText()); }

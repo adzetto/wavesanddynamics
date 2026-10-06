@@ -628,14 +628,16 @@ const wAt = (n, k) => WS[n * M + k];
 
 /* ------------------------------------------------------------ clock
    Intro (README, round 2): strokes by .95 s, labels by 1.2 s. The run starts
-   at .55 s: 600 samples in 7.5 s, rests, glides back to n = 0. */
-const T0 = .55, RUN = 7.5, HOLD = 1.6, BACK = .9, REST = .3, PER = RUN + HOLD + BACK + REST;
-function nNow() {
-  if (t < T0) return 0;
-  const c = Math.floor((t - T0) / PER), u = t - T0 - c * PER;
-  if (u < RUN) return N * u / RUN;
-  if (u < RUN + HOLD) return N;
-  return N * (1 - settle(T0 + c * PER + RUN + HOLD, BACK * .8));
+   at .55 s: 600 samples in 7.5 s, rests 2.6 s; what the run drew fades out,
+   the filter fades back in at n = 0, and it runs again (no fast rewind). */
+const T0 = .55, RUN = 7.5, HOLD = 2.6, FADE = .45, REST = .3, PER = RUN + HOLD + 2 * FADE + REST;
+function nNow() {                       // samples played, and the alpha of what the run has drawn
+  if (t < T0) return {n: 0, a: 1};
+  const c = Math.floor((t - T0) / PER), u = t - T0 - c * PER, b0 = T0 + c * PER;
+  if (u < RUN) return {n: N * u / RUN, a: 1};
+  if (u < RUN + HOLD) return {n: N, a: 1};
+  if (u < RUN + HOLD + FADE) return {n: N, a: 1 - seg(b0 + RUN + HOLD, FADE)};
+  return {n: 0, a: seg(b0 + RUN + HOLD + FADE, FADE)};
 }
 const POSTER_T = T0 + RUN + .6;
 
@@ -654,7 +656,7 @@ function stems(b, val, col, al, ghost) {
   for (let k = 0; k < M; k++) { ctx.beginPath(); ctx.arc(SX(b, k), yb - SS * val(k), 1.9, 0, 2 * Math.PI); ctx.fill(); }
   ctx.restore();
 }
-function panelA(nf) {
+function panelA(nf, ra) {
   panel('a', 20, 34, {alpha: seg(0, .2)});
   text('system identification', 54, 34, {size: 17, color: C.body, alpha: seg(.03, .25)});
   const w0 = seg(.02, .3), w1 = seg(.12, .3), w2 = seg(.22, .3);
@@ -681,7 +683,7 @@ function panelA(nf) {
   // box from below: the textbook's diagonal through the box would cross the
   // live coefficients drawn inside it
   arrow(xU, yF, xU, AB.y + AB.h + 1, {width: 1.6, head: 10, alpha: seg(.5, .25)});
-  math('\\rm{update}', xU + 10, yF - 12, {size: 14, color: C.muted, alpha: seg(.55, .25)});
+  math('\\rm{update}', xU + 10, yF - 12, {size: 16, color: C.muted, alpha: seg(.55, .25)});
   // words and symbols
   const L1 = lab(.12), L2 = lab(.18), L3 = lab(.24), L4 = lab(.3);
   text('unknown system', UB.x, UB.y - 9 + rise(L1), {size: 16, alpha: L1});
@@ -698,44 +700,44 @@ function panelA(nf) {
   const sa = seg(.3, .3);
   stems(UB, k => HK[k], C.navy, sa, false);
   const n0 = Math.floor(nf), fr = nf - n0, n1 = Math.min(N, n0 + 1);
-  stems(AB, k => lerp(wAt(n0, k), wAt(n1, k), fr), C.blue, sa, true);
+  stems(AB, k => lerp(wAt(n0, k), wAt(n1, k), fr), C.blue, sa * ra, true);
   // the sample counter, and how fast the record plays
   const ca = seg(.5, .2);
-  math(`n = ${Math.round(nf)}`, 980, 34, {size: 16, align: 'right', alpha: ca});
-  math('\\rm{time sped up }' + D.speed + '\\,\\times', 980, 56, {size: 14, color: C.muted, align: 'right', alpha: ca});
+  math(`n = ${Math.round(nf)}`, 980, 34, {size: 16, align: 'right', alpha: ca * ra});
+  math('\\rm{time sped up }' + D.speed + '\\,\\times', 980, 58, {size: 16, color: C.muted, align: 'right', alpha: ca});
 }
 
 /* ------------------------------------------------------------ (b) */
 const PB = {x: 84, y: 398, w: 392, h: 176};
-function panelB(nf) {
+function panelB(nf, ra) {
   panel('b', 20, 372, {alpha: seg(.08, .2)});
   text('learning curve', 54, 372, {size: 17, color: C.body, alpha: seg(.1, .25)});
   const A = axes({x: PB.x, y: PB.y, w: PB.w, h: PB.h, xlim: [0, N], ylim: [-40, 5],
                   xticks: [0, 100, 200, 300, 400, 500, 600], yticks: [-40, -30, -20, -10, 0],
                   xlabel: 'n', ylabel: '\\rm{mean square error (dB)}', ylabelGap: 44,
-                  grid: true, progress: seg(.1, .35)});
+                  grid: true, tickSize: 16, progress: seg(.1, .35)});
   // the floor: the measurement noise, what no filter can remove
   const fa = seg(.35, .25);
   A.inside(() => line([[PB.x, A.Y(D.floor)], [PB.x + PB.w, A.Y(D.floor)]], {color: C.guide, width: 1, dash: [5, 4], alpha: fa}));
-  text('noise floor', PB.x + 8, A.Y(D.floor) + 17, {size: 14, color: C.muted, alpha: fa});
+  text('noise floor', PB.x + 8, A.Y(D.floor) + 19, {size: 16, color: C.muted, alpha: fa});
   // the mean of 400 runs, whole; this run, up to n
   const ens = []; for (let n = 0; n < N; n++) ens.push([A.X(n + .5), A.Y(ENS[n])]);
   A.inside(() => line(ens, {color: C.navy, width: 2.2, progress: seg(.2, .4)}));
   const k = Math.min(N - 1, Math.floor(nf));
   if (t >= T0 && k > 0) {
     const run = []; for (let n = 0; n <= k; n++) run.push([A.X(n + .5), A.Y(Math.max(-44, SM8[n]))]);
-    A.inside(() => line(run, {color: C.sky, width: 1.2}));
+    A.inside(() => line(run, {color: C.sky, width: 1.2, alpha: ra}));
   }
-  if (t >= T0) dot(A.X(k + .5), A.Y(clamp(SM8[k], -40, 5)), 4, {color: '#fff', fill: C.accent, width: 1.4, alpha: seg(T0, .15)});
+  if (t >= T0) dot(A.X(k + .5), A.Y(clamp(SM8[k], -40, 5)), 4, {color: '#fff', fill: C.accent, width: 1.4, alpha: seg(T0, .15) * ra});
   // legend
-  const la = seg(.4, .25), LX = PB.x + PB.w - 178, LY = PB.y + 10;
+  const la = seg(.4, .25), LX = PB.x + PB.w - 192, LY = PB.y + 10;
   if (la > 0) {
     ctx.save(); ctx.globalAlpha *= la; ctx.fillStyle = '#fff'; ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-    ctx.fillRect(LX, LY, 170, 50); ctx.strokeRect(LX, LY, 170, 50); ctx.restore();
-    line([[LX + 10, LY + 17], [LX + 38, LY + 17]], {color: C.sky, width: 1.2, alpha: la});
-    text('this run', LX + 46, LY + 22, {size: 15, alpha: la});
-    line([[LX + 10, LY + 37], [LX + 38, LY + 37]], {color: C.navy, width: 2.2, alpha: la});
-    text(`mean of ${D.runs} runs`, LX + 46, LY + 42, {size: 15, alpha: la});
+    ctx.fillRect(LX, LY, 184, 54); ctx.strokeRect(LX, LY, 184, 54); ctx.restore();
+    line([[LX + 10, LY + 18], [LX + 38, LY + 18]], {color: C.sky, width: 1.2, alpha: la});
+    text('this run', LX + 46, LY + 23.5, {size: 16, alpha: la});
+    line([[LX + 10, LY + 39], [LX + 38, LY + 39]], {color: C.navy, width: 2.2, alpha: la});
+    text(`mean of ${D.runs} runs`, LX + 46, LY + 44.5, {size: 16, alpha: la});
   }
 }
 
@@ -753,40 +755,40 @@ function magnitude(val) {
   return out;
 }
 const HM = magnitude(k => HK[k]);
-function panelC(nf) {
+function panelC(nf, ra) {
   panel('c', 540, 372, {alpha: seg(.1, .2)});
   text('frequency response', 574, 372, {size: 17, color: C.body, alpha: seg(.12, .25)});
   const A = axes({x: PC.x, y: PC.y, w: PC.w, h: PC.h, xlim: [0, FS / 2], ylim: [0, 7.5],
                   xticks: [0, 1, 2, 3, 4], yticks: [0, 2, 4, 6],
                   xlabel: '\\rm{frequency}\\ f\\ (\\rm{Hz})', ylabel: '|H|,\\ |W|', ylabelGap: 36,
-                  grid: true, progress: seg(.14, .35)});
+                  grid: true, tickSize: 16, progress: seg(.14, .35)});
   const fx = i => A.X(i / (NF - 1) * FS / 2);
   const hp = []; for (let i = 0; i < NF; i++) hp.push([fx(i), A.Y(HM[i])]);
   const n0 = Math.floor(nf), fr = nf - n0, n1 = Math.min(N, n0 + 1);
   const WM = magnitude(k => lerp(wAt(n0, k), wAt(n1, k), fr));
   const wp = []; for (let i = 0; i < NF; i++) wp.push([fx(i), A.Y(WM[i])]);
   A.inside(() => {                      // the filter under, the system's dashes on top: they meet
-    if (t >= T0) line(wp, {color: C.blue, width: 2.4, alpha: seg(T0, .2)});
+    if (t >= T0) line(wp, {color: C.blue, width: 2.4, alpha: seg(T0, .2) * ra});
     line(hp, {color: C.navy, width: 1.6, dash: [7, 4], progress: seg(.22, .4)});
   });
   // legend
-  const la = seg(.4, .25), LX = PC.x + PC.w - 178, LY = PC.y + 10;
+  const la = seg(.4, .25), LX = PC.x + PC.w - 192, LY = PC.y + 10;
   if (la > 0) {
     ctx.save(); ctx.globalAlpha *= la; ctx.fillStyle = '#fff'; ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-    ctx.fillRect(LX, LY, 170, 50); ctx.strokeRect(LX, LY, 170, 50); ctx.restore();
-    line([[LX + 10, LY + 17], [LX + 38, LY + 17]], {color: C.navy, width: 1.6, dash: [7, 4], alpha: la});
-    text('unknown system', LX + 46, LY + 22, {size: 15, alpha: la});
-    line([[LX + 10, LY + 37], [LX + 38, LY + 37]], {color: C.blue, width: 2.4, alpha: la});
-    text('adaptive filter', LX + 46, LY + 42, {size: 15, alpha: la});
+    ctx.fillRect(LX, LY, 184, 54); ctx.strokeRect(LX, LY, 184, 54); ctx.restore();
+    line([[LX + 10, LY + 18], [LX + 38, LY + 18]], {color: C.navy, width: 1.6, dash: [7, 4], alpha: la});
+    text('unknown system', LX + 46, LY + 23.5, {size: 16, alpha: la});
+    line([[LX + 10, LY + 39], [LX + 38, LY + 39]], {color: C.blue, width: 2.4, alpha: la});
+    text('adaptive filter', LX + 46, LY + 44.5, {size: 16, alpha: la});
   }
 }
 
 function draw() {
-  const nf = nNow();
-  panelA(nf);
-  panelB(nf);
-  panelC(nf);
-  math(D.params, 20, H - 14, {size: 14, color: C.muted, alpha: seg(.45, .3)});
+  const {n: nf, a: ra} = nNow();
+  panelA(nf, ra);
+  panelB(nf, ra);
+  panelC(nf, ra);
+  math(D.params, 20, H - 14, {size: 15, color: C.muted, alpha: seg(.45, .3)});
 }
 boot();
 </script>

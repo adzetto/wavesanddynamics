@@ -91,6 +91,10 @@ DISPLAY AND CLOCK
   the next). The still (print, reduced motion): t = 7.15 s, every example converged.
   Crimson marks the current estimate where it is a point: the filter's newest output sample, the
   posterior mean, the iterate.
+  W x H = 1000 x 528: his title line at 20 above the nodes (his 'Different problems · shared inference and
+  fitting tools'), and under them his key for the dashed links ('Overlapping methods', 16) and his note
+  ('Conceptual links, not a required pipeline', 16; left out on a phone, where the key is 24). Box subtitles
+  18, link labels 17.
 
 OVERLAP (engine ?overlap, common.overlaps; common.still also samples every 0.25 s up to the poster)
   672 px: moments still, t=0.2, t=0.45, t=0.7, t=1, t=1.3, t=2, t=3, t=4.5, t=6, t=7.15, t=8.65, t=9.05, t=9.35, t=9.85, t=11.95, t=24.85: none

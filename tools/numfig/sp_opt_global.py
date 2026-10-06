@@ -65,18 +65,18 @@ PSO_P = dict(w=0.7298, c1=1.49618, c2=1.49618, v0=0.1)
 SA_P = dict(T0=2.0, T1=2e-3, step=1.0)
 ACO_P = dict(m=2, q=0.5, xi=0.85)
 LEVELS = [-1.7, -1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1, 0.1, 0.4, 0.7, 1.0]
-H_PAGE = 760
+H_PAGE = 740
 T0_RUN = 0.6        # the page's clock (JS clock()): the run starts here
 NS_SLOTS = NE // NPOP
 
 
 def t_of(u):
     """The moment (s, first loop) at which the page's clock reads u: slots of
-    20 evaluations, 1 s each for the first five, 0.5 s from the tenth on."""
+    20 evaluations, 1 s each for the first five, 0.8 s from the tenth on."""
     dur = []
     for k in range(NS_SLOTS):
         x = min(1.0, max(0.0, (k - 4) / 6))
-        dur.append(0.5 + 0.5 * (1 - x * x * (3 - 2 * x)))
+        dur.append(0.8 + 0.2 * (1 - x * x * (3 - 2 * x)))
     cum = np.concatenate([[0], np.cumsum(dur)])
     k = int(min(max(np.floor(u + 1), 0), NS_SLOTS - 1))
     return T0_RUN + cum[k] + (u + 1 - k) * dur[k]
@@ -411,10 +411,10 @@ const SIG = []; for (let i = 0; i <= AI; i++) SIG.push(sigmas(AARCH.subarray(i *
    at .6 s. Every 20 evaluations are one slot, the same budget for all four at
    every moment: u runs from -1 (nothing evaluated) to 19 (all 400),
    n = 20 (u + 1). The first five slots take 1 s each, where the four are
-   still exploring; from the tenth on 0.5 s (a smooth step between). The run
+   still exploring; from the tenth on 0.8 s (a smooth step between). The run
    rests on its end, fades and starts again. */
 const T0 = .6, DUR = [], CUM = [0];
-for (let k = 0; k < NS; k++) { const x = clamp((k - 4) / 6); DUR.push(.5 + .5 * (1 - x * x * (3 - 2 * x))); CUM.push(CUM[k] + DUR[k]); }
+for (let k = 0; k < NS; k++) { const x = clamp((k - 4) / 6); DUR.push(.8 + .2 * (1 - x * x * (3 - 2 * x))); CUM.push(CUM[k] + DUR[k]); }
 const RUN = CUM[NS], HOLD = 2.6, FADE = .5, REST = .35, PER = RUN + HOLD + FADE + REST;
 let BASE = T0;                                   // the start of this loop, set from t by clock()
 function clock() {
@@ -431,8 +431,8 @@ const tOf = u => { const k = clamp(Math.floor(u + 1), 0, NS - 1); return BASE + 
 const POSTER_T = (() => { const k = Math.floor(D.poster + 1); return T0 + CUM[k] + (D.poster + 1 - k) * DUR[k]; })();
 
 /* ------------------------------------------------------------ layout */
-const MS = 280, MAPS = [{x: 66, y: 44}, {x: 382, y: 44}, {x: 66, y: 378}, {x: 382, y: 378}];
-const EP = {x: 754, y: 44, w: 226, h: 280}, YL = D.ylim;
+const MS = 270, MAPS = [{x: 66, y: 44}, {x: 366, y: 44}, {x: 66, y: 368}, {x: 366, y: 368}];
+const EP = {x: 738, y: 44, w: 242, h: 270}, YL = D.ylim;
 const DOT = 4;
 function mapOf(m) {
   const k = MS / (HI - LO);
@@ -494,7 +494,7 @@ function header(m, letter, words, t0) {
 }
 function counter(m, s, a, isMath) {
   if (a <= 0) return;
-  if (isMath) math(s, m.x + MS, m.y - 14, {size: 16, align: 'right', alpha: a});
+  if (isMath) math(s, m.x + MS, m.y - 14, {size: 15, align: 'right', alpha: a});
   else text(s, m.x + MS, m.y - 14, {size: 15, align: 'right', alpha: a});
 }
 
@@ -680,7 +680,7 @@ const SER = [
   {name: 'ant colony', color: C.ink, dash: [9, 3, 2, 3], width: 1.6},
 ];
 function drawE(u, a, counts) {
-  header({x: 700, y: EP.y}, 'e', 'convergence', .14);
+  header({x: 672, y: EP.y}, 'e', 'convergence', .14);
   const A = axes({x: EP.x, y: EP.y, w: EP.w, h: EP.h, xlim: [0, NE], ylim: YL, xticks: [0, 100, 200, 300, 400],
                   yticks: D.yticks, xlabel: '\\rm{function evaluations}', ylabel: '\\rm{best}\\ f\\ \\rm{so far}',
                   ylabelGap: 54, tickSize: 16, labelSize: 17, grid: true, progress: seg(.12, .4)});
@@ -695,16 +695,16 @@ function drawE(u, a, counts) {
       SER.forEach((s, j) => { if (counts[j] >= 1) line(EC[j].pts.slice(0, EC[j].cut[counts[j]]), {color: s.color, width: s.width, dash: s.dash, alpha: a}); });
     }
   });
-  text('global minimum', EP.x + EP.w - 6, A.Y(D.fstar) - 10, {size: 14, color: C.muted, align: 'right', alpha: ga});
+  text('global minimum', EP.x + EP.w - 6, A.Y(D.fstar) - 10, {size: 16, color: C.muted, align: 'right', alpha: ga});
   // legend
-  const la = seg(.45, .25), LX = EP.x + EP.w - 180, LY = EP.y + 8, LH = 22;
+  const la = seg(.45, .25), LX = EP.x + EP.w - 194, LY = EP.y + 8, LH = 23;
   if (la > 0) {
     ctx.save(); ctx.globalAlpha *= la; ctx.fillStyle = '#fff'; ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-    ctx.fillRect(LX, LY, 174, 4 * LH + 8); ctx.strokeRect(LX, LY, 174, 4 * LH + 8); ctx.restore();
+    ctx.fillRect(LX, LY, 188, 4 * LH + 8); ctx.strokeRect(LX, LY, 188, 4 * LH + 8); ctx.restore();
     SER.forEach((s, j) => {
-      const y = LY + 15 + j * LH;
+      const y = LY + 15.5 + j * LH;
       line([[LX + 8, y], [LX + 30, y]], {color: s.color, width: s.width, dash: s.dash, alpha: la});
-      text(s.name, LX + 36, y + 5, {size: 15, alpha: la});
+      text(s.name, LX + 36, y + 5.5, {size: 16, alpha: la});
     });
   }
   return A;
@@ -712,7 +712,7 @@ function drawE(u, a, counts) {
 
 /* ------------------------------------------------------------ the key */
 function key(t0) {
-  const x0 = 702, y0 = 412, LH = 27, gx = x0 + 14, tx = x0 + 36;
+  const x0 = 686, y0 = 404, LH = 27, gx = x0 + 14, tx = x0 + 36;
   const rows = [
     [a => { ctx.save(); ctx.globalAlpha *= a; ctx.strokeStyle = C.rule; ctx.lineWidth = 1; for (const r of [5, 9, 13]) { ctx.beginPath(); ctx.arc(gx, 7, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); } ctx.restore(); }, [['contours of '], ['f', 1], [', every 0.2']]],
     [a => { ring(gx, 0, 6, C.ink, a, 1.4); line([[gx - 3.6, 0], [gx + 3.6, 0]], {color: C.ink, width: 1.2, alpha: a}); line([[gx, -3.6], [gx, 3.6]], {color: C.ink, width: 1.2, alpha: a}); }, 'global minimum'],
@@ -727,11 +727,11 @@ function key(t0) {
     const a = lab(t0 + .03 * i), y = y0 + i * LH;
     if (a <= 0) return;
     ctx.save(); ctx.translate(0, y + rise(a)); g(a); ctx.restore();
-    if (typeof s === 'string') text(s, tx, y + 5 + rise(a), {size: 15, color: C.body, alpha: a});
+    if (typeof s === 'string') text(s, tx, y + 5.5 + rise(a), {size: 16, color: C.body, alpha: a});
     else {                                   // words with a symbol in math
       let x = tx;
-      for (const [w, m] of s) x += m ? math(w, x, y + 5 + rise(a), {size: 16, color: C.body, alpha: a}) + 1
-                                     : text(w, x, y + 5 + rise(a), {size: 15, color: C.body, alpha: a});
+      for (const [w, m] of s) x += m ? math(w, x, y + 5.5 + rise(a), {size: 16, color: C.body, alpha: a}) + 1
+                                     : text(w, x, y + 5.5 + rise(a), {size: 16, color: C.body, alpha: a});
     }
   });
 }
@@ -778,8 +778,8 @@ function draw() {
   drawE(u, a, [gaCount(u), psoCount(u), saN(u), u < 0 ? saN(u) : Math.min(NE, NP + AM * acoIt(u))].map(v => a > 0 ? v : 0));
   math(`n = ${a > 0 ? n : 0}`, EP.x + EP.w, EP.y - 14, {size: 16, align: 'right', alpha: ca});
   key(.5);
-  math(D.params[0], 20, H - 32, {size: 14, color: C.muted, alpha: seg(.45, .3)});
-  math(D.params[1], 20, H - 12, {size: 14, color: C.muted, alpha: seg(.5, .3)});
+  math(D.params[0], 20, H - 33, {size: 15, color: C.muted, alpha: seg(.45, .3)});
+  math(D.params[1], 20, H - 12, {size: 15, color: C.muted, alpha: seg(.5, .3)});
 }
 boot();
 """
@@ -816,10 +816,10 @@ def build(still=True):
         aco=dict(x=common.f32(np.array(R["aco"]["F"].x)), f=common.f32(R["aco"]["F"].v),
                  arch=i16(R["aco"]["arch"]), guide=i16(R["aco"]["guide"]), m=ACO_P["m"], q=ACO_P["q"], xi=ACO_P["xi"]),
         params=[
-            r"f(x) = 0.04|x|^2 - \Sigma\ a_i\ \rm{exp}(-|x - c_i|^2/2s_i^2)\rm{, seven wells;   400 evaluations of }f\,\rm{ each, seed %d;   "
-            r"GA: tournament, blend crossover }\alpha\ = 0.5\rm{, }p_{\rm{m}} = 0.25\rm{, 2 elites}" % SEED,
+            r"f(x) = 0.04|x|^2 - \Sigma\ a_i\ \rm{exp}(-|x - c_i|^2/2s_i^2)\rm{, seven wells;   400 evaluations of }f\,\rm{ each;   "
+            r"GA: tournament, blend }\alpha\ = 0.5\rm{, }p_{\rm{m}} = 0.25\rm{, 2 elites}",
             r"\rm{PSO: }w = 0.7298,\ c_1 = c_2 = 1.4962\rm{;   SA: }T\ \rm{from 2 to 0.002, geometric, steps of 1;   "
-            r"continuous ACO (ACO}_{\rm{R}}\rm{): }k = 20,\ m = 2,\ q = 0.5,\ \xi\ = 0.85",
+            r"ACO}_{\rm{R}}\rm{: }k = 20,\ m = 2,\ q = 0.5,\ \xi\ = 0.85\rm{;   seed %d}" % SEED,
         ],
     )
     title = "Figure 9: Four global optimization algorithms on one landscape with seven minima"
@@ -1111,7 +1111,7 @@ def validate(B):
     say("DISPLAY")
     say("  One shared clock: in each slot every algorithm spends 20 more evaluations (GA: a generation, PSO: an")
     say("  iteration, SA: 20 proposals, ACO_R: 10 iterations of 2 ants), so at every moment all four have used")
-    say("  the same budget, counted by n in (e). The first five slots take 1 s each, from the tenth on 0.5 s")
+    say("  the same budget, counted by n in (e). The first five slots take 1 s each, from the tenth on 0.8 s")
     say(f"  (a smooth step between): the run takes {t_of(NS_SLOTS - 1) - T0_RUN:.2f} s, rests 2.6 s, fades and starts again.")
     say("  Each curve in (e) is drawn up to its own algorithm's count (GA's children are evaluated one by one")
     say("  as they are born; PSO's swarm all at once on arrival), with the whole run faint behind it.")

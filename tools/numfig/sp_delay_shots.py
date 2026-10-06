@@ -28,7 +28,7 @@ import common
 import sp_delay_lib as L
 
 NAME = "sp-delay-shots"
-H = 758
+H = 752
 JS = L.JS
 TITLE = "Figure 13: One signal at two sensors, recovered after averaging repeated shots"
 ARIA = ("Two sensor records of one signal, the second 48 ms later, buried in heavy noise. The figure steps through "
@@ -38,7 +38,7 @@ ARIA = ("Two sensor records of one signal, the second 48 ms later, buried in hea
         "the delay and the correlation for every number of shots; chips choose the stage, the signal and the "
         "number of shots, a slider the SNR of one shot.")
 PARAMS = (r"f_{\rm{s}} = 500\ \rm{Hz, 2,048 samples;  }\tau\ = 48\ \rm{ms = 24 samples;  new noise in every shot;  "
-          r"Welch: Hann, 256 samples, 50% overlap;  amplitudes in signal RMS}")
+          r"Welch: Hann, 256 samples, 50% overlap;  signal RMS = 1}")
 
 
 def build():

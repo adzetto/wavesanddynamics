@@ -26,6 +26,8 @@ VALIDATION
   4. The page's own f(w) in (a) and (b) against these at 9 points: 0.0e+00.
 
 DISPLAY
-  One step every 0.22 s; between iterates the marker glides along the curve (a Motion
+  One step every 0.3 s; between iterates the marker glides along the curve (a Motion
   spring, for the eye only). The segments are the chords of the jumps; the short line
-  through each marker is the tangent, slope f'(w), that the next step follows.
+  through each marker is the tangent, slope f'(w), that the next step follows. The runs rest
+  2.6 s at w_20, fade out in 0.45 s and fade back in at w_0: the marker never travels through
+  points the descent did not visit. Parameter line at 15 units.

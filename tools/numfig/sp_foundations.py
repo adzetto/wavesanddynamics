@@ -48,6 +48,7 @@ import common
 import sp_model as SM
 
 NAME = "sp-foundations"
+H_PAGE = 528               # W = 1000: his title line, the five nodes, his key and note
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ------------------------------------------------------------------ the page's clock (s)
@@ -300,7 +301,8 @@ const arrive = (st, j) => j < st.k ? st.a : j === st.k ? st.a * settle(st.b0 + (
 function clip(r, f) { ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip(); f(); ctx.restore(); }
 
 /* ------------------------------------------------------------ layout */
-const NW = 290, NH = 190, TOPY = 7, BOTY = 263, BUS = 221;
+/* his title line above the nodes; under them his key for the dashed links and his note */
+const NW = 290, NH = 190, TOPY = 46, BOTY = 302, BUS = 260;
 const XT = [167, 500, 833], XF = [300, 700];          // centres of the problems, of the foundations
 const XR = [XF[0] - NW / 2 + 60, XF[1] + NW / 2 - 60]; // where the foundations' links leave them
 const NODES = [
@@ -449,7 +451,7 @@ function node(n, i) {
   else {
     text(n.title, n.cx, n.y + 31 + rise(ta), { size: 22, align: 'center', alpha: ta });
     const sa = lab(.3 + i0);
-    n.sub.forEach((s, j) => text(s, n.cx, n.y + 158 + 20 * j + rise(sa), { size: 17, color: C.body, align: 'center', alpha: sa }));
+    n.sub.forEach((s, j) => text(s, n.cx, n.y + 158 + 20 * j + rise(sa), { size: 18, color: C.body, align: 'center', alpha: sa }));
   }
   n.plot(plotRect(n), i0 + .05);
 }
@@ -472,14 +474,25 @@ function links() {
   grow(xb, yc + 9, xa, yc + 9, seg(.58, .3), o);
   if (NARROW()) return;
   const la = lab(.62), lb = lab(.7);
-  text('statistical inference', XR[0] - 9, BUS + 25 + rise(la), { size: 16, color: C.body, align: 'right', alpha: la });
-  text('numerical fitting', XR[1] + 9, BUS + 25 + rise(la), { size: 16, color: C.body, alpha: la });
-  text('shared tools for data-driven models', (XT[0] + XT[2]) / 2, BUS + 25 + rise(lb), { size: 16, color: C.body, align: 'center', alpha: lb });
-  text('criterion', (xa + xb) / 2, yc - 17 + rise(lb), { size: 16, color: C.body, align: 'center', alpha: lb });
-  text('solution', (xa + xb) / 2, yc + 28 + rise(lb), { size: 16, color: C.body, align: 'center', alpha: lb });
+  text('statistical inference', XR[0] - 9, BUS + 26 + rise(la), { size: 17, color: C.body, align: 'right', alpha: la });
+  text('numerical fitting', XR[1] + 9, BUS + 26 + rise(la), { size: 17, color: C.body, alpha: la });
+  text('shared tools for data-driven models', (XT[0] + XT[2]) / 2, BUS + 26 + rise(lb), { size: 17, color: C.body, align: 'center', alpha: lb });
+  text('criterion', (xa + xb) / 2, yc - 17 + rise(lb), { size: 17, color: C.body, align: 'center', alpha: lb });
+  text('solution', (xa + xb) / 2, yc + 29 + rise(lb), { size: 17, color: C.body, align: 'center', alpha: lb });
+}
+/* his title line, and his key and note under the nodes (on a phone the note is left out) */
+function frameWords() {
+  const k = KW(), n = NARROW(), ta = lab(.04), ka = lab(.66);
+  text('Different problems · shared inference and fitting tools', W / 2, 29 + rise(ta),
+       { size: n ? 30 : 20, color: C.body, align: 'center', alpha: ta });
+  const y = H - (n ? 9 : 13), sw = n ? 44 : 30;
+  line([[22, y - (n ? 8 : 5.5)], [22 + sw, y - (n ? 8 : 5.5)]], { color: C.guide, width: k, dash: [5, 4], alpha: ka });
+  text('Overlapping methods', 30 + sw, y, { size: n ? 24 : 16, color: C.body, alpha: ka });
+  if (!n) text('Conceptual links, not a required pipeline', W - 22, y, { size: 16, color: C.muted, align: 'right', alpha: ka });
 }
 
 function draw() {
+  frameWords();
   NODES.forEach(node);
   links();
 }
@@ -798,6 +811,10 @@ def report(sp, si, ml, es, op, v, pg, over):
     say(f"  the next). The still (print, reduced motion): t = {T0 + RUN + 1.0:g} s, every example converged.")
     say("  Crimson marks the current estimate where it is a point: the filter's newest output sample, the")
     say("  posterior mean, the iterate.")
+    say(f"  W x H = 1000 x {H_PAGE}: his title line at 20 above the nodes (his 'Different problems · shared inference and")
+    say("  fitting tools'), and under them his key for the dashed links ('Overlapping methods', 16) and his note")
+    say("  ('Conceptual links, not a required pipeline', 16; left out on a phone, where the key is 24). Box subtitles")
+    say("  18, link labels 17.")
     say("")
     say("OVERLAP (engine ?overlap, common.overlaps; common.still also samples every 0.25 s up to the poster)")
     for width, res in over:
@@ -812,7 +829,7 @@ def report(sp, si, ml, es, op, v, pg, over):
 def build():
     sp, si, ml, es, op = sp_model(), si_model(), ml_model(), est_model(), opt_model()
     data = page_data(sp, si, ml, es, op)
-    common.build_html(NAME, TITLE, ARIA, 1000, 460, data, JS)
+    common.build_html(NAME, TITLE, ARIA, 1000, H_PAGE, data, JS)
     png = common.still(NAME, width=672)
     print("still:", png)
     pg = page_check(sp, ml)

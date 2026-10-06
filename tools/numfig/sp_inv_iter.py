@@ -35,7 +35,7 @@ import common
 import sp_inv_lib as L
 
 NAME = "sp-inv-iter"
-W, H = 1000, 740
+W, H = 1000, 700
 TITLE = "Figure 5: Solving by iterating, where the iteration count is the regularization parameter"
 ARIA = ("The blurred, noisy measurement of Figure 4 solved by iterating from zero, by Landweber (gradient descent) "
         "and by conjugate gradients (CGLS). The iterate first gains the true shape, then noise: its error against the "
@@ -73,7 +73,7 @@ const kfmt = k => k < 1000 ? String(k) : String(k).replace(/\B(?=(\d{3})+(?!\d))
    run: the iteration running on {t0, l0} (log10 k at t0)} */
 let ST = null;
 function reset() { ST = null; UI.hov = UI.down = UI.drag = UI.press = ''; }
-const T0 = .6, RL = 10, RC = 10, HD = 1.4, HE = 1.2;                    // runs, the pause at the discrepancy stop, the hold at the end
+const T0 = .6, RL = 14, RC = 15, HD = 2.6, HE = 2.6;                    // runs, the pause at the discrepancy stop, the hold at the end
 const RATE_L = D.lwdec / RL, STEP_C = RC / KC;                               // decades of k per s; s per CGLS step
 const runK = (m, t0, l0) => m === 0 ? Math.round(Math.pow(10, Math.min(D.lwdec, l0 + RATE_L * (t - t0))))
                                     : Math.min(KC, Math.round(Math.pow(10, l0)) + Math.floor((t - t0) / STEP_C));
@@ -121,18 +121,18 @@ let LAY = null;
 function layout() {
   if (LAY) return LAY;
   const L = { r1: [], r2: [] };
-  let x = 20 + tw('solver', 15) + 10;
+  let x = 20 + tw('solver', 16) + 10;
   L.solver = x - 10;
-  SOLV.forEach((s, i) => { const w = Math.max(46, tw(s, 15) + 22); L.r1.push({ id: 'm' + i, x, w }); x += w + 6; });
-  x += 24; L.noise = x; x += tw('noise', 15) + 10;
+  SOLV.forEach((s, i) => { const w = Math.max(46, tw(s, 16) + 22); L.r1.push({ id: 'm' + i, x, w }); x += w + 6; });
+  x += 24; L.noise = x; x += tw('noise', 16) + 10;
   D.names.forEach((s, i) => { L.r1.push({ id: 'n' + i, x, w: 52 }); x += 58; });
   x = 532;
-  for (const [id, s] of [['run', 'iterate'], ['dp', 'discrepancy principle']]) { const w = tw(s, 15) + 22; L.r2.push({ id, x, w }); x += w + 8; }
+  for (const [id, s] of [['run', 'iterate'], ['dp', 'discrepancy principle']]) { const w = tw(s, 16) + 22; L.r2.push({ id, x, w }); x += w + 8; }
   return (LAY = L);
 }
 function mkChip(g, y, label, on, act, off = () => false, extra = {}) {
   const h = (UI.list.find(c => c.id === g.id) || {});
-  Object.assign(h, { id: g.id, kind: 'chip', x: g.x, y, w: g.w, h: CHH, hit: [g.x - 3, y - 8, g.x + g.w + 3, y + CHH + 7],
+  Object.assign(h, { id: g.id, kind: 'chip', x: g.x, y, w: g.w, h: CHH, hit: [g.x - 3, y - 6, g.x + g.w + 3, y + CHH + 6],
                      label, on, act, off }, extra);
   if (!UI.list.includes(h)) UI.list.push(h);
 }
@@ -180,8 +180,8 @@ UI.ground = (X, Y) => Y < ROW2 + CHH + 12;
 function controls(o, a) {
   buildControls();
   const L = layout();
-  text('solver', L.solver, ROW1 + 19, { size: 15, color: C.body, align: 'right', alpha: a });
-  text('noise', L.noise, ROW1 + 19, { size: 15, color: C.body, alpha: a });
+  text('solver', L.solver, ROW1 + 19, { size: 16, color: C.body, align: 'right', alpha: a });
+  text('noise', L.noise, ROW1 + 19, { size: 16, color: C.body, alpha: a });
   for (const c of UI.list) if (c.kind === 'chip') drawChip(c, a);
   drawSlider(ctlById('sl'), a);
   math('k', 22, SLY + 6, { size: 18, alpha: a });
@@ -189,8 +189,8 @@ function controls(o, a) {
 }
 
 /* ================================================ the panels */
-const PA = { x: 88, y: 132, w: 364, h: 200 }, PB = { x: 576, y: 132, w: 364, h: 146 }, PF = { x: 576, y: 288, w: 364, h: 44 };
-const PC = { x: 88, y: 434, w: 364, h: 200 }, PD = { x: 576, y: 434, w: 364, h: 200 };
+const PA = { x: 88, y: 126, w: 364, h: 192 }, PB = { x: 576, y: 126, w: 364, h: 140 }, PF = { x: 576, y: 274, w: 364, h: 44 };
+const PC = { x: 88, y: 416, w: 364, h: 192 }, PD = { x: 576, y: 416, w: 364, h: 192 };
 const curve = (A, ys, lo = -1e9, hi = 1e9) => Array.from(ys, (v, i) => [A.X(XC[i]), A.Y(clamp(v, lo, hi))]);
 const mk = {
   line: (col, w, dash) => (x, y, a) => line([[x - 12, y], [x + 12, y]], { color: col, width: w, dash, alpha: a }),
@@ -214,9 +214,9 @@ function panelA(o, S, I, mh) {
   legend(PA.x + PA.w - 8, PA.y + 7, [[[mk.line(C.ink, 1.8), '\\rm{true cause }m'], [mk.line(C.accent, 2.4), '\\rm{iterate }m_k']]], lab(.44), { right: true });
   let mx = 0; for (let i = 0; i < NC; i++) mx = Math.max(mx, Math.abs(mh[i]));
   if (mx > 1.6) {
-    const s = '\\rm{max}\\ |m_k| = ' + sci(mx) + '\\rm{, off the axes}', w = math(s, 0, -1e4, { size: 15, alpha: 0 });
+    const s = '\\rm{max}\\ |m_k| = ' + sci(mx) + '\\rm{, off the axes}', w = math(s, 0, -1e4, { size: 16, alpha: 0 });
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(PA.x + PA.w - 14 - w, PA.y + PA.h - 30, w + 8, 22); ctx.restore();
-    math(s, PA.x + PA.w - 10, PA.y + PA.h - 14, { size: 15, color: C.accent, align: 'right', alpha: ra });
+    math(s, PA.x + PA.w - 10, PA.y + PA.h - 14, { size: 16, color: C.accent, align: 'right', alpha: ra });
   }
 }
 function panelB(o, S, I) {
@@ -242,7 +242,7 @@ function panelB(o, S, I) {
     if (da > 0) dot(A.X(j + 1), A.Y(Math.max(-17.8, ls)), 2.3, { color: C.ink, fill: C.ink, width: .6, alpha: da });
     if (ba > 0) dot(A.X(j + 1), A.Y(Math.max(-17.8, lb)), 2.3, { color: C.blue, fill: C.blue, width: .6, alpha: ba });
   }
-  legend(PB.x + 8, PB.y + PB.h - 52, [[[mk.dot(C.ink, C.ink, 2.3), '\\rm{singular value}\\ s_i'], [mk.dot(C.blue, C.blue, 2.3), '|u_i^{\\rm{T}}d|']],
+  legend(PB.x + 8, PB.y + PB.h - 52, [[[mk.dot(C.ink, C.ink, 2.3), '\\rm{singular value}\\ s_i'], [mk.dot(C.blue, C.blue, 2.3), '|u_i^{⊤}d|']],
                                       [[mk.line(C.guide, 1.2, [5, 4]), '\\rm{noise floor}']]], lab(.48), { rh: 20 });
 }
 /* (c) and (d): k on a log axis from 1 to 10^8; Landweber through its integer iterates, CGLS its 50 */
@@ -296,7 +296,7 @@ function draw() {
   panelB(o, S, I);
   panelC(o, S, I);
   panelD(o, S, I);
-  math(D.params, 20, H - 14, { size: 14, color: C.muted, alpha: seg(.45, .3) });
+  math(D.params, 20, H - 14, { size: 15, color: C.muted, alpha: seg(.45, .3) });
   placeKeys([o.m, o.nz, o.k, o.run].join(':'));
 }
 /* the poster: the tour's Landweber run paused at its discrepancy stop (1 % noise) */
@@ -347,7 +347,7 @@ def compute():
     data = dict(
         n=L.N, s=L.f64(P.s), V=L.f64(P.V), t=L.f64(P.t), m=L.f64(P.m), mnorm=P.mnorm,
         omega=P.omega, klmax=int(10 ** L.LW_DECADES), kcmax=L.K_CGLS, lwdec=L.LW_DECADES, names=list(L.LEVEL_NAMES), sets=sets,
-        params=(r"\rm{Figure 4's problem (noise draw 1), both from }m_0 = 0\rm{; Landweber }m_k = m_{k-1} + \omega G^{\rm{T}}(d - Gm_{k-1})"
+        params=(r"\rm{Figure 4's problem (noise draw 1), both from }m_0 = 0\rm{; Landweber }m_k = m_{k-1} + \omega G^{⊤}(d - Gm_{k-1})"
                 r"\rm{, }\omega\ = 1/s_1^2\rm{; CGLS, 50 iterations}"),
     )
     return P, ks, info, data
@@ -488,14 +488,15 @@ def validate(P, ks, info):
     say("  (0.1 %: 29 against 23,588) and shrinks as it rises (10 %: 6 against 23).")
     say("")
     say("DISPLAY")
-    say("  W x H = 1000 x 740. Untouched (1 % noise): Landweber runs from k = 1 at 0.8 decades of k a second (every k an")
-    say(f"  integer), pauses 1.4 s at its discrepancy stop (k = {info[1]['ldp']}), runs on to 10^8 (10 s in all) and holds 1.2 s; then")
+    say(f"  W x H = 1000 x {H}. Untouched (1 % noise): Landweber runs from k = 1 at 8/14 = 0.57 decades of k a second")
+    say(f"  (every k an integer), pauses 2.6 s at its discrepancy stop (k = {info[1]['ldp']}), runs on to 10^8 (14 s in all) and holds")
     ld1 = info[1]["ldp"]
-    say(f"  CGLS the same, 0.2 s an iteration, pausing at k = {info[1]['cdp']}; then again. POSTER_T = 0.6 + log10({ld1})/0.8 + 0.7 =")
-    say(f"  {0.6 + np.log10(ld1) / 0.8 + 0.7:.4f} s: Landweber paused at its discrepancy stop. Controls: solver and")
-    say("  noise chips, the iteration slider (log k for Landweber, k for CGLS), 'iterate' (his Play: the iterations run")
-    say("  on from the one shown), 'discrepancy principle' (his Stop at discrepancy principle). Query keys: m=lw|cgls,")
-    say("  k, nz, run.")
+    say(f"  2.6 s; then CGLS the same, 0.3 s an iteration, pausing 2.6 s at k = {info[1]['cdp']} and at k = 50; then again.")
+    say(f"  POSTER_T = 0.6 + log10({ld1}) x 14/8 + 1.3 = {0.6 + np.log10(ld1) * 14 / 8 + 1.3:.4f} s: Landweber paused at its discrepancy stop.")
+    say("  Controls (hit areas 40 units tall, 27 CSS px at the page's 672 px, the keyboard's stand-ins as large; the")
+    say("  focus ring 3 units outside the drawn chip): solver and noise chips, the iteration slider (log k for")
+    say("  Landweber, k for CGLS), 'iterate' (his Play: the iterations run on from the one shown), 'discrepancy")
+    say("  principle' (his Stop at discrepancy principle). Query keys: m=lw|cgls, k, nz, run.")
     txt = "\n".join(T) + "\n"
     with open(os.path.join(common.HERE, "sp_inv_iter.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)

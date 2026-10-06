@@ -42,7 +42,7 @@ import sp_bss_lib as L
 
 NAME = "sp-bss-sobi"
 SNR0, REC0 = 0, 4
-H_PAGE = 760
+H_PAGE = 730
 
 TITLE = "Figure 11: Blind source separation, method 2: SOBI-family separation and Wiener denoising"
 ARIA = ("The same two noisy sensor records as Figure 10, separated by a second-order method: the spectra with "
@@ -110,14 +110,14 @@ const snapNow = () => view().v;
 
 /* ------------------------------------------------------------ layout */
 const SR = {y: 12, h: 30, gap: 22};
-const LN = {x: 98, y: 102, w: 484, h: 84, gap: 16};       // (a)
-const SC = {x: 726, y: 102, s: 212};                      // (b)
-const PS = {x: 98, y: 430, w: 484, h: 96}, GB = {x: 98, y: 536, w: 484, h: 40};   // (c)
-const JB = {x: 726, y: 412, w: 212, h: 72};               // (d)
-const TB = {x0: 640, x1: 980, y: 548};                    // the table
-/* the chips end before the frame's own buttons (bottom right, shown when the page stands alone) */
-const SN = {x: 92, y: 702, w: 36, h: 28, pitch: 38};      // SNR chips
-const RC = {x: 724, y: 702, w: 48, h: 28, pitch: 52};     // record chips
+const LN = {x: 98, y: 100, w: 484, h: 78, gap: 14};       // (a)
+const SC = {x: 726, y: 100, s: 196};                      // (b)
+const PS = {x: 98, y: 416, w: 484, h: 92}, GB = {x: 98, y: 516, w: 484, h: 38};   // (c)
+const JB = {x: 726, y: 398, w: 212, h: 70};               // (d)
+const TB = {x0: 652, x1: 980, y: 532};                    // the table
+/* the chips under (c), in the left column: the SNR, then the record */
+const SN = {x: 92, y: 620, w: 35, h: 28, pitch: 36};      // SNR chips
+const RC = {x: 92, y: 662, w: 50, h: 28, pitch: 56};      // record chips
 let SRX = null;
 
 function stageRow(k, ph) {
@@ -125,7 +125,7 @@ function stageRow(k, ph) {
     const ws = STAGES.map(s => chipW(s[0], s[1])), tot = ws.reduce((p, q) => p + q, 0) + SR.gap * (NS - 1);
     let x = (W - tot) / 2;
     SRX = ws.map(w => { const r = [x, w]; x += w + SR.gap; return r; });
-    place(GS, SRX.map(([x, w]) => [x - 3, 0, w + 6, SR.y + SR.h + 8]));
+    place(GS, SRX.map(([x, w]) => [x - 3, 0, w + 6, SR.y + SR.h + 8]), SRX.map(([x, w]) => [x, SR.y, w, SR.h]));
     BANDS.push([SRX[0][0] - 12, 0, SRX[NS - 1][0] + SRX[NS - 1][1] + 12, SR.y + SR.h + 14]);
   }
   for (let i = 0; i < NS; i++) {
@@ -140,10 +140,10 @@ function stageRow(k, ph) {
 }
 function kapLabel(v, x, y) {
   const one = k => Math.abs(k - 1) < .005;
-  if (!one(v.kA) && !one(v.kB)) { math('\\times\\ ' + lerp(v.kA, v.kB, v.ls).toFixed(2), x, y, {size: 15, color: C.body}); return; }
+  if (!one(v.kA) && !one(v.kB)) { math('\\times\\ ' + lerp(v.kA, v.kB, v.ls).toFixed(2), x, y, {size: 16, color: C.body}); return; }
   const [a0, a1] = swap(v.ls);
-  if (!one(v.kA) && a0 > .01) math('\\times\\ ' + v.kA.toFixed(2), x, y, {size: 15, color: C.body, alpha: a0});
-  if (!one(v.kB) && a1 > .01) math('\\times\\ ' + v.kB.toFixed(2), x, y, {size: 15, color: C.body, alpha: a1});
+  if (!one(v.kA) && a0 > .01) math('\\times\\ ' + v.kA.toFixed(2), x, y, {size: 16, color: C.body, alpha: a0});
+  if (!one(v.kB) && a1 > .01) math('\\times\\ ' + v.kB.toFixed(2), x, y, {size: 16, color: C.body, alpha: a1});
 }
 function panelA(v, cur) {
   sub('a', 18, 78, 'signals over time', arrive(.04));
@@ -159,15 +159,15 @@ function panelA(v, cur) {
   }
   const yx = LN.y + 2 * LN.h + LN.gap + 50;
   math('t\\ (\\rm{s})', LN.x + LN.w / 2, yx, {size: 17, align: 'center', alpha: la});
-  text(D.T[REC] > 4 ? 'first 4 s of ' + D.T[REC] + ' s' : 'real time', LN.x + LN.w, yx, {size: 14, color: C.muted, align: 'right', alpha: seg(.5, .3)});
-  kapLabel(v, LN.x, LN.y - 8);
+  text(D.T[REC] > 4 ? 'first 4 s of ' + D.T[REC] + ' s' : 'real time', LN.x + LN.w, yx, {size: 16, color: C.muted, align: 'right', alpha: seg(.5, .3)});
+  kapLabel(v, LN.x, LN.y - 6);
   if (v.ov > .01) {
-    const y = LN.y - 9, x1 = LN.x + LN.w, w2 = tw('matched source', 15), w1 = tw('estimate', 15);
+    const y = LN.y - 9, x1 = LN.x + LN.w, w2 = tw('matched source', 16), w1 = tw('estimate', 16);
     line([[x1 - w2 - 34, y - 5], [x1 - w2 - 8, y - 5]], {color: C.navy, width: 1.3, dash: [5, 3.5], alpha: v.ov});
-    text('matched source', x1, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+    text('matched source', x1, y, {size: 16, color: C.body, align: 'right', alpha: v.ov});
     const x2 = x1 - w2 - 52;
     line([[x2 - w1 - 34, y - 5], [x2 - w1 - 8, y - 5]], {color: C.blue, width: 1.6, alpha: v.ov});
-    text('estimate', x2, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+    text('estimate', x2, y, {size: 16, color: C.body, align: 'right', alpha: v.ov});
   }
 }
 function panelB(v, cur) {
@@ -181,7 +181,7 @@ function panelB(v, cur) {
   symLabel(v.labB, 1, '', SC.x + SC.s / 2, SC.y + SC.s + 50, {alpha: la * a1});
   symLabel(v.labA, 2, '', SC.x - 46, SC.y + SC.s / 2, {rot: true, alpha: la * a0});
   symLabel(v.labB, 2, '', SC.x - 46, SC.y + SC.s / 2, {rot: true, alpha: la * a1});
-  kapLabel(v, SC.x, SC.y - 8);
+  kapLabel(v, SC.x, SC.y - 6);
 }
 /* a channel's symbol with its index: y-hat (his denoised outputs) is CMU's italic y-hat */
 function symLabel(sy, i, suf, x, y, o) {
@@ -208,8 +208,10 @@ function panelC(v) {
   const sp = s.sp.map((q, i) => b64i8(q));
   ax.inside(() => {
     const ba = sa * v.band;                                // the bands used, shaded
-    if (ba > .01) { ctx.save(); ctx.globalAlpha *= ba; ctx.fillStyle = C.steel2;
-      for (const k of s.bands) ctx.fillRect(ax.X((k - .5) * df), PS.y, Math.max(1.2, ax.X(df) - ax.X(0)), PS.h); ctx.restore(); }
+    if (ba > .01) {                                      // each band its own bin, a gap between neighbours
+      const bw = ax.X(df) - ax.X(0), g = clamp(.16 * bw, 1, 3.5);
+      ctx.save(); ctx.globalAlpha *= ba; ctx.fillStyle = C.steel2;
+      for (const k of s.bands) ctx.fillRect(ax.X((k - .5) * df) + g / 2, PS.y, Math.max(1, bw - g), PS.h); ctx.restore(); }
     [C.navy, C.sky].forEach((c, i) => {
       const pts = []; for (let k = 1; k <= n; k++) pts.push([ax.X(k * df), ax.Y(dB(sp[i][k]))]);
       line(pts, {color: c, width: 1.8, progress: seg(.22 + .05 * i, .45), alpha: sa});
@@ -229,18 +231,18 @@ function panelC(v) {
   // which line is which, in one row over the spectra
   const ly = PS.y - 12, ka = la * Math.max(sa, .45);
   let x = PS.x + 4;
-  const item = (draw, words) => { draw(x); x += 34 + text(words, x + 34, ly, {size: 15, color: C.body, alpha: ka}) + 22; };
+  const item = (draw, words) => { draw(x); x += 34 + text(words, x + 34, ly, {size: 16, color: C.body, alpha: ka}) + 18; };
   item(x0 => line([[x0, ly - 5], [x0 + 26, ly - 5]], {color: C.navy, width: 1.8, alpha: ka}), 'channel 1');
   item(x0 => line([[x0, ly - 5], [x0 + 26, ly - 5]], {color: C.sky, width: 1.8, alpha: ka}), 'channel 2');
   item(x0 => line([[x0, ly - 5], [x0 + 26, ly - 5]], {color: C.guide, width: 1.3, dash: [5, 4], alpha: ka}), 'noise floor');
-  item(x0 => { ctx.save(); ctx.globalAlpha *= ka; ctx.fillStyle = C.steel2; ctx.fillRect(x0 + 4, ly - 12, 18, 13); ctx.restore(); }, 'bands used');
+  item(x0 => { ctx.save(); ctx.globalAlpha *= ka; ctx.fillStyle = C.steel2; ctx.fillRect(x0 + 2, ly - 12, 10, 13); ctx.fillRect(x0 + 14, ly - 12, 10, 13); ctx.restore(); }, 'bands used');
 }
 /* (d): J(theta) / J max = c0 + c1 cos 4 theta + c2 sin 4 theta, exact */
 function panelD(v) {
   const s = st(), a = v.jon, la = arrive(.12), J = th => s.J[0] + s.J[1] * Math.cos(4 * th) + s.J[2] * Math.sin(4 * th);
   sub('d', SC.x - 72, PS.y - 38, 'off-diagonal against angle', la);
   const ax = axes({x: JB.x, y: JB.y, w: JB.w, h: JB.h, xlim: [0, 90], ylim: [0, 1.05], xticks: [0, 45, 90], yticks: [0, 1],
-    xlabel: '\\rm{rotation angle}\\ \\theta\\ (\\rm{deg})', ylabel: 'J(\\theta)', ylabelGap: 34, tickSize: 16, labelSize: 17,
+    xlabel: '\\rm{rotation angle}\\ \\theta\\ (\\deg)', ylabel: 'J(\\theta)', ylabelGap: 34, tickSize: 16, labelSize: 17,
     progress: seg(.12, .35), alpha: a});
   const pts = []; for (let i = 0; i <= 180; i++) { const d = i / 2; pts.push([ax.X(d), ax.Y(J(d * Math.PI / 180))]); }
   const thd = s.th * 180 / Math.PI;
@@ -252,30 +254,32 @@ function panelD(v) {
 }
 function table(v) {
   const s = st(), a = arrive(.35) * lerp(.55, 1, v.ov), aw = a * lerp(.55, 1, v.den), {x0, x1, y} = TB;
-  const cx = [x0 + 168, x0 + 226, x1 - 58, x1];          // right edges of SIR s1, SIR s2, rho s1, rho s2
+  const cx = [x0 + 162, x0 + 218, x1 - 58, x1];          // right edges of SIR s1, SIR s2, rho s1, rho s2
   rule(x0, x1, y, 1.3, a);
-  text('SIR (dB)', (cx[0] + cx[1]) / 2 - 22, y + 20, {size: 15, color: C.body, align: 'center', alpha: a});
-  math('\\rm{correlation}\\ \\rho', (cx[2] + cx[3]) / 2 - 20, y + 20, {size: 15, color: C.body, align: 'center', alpha: a});
-  [0, 1, 2, 3].forEach(c => math('s_' + (c % 2 + 1), cx[c], y + 41, {size: 15, color: C.body, align: 'right', alpha: a}));
-  rule(x0, x1, y + 49, .8, a);
+  text('SIR (dB)', (cx[0] + cx[1]) / 2 - 22, y + 21, {size: 16, color: C.body, align: 'center', alpha: a});
+  math('\\rm{correlation}\\ \\rho', (cx[2] + cx[3]) / 2 - 20, y + 21, {size: 16, color: C.body, align: 'center', alpha: a});
+  [0, 1, 2, 3].forEach(c => math('s_' + (c % 2 + 1), cx[c], y + 43, {size: 16, color: C.body, align: 'right', alpha: a}));
+  rule(x0, x1, y + 51, .8, a);
   const rows = [['kurtosis ICA', s.k], ['SOBI family', s.o], ['+ Wiener', s.w]];
   rows.forEach(([name, r], j) => {
-    const yy = y + 68 + j * 22, al = j === 2 ? aw : a;
-    text(name, x0, yy, {size: 15, alpha: al});
-    if (r.sir) r.sir.forEach((t, c) => text(t, cx[c], yy, {size: 15, align: 'right', alpha: al}));
-    r.rho.forEach((t, c) => text(t, cx[2 + c], yy, {size: 15, align: 'right', alpha: al}));
+    const yy = y + 71 + j * 24, al = j === 2 ? aw : a;
+    text(name, x0, yy, {size: 16, alpha: al});
+    if (r.sir) r.sir.forEach((t, c) => text(t, cx[c], yy, {size: 16, align: 'right', alpha: al}));
+    r.rho.forEach((t, c) => text(t, cx[2 + c], yy, {size: 16, align: 'right', alpha: al}));
   });
-  rule(x0, x1, y + 118, 1.3, a);
-  math(s.note, x0, y + 138, {size: 14, color: C.muted, alpha: arrive(.4)});
+  rule(x0, x1, y + 127, 1.3, a);
+  math('\\rm{rotation}\\ \\theta^{*} = ' + num(s.th * 180 / Math.PI, 1) + '\\deg\\rm{:}\\ \\ ' + s.pair, x0, y + 149, {size: 16, color: C.body, alpha: arrive(.4)});
 }
 function controls() {
   const a = arrive(.4);
-  text('SNR (dB)', SN.x - 10, SN.y + 19, {size: 15, color: C.body, align: 'right', alpha: a});
+  text('SNR (dB)', SN.x - 8, SN.y + 19.5, {size: 16, color: C.body, align: 'right', alpha: a});
   D.snrs.forEach((v, i) => chip(SN.x + i * SN.pitch, SN.y, SN.w, SN.h, num(v, 0), null,
     {on: i === SEL, hover: HOV.snr === i, down: DOWN.snr === i}, arrive(.4 + .01 * i)));
-  text('record', RC.x - 10, RC.y + 19, {size: 15, color: C.body, align: 'right', alpha: a});
+  text('record', RC.x - 8, RC.y + 19.5, {size: 16, color: C.body, align: 'right', alpha: a});
   D.T.forEach((v, i) => chip(RC.x + i * RC.pitch, RC.y, RC.w, RC.h, v + ' s', null,
     {on: i === REC, hover: HOV.rec === i, down: DOWN.rec === i}, arrive(.45 + .02 * i)));
+  // what the record length gives: the Welch segments K, and the bands found above the floor
+  math(st().note, RC.x + D.T.length * RC.pitch + 14, RC.y + 19.5, {size: 16, color: C.muted, alpha: arrive(.45)});
 }
 function draw() {
   const {w, v} = view(), cur = cursor(w);
@@ -286,7 +290,7 @@ function draw() {
   panelD(v);
   table(v);
   controls();
-  mixed(D.params, 18, H - 12, {size: 14, color: C.muted, alpha: seg(.5, .3)});
+  mixed(D.params, 18, H - 12, {size: 15, color: C.muted, alpha: seg(.5, .3)});
 }
 function status() {
   const s = st(), k = clock().k;
@@ -297,9 +301,12 @@ const GS = group('stage', 'Stage of the method', STAGES.map((s, i) => ({aria: 'S
   () => clock().k, j => chooseStage(j));
 const GN = group('snr', 'Sensor SNR', D.snrs.map(v => ({aria: 'SNR ' + v + ' dB'})), () => SEL, i => chooseData(() => { SEL = i; }));
 const GR = group('rec', 'Record length', D.T.map(v => ({aria: 'Record ' + v + ' s'})), () => REC, i => chooseData(() => { REC = i; }));
-place(GN, D.snrs.map((_, i) => [SN.x + i * SN.pitch - (SN.pitch - SN.w) / 2, SN.y - 8, SN.pitch, SN.h + 16]));
-place(GR, D.T.map((_, i) => [RC.x + i * RC.pitch - (RC.pitch - RC.w) / 2, RC.y - 8, RC.pitch, RC.h + 16]));
-BANDS.push([SN.x - 80, SN.y - 10, RC.x + D.T.length * RC.pitch + 6, SN.y + SN.h + 10]);
+place(GN, D.snrs.map((_, i) => [SN.x + i * SN.pitch - (SN.pitch - SN.w) / 2, SN.y - 7, SN.pitch, SN.h + 14]),
+      D.snrs.map((_, i) => [SN.x + i * SN.pitch, SN.y, SN.w, SN.h]));
+place(GR, D.T.map((_, i) => [RC.x + i * RC.pitch - (RC.pitch - RC.w) / 2, RC.y - 7, RC.pitch, RC.h + 14]),
+      D.T.map((_, i) => [RC.x + i * RC.pitch, RC.y, RC.w, RC.h]));
+BANDS.push([SN.x - 80, SN.y - 10, SN.x + D.snrs.length * SN.pitch + 4, SN.y + SN.h + 7]);
+BANDS.push([RC.x - 80, RC.y - 7, RC.x + D.T.length * RC.pitch + 4, RC.y + RC.h + 10]);
 function reset() { TOUR0 = TOUR_START; JUMP = null; CHG = null; sync(); }
 sync();
 boot();
@@ -360,16 +367,17 @@ def data(recs, states):
             G = so["G"]
             J = [(G[0, 0] + G[1, 1]) / 2 / lam, (G[0, 0] - G[1, 1]) / 2 / lam, G[0, 1] / lam]
             out = [m["out"][j] for j in range(2)]
-            note = (r"s_1 \to\ " + ("-" if m["sign"][out[0]] < 0 else "") + f"y_{out[0] + 1},\\ \\ "
-                    r"s_2 \to\ " + ("-" if m["sign"][out[1]] < 0 else "") + f"y_{out[1] + 1}"
-                    + r"\rm{;   }" + str(len(so["chosen"])) + r"\rm{ bands;   }K = " + str(so["K"]) + r"\rm{ segments}")
+            # the pairing the rotation gives, on the rotation's line; the bands and segments under it
+            pair = (r"s_1 \to\ " + ("-" if m["sign"][out[0]] < 0 else "") + f"y_{out[0] + 1},\\ \\ "
+                    r"s_2 \to\ " + ("-" if m["sign"][out[1]] < 0 else "") + f"y_{out[1] + 1}")
+            note = str(len(so["chosen"])) + r"\rm{ bands;   }K = " + str(so["K"]) + r"\rm{ segments}"
             row.append(dict(
                 sg=q["sg"], kx=q["kx"], kw=q["kw"], WA=q["WA"], F=q["F"], th=so["theta"], J=J, perm=m["perm"], c=q["c"], cd=q["cd"],
                 yd=yd, ysc=ysc, sp=spq, g=gq, fl=[float(v) for v in L.psd_db(np.array(so["floors"]), Lw)],
                 bands=[int(k) for k in so["chosen"] if k <= n],
                 k=dict(sir=[fmt_sir(v) for v in mk["sir_src"]], rho=[f"{v:.3f}" for v in q["rho_k"]]),
                 o=dict(sir=[fmt_sir(v) for v in m["sir_src"]], rho=[f"{v:.3f}" for v in q["rho_o"]]),
-                w=dict(rho=[f"{v:.3f}" for v in q["rho_w"]]), note=note))
+                w=dict(rho=[f"{v:.3f}" for v in q["rho_w"]]), pair=pair, note=note))
         st_out.append(row)
     params = [["t", "Welch: Hann, 50% overlap, 256, 1024, 2048 samples;  floor: the median;  bands: 4 standard errors "
                     "above it;  Wiener over-subtraction "], ["m", r"1 + 2/\sqrt{K}"]]
@@ -667,8 +675,13 @@ def validate(recs, states, quick=False):
     say("  own RMS, both printed at the axes). (c) one-sided PSD 2 S / (fs sum w^2) in dB re 1 per Hz (the signals in")
     say("  units of the sources' standard deviation), one scale (-70 to 20 dB) for every state so that the floor visibly")
     say("  rises with the noise; bins 1 to 40 Hz; the bands up to 40 Hz shaded; the gains under them on the same")
-    say("  frequency axis (channel 1 = output 1). (d) J(theta) / J_max over one period, 0 to 90 deg. The spectra are")
-    say("  int8 in half decibels, the gains int8 in 1/127.")
+    say("  frequency axis (channel 1 = output 1); each band shaded on its own bin with a white gap (16 % of a bin, 1 to")
+    say("  3.5 units) between neighbours, so that nine contiguous bands at 4 s read as nine. (d) J(theta) / J_max over")
+    say("  one period, 0 to 90 degrees; theta* printed under the table. The spectra are int8 in half decibels, the gains")
+    say("  int8 in 1/127.")
+    say(f"  W x H = 1000 x {H_PAGE}: the SNR and record chips in two rows under (c), the parameter line 24 units under them;")
+    say("  beside the record chips, what the record gives: the bands found and the Welch segments K. The table, its")
+    say("  readout, the legends and the labels at 16 units, the parameter line at 15.")
     say("  No 'new noise' control: his page draws one seeded record per length (mulberry32(7 + T)); item 8 shows the")
     say("  spread over other records.")
     return out
@@ -714,7 +727,7 @@ def main():
          "playing === false", 150),
         ("paused, a stage chip shows it complete", "click:.nfb[aria-label='Stage 7: Wiener']", "clock().k === 6 && where().e > .99 && playing === false", 150),
         ("click between the chip rows does not toggle", "(() => { const r = cv.getBoundingClientRect(); "
-         f"cv.dispatchEvent(new MouseEvent('click', {{bubbles: true, clientX: r.left + r.width * {780 / 1000}, clientY: r.top + r.height * {716 / H_PAGE}}})); }})()",
+         f"cv.dispatchEvent(new MouseEvent('click', {{bubbles: true, clientX: r.left + r.width * {150 / 1000}, clientY: r.top + r.height * {655 / H_PAGE}}})); }})()",
          "playing === false", 150),
     ]
     fails, errs2 = L.interact(NAME, steps)

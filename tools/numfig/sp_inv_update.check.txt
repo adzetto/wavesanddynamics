@@ -168,7 +168,10 @@ THE PAGE
   frequencies, converged on the twin. The tour: Levenberg-Marquardt, Gauss-Newton, gradient descent, the
   swarm and MCMC from (210, 30) on the frequencies; MCMC and Levenberg-Marquardt with the mode shape;
   Levenberg-Marquardt and MCMC with the prior; then again. One iteration every 0.40 s (Levenberg-
-  Marquardt), 0.45 s (Gauss-Newton), 0.024 s (gradient descent), 0.10 s (swarm); MCMC 1,500 steps a second.
+  Marquardt), 0.45 s (Gauss-Newton), 0.30 s (swarm, gliding between iterations); gradient descent's 249
+  iterations are drawn as its path at 0.024 s each (one by one at 0.3 s they would take 75 s); MCMC
+  1,500 steps a second. Each run rests 2.6 s on its result before the next. Chips, labels, the key
+  and the colour bar at 16 units, the parameter lines at 15, the focus ring 3 units outside the chip.
   A chip or a click on the map chooses (the tour stops); restart returns to it; paused or with less
   motion, the chosen run shows complete. Keyboard: two radio groups and two toggles; a status line.
-  page 105,472 bytes; still 90,850 bytes
+  page 106,258 bytes; still 94,128 bytes

@@ -616,7 +616,7 @@ function getRun(kind, start, mode, prior) {
 }
 const runOf = (sc, kind) => getRun(kind || sc.solver, sc.start, sc.mode, sc.prior);
 /* time on screen: one iteration every PACE seconds; MCMC at RATE steps a second */
-const PACE = {gd: .024, gn: .45, lm: .40, pso: .10}, RATE = 1500;
+const PACE = {gd: .024, gn: .45, lm: .40, pso: .30}, RATE = 1500;
 const dur = r => r.kind === 'mcmc' ? r.n / RATE : r.it * PACE[r.kind];
 function prog(r, u) {                      // where a run is, u seconds after it started
   if (r.kind === 'mcmc') { const n = u <= 0 ? 0 : Math.min(r.n, Math.floor(u * RATE)); return {k: n, s: 0, done: n >= r.n}; }
@@ -629,7 +629,7 @@ const variant = sc => (sc.mode ? 1 : 0) + (sc.prior ? 2 : 0);
    (210, 30)), the other solvers, then the mode shape and the prior added */
 const TOUR = [['lm', 0, 0], ['gn', 0, 0], ['gd', 0, 0], ['pso', 0, 0], ['mcmc', 0, 0],
               ['mcmc', 1, 0], ['lm', 1, 0], ['lm', 0, 1], ['mcmc', 0, 1]];
-const T_START = .1, PRE_NEW = .5, PRE_SAME = .25, HOLD = 1.6, HOLD_MC = 2.2;
+const T_START = .1, PRE_NEW = .5, PRE_SAME = .25, HOLD = 2.6, HOLD_MC = 2.6;
 let SCHED = null;
 function schedule() {
   if (SCHED) return SCHED;
@@ -672,12 +672,12 @@ function layout() {                         // the chips, measured once the type
   if (LAY) return LAY;
   const L = {solver: [], start: [], opt: []};
   let x = 98;
-  for (const s of SOLVERS) { const w = Math.round(tw(SNAME[s], 15) + 26); L.solver.push({x, y: ROW1, w, h: CHH}); x += w + 8; }
+  for (const s of SOLVERS) { const w = Math.round(tw(SNAME[s], 16) + 24); L.solver.push({x, y: ROW1, w, h: CHH}); x += w + 8; }
   x = 98;
-  for (const s of D.starts) { const w = Math.round(tw('(' + s[0] + ', ' + s[1] + ')', 15) + 26); L.start.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
-  x += 40;
+  for (const s of D.starts) { const w = Math.round(tw('(' + s[0] + ', ' + s[1] + ')', 16) + 24); L.start.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
+  x += 42;
   L.add = x - 10;
-  for (const s of ['mode shape', 'prior']) { const w = Math.round(tw(s, 15) + 26); L.opt.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
+  for (const s of ['mode shape', 'prior']) { const w = Math.round(tw(s, 16) + 24); L.opt.push({x, y: ROW2, w, h: CHH}); x += w + 8; }
   return LAY = L;
 }
 
@@ -819,9 +819,9 @@ function mapPanel(sc, u) {
   tag('twin', KX(D.fits[1][0]) + 2, KY(D.fits[1][1]) + 27, la, {align: 'center'});
   const fa = lab(.5), fx = KX(186), fy = KY(93);
   ctx.save(); ctx.translate(fx, fy); ctx.rotate(-Math.atan(.5));
-  const fw = math('k_{1} = 2k_{2}', 0, -1e4, {size: 15, alpha: 0});
-  knock(-fw / 2 - 4, -26, fw + 8, 19, fa);
-  math('k_{1} = 2k_{2}', -fw / 2, -11, {size: 15, color: C.body, alpha: fa});
+  const fw = math('k_{1} = 2k_{2}', 0, -1e4, {size: 16, alpha: 0});
+  knock(-fw / 2 - 4, -27, fw + 8, 20, fa);
+  math('k_{1} = 2k_{2}', -fw / 2, -11.5, {size: 16, color: C.body, alpha: fa});
   ctx.restore();
   if (sc.prior || (sc.prev && sc.prev.prior)) {
     const da = sc.prior ? (sc.prev && !sc.prev.prior ? seg(sc.t0, .3) : 1) : 1 - seg(sc.t0, .3);
@@ -836,7 +836,7 @@ function mapPanel(sc, u) {
   line([[CBX, y0], [CBX + CBW, y0], [CBX + CBW, y1], [CBX, y1]], {color: C.ink, width: 1, close: true, alpha: ca});
   for (let l = -1; l <= 4; l++) {
     line([[CBX + CBW, Yc(l)], [CBX + CBW + 4, Yc(l)]], {color: C.ink, width: 1, alpha: ca});
-    math(l === 0 ? '1' : l === 1 ? '10' : '10^{' + l + '}', CBX + CBW + 7, Yc(l) + 5, {size: 15, alpha: ca});
+    math(l === 0 ? '1' : l === 1 ? '10' : '10^{' + l + '}', CBX + CBW + 7, Yc(l) + 5.5, {size: 16, alpha: ca});
   }
   math('\\Phi', CBX + CBW / 2, y0 - 9, {size: 16, align: 'center', alpha: ca});
 }
@@ -898,9 +898,9 @@ function postPanel(sc, u) {
   const ka = lab(sc.t0 + .1), kw = 196, kx = BX + BW - kw - 8, ky = BY + 8;
   line([[kx, ky], [kx + kw, ky], [kx + kw, ky + 28], [kx, ky + 28]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: ka});
   line([[kx + 10, ky + 14], [kx + 34, ky + 14]], {color: C.navy, width: 2.2, alpha: ka});
-  text('exact', kx + 41, ky + 19, {size: 15, alpha: ka});
+  text('exact', kx + 41, ky + 19.5, {size: 16, alpha: ka});
   line([[kx + 96, ky + 21], [kx + 96, ky + 8], [kx + 116, ky + 8], [kx + 116, ky + 21]], {color: C.accent, width: 1, fill: C.wash, alpha: ka});
-  text('samples', kx + 123, ky + 19, {size: 15, alpha: ka});
+  text('samples', kx + 123, ky + 19.5, {size: 16, alpha: ka});
 }
 
 /* ================================================================ the table */
@@ -963,8 +963,8 @@ function frame(cx, gy, a) {
     line([[cx - w / 2, y0], [cx - w / 2, y1]], {width: 1.5, alpha: a});
     line([[cx + w / 2, y0], [cx + w / 2, y1]], {width: 1.5, alpha: a});
     line([[cx - w / 2 - 4, y1], [cx + w / 2 + 4, y1]], {color: C.navy, width: 3.2, alpha: a});
-    math('k_{' + (s + 1) + '}', cx + w / 2 + 9, y0 - h / 2 + 5, {size: 15, alpha: a});
-    math('m', cx - w / 2 - 11, y1 + 5, {size: 15, align: 'right', alpha: a});
+    math('k_{' + (s + 1) + '}', cx + w / 2 + 9, y0 - h / 2 + 5, {size: 16, alpha: a});
+    math('m', cx - w / 2 - 11, y1 + 5, {size: 16, align: 'right', alpha: a});
   }
 }
 
@@ -973,12 +973,12 @@ let HOVER = null, DOWN = null;             // {g, i}: the chip under the pointer
 const isH = (g, i) => HOVER && HOVER.g === g && HOVER.i === i, isD = (g, i) => DOWN && DOWN.g === g && DOWN.i === i;
 function chips(sc) {
   const L = layout(), a = lab(.1);
-  text('solver', L.solver[0].x - 10, ROW1 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
-  SOLVERS.forEach((s, i) => { const c = L.solver[i]; uiChip(c.x, c.y, c.w, c.h, SNAME[s], {on: sc.solver === s, hover: isH('solver', i), down: isD('solver', i)}, a); });
-  text('start', L.start[0].x - 10, ROW2 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
-  D.starts.forEach((s, i) => { const c = L.start[i]; uiChip(c.x, c.y, c.w, c.h, '(' + s[0] + ', ' + s[1] + ')', {on: sc.si === i, hover: isH('start', i), down: isD('start', i)}, a); });
-  text('add', L.add, ROW2 + 20, {size: 15, color: C.body, align: 'right', alpha: a});
-  ['mode shape', 'prior'].forEach((s, i) => { const c = L.opt[i]; uiChip(c.x, c.y, c.w, c.h, s, {on: i ? !!sc.prior : !!sc.mode, hover: isH('opt', i), down: isD('opt', i)}, a); });
+  text('solver', L.solver[0].x - 10, ROW1 + 20, {size: 16, color: C.body, align: 'right', alpha: a});
+  SOLVERS.forEach((s, i) => { const c = L.solver[i]; uiChip(c.x, c.y, c.w, c.h, SNAME[s], {on: sc.solver === s, hover: isH('solver', i), down: isD('solver', i), size: 16}, a); });
+  text('start', L.start[0].x - 10, ROW2 + 20, {size: 16, color: C.body, align: 'right', alpha: a});
+  D.starts.forEach((s, i) => { const c = L.start[i]; uiChip(c.x, c.y, c.w, c.h, '(' + s[0] + ', ' + s[1] + ')', {on: sc.si === i, hover: isH('start', i), down: isD('start', i), size: 16}, a); });
+  text('add', L.add, ROW2 + 20, {size: 16, color: C.body, align: 'right', alpha: a});
+  ['mode shape', 'prior'].forEach((s, i) => { const c = L.opt[i]; uiChip(c.x, c.y, c.w, c.h, s, {on: i ? !!sc.prior : !!sc.mode, hover: isH('opt', i), down: isD('opt', i), size: 16}, a); });
 }
 
 /* ================================================================ draw */
@@ -987,7 +987,7 @@ function draw() {
   chips(sc);
   frame(930, 92, lab(.2));
   sub_('a', 18, 128, 'misfit of the measured data', lab(.04));
-  if (!STILL) text('click the map to start there', MX + MS, 128, {size: 15, color: C.muted, align: 'right', alpha: lab(.5)});
+  if (!STILL) text('click the map to start there', MX + MS, 128, {size: 16, color: C.muted, align: 'right', alpha: lab(.5)});
   mapPanel(sc, u);
   if (sc.solver === 'mcmc') {
     const ba = lab(.06); sub_('b', RX - 4, 128, 'posterior of', ba);
@@ -998,8 +998,8 @@ function draw() {
   table(sc, u);
   dataBlock(sc, u);
   const pa = lab(.6);
-  mixed(D.params[0], 18, H - 34, {size: 14, color: C.muted, alpha: pa});
-  mixed(D.params[1], 18, H - 13, {size: 14, color: C.muted, alpha: pa});
+  mixed(D.params[0], 18, H - 34, {size: 15, color: C.muted, alpha: pa});
+  mixed(D.params[1], 18, H - 13, {size: 15, color: C.muted, alpha: pa});
   place();
 }
 /* runs of words (text) and of symbols ({m: ...}, math), set one after the other */
@@ -1060,9 +1060,9 @@ function place() {                         // the keyboard's stand-ins sit on th
 }
 if (!STILL) {
   document.head.insertAdjacentHTML('beforeend', '<style>.nfm{position:absolute;box-sizing:border-box;margin:0;padding:0;' +
-    'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden;font:inherit}' +
+    'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:visible;font:inherit}' +
     '.nfm:focus{outline:none}.nfm::after{content:"";position:absolute;inset:var(--iy,4px) var(--ix,2px)}' +
-    '.nfm:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}</style>');
+    '.nfm:focus-visible::after{outline:2px solid #095A94;outline-offset:2px}</style>');
   const ctl = FIG.querySelector('.ctl');
   const group = (label, role) => { const g = document.createElement('div'); if (role) g.setAttribute('role', role); g.setAttribute('aria-label', label); FIG.insertBefore(g, ctl); return g; };
   const gS = group('Solver', 'radiogroup'), gT = group('Starting point', 'radiogroup'), gO = group('Data added to the misfit', 'group');
@@ -1431,7 +1431,10 @@ def validate(data, res):
     say("  frequencies, converged on the twin. The tour: Levenberg-Marquardt, Gauss-Newton, gradient descent, the")
     say("  swarm and MCMC from (210, 30) on the frequencies; MCMC and Levenberg-Marquardt with the mode shape;")
     say("  Levenberg-Marquardt and MCMC with the prior; then again. One iteration every 0.40 s (Levenberg-")
-    say("  Marquardt), 0.45 s (Gauss-Newton), 0.024 s (gradient descent), 0.10 s (swarm); MCMC 1,500 steps a second.")
+    say("  Marquardt), 0.45 s (Gauss-Newton), 0.30 s (swarm, gliding between iterations); gradient descent's 249")
+    say("  iterations are drawn as its path at 0.024 s each (one by one at 0.3 s they would take 75 s); MCMC")
+    say("  1,500 steps a second. Each run rests 2.6 s on its result before the next. Chips, labels, the key")
+    say("  and the colour bar at 16 units, the parameter lines at 15, the focus ring 3 units outside the chip.")
     say("  A chip or a click on the map chooses (the tour stops); restart returns to it; paused or with less")
     say("  motion, the chosen run shows complete. Keyboard: two radio groups and two toggles; a status line.")
     path = os.path.join(common.ANIM, f"nf-{NAME}.html")

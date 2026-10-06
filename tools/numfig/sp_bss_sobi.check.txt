@@ -128,8 +128,13 @@ DISPLAY
   own RMS, both printed at the axes). (c) one-sided PSD 2 S / (fs sum w^2) in dB re 1 per Hz (the signals in
   units of the sources' standard deviation), one scale (-70 to 20 dB) for every state so that the floor visibly
   rises with the noise; bins 1 to 40 Hz; the bands up to 40 Hz shaded; the gains under them on the same
-  frequency axis (channel 1 = output 1). (d) J(theta) / J_max over one period, 0 to 90 deg. The spectra are
-  int8 in half decibels, the gains int8 in 1/127.
+  frequency axis (channel 1 = output 1); each band shaded on its own bin with a white gap (16 % of a bin, 1 to
+  3.5 units) between neighbours, so that nine contiguous bands at 4 s read as nine. (d) J(theta) / J_max over
+  one period, 0 to 90 degrees; theta* printed under the table. The spectra are int8 in half decibels, the gains
+  int8 in 1/127.
+  W x H = 1000 x 730: the SNR and record chips in two rows under (c), the parameter line 24 units under them;
+  beside the record chips, what the record gives: the bands found and the Welch segments K. The table, its
+  readout, the legends and the labels at 16 units, the parameter line at 15.
   No 'new noise' control: his page draws one seeded record per length (mulberry32(7 + T)); item 8 shows the
   spread over other records.
 
@@ -141,4 +146,4 @@ CHECKS OF THE PAGE
   In a browser: 8 of 8 interactions as intended (stage, SNR and record chips
   never pause the figure, arrow keys move the choice, a click on open ground pauses, a paused choice
   shows the stage complete); console errors: 0.
-  Page 255 KB, poster 103 KB.
+  Page 257 KB, poster 106 KB.

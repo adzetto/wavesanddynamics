@@ -96,4 +96,4 @@ CHECKS OF THE PAGE
   In a browser: 8 of 8 interactions as intended (stage and SNR chips never
   pause the figure, arrow keys move the choice, a click on open ground pauses, a paused choice shows
   the stage complete); console errors: 0.
-  Page 73 KB, poster 96 KB.
+  Page 75 KB, poster 98 KB.

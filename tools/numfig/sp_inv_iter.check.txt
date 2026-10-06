@@ -55,10 +55,11 @@ SEMI-CONVERGENCE: ITERATIONS TO THE LOWEST ERROR AND TO THE DISCREPANCY STOP (er
   (0.1 %: 29 against 23,588) and shrinks as it rises (10 %: 6 against 23).
 
 DISPLAY
-  W x H = 1000 x 740. Untouched (1 % noise): Landweber runs from k = 1 at 0.8 decades of k a second (every k an
-  integer), pauses 1.4 s at its discrepancy stop (k = 32), runs on to 10^8 (10 s in all) and holds 1.2 s; then
-  CGLS the same, 0.2 s an iteration, pausing at k = 7; then again. POSTER_T = 0.6 + log10(32)/0.8 + 0.7 =
-  3.1814 s: Landweber paused at its discrepancy stop. Controls: solver and
-  noise chips, the iteration slider (log k for Landweber, k for CGLS), 'iterate' (his Play: the iterations run
-  on from the one shown), 'discrepancy principle' (his Stop at discrepancy principle). Query keys: m=lw|cgls,
-  k, nz, run.
+  W x H = 1000 x 700. Untouched (1 % noise): Landweber runs from k = 1 at 8/14 = 0.57 decades of k a second
+  (every k an integer), pauses 2.6 s at its discrepancy stop (k = 32), runs on to 10^8 (14 s in all) and holds
+  2.6 s; then CGLS the same, 0.3 s an iteration, pausing 2.6 s at k = 7 and at k = 50; then again.
+  POSTER_T = 0.6 + log10(32) x 14/8 + 1.3 = 4.5340 s: Landweber paused at its discrepancy stop.
+  Controls (hit areas 40 units tall, 27 CSS px at the page's 672 px, the keyboard's stand-ins as large; the
+  focus ring 3 units outside the drawn chip): solver and noise chips, the iteration slider (log k for
+  Landweber, k for CGLS), 'iterate' (his Play: the iterations run on from the one shown), 'discrepancy
+  principle' (his Stop at discrepancy principle). Query keys: m=lw|cgls, k, nz, run.

@@ -89,26 +89,27 @@ THE PAGE
   Styblinski-Tang f 0.0e+00, the penalty's x(mu) at 9 values of mu 4.0e-15; the level sets drawn in
   scene 5 (42 arcs for mu = 0.1, 1, 10, 100): F_mu on them equals the level within 8.5e-15 (relative),
   0 points on the wrong side of the line, the arcs' ends on it within 2.7e-15
-  overlap check (engine.js ?overlap) in 427 states: the tour every 0.25 s over its 48 s, each
-  scene from its start at 12 moments, every chip hovered and pressed in every scene, and every scene
+  overlap check (engine.js ?overlap) in 559 states: the tour every 0.25 s over its 72.5 s, each
+  scene from its start at 18 moments, every chip hovered and pressed in every scene, and every scene
   chosen from every other at 0.05, 0.15 and 0.3 s: 0 with a collision
-  live page: script errors 0, console errors or warnings 0; after 1.6 s t = 1.78, playing
+  live page: script errors 0, console errors or warnings 0; after 1.6 s t = 1.62, playing
   True; a click on chip 4 shows scene 4 and the figure keeps playing (True), aria-checked
-  ['false', 'false', 'false', 'true', 'false', 'false']; 0.5 s later its clock is at 0.55 s; ArrowRight moves to scene 5 ('constrained'), ArrowDown
+  ['false', 'false', 'false', 'true', 'false', 'false']; 0.5 s later its clock is at 0.53 s; ArrowRight moves to scene 5 ('constrained'), ArrowDown
   (two on, wrapping) to scene 1; paused, a chip shows its scene complete (True) and stays paused;
   the tour wraps from scene 6 to scene 1; restart returns to the tour at t = 0 ([True, True, True]); a click on the
   canvas away from the chips pauses (playing False); ?view=5 starts on scene 5. A chip's hit area at
   672 px: 129.0 x 29.6 CSS px. All as expected: True
-  page 118.9 KB, still 82.3 KB; common.still's own check (the poster and every
+  page 120.1 KB, still 83.0 KB; common.still's own check (the poster and every
   0.25 s up to it): clean
 
 DISPLAY
-  W = 1000, H = 640. One scene every 8 s: its solver starts 0.5 s in and is done by about 4.5 s, its labels
-  by 5 s; POSTER_T = 5.6 s shows the first scene complete (with ?view=N, scene N). The intro: the box and the
-  first landscape draw in 0.45 s, the chips and the characteristics arrive by 0.4 s, gradient descent starts at
-  0.5 s. Between iterates a marker glides (a Motion spring, for the eye; the iterates themselves are exact):
-  descent one step every 0.16 s (scene 1) or 0.13 s (scene 3), the swarm and NSGA-II one iteration or
-  generation every 0.1 s, the simplex one pivot per 1 s and 0.7 s, the penalty one mu every 0.95 s (log mu
+  W = 1000, H = 640. Each scene its own length, 11.5, 8, 13, 16, 8, 16 s (a tour of 72.5 s): its solver
+  starts 0.5 s in and is done at 8, 4.5, 9.5, 12.5, 4.5, 12.5 s, its labels about 0.4 s later, and it stays
+  complete 3.2 s before it fades. POSTER_T = 9.1 s shows the first scene complete (with ?view=N, scene N,
+  at 9.1, 5.6, 10.6, 13.6, 5.6, 13.6 s). The intro: the box and the first landscape draw in 0.45 s, the chips and the
+  characteristics arrive by 0.4 s, gradient descent starts at 0.5 s. Between iterates a marker glides (a Motion
+  spring, for the eye; the iterates themselves are exact): one step, iteration or generation every 0.3 s
+  (descent in scenes 1 and 3, the swarm, NSGA-II), the simplex one pivot per 1 s and 0.7 s, the penalty one mu every 0.95 s (log mu
   glides between them; the page draws F_mu's level sets and x(mu) in closed form at every moment). NSGA-II
   replaces candidates, it does not move them: a survivor stays put, one dropped fades, a new one appears.
   The landscape stays from scene 3 into scene 4 (the tour's order). Chips choose a scene (the tour goes on from

@@ -36,7 +36,7 @@ import common
 import sp_inv_lib as L
 
 NAME = "sp-inv-reg"
-W, H = 1000, 740
+W, H = 1000, 700
 TITLE = "Figure 4: Undoing a blur, an ill-posed inverse problem"
 ARIA = ("Four panels on one blurred, noisy measurement. A hidden cause, a smooth bump and a sharp block, "
         "is blurred and measured with noise; the cause recovered from the data is compared with the truth. "
@@ -52,7 +52,6 @@ const SETS = D.sets.map(row => row.map(q => ({ ...q, d: b64f32(q.d), beta: b64f6
   rho: b64f32(q.rho), eta: b64f32(q.eta), trho: b64f32(q.trho), teta: b64f32(q.teta) })));
 const GM = b64f32(D.Gm), NAP = D.na;
 const alphaOf = u => Math.pow(10, LA0 + (LA1 - LA0) * u), uOf = a => (Math.log10(a) - LA0) / (LA1 - LA0);
-const rOfK = k => (NC - k) / (NC - 1), kOfR = r => Math.round(NC - (NC - 1) * r);
 const ONES = new Float64Array(NC).fill(1);
 function filt(o) {
   if (o.m === 0) return ONES;
@@ -68,24 +67,48 @@ function filt(o) {
    u: Tikhonov's slider position; k: the truncation; sw: a sweep {t0, ph}; an: draws animated {t0, d0}} */
 let ST = null;
 function reset() { ST = null; UI.hov = UI.down = UI.drag = UI.press = ''; }
-const TS = 12, HOLD = 1.8, TN = 6, PD_ = 1.2, T0 = .6;   // sweep period, holds, none phase, draw period
-const PER = TS + HOLD + TN + TS + HOLD;
+/* the tour: the discrepancy principle held (the poster), Tikhonov swept once and held there again, no
+   regularization while the noise draw changes, truncated SVD held at its discrepancy k, swept once and
+   held; then again */
+const TS = 18, HD0 = 3, HOLD = 2.6, TN = 6, PD_ = 1.2;           // sweep period, holds, none phase, draw period
+const PHASES = [HD0, TS, HOLD, TN, HOLD, TS, HOLD], PER = PHASES.reduce((a, b) => a + b);
+/* a sweep runs a cosine back and forth over the strengths worth seeing, from too little (r = 0) to too
+   much (r = 1), and back to where it started: Tikhonov log10 alpha from -3 to 0.5, truncated SVD k from 28
+   to 1. A tanh warp about the middle, where the estimate is good, slows it there (about 0.4 decades or
+   2.6 terms a second) and hurries it through the ends; a sweep started outside that range widens it */
+const atanh = x => .5 * Math.log((1 + x) / (1 - x));
+function warp(m, v0) {
+  const W = m === 2 ? { a: Math.min(-3, v0), b: Math.max(.5, v0), c: -1.2, s: 1.2 } : { a: Math.max(28, v0), b: 1, c: 15, s: 8 };
+  W.w0 = Math.tanh((W.a - W.c) / W.s); W.w1 = Math.tanh((W.b - W.c) / W.s);
+  return W;
+}
+const swVal = (W, r) => W.c + W.s * atanh(lerp(W.w0, W.w1, r));
+const swR = (W, v) => clamp((Math.tanh((v - W.c) / W.s) - W.w0) / (W.w1 - W.w0));
+const lgOf = u => LA0 + (LA1 - LA0) * u, uOfLg = l => (l - LA0) / (LA1 - LA0);
 const sweep = (t0, ph) => .5 - .5 * Math.cos(2 * Math.PI * (t - t0) / TS + ph);
-const phase = r => Math.acos(clamp(1 - 2 * r, -1, 1));          // a sweep from r, stronger first
+/* a sweep from the strength shown, stronger first */
+function sweepFrom(m, u, k, t0) {
+  const v0 = m === 2 ? lgOf(u) : k, W = warp(m, v0);
+  return { t0, ph: Math.acos(clamp(1 - 2 * swR(W, v0), -1, 1)), W };
+}
 function tour() {
   const S = SETS[1][0], uD = uOf(S.adp), base = { nz: 1, dr: 0, u: uD, k: S.kdp, sw: null, an: null };
-  if (t < T0) return { ...base, m: 2 };
-  const c = (t - T0) % PER, c0 = t - c;
-  if (c < TS) return { ...base, m: 2, sw: { t0: c0, ph: phase(uD) } };
-  if (c < TS + HOLD) return { ...base, m: 2 };
-  if (c < TS + HOLD + TN) return { ...base, m: 0, an: { t0: c0 + TS + HOLD, d0: 0, first: 0 } };
-  if (c < 2 * TS + HOLD + TN) return { ...base, m: 1, sw: { t0: c0 + TS + HOLD + TN, ph: phase(rOfK(S.kdp)) } };
+  let c = t % PER;
+  if (c < PHASES[0]) return { ...base, m: 2 };
+  if ((c -= PHASES[0]) < TS) return { ...base, m: 2, sw: sweepFrom(2, uD, 0, t - c) };
+  if ((c -= TS) < HOLD) return { ...base, m: 2 };
+  if ((c -= HOLD) < TN) return { ...base, m: 0, an: { t0: t - c, d0: 0, first: 0 } };
+  if ((c -= TN) < HOLD) return { ...base, m: 1 };
+  if ((c -= HOLD) < TS) return { ...base, m: 1, sw: sweepFrom(1, 0, S.kdp, t - c) };
   return { ...base, m: 1 };
 }
 /* the state shown at this moment: the tour's or the reader's, with its sweep and its draws run on */
 function now() {
   const s = ST || tour(), o = { m: s.m, nz: s.nz, dr: s.dr, u: s.u, k: s.k, sw: !!s.sw, an: !!s.an };
-  if (s.sw && s.m > 0) { const r = sweep(s.sw.t0, s.sw.ph); if (s.m === 2) o.u = r; else o.k = kOfR(r); }
+  if (s.sw && s.m > 0) {
+    const v = swVal(s.sw.W, sweep(s.sw.t0, s.sw.ph));
+    if (s.m === 2) o.u = clamp(uOfLg(v)); else o.k = clamp(Math.round(v), 1, NC);
+  }
   if (s.an) o.dr = (s.an.d0 + Math.max(0, Math.floor((t - s.an.t0) / PD_ + (s.an.first === undefined ? .6 : s.an.first)))) % 3;
   return o;
 }
@@ -96,7 +119,7 @@ function hold() {
   ST = { m: o.m, nz: o.nz, dr: o.dr, u: o.u, k: o.k, sw: s.sw, an: s.an ? { t0: t, d0: o.dr } : null };
 }
 function freeze() { const o = now(); ST.u = o.u; ST.k = o.k; ST.sw = null; }
-function startSweep() { const o = now(); ST.u = o.u; ST.k = o.k; ST.sw = { t0: t, ph: phase(ST.m === 2 ? o.u : rOfK(o.k)) }; }
+function startSweep() { const o = now(); ST.u = o.u; ST.k = o.k; ST.sw = sweepFrom(ST.m, o.u, o.k, t); }
 const moves = () => !REDUCED && !STILL;
 function choose(f) { hold(); f(); redraw(); }
 
@@ -108,23 +131,23 @@ let LAY = null;
 function layout() {                           // chips sized to their words, once the type has loaded
   if (LAY) return LAY;
   const L = { r1: [], r2: [] };
-  let x = 20 + tw('method', 15) + 10;
+  let x = 20 + tw('method', 16) + 10;
   L.method = x - 10;
-  METH.forEach((s, i) => { const w = Math.max(46, tw(s, 15) + 22); L.r1.push({ id: 'm' + i, x, w }); x += w + 6; });
-  x += 24; L.noise = x; x += tw('noise', 15) + 10;
+  METH.forEach((s, i) => { const w = Math.max(46, tw(s, 16) + 22); L.r1.push({ id: 'm' + i, x, w }); x += w + 6; });
+  x += 24; L.noise = x; x += tw('noise', 16) + 10;
   D.names.forEach((s, i) => { L.r1.push({ id: 'n' + i, x, w: 52 }); x += 58; });
-  x += 18; L.draw = x; x += tw('draw', 15) + 10;
+  x += 18; L.draw = x; x += tw('draw', 16) + 10;
   for (let i = 0; i < 3; i++) { L.r1.push({ id: 'd' + i, x, w: 30 }); x += 36; }
-  L.r1.push({ id: 'an', x, w: tw('animate', 15) + 22 });
+  L.r1.push({ id: 'an', x, w: tw('animate', 16) + 22 });
   x = 532;
   for (const [id, s] of [['sw', 'sweep'], ['dp', 'discrepancy principle'], ['cn', 'L-curve corner']]) {
-    const w = tw(s, 15) + 22; L.r2.push({ id, x, w }); x += w + 8;
+    const w = tw(s, 16) + 22; L.r2.push({ id, x, w }); x += w + 8;
   }
   return (LAY = L);
 }
 function mkChip(g, y, label, on, act, off = () => false, extra = {}) {
   const h = (UI.list.find(c => c.id === g.id) || {});
-  Object.assign(h, { id: g.id, kind: 'chip', x: g.x, y, w: g.w, h: CHH, hit: [g.x - 3, y - 8, g.x + g.w + 3, y + CHH + 7],
+  Object.assign(h, { id: g.id, kind: 'chip', x: g.x, y, w: g.w, h: CHH, hit: [g.x - 3, y - 6, g.x + g.w + 3, y + CHH + 6],
                      label, on, act, off }, extra);
   if (!UI.list.includes(h)) UI.list.push(h);
 }
@@ -177,9 +200,9 @@ UI.ground = (X, Y) => Y < ROW2 + CHH + 12;
 function controls(o, a) {
   buildControls();
   const L = layout();
-  text('method', L.method, ROW1 + 19, { size: 15, color: C.body, align: 'right', alpha: a });
-  text('noise', L.noise, ROW1 + 19, { size: 15, color: C.body, alpha: a });
-  text('draw', L.draw, ROW1 + 19, { size: 15, color: C.body, alpha: a });
+  text('method', L.method, ROW1 + 19, { size: 16, color: C.body, align: 'right', alpha: a });
+  text('noise', L.noise, ROW1 + 19, { size: 16, color: C.body, alpha: a });
+  text('draw', L.draw, ROW1 + 19, { size: 16, color: C.body, alpha: a });
   for (const c of UI.list) if (c.kind === 'chip') drawChip(c, a);
   const sl = ctlById('sl');
   drawSlider(sl, a);
@@ -189,12 +212,12 @@ function controls(o, a) {
   } else if (o.m === 1) {
     math('k', 22, SLY + 6, { size: 18, alpha: a });
     math('k = ' + o.k + '\\rm{ of }' + NC, SL.x1 + 22, SLY + 6, { size: 16, alpha: a });
-  } else text('no parameter', SL.x1 + 22, SLY + 6, { size: 15, color: C.muted, alpha: a });
+  } else text('no parameter', SL.x1 + 22, SLY + 6, { size: 16, color: C.muted, alpha: a });
 }
 
 /* ================================================ the panels */
-const PA = { x: 88, y: 132, w: 364, h: 200 }, PB = { x: 576, y: 132, w: 364, h: 200 };
-const PC = { x: 88, y: 434, w: 364, h: 200 }, PD = { x: 576, y: 434, w: 364, h: 146 }, PF = { x: 576, y: 590, w: 364, h: 44 };
+const PA = { x: 88, y: 126, w: 364, h: 192 }, PB = { x: 576, y: 126, w: 364, h: 192 };
+const PC = { x: 88, y: 416, w: 364, h: 192 }, PD = { x: 576, y: 416, w: 364, h: 140 }, PF = { x: 576, y: 564, w: 364, h: 44 };
 const curve = (A, ys, lo = -1e9, hi = 1e9) => Array.from(ys, (v, i) => [A.X(XC[i]), A.Y(clamp(v, lo, hi))]);
 const mk = {
   line: (col, w, dash) => (x, y, a) => line([[x - 12, y], [x + 12, y]], { color: col, width: w, dash, alpha: a }),
@@ -241,9 +264,9 @@ function panelB(o, S, E, mh) {
          lab(.44), { right: true });
   let mx = 0; for (let i = 0; i < NC; i++) mx = Math.max(mx, Math.abs(mh[i]));
   if (!none && mx > 1.6) {
-    const s = '\\rm{max}\\ |m̂| = ' + sci(mx) + '\\rm{, off the axes}', w = math(s, 0, -1e4, { size: 15, alpha: 0 });
+    const s = '\\rm{max}\\ |m̂| = ' + sci(mx) + '\\rm{, off the axes}', w = math(s, 0, -1e4, { size: 16, alpha: 0 });
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(PB.x + PB.w - 14 - w, PB.y + PB.h - 30, w + 8, 22); ctx.restore();
-    math(s, PB.x + PB.w - 10, PB.y + PB.h - 14, { size: 15, color: C.accent, align: 'right', alpha: ra });
+    math(s, PB.x + PB.w - 10, PB.y + PB.h - 14, { size: 16, color: C.accent, align: 'right', alpha: ra });
   }
 }
 function panelC(o, S, E) {
@@ -274,7 +297,7 @@ function panelC(o, S, E) {
   const ex = Math.log10(E.rho), ey = Math.log10(E.eta);
   if (o.m > 0 && ex > -3 && ex < 1 && ey > -2 && ey < 5) dot(A.X(ex), A.Y(ey), 5.5, { color: '#fff', fill: C.accent, width: 1.4, alpha: lab(.45) });
   else math('\\rm{estimate off the chart:}\\ ‖m̂‖ = ' + sci(E.eta), PC.x + PC.w, PC.y - 14, { size: 16, color: C.accent, align: 'right', alpha: ma });
-  text('noise level', A.X(lx) + 7, PC.y + 20, { size: 14, color: C.muted, alpha: seg(.3, .3) });
+  text('noise level', A.X(lx) + 7, PC.y + 21, { size: 16, color: C.muted, alpha: seg(.3, .3) });
   const marks = o.m === 2 ? [[mk.ring(6), '\\rm{lowest error}'], [mk.square(5), '\\rm{corner}']] : o.m === 1 ? [[mk.ring(6), '\\rm{lowest error}']] : [];
   legend(PC.x + 8, PC.y + PC.h - (marks.length ? 56 : 35), [[[mk.line(C.navy, 2.2), '\\rm{Tikhonov}'], [mk.dot(C.blue, C.sky, 3), '\\rm{truncated SVD}']],
                                       ...(marks.length ? [marks] : [])], lab(.46));
@@ -310,7 +333,7 @@ function panelD(o, S, f) {
     if (ba > 0) dot(A.X(j + 1), A.Y(Math.max(-17.8, lb)), 2.3, { color: C.blue, fill: C.blue, width: .6, alpha: ba });
   }
   const lev = o.m === 2 ? [mk.line(C.accent, 1.3, [3, 3]), 's_i = \\alpha'] : o.m === 1 ? [mk.vbar(C.accent), '\\rm{cut after}\\ k'] : null;
-  legend(PD.x + 8, PD.y + PD.h - 52, [[[mk.dot(C.ink, C.ink, 2.3), '\\rm{singular value}\\ s_i'], [mk.dot(C.blue, C.blue, 2.3), '|u_i^{\\rm{T}}d|']],
+  legend(PD.x + 8, PD.y + PD.h - 52, [[[mk.dot(C.ink, C.ink, 2.3), '\\rm{singular value}\\ s_i'], [mk.dot(C.blue, C.blue, 2.3), '|u_i^{⊤}d|']],
                                       [[mk.line(C.guide, 1.2, [5, 4]), '\\rm{noise floor}'], ...(lev ? [lev] : [])]], lab(.48), { rh: 20 });
 }
 
@@ -321,10 +344,10 @@ function draw() {
   panelB(o, S, E, mh);
   panelC(o, S, E);
   panelD(o, S, f);
-  math(D.params, 20, H - 14, { size: 14, color: C.muted, alpha: seg(.45, .3) });
+  math(D.params, 20, H - 14, { size: 15, color: C.muted, alpha: seg(.45, .3) });
   placeKeys([o.m, o.nz, o.dr, o.k, o.u.toFixed(5), o.sw, o.an].join(':'));
 }
-const POSTER_T = T0 + TS + HOLD / 2;          // the tour's Tikhonov sweep done, held at the discrepancy principle
+const POSTER_T = 2.2;                         // the tour's first hold: Tikhonov at the discrepancy principle
 /* the address can choose a state (for the overlap check of every state); nothing when absent */
 if (['m', 'nz', 'dr', 'a', 'u', 'k', 'sw', 'an'].some(k => QS.has(k))) {
   const o = { m: 2, nz: 1, dr: 0 };
@@ -332,7 +355,7 @@ if (['m', 'nz', 'dr', 'a', 'u', 'k', 'sw', 'an'].some(k => QS.has(k))) {
   const S = SETS[ST.nz][ST.dr];
   ST.u = QS.has('a') ? uOf(+QS.get('a')) : QS.has('u') ? +QS.get('u') : uOf(S.adp);
   ST.k = QS.has('k') ? +QS.get('k') : S.kdp;
-  if (QS.get('sw') === '1') ST.sw = { t0: POSTER_T, ph: phase(ST.m === 2 ? ST.u : rOfK(ST.k)) };
+  if (QS.get('sw') === '1') ST.sw = sweepFrom(ST.m, ST.u, ST.k, POSTER_T);
   if (QS.get('an') === '1') ST.an = { t0: POSTER_T, d0: ST.dr };
 }
 buildControls();
@@ -568,11 +591,18 @@ def validate(P, info, data):
                 f"{z['kbest']:2d} ({100 * z['tsvd'][z['kbest'] - 1, 2]:.2f} %)")
     say("")
     say("DISPLAY")
-    say("  W x H = 1000 x 740. Untouched, the figure tours: 0.6 s at the discrepancy alpha (1 %, draw 1) while the intro")
-    say("  draws, Tikhonov swept once (12 s, a cosine in log10 alpha from alpha_DP, stronger first), held 1.8 s, no")
-    say("  regularization for 6 s with a new noise draw every 1.2 s (Hadamard), truncated SVD swept once (12 s, k from")
-    say("  k_DP, fewer terms first) and held 1.8 s; then again. POSTER_T = 13.5 s: the sweep done, held at alpha_DP.")
-    say("  Controls: method, noise level and noise draw chips, 'animate' (a new draw every 1.2 s, his Animate noise),")
+    say(f"  W x H = 1000 x {H}. Untouched, the figure tours (1 %, draw 1): 3 s at the discrepancy alpha while the intro")
+    say("  draws, Tikhonov swept once (18 s) and held 2.6 s at alpha_DP, no regularization for 6 s with a new noise")
+    say("  draw every 1.2 s (Hadamard), truncated SVD held 2.6 s at k_DP, swept once (18 s) and held 2.6 s; then again")
+    say("  (52.8 s). A sweep is a cosine back and forth from where it starts, stronger first, over the strengths worth")
+    say("  seeing: log10 alpha from -3 (error 119 %, the estimate just off the axes) to 0.5 (93 %, the bump nearly")
+    say("  flat), k from 28 (104 %) to 1 (71 %), through a tanh warp centred on log10 alpha = -1.2 (scale 1.2) and on")
+    say("  k = 15 (scale 8): about 0.4 decades or 2.6 terms a second in the middle, where the error is under 25 % for")
+    say("  7 s of each 18 s sweep, faster towards the ends. A sweep the reader starts outside that range widens it to")
+    say("  start where the slider is. POSTER_T = 2.2 s: the first hold, Tikhonov at alpha_DP (17.6 %).")
+    say("  Controls (hit areas 40 units tall, 27 CSS px at the page's 672 px, the keyboard's stand-ins as large; the")
+    say("  focus ring 3 units outside the drawn chip): method, noise level and noise draw chips, 'animate' (a new draw")
+    say("  every 1.2 s, his Animate noise),")
     say("  the strength slider (Tikhonov alpha, log; truncated SVD k), 'sweep' (his Play sweep), 'discrepancy")
     say("  principle', 'L-curve corner'. No regularization draws (b) on its own scale (10^12, 10^13, 10^14 for the three")
     say("  levels). An estimate outside (b)'s axes is clipped and its max stated; an L-curve point outside (c) is stated")

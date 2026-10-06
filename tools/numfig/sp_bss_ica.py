@@ -99,7 +99,7 @@ const LN = {x: 98, y: 108, w: 484, h: 92, gap: 18};       // (a)
 const SC = {x: 706, y: 108, s: 236};                      // (b)
 const KB = {x: 98, y: 446, w: 484, h: 116};               // (c)
 const TB = {x0: 640, x1: 980, y: 432};                    // the table
-const SN = {x: 92, y: 650, w: 36, h: 28, pitch: 38};      // the SNR chips (as Figure 11's)
+const SN = {x: 92, y: 650, w: 38, h: 28, pitch: 40};      // the SNR chips
 let SRX = null;
 
 function stageRow(k, ph) {
@@ -107,7 +107,7 @@ function stageRow(k, ph) {
     const ws = STAGES.map(s => chipW(s[0], s[1])), tot = ws.reduce((p, q) => p + q, 0) + SR.gap * (NS - 1);
     let x = (W - tot) / 2;
     SRX = ws.map(w => { const r = [x, w]; x += w + SR.gap; return r; });
-    place(GS, SRX.map(([x, w]) => [x - 4, 0, w + 8, SR.y + SR.h + 8]));
+    place(GS, SRX.map(([x, w]) => [x - 4, 0, w + 8, SR.y + SR.h + 8]), SRX.map(([x, w]) => [x, SR.y, w, SR.h]));
     BANDS.push([SRX[0][0] - 12, 0, SRX[NS - 1][0] + SRX[NS - 1][1] + 12, SR.y + SR.h + 14]);
   }
   for (let i = 0; i < NS; i++) {
@@ -122,10 +122,10 @@ function stageRow(k, ph) {
 }
 function kapLabel(v, x, y) {                               // pgfplots' scaled ticks: the factor the ticks carry
   const one = k => Math.abs(k - 1) < .005;
-  if (!one(v.kA) && !one(v.kB)) { math('\\times\\ ' + lerp(v.kA, v.kB, v.ls).toFixed(2), x, y, {size: 15, color: C.body}); return; }
+  if (!one(v.kA) && !one(v.kB)) { math('\\times\\ ' + lerp(v.kA, v.kB, v.ls).toFixed(2), x, y, {size: 16, color: C.body}); return; }
   const [a0, a1] = swap(v.ls);
-  if (!one(v.kA) && a0 > .01) math('\\times\\ ' + v.kA.toFixed(2), x, y, {size: 15, color: C.body, alpha: a0});
-  if (!one(v.kB) && a1 > .01) math('\\times\\ ' + v.kB.toFixed(2), x, y, {size: 15, color: C.body, alpha: a1});
+  if (!one(v.kA) && a0 > .01) math('\\times\\ ' + v.kA.toFixed(2), x, y, {size: 16, color: C.body, alpha: a0});
+  if (!one(v.kB) && a1 > .01) math('\\times\\ ' + v.kB.toFixed(2), x, y, {size: 16, color: C.body, alpha: a1});
 }
 function panelA(v, cur, intro) {
   sub('a', 18, 84, 'signals over time', arrive(.04));
@@ -139,16 +139,16 @@ function panelA(v, cur, intro) {
     ylab(v.labB + '_' + (i + 1) + '(t)', LN.x - 52, yc, la * a1);
   }
   math('t\\ (\\rm{s})', LN.x + LN.w / 2, LN.y + 2 * LN.h + LN.gap + 52, {size: 17, align: 'center', alpha: la});
-  text('real time', LN.x + LN.w, LN.y + 2 * LN.h + LN.gap + 52, {size: 14, color: C.muted, align: 'right', alpha: seg(.5, .3)});
+  text('real time', LN.x + LN.w, LN.y + 2 * LN.h + LN.gap + 52, {size: 16, color: C.muted, align: 'right', alpha: seg(.5, .3)});
   kapLabel(v, LN.x, LN.y - 8);
   if (v.ov > .01) {                                        // which line is which, once the sources are drawn
     const y = LN.y - 9, x1 = LN.x + LN.w;
-    const w2 = tw('matched source', 15), w1 = tw('estimate', 15);
+    const w2 = tw('matched source', 16), w1 = tw('estimate', 16);
     line([[x1 - w2 - 34, y - 5], [x1 - w2 - 8, y - 5]], {color: C.navy, width: 1.3, dash: [5, 3.5], alpha: v.ov});
-    text('matched source', x1, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+    text('matched source', x1, y, {size: 16, color: C.body, align: 'right', alpha: v.ov});
     const x2 = x1 - w2 - 52;
     line([[x2 - w1 - 34, y - 5], [x2 - w1 - 8, y - 5]], {color: C.blue, width: 1.6, alpha: v.ov});
-    text('estimate', x2, y, {size: 15, color: C.body, align: 'right', alpha: v.ov});
+    text('estimate', x2, y, {size: 16, color: C.body, align: 'right', alpha: v.ov});
   }
 }
 function panelB(v, cur) {
@@ -177,7 +177,7 @@ function panelC(v) {
   sub('c', 18, KB.y - 24, 'kurtosis against rotation', la);
   math('K(\\theta) = |\\rm{kurt}\\ y_1| + |\\rm{kurt}\\ y_2|', KB.x + KB.w, KB.y - 24, {size: 16, color: C.body, align: 'right', alpha: la * a});
   const ax = axes({x: KB.x, y: KB.y, w: KB.w, h: KB.h, xlim: [-45, 45], ylim: [0, D.kmax], xticks: [-45, -30, -15, 0, 15, 30, 45],
-    yticks: D.kticks, xlabel: '\\rm{rotation angle}\\ \\theta\\ (\\rm{deg})', ylabel: 'K(\\theta)', ylabelGap: 46,
+    yticks: D.kticks, xlabel: '\\rm{rotation angle}\\ \\theta\\ (\\deg)', ylabel: 'K(\\theta)', ylabelGap: 46,
     tickSize: 16, labelSize: 17, progress: seg(.1, .35), alpha: a});
   const m = st().m, pts = [];
   for (let i = 0; i <= 360; i++) { const d = -45 + i / 4; pts.push([ax.X(d), ax.Y(kurtPair(m, d * Math.PI / 180))]); }
@@ -208,12 +208,12 @@ function table(v) {
     text(s.rhos[j], x1, yy, {size: 16, align: 'right', alpha: a});
   }
   rule(x0, x1, y + 92, 1.3, a);
-  math('\\rm{rotation}\\ \\theta^{*} = ' + s.thd + '\\rm{ deg, }\\ K(\\theta^{*}) = ' + s.Ks, x0, y + 122, {size: 15, color: C.body, alpha: a});
-  math('\\rm{source kurtosis: }' + D.ks[0] + '\\rm{ (harmonic), }' + D.ks[1] + '\\rm{ (impacts)}', x0, y + 146, {size: 14, color: C.muted, alpha: arrive(.4)});
+  math('\\rm{rotation}\\ \\theta^{*} = ' + s.thd + '\\deg\\rm{, }\\ K(\\theta^{*}) = ' + s.Ks, x0, y + 122, {size: 16, color: C.body, alpha: a});
+  math('\\rm{source kurtosis: }' + D.ks[0] + '\\rm{ (harmonic), }' + D.ks[1] + '\\rm{ (impacts)}', x0, y + 147, {size: 16, color: C.muted, alpha: arrive(.4)});
 }
 function snrRow() {
   const a = arrive(.4);
-  text('SNR (dB)', SN.x - 10, SN.y + 19, {size: 15, color: C.body, align: 'right', alpha: a});
+  text('SNR (dB)', SN.x - 8, SN.y + 19.5, {size: 16, color: C.body, align: 'right', alpha: a});
   D.snrs.forEach((v, i) => chip(SN.x + i * SN.pitch, SN.y, SN.w, SN.h, num(v, 0), null,
     {on: i === SEL, hover: HOV.snr === i, down: DOWN.snr === i}, arrive(.4 + .01 * i)));
 }
@@ -225,7 +225,7 @@ function draw() {
   panelC(v);
   table(v);
   snrRow();
-  mixed(D.params, 18, H - 12, {size: 14, color: C.muted, alpha: seg(.5, .3)});
+  mixed(D.params, 18, H - 12, {size: 15, color: C.muted, alpha: seg(.5, .3)});
 }
 function status() {
   const s = st(), k = clock().k;
@@ -235,7 +235,8 @@ function status() {
 const GS = group('stage', 'Stage of kurtosis ICA', STAGES.map((s, i) => ({aria: 'Stage ' + (i + 1) + ': ' + s[0]})),
   () => clock().k, j => chooseStage(j));
 const GN = group('snr', 'Sensor SNR', D.snrs.map(v => ({aria: 'SNR ' + v + ' dB'})), () => SEL, i => chooseData(() => { SEL = i; }));
-place(GN, D.snrs.map((_, i) => [SN.x + i * SN.pitch - (SN.pitch - SN.w) / 2, SN.y - 8, SN.pitch, SN.h + 16]));
+place(GN, D.snrs.map((_, i) => [SN.x + i * SN.pitch - (SN.pitch - SN.w) / 2, SN.y - 8, SN.pitch, SN.h + 16]),
+      D.snrs.map((_, i) => [SN.x + i * SN.pitch, SN.y, SN.w, SN.h]));
 BANDS.push([SN.x - 80, SN.y - 10, SN.x + D.snrs.length * SN.pitch + 6, SN.y + SN.h + 10]);
 function reset() { TOUR0 = TOUR_START; JUMP = null; CHG = null; sync(); }
 sync();

@@ -53,9 +53,9 @@ NAME = "sp-opt-types"
 W, H = 1000, 640
 
 # ------------------------------------------------------------------ timing (the page's own)
-DUR = 8.0          # one scene, s; the tour steps through all six
 TA = 0.5           # the solver starts this long into its scene
-TDONE = 5.6        # the scene complete: the poster moment
+STEP = 0.3         # one step, iteration or generation of a stepped run (scenes 1, 3, 4, 6), s
+FIXED = 4.5        # the simplex (scene 2) and the penalty (scene 5) are done by then: their own pace
 
 # ------------------------------------------------------------------ 1 and 5: the convex quadratic
 THETA = np.deg2rad(30.0)
@@ -468,10 +468,22 @@ def hypervolume(F, ref=(1.0, 1.0)):
     return hv
 
 
+# ------------------------------------------------------------------ the page's clock
+# each scene's solver is done at RUNS[i] s into it (a stepped run: TA + its steps x STEP); its labels
+# arrive about 0.4 s later, and it stays complete until 0.3 s before its end, when it fades
+RUNS = [TA + K_Q * STEP, FIXED, TA + K_ST * STEP, TA + PSO_IT * STEP, FIXED, TA + NS_G * STEP]
+TDONES = [round(r + 1.1, 3) for r in RUNS]        # complete: the poster moment (?view=N: scene N)
+DURS = [round(r + 3.5, 3) for r in RUNS]          # the scene's length: 3.2 s complete before its fade
+
 # ------------------------------------------------------------------ the page
 JS = r"""
 const D = DATA;
-const DUR = D.dur, TA = D.ta, TDONE = D.tdone, POSTER_T = TDONE;
+/* each scene its own length: a stepped run takes one step every STEP s, and every scene stays complete
+   3.2 s (2.8 s after its last label arrives) before it fades; TDN[i] is scene i complete (the poster
+   moment, of ?view=i+1 for scene i) */
+const DURS = D.durs, TA = D.ta, STEP = D.step, TDN = D.tdone, TOUR = DURS.reduce((a, b) => a + b);
+const VIEW = (() => { const m = /[?&]view=(\d+)/.exec(location.search), v = m ? +m[1] : 0; return v >= 1 && v <= 6 ? v - 1 : -1; })();
+const POSTER_T = TDN[Math.max(VIEW, 0)];
 const lab = t0 => settle(t0, .28), rise = s => 4 * (1 - s);
 
 /* ================================================ the six scenes, in his order and his terms */
@@ -511,13 +523,14 @@ const ROWS = [['(i)', 'convex', 'nonconvex'], ['(ii)', 'linear', 'nonlinear'], [
 /* ================================================ the reader's choice, and the tour */
 /* SEL: a scene chosen {i, t0, prev}; null: the tour from the first. ?view=N (1 to 6)
    starts the tour at scene N, for the overlap check of every scene; absent, nothing. */
-const VIEW = (() => { const m = /[?&]view=(\d+)/.exec(location.search), v = m ? +m[1] : 0; return v >= 1 && v <= 6 ? v - 1 : -1; })();
 let SEL = null, HC = -1, HD = -1;
 function reset() { SEL = VIEW >= 0 ? {i: VIEW, t0: 0, prev: -1} : null; HC = HD = -1; sync(); }
 function now() {
-  const t0 = SEL ? SEL.t0 : 0, i0 = SEL ? SEL.i : 0, u = Math.max(0, t - t0), k = Math.floor(u / DUR);
-  const i = (i0 + k) % 6, tau = u - k * DUR;
-  return {i, tau, st: t - tau, prev: k > 0 ? (i + 5) % 6 : SEL ? SEL.prev : -1, intro: !SEL && k === 0};
+  const t0 = SEL ? SEL.t0 : 0;
+  let i = SEL ? SEL.i : 0, u = Math.max(0, t - t0), k = 6 * Math.floor(u / TOUR);
+  u -= TOUR * Math.floor(u / TOUR);                          // whole tours, then scene by scene
+  while (u >= DURS[i]) { u -= DURS[i]; i = (i + 1) % 6; k++; }
+  return {i, tau: u, st: t - u, prev: k > 0 ? (i + 5) % 6 : SEL ? SEL.prev : -1, intro: !SEL && k === 0};
 }
 
 /* ================================================ layout */
@@ -635,9 +648,9 @@ function minMark(A, p, a, glob) {
 /* ================================================ scene 1: convex */
 function scene1(A, S, a) {
   contoursQ(A, a, seg(S.st + .05, .45));
-  const st = stepAt(S, TA, .16, D.q.k);
+  const st = stepAt(S, TA, STEP, D.q.k);
   for (const P of D.q.runs) run(A, P, st.k, st.s, a * seg(S.st + .3, .2));
-  const la = lab(S.st + TA + .16 * D.q.k + .1) * a, x = A.X(XQ[0]), y = A.Y(XQ[1]);
+  const la = lab(S.st + TA + STEP * D.q.k + .1) * a, x = A.X(XQ[0]), y = A.Y(XQ[1]);
   minMark(A, XQ, la, true);
   line([[x + 8, y + 7], [x + 44, y + 40]], {color: C.guide, width: 1, alpha: la});
   tag('global minimum', x + 48, y + 54 + rise(la), {color: C.accent, alpha: la});
@@ -687,9 +700,9 @@ function scene2(A, S, a) {
 /* ================================================ scene 3: nonconvex, a local search */
 function scene3(A, S, a, o) {
   contoursST(A, o.keepOut ? o.fin : a, o.keepIn ? 1 : seg(S.st + .05, .45));
-  const st = stepAt(S, TA, .13, D.st.k);
+  const st = stepAt(S, TA, STEP, D.st.k);
   run(A, D.st.run, st.k, st.s, a * seg(S.st + .3, .2));
-  const end = D.st.run[D.st.k], la = lab(S.st + TA + .13 * D.st.k + .1) * a, lb = lab(S.st + TA + .13 * D.st.k + .4) * a;
+  const end = D.st.run[D.st.k], la = lab(S.st + TA + STEP * D.st.k + .1) * a, lb = lab(S.st + TA + STEP * D.st.k + .4) * a;
   for (const m of D.st.minima.slice(1)) if (m !== D.st.minima[3]) minMark(A, m, lb, false);
   tag('local minimum', A.X(end[0]) + 12, A.Y(end[1]) + 26 + rise(la), {alpha: la});
   minMark(A, D.st.minima[0], lb, true);
@@ -699,7 +712,7 @@ function scene3(A, S, a, o) {
 /* ================================================ scene 4: the same function, a swarm */
 function scene4(A, S, a, o) {
   contoursST(A, o.keepIn ? o.fout : a, o.keepIn ? 1 : seg(S.st + .05, .45));
-  const X = D.pso.X, n = D.pso.n, IT = D.pso.it, step = .1;
+  const X = D.pso.X, n = D.pso.n, IT = D.pso.it, step = STEP;
   const st = stepAt(S, TA, step, IT), k = st.k, s = st.s;
   const pa = a * seg(S.st + .15, .25);
   for (let j = 0; j < n; j++) dot(A.X(X[0][j][0]), A.Y(X[0][j][1]), 3.2, {color: C.sky, fill: '#fff', width: 1.1, alpha: pa * (k > 0 || s > .05 ? .8 : 0)});
@@ -753,7 +766,7 @@ function scene5(A, S, a) {
 /* ================================================ scene 6: two objectives */
 const NS_F = b64f32(D.ns.F);
 function scene6(A, S, a) {
-  const G = D.ns.g, step = .1, st = stepAt(S, TA, step, G), k = st.k, s = st.s;
+  const G = D.ns.g, step = STEP, st = stepAt(S, TA, step, G), k = st.k, s = st.s;
   // the exact Pareto front f2 = 1 - sqrt(f1)
   const fr = []; for (let j = 0; j <= 200; j++) { const f1 = (j / 200) ** 2; fr.push([A.X(f1), A.Y(ZDT(f1))]); }
   line(fr, {color: C.navy, width: 2.2, alpha: a, progress: seg(S.st + .05, .45)});
@@ -778,9 +791,9 @@ function scene6(A, S, a) {
   const kx = A.X(.6), ky = A.Y(2.12), la = lab(S.st + .3) * a;
   line([[kx, ky], [A.X(.985), ky], [A.X(.985), ky + 66], [kx, ky + 66]], {color: C.ink, width: 1, fill: '#fff', close: true, alpha: la});
   dot(kx + 18, ky + 20, 4.4, {color: '#fff', fill: C.accent, width: 1, alpha: la});
-  text('non-dominated', kx + 32, ky + 25, {size: 15, alpha: la});
+  text('non-dominated', kx + 32, ky + 25.5, {size: 16, alpha: la});
   dot(kx + 18, ky + 46, 3.8, {color: C.sky, fill: '#fff', width: 1.3, alpha: la});
-  text('dominated', kx + 32, ky + 51, {size: 15, alpha: la});
+  text('dominated', kx + 32, ky + 51.5, {size: 16, alpha: la});
   return {head: `\\rm{generation}\\ ${st.on ? k : 0}`};
 }
 const SCENES = [scene1, scene2, scene3, scene4, scene5, scene6];
@@ -825,7 +838,7 @@ function swatch(key, x, y, a) {
 /* ================================================ the frame */
 function draw() {
   const S = now(), sc = SC[S.i];
-  const fin = S.intro ? 1 : seg(S.st, .3), fout = 1 - seg(S.st + DUR - .3, .3), a = fin * fout;
+  const fin = S.intro ? 1 : seg(S.st, .3), fout = 1 - seg(S.st + DURS[S.i] - .3, .3), a = fin * fout;
   // the axes: their ticks change with the scene; the box stays
   const same = j => j >= 0 && JSON.stringify(SC[j].lim) === JSON.stringify(sc.lim);
   const nxt = (S.i + 1) % 6, ta = (same(S.prev) && !S.intro ? 1 : fin) * (same(nxt) ? 1 : fout);
@@ -842,7 +855,7 @@ function draw() {
   math(hd.head, FP.x + FP.w, FP.y - 16, {size: 17, align: 'right', alpha: a * lab(S.st + (S.intro ? .3 : .1))});
   column(S, a);
   let px = 18; const pa = a * seg(S.intro ? .45 : S.st + .1, .3);
-  for (const [kind, str] of sc.params) px += (kind === 'm' ? math : text)(str, px, H - 14, {size: 14, color: C.muted, alpha: pa});
+  for (const [kind, str] of sc.params) px += (kind === 'm' ? math : text)(str, px, H - 14, {size: 15, color: C.muted, alpha: pa});
   place(S);
 }
 function ticks(A, sc, a) {
@@ -872,7 +885,7 @@ function place(S) { if (BTN.length && KEY !== String(S.i)) { KEY = String(S.i); 
    goes on from it; paused, it shows complete */
 function choose(i) {
   const cur = now();
-  SEL = playing ? {i, t0: t, prev: cur.i} : {i, t0: t - TDONE, prev: -1};
+  SEL = playing ? {i, t0: t, prev: cur.i} : {i, t0: t - TDN[i], prev: -1};
   render(); sync();
   if (said) said.textContent = 'Problem type: ' + SC[i].chip + '.';
 }
@@ -880,7 +893,7 @@ if (!STILL) {
   document.head.insertAdjacentHTML('beforeend', '<style>.nfo{position:absolute;pointer-events:auto;box-sizing:border-box;margin:0;padding:0;' +
     'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;font:inherit;overflow:hidden}' +
     '.nfo:focus{outline:none}.nfo::after{content:"";position:absolute;left:var(--l);right:var(--r);top:var(--t);bottom:var(--b)}' +
-    '.nfo:focus-visible::after{outline:2px solid #095A94;outline-offset:1px}</style>');
+    '.nfo:focus-visible::after{outline:2px solid #095A94;outline-offset:2px}</style>');
   const group = document.createElement('div');
   group.setAttribute('role', 'radiogroup'); group.setAttribute('aria-label', 'Problem type');
   group.style.cssText = 'position:absolute;inset:0;pointer-events:none';
@@ -968,7 +981,7 @@ def page_data(r):
     Fshow = np.array([r["table"][i] for i in shown])
     gens = [{"ids": [ren[int(i)] for i in ids], "nd": [int(v == 0) for v in rank]} for ids, rank in r["gens"]]
     return dict(
-        dur=DUR, ta=TA, tdone=TDONE,
+        durs=DURS, ta=TA, step=STEP, tdone=TDONES,
         q=dict(theta=30, lam=LAM, xs=XQ, levels=LEVELS_Q, k=K_Q, runs=r["q_runs"]),
         lp=dict(poly=POLY, c=C_LP, simplex=r["simplex"], central=r["cpath"][np.r_[0:len(r["cpath"]) - 1:2, len(r["cpath"]) - 1]],
                 dots=r["cdots"],
@@ -1195,12 +1208,13 @@ def validate(r, ver=None):
             say("  " + line_)
         say("")
     say("DISPLAY")
-    say(f"  W = {W}, H = {H}. One scene every {DUR:g} s: its solver starts {TA:g} s in and is done by about 4.5 s, its labels")
-    say(f"  by 5 s; POSTER_T = {TDONE:g} s shows the first scene complete (with ?view=N, scene N). The intro: the box and the")
-    say("  first landscape draw in 0.45 s, the chips and the characteristics arrive by 0.4 s, gradient descent starts at")
-    say("  0.5 s. Between iterates a marker glides (a Motion spring, for the eye; the iterates themselves are exact):")
-    say("  descent one step every 0.16 s (scene 1) or 0.13 s (scene 3), the swarm and NSGA-II one iteration or")
-    say("  generation every 0.1 s, the simplex one pivot per 1 s and 0.7 s, the penalty one mu every 0.95 s (log mu")
+    say(f"  W = {W}, H = {H}. Each scene its own length, {', '.join(f'{d:g}' for d in DURS)} s (a tour of {sum(DURS):g} s): its solver")
+    say(f"  starts {TA:g} s in and is done at {', '.join(f'{r:g}' for r in RUNS)} s, its labels about 0.4 s later, and it stays")
+    say(f"  complete 3.2 s before it fades. POSTER_T = {TDONES[0]:g} s shows the first scene complete (with ?view=N, scene N,")
+    say(f"  at {', '.join(f'{d:g}' for d in TDONES)} s). The intro: the box and the first landscape draw in 0.45 s, the chips and the")
+    say("  characteristics arrive by 0.4 s, gradient descent starts at 0.5 s. Between iterates a marker glides (a Motion")
+    say(f"  spring, for the eye; the iterates themselves are exact): one step, iteration or generation every {STEP:g} s")
+    say("  (descent in scenes 1 and 3, the swarm, NSGA-II), the simplex one pivot per 1 s and 0.7 s, the penalty one mu every 0.95 s (log mu")
     say("  glides between them; the page draws F_mu's level sets and x(mu) in closed form at every moment). NSGA-II")
     say("  replaces candidates, it does not move them: a survivor stays put, one dropped fades, a new one appears.")
     say("  The landscape stays from scene 3 into scene 4 (the tour's order). Chips choose a scene (the tour goes on from")
@@ -1281,13 +1295,16 @@ def verify(r):
             pg.goto(url + "?t=0&overlap")
             pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=30000)
             pg.evaluate("setPlay(false)")
-            states = [(f"tour t = {tt:.2f}", f"SEL = null; HC = HD = -1; t = {tt}") for tt in np.arange(0, 48.01, .25)]
+            tour = sum(DURS)
+            states = [(f"tour t = {tt:.2f}", f"SEL = null; HC = HD = -1; t = {tt}") for tt in np.arange(0, tour + .01, .25)]
             for v in range(6):
+                moments = sorted(set([0.1, 0.3, 0.6, 1, 1.5, 2.2, 3] + [round(x, 2) for x in np.linspace(3.8, DURS[v] - .15, 10)]
+                                     + [TDONES[v]]))
                 states += [(f"view {v + 1} t = {tt:g}", f"SEL = {{i: {v}, t0: 0, prev: -1}}; HC = HD = -1; t = {tt}")
-                           for tt in (0.1, 0.3, 0.6, 1, 1.5, 2.2, 3, 3.8, 4.6, 5.6, 7, 7.85)]
+                           for tt in moments]
                 for j in range(6):
-                    states += [(f"view {v + 1} chip {j + 1} hover", f"SEL = {{i: {v}, t0: 0, prev: -1}}; HC = {j}; HD = -1; t = 5.6"),
-                               (f"view {v + 1} chip {j + 1} pressed", f"SEL = {{i: {v}, t0: 0, prev: -1}}; HC = {j}; HD = {j}; t = 5.6")]
+                    states += [(f"view {v + 1} chip {j + 1} hover", f"SEL = {{i: {v}, t0: 0, prev: -1}}; HC = {j}; HD = -1; t = {TDONES[v]}"),
+                               (f"view {v + 1} chip {j + 1} pressed", f"SEL = {{i: {v}, t0: 0, prev: -1}}; HC = {j}; HD = {j}; t = {TDONES[v]}")]
                 # chosen mid-scene from another: the glide of the marks
                 states += [(f"chosen {v + 1} from {w + 1} +{dt:g}", f"SEL = {{i: {v}, t0: 20, prev: {w}}}; HC = HD = -1; t = {20 + dt}")
                            for w in range(6) if w != v for dt in (0.05, 0.15, 0.3)]
@@ -1297,8 +1314,8 @@ def verify(r):
                 lab_, cro = pg.evaluate("[window.__overlaps || [], window.__crossings || []]")
                 if lab_ or cro:
                     bad.append((nm, lab_[:3], cro[:3]))
-            out.append(f"overlap check (engine.js ?overlap) in {len(states)} states: the tour every 0.25 s over its 48 s, each")
-            out.append("scene from its start at 12 moments, every chip hovered and pressed in every scene, and every scene")
+            out.append(f"overlap check (engine.js ?overlap) in {len(states)} states: the tour every 0.25 s over its {tour:g} s, each")
+            out.append("scene from its start at 18 moments, every chip hovered and pressed in every scene, and every scene")
             out.append(f"chosen from every other at 0.05, 0.15 and 0.3 s: {len(bad)} with a collision")
             for nm, a_, c_ in bad[:20]:
                 out.append(f"  {nm}: {a_} {c_}")
@@ -1323,11 +1340,11 @@ def verify(r):
             s5 = pg.evaluate("[now().i, document.activeElement.textContent]")
             pg.locator("#pp").click()
             pg.locator(".nfo").nth(0).click()
-            s6 = pg.evaluate("[now().i, playing, Math.abs(now().tau - TDONE) < 1e-6]")
+            s6 = pg.evaluate("[now().i, playing, Math.abs(now().tau - TDN[0]) < 1e-6]")
             pg.locator("#pp").click()
-            pg.evaluate("SEL = null; t = 47.6")
+            pg.evaluate(f"SEL = null; t = {tour - 0.4}")
             pg.wait_for_timeout(900)
-            s7 = pg.evaluate("[now().i, t > 48]")
+            s7 = pg.evaluate(f"[now().i, t > {tour}]")
             pg.locator("#rs").click()
             pg.wait_for_timeout(300)
             s8 = pg.evaluate("[SEL === null, t < 1, playing]")

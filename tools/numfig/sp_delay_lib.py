@@ -690,17 +690,17 @@ function P(ph, key, a = 0, b = 1) {
 }
 
 /* ================================================ the layout (drawing units) */
-const LA = { x: 96, w: 876, y1: 86, h: 94, gap: 14 };          // the two lanes of (a)
+const LA = { x: 96, w: 876, y1: 86, h: 90, gap: 14 };          // the two lanes of (a)
 LA.y2 = LA.y1 + LA.h + LA.gap;
-const PB = { x: 96, w: 352, y: 392, h: 114 };                   // (b) the GCC
-const PC = { x: 590, w: 382, y: 392, h1: 64, gap: 16, h2: 34 }; // (c) the spectra over the gain
+const PB = { x: 96, w: 352, y: LA.y2 + LA.h + 100, h: 114 };    // (b) the GCC
+const PC = { x: 590, w: 382, y: PB.y, h1: 64, gap: 16, h2: 34 }; // (c) the spectra over the gain
 PC.y2 = PC.y + PC.h1 + PC.gap;
 const BOT = PB.y + PB.h + 72;                                   // the controls and numbers
 const STG = { y: 14, h: 30, gap: 26 };
 const STX = [];                                                 // the stage chips, set once the type is in
 function stageChips() {
   if (STX.length) return;
-  ctx.save(); ctx.font = font({ size: 15 });
+  ctx.save(); ctx.font = font({ size: 16 });
   const ws = NAMES.map((s, k) => ctx.measureText((k + 1) + '  ' + s).width + 26);
   ctx.restore();
   const tot = ws.reduce((a, b) => a + b, 0) + STG.gap * (K - 1);
@@ -862,8 +862,8 @@ function panelA(w, ph) {
   let kx = LA.x + LA.w;
   for (let q = items.length - 1; q >= 0; q--) {
     const [col, wd, dash, words] = items[q];
-    kx -= tw(words, 15);
-    text(words, kx, ky, { size: 15, color: C.body, alpha: ka });
+    kx -= tw(words, 16);
+    text(words, kx, ky, { size: 16, color: C.body, alpha: ka });
     kx -= 34;
     line([[kx, ky - 5], [kx + 26, ky - 5]], { color: col, width: wd, dash, alpha: ka });
     kx -= 22;
@@ -876,7 +876,7 @@ function panelA(w, ph) {
   else if (L.info === 'rec' || L.info === 'est')
     words = M2 && w.mi ? `\\rm{average of}\\ ${thou(D.shots[w.mi])}\\ \\rm{shots: SNR}\\ ` + two(D.rs[w.i])
                        : (M2 ? '\\rm{one shot: SNR}\\ ' : '\\rm{the records: SNR}\\ ') + two(D.rs[w.i]);
-  if (words) math(words, LA.x + LA.w, y, { size: 15, color: C.body, align: 'right', alpha: arrive(.4) });
+  if (words) math(words, LA.x + LA.w, y, { size: 16, color: C.body, align: 'right', alpha: arrive(.4) });
   return L;
 }
 
@@ -959,8 +959,8 @@ function panelC(w, ph) {
   let kx = PC.x + PC.w;
   for (let q = items.length - 1; q >= 0; q--) {
     const [mark, words, mw] = items[q];
-    kx -= math(words, 0, -1e4, { size: 15, alpha: 0 });
-    math(words, kx, ky, { size: 15, color: C.body, alpha: ka });
+    kx -= math(words, 0, -1e4, { size: 16, alpha: 0 });
+    math(words, kx, ky, { size: 16, color: C.body, alpha: ka });
     kx -= mw;
     mark(kx);
     kx -= 14;
@@ -974,7 +974,7 @@ function stages(ph) {
   STX.forEach((c, k) => {
     const a = arrive(.02 * k);
     uiChip(c.x, STG.y, c.w, STG.h, (k + 1) + '  ' + NAMES[k], { on: k === cur, hover: HOVER.type === 'stage' && HOVER.i === k,
-           down: DOWN.type === 'stage' && DOWN.i === k }, a);
+           down: DOWN.type === 'stage' && DOWN.i === k, size: 16 }, a);
     if (k < K - 1) arrow(c.x + c.w + 5, STG.y + STG.h / 2, c.x + c.w + STG.gap - 5, STG.y + STG.h / 2,
                          { color: C.guide, width: 1.1, head: 7, alpha: a });
   });
@@ -991,7 +991,7 @@ function slider(a) {
   line([[SL.x0, SL.y], [SL.x1, SL.y]], { color: C.rule, width: 3, alpha: a });
   line([[SL.x0, SL.y], [hx, SL.y]], { color: C.mist, width: 3, alpha: a });
   for (let q = 0; q <= n; q++) line([[X(q), SL.y - 5], [X(q), SL.y + 5]], { color: C.rule, width: 1, alpha: a });
-  for (let q = 0; q <= n; q += 2) math(num(D.snrs[q], 0), X(q), SL.y + 25, { size: 15, color: C.muted, align: 'center', alpha: a });
+  for (let q = 0; q <= n; q += 2) math(num(D.snrs[q], 0), X(q), SL.y + 25, { size: 16, color: C.muted, align: 'center', alpha: a });
   dot(hx, SL.y, HOVER.type === 'slider' || DRAG ? 8.5 : 7.5, { color: C.navy, fill: '#fff', width: 2, alpha: a });
   math(`${num(D.snrs[SI], 0)}\\ \\rm{dB}`, SL.x1 + 18, SL.y + 6, { size: 16, alpha: a });
 }
@@ -999,7 +999,7 @@ function kinds(a) {
   text('signal', CX0, KC.y + KC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
   let x = KC.x;
   D.kinds.forEach((s, k) => {
-    uiChip(x, KC.y, KC.w[k], KC.h, s, { on: k === KI, hover: HOVER.type === 'kind' && HOVER.i === k, down: DOWN.type === 'kind' && DOWN.i === k }, a);
+    uiChip(x, KC.y, KC.w[k], KC.h, s, { on: k === KI, hover: HOVER.type === 'kind' && HOVER.i === k, down: DOWN.type === 'kind' && DOWN.i === k, size: 16 }, a);
     x += KC.w[k] + KC.gap;
   });
 }
@@ -1017,11 +1017,11 @@ function numbers1(w, V) {
   const x = 18, y = BOT + 8, i = w.i, a = arrive(.45), x1 = 106, x2 = 262;
   text('delay', x, y, { size: 16, color: C.body, alpha: a });
   amath([['\\tau', 'hat'], [` = ${num(D.d[i] * 2, 0)}\\ \\rm{ms}`]], x1, y, { size: 16, color: C.accent, alpha: a * V.d });
-  math('\\rm{true}\\ \\tau\\ = 48\\ \\rm{ms;\\ one\\ sample}\\ = 2\\ \\rm{ms}', x2, y, { size: 15, color: C.muted, alpha: a });
+  math('\\rm{true}\\ \\tau\\ = 48\\ \\rm{ms;\\ one\\ sample}\\ = 2\\ \\rm{ms}', x2, y, { size: 16, color: C.muted, alpha: a });
   text('estimate', x, y + 30, { size: 16, color: C.body, alpha: a });
   math(`\\rho\\ = ${num(D.rho[i][0], 3)},\\ ${num(D.rho[i][1], 3)}`, x1, y + 30, { size: 16, alpha: a * V.e });
   amath([['\\rm{correlation of}\\ '], ['s', 'hat'], ['(t)\\ \\rm{and}\\ '], ['s', 'hat'], ['(t - '], ['\\tau', 'hat'],
-         [')\\ \\rm{with the truth}']], x2, y + 30, { size: 15, color: C.muted, alpha: a * V.e });
+         [')\\ \\rm{with the truth}']], x2, y + 30, { size: 16, color: C.muted, alpha: a * V.e });
   text('SNR', x, y + 60, { size: 16, color: C.body, alpha: a });
   // the gain as the two rounded numbers shown give it
   const so = D.so[i], fin = so > -99, r1 = Math.round(D.rs[i][0] * 10) / 10, s1 = Math.round(so * 10) / 10;
@@ -1029,16 +1029,16 @@ function numbers1(w, V) {
   const lost = !fin || Math.abs(D.rho[i][0]) < .1;
   math(`${num(r1, 1)}\\ \\rm{dB}` + (lost ? '' : `\\ \\to\\ ${num(s1, 1)}\\ \\rm{dB}`), x1, y + 60, { size: 16, alpha: a * V.e });
   math(lost ? '\\rm{the estimate does not follow the signal}' : `\\rm{sensor 1 to estimate: a gain of}\\ ${num(s1 - r1, 1)}\\ \\rm{dB}`,
-       x2, y + 60, { size: 15, color: C.muted, alpha: a * V.e });
+       x2, y + 60, { size: 16, color: C.muted, alpha: a * V.e });
 }
 /* Figure 13: what averaging buys, for every number of shots */
 function table2(w, V) {
-  const a = arrive(.45), x = 18, cx = q => MC.x + MC.w / 2 + q * MC.pitch, y0 = MC.y + MC.h + 25, dy = 23;
+  const a = arrive(.45), x = 18, cx = q => MC.x + MC.w / 2 + q * MC.pitch, y0 = MC.y + MC.h + 25, dy = 24;
   const at = q => sidx(w.ki, w.si, q), right = cx(NM - 1) + MC.pitch / 2;
   text('shots', x, MC.y + MC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
   math('M', x + 46, MC.y + MC.h / 2 + 5, { size: 16, color: C.body, alpha: a });
   D.shots.forEach((m, q) => uiChip(MC.x + q * MC.pitch, MC.y, MC.w, MC.h, thou(m),
-    { on: q === MI, hover: HOVER.type === 'shots' && HOVER.i === q, down: DOWN.type === 'shots' && DOWN.i === q }, a));
+    { on: q === MI, hover: HOVER.type === 'shots' && HOVER.i === q, down: DOWN.type === 'shots' && DOWN.i === q, size: 16 }, a));
   const gain = q => (D.rs[at(q)][0] + D.rs[at(q)][1] - D.rs[at(0)][0] - D.rs[at(0)][1]) / 2;
   const rows = [
     [[['10\\ \\rm{log}_{10}\\ M\\ \\ (\\rm{dB})']], q => num(D.gain_th[q], 1), 1, C.muted],
@@ -1051,8 +1051,8 @@ function table2(w, V) {
   line([[x, y0 - 20], [right, y0 - 20]], { color: C.ink, width: 1.3, alpha: a });
   rows.forEach(([lab, val, ra, col], r) => {
     const y = y0 + r * dy;
-    amath(lab, x, y, { size: 15, color: C.body, alpha: a });
-    for (let q = 0; q < NM; q++) math(val(q), cx(q), y, { size: 15, align: 'center', color: col, alpha: a * ra });
+    amath(lab, x, y, { size: 16, color: C.body, alpha: a });
+    for (let q = 0; q < NM; q++) math(val(q), cx(q), y, { size: 16, align: 'center', color: col, alpha: a * ra });
   });
   line([[x, y0 + rows.length * dy - 14], [right, y0 + rows.length * dy - 14]], { color: C.ink, width: 1.3, alpha: a });
   // from which number of shots on the delay stays within a sample of 48 ms
@@ -1061,7 +1061,7 @@ function table2(w, V) {
   const note = from === 0 ? '\\rm{delay within one sample of 48 ms at every}\\ M'
     : from === NM ? '\\rm{delay not within one sample of 48 ms at any}\\ M'
     : `\\rm{delay within one sample of 48 ms from}\\ M = ${thou(D.shots[from])}\\ \\rm{on}`;
-  math(note, x, y0 + rows.length * dy + 8, { size: 15, color: C.body, alpha: a * V.d });
+  math(note, x, y0 + rows.length * dy + 8, { size: 16, color: C.body, alpha: a * V.d });
 }
 
 /* while a stage holds, nothing but its hairline moves: the frame is kept and drawn again from
@@ -1088,7 +1088,7 @@ function draw() {
   slider(ca);
   kinds(ca);
   if (M2) table2(w, V); else numbers1(w, V);
-  math(D.params, 18, H - 14, { size: 14, color: C.muted, alpha: arrive(.55) });
+  math(D.params, 18, H - 14, { size: 15, color: C.muted, alpha: arrive(.55) });
   if (key) {
     OFF.width = cv.width; OFF.height = cv.height;
     OFF.getContext('2d').drawImage(cv, 0, 0); OFFKEY = key;
@@ -1133,8 +1133,12 @@ const snrAt = X => Math.round(clamp((X - SL.x0) / (SL.x1 - SL.x0)) * (NS - 1));
 let PRESS = '';
 if (!STILL) {
   const css = document.createElement('style');
+  /* a stand-in covers its control's hit area (24 CSS px at least at the page's 672 px); its focus
+     ring hugs the drawn chip, 3 units outside it (::after, set by place) */
   css.textContent = '.nfk{position:absolute;margin:0;padding:0;border:0;background:transparent;pointer-events:none;' +
-    'outline:none;color:transparent;font:inherit;overflow:hidden}.nfk:focus-visible{outline:2px solid #095A94;outline-offset:2px}';
+    'outline:none;color:transparent;font:inherit;overflow:visible}' +
+    '.nfk::after{content:"";position:absolute;left:var(--l,0);top:var(--t,0);right:var(--r,0);bottom:var(--b,0);pointer-events:none}' +
+    '.nfk:focus-visible::after{outline:2px solid #095A94;outline-offset:2px}';
   document.head.appendChild(css);
   const ctl = FIG.querySelector('.ctl');
   const add = (parent, role, label) => {
@@ -1207,11 +1211,27 @@ function place() {
   if (key === KB.key) return;
   KB.key = key;
   const u = cv.clientWidth / W, px = v => (v * u).toFixed(1) + 'px';
-  const box = (el, x0, y0, x1, y1) => { el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0); };
-  KB.st.forEach((b, j) => { box(b, STX[j].x, STG.y, STX[j].x + STX[j].w, STG.y + STG.h); b.setAttribute('aria-checked', String(j === k)); b.tabIndex = j === k ? 0 : -1; });
-  KB.kd.forEach((b, j) => { box(b, kindX(j), KC.y, kindX(j) + KC.w[j], KC.y + KC.h); b.setAttribute('aria-checked', String(j === KI)); b.tabIndex = j === KI ? 0 : -1; });
-  KB.ms.forEach((b, j) => { box(b, MC.x + j * MC.pitch, MC.y, MC.x + j * MC.pitch + MC.w, MC.y + MC.h); b.setAttribute('aria-checked', String(j === MI)); b.tabIndex = j === MI ? 0 : -1; });
-  box(KB.sl, SL.x0 - 10, SL.y - 14, SL.x1 + 10, SL.y + 14);
+  // each stand-in is the control's hit area (as hit() takes it); [r] is the drawn chip its ring hugs
+  const box = (el, x0, y0, x1, y1, r) => {
+    el.style.left = px(x0); el.style.top = px(y0); el.style.width = px(x1 - x0); el.style.height = px(y1 - y0);
+    el.style.setProperty('--l', px(r[0] - x0)); el.style.setProperty('--t', px(r[1] - y0));
+    el.style.setProperty('--r', px(x1 - r[2])); el.style.setProperty('--b', px(y1 - r[3]));
+  };
+  KB.st.forEach((b, j) => {
+    const c = STX[j];
+    box(b, c.x - STG.gap / 2 + 1, STG.y - 8, c.x + c.w + STG.gap / 2 - 1, STG.y + STG.h + 8, [c.x, STG.y, c.x + c.w, STG.y + STG.h]);
+    b.setAttribute('aria-checked', String(j === k)); b.tabIndex = j === k ? 0 : -1;
+  });
+  KB.kd.forEach((b, j) => {
+    box(b, kindX(j) - KC.gap / 2, KC.y - 8, kindX(j) + KC.w[j] + KC.gap / 2, KC.y + KC.h + 8, [kindX(j), KC.y, kindX(j) + KC.w[j], KC.y + KC.h]);
+    b.setAttribute('aria-checked', String(j === KI)); b.tabIndex = j === KI ? 0 : -1;
+  });
+  KB.ms.forEach((b, j) => {
+    const x = MC.x + j * MC.pitch;
+    box(b, x - 6, MC.y - 6, x + MC.w + 6, MC.y + MC.h + 6, [x, MC.y, x + MC.w, MC.y + MC.h]);
+    b.setAttribute('aria-checked', String(j === MI)); b.tabIndex = j === MI ? 0 : -1;
+  });
+  box(KB.sl, SL.x0 - 14, SL.y - 19, SL.x1 + 14, SL.y + 19, [SL.x0 - 10, SL.y - 14, SL.x1 + 10, SL.y + 14]);
   const i = cur();
   KB.sl.setAttribute('aria-valuenow', String(D.snrs[SI]));
   KB.sl.setAttribute('aria-valuetext', `${D.snrs[SI]} dB: estimated delay ${num(D.d[i] * 2, M2 ? 1 : 0)} ms, correlation ${num(D.rho[i][0], 2)}`);

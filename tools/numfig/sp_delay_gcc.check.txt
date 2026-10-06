@@ -75,4 +75,4 @@ DISPLAY
   0.7 s, labels and controls by 0.9 s; the first stage change starts at 2.0 s.
   Overlap check (engine ?overlap): 442 frames (every state at the middle and end of every stage and the return,
   and every stage of the default state live): 0 with a collision.
-  Page size 107,823 bytes.
+  Page size 109,518 bytes.

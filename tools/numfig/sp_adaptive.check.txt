@@ -11,7 +11,7 @@ MODEL
   mean learning curve: 400 runs, seeds 1000 to 1399 (numpy default_rng).
 
 VALIDATION
-  1. h_k against the resonator h(k / fs): largest difference 1.9e-16.
+  1. h_k against the resonator h(k / fs): largest difference 2.2e-16.
   2. The page runs the same NLMS itself (float32 input and d, double arithmetic); against
      numpy on the same numbers: weights at n = 1, 100, 300, 600 within 2.2e-16, errors
      e(n) within 1.6e-15.
@@ -32,4 +32,7 @@ VALIDATION
 
 DISPLAY
   600 samples at 8 Hz (75 s of the record) play in 7.5 s: time sped up 10 times. In (b)
-  this run is e^2 averaged over the last 8 samples (one period of the resonance).
+  this run is e^2 averaged over the last 8 samples (one period of the resonance). The run rests
+  2.6 s at n = 600; what it drew (the filter's coefficients, this run's curve, |W|, the counter)
+  fades out in 0.45 s and back in at n = 0, so nothing rewinds fast. Tick labels, legends and
+  notes at 16 units, the parameter line at 15.

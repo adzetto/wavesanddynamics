@@ -18,8 +18,8 @@ VALIDATION
      interval (DOP853, rtol 1e-12), against the recursion on the whole fine grid:
      largest difference 2.9e-13 (1.2e-12 of max |y|).
   2. Adaptive quadrature of the convolution integral (breakpoints at the samples) at
-     t = [1.3, 2.1, 3.552, 5.2, 7.9] s: largest difference 2.4e-15.
-  3. b = A x against y(t_i) at all 100 samples: largest difference 2.8e-15: sampled, the
+     t = [1.3, 2.1, 3.552, 5.2, 7.9] s: largest difference 2.5e-15.
+  3. b = A x against y(t_i) at all 100 samples: largest difference 3.0e-15: sampled, the
      convolution of (b) is the linear system of (c), b the output. Row i of A is h(t_i - tau)
      sampled with the hold's weights: the flipped impulse response of (b).
   4. Integral of h from 0 to infinity: 0.1583571689 against w_d / w_n^2 = 0.1583571689
@@ -30,8 +30,8 @@ VALIDATION
 
 DISPLAY
   (a) each plot titled with what it is and its symbol: input x(t), system, impulse response
-  h(t), output y(t). (b) runs in real time: 8 s of record in 8 s, then rests 1.1 s and glides
-  back; its top plot is titled by naming its three curves (input, flipped impulse response,
+  h(t), output y(t). (b) runs in real time: 8 s of record in 8 s, then rests 2.6 s; its marks fade
+  out and back in at t = 0 (no rewind); its top plot is titled by naming its three curves (input, flipped impulse response,
   their product), its bottom plot 'output y(t): the area of the product', with the running
   t and y(t) on the same row. The cursor is drawn inside each plot, never across the row
   between them. (c) states A x = b with each part named under a brace (A system, x input,

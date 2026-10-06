@@ -69,19 +69,21 @@ function title(words, m, x, y, o = {}) {
 /* ------------------------------------------------------------ clock
    Intro (README, round 2): every stroke drawn by 1.0 s, labels by 1.3 s.
    The cursor starts at .5 s and runs in real time, 8 s of record in 8 s;
-   it rests, glides back to 0 and runs again. */
-const T0 = .5, SW = TT, HOLD = 1.1, BACK = .9, REST = .3, PER = SW + HOLD + BACK + REST;
+   it rests 2.6 s, its marks fade out, fade back in at 0 (no rewind), and it
+   runs again. */
+const T0 = .5, SW = TT, HOLD = 2.6, FADE = .45, REST = .3, PER = SW + HOLD + 2 * FADE + REST;
 function cursor() {
   if (t < T0) return 0;
   const n = Math.floor((t - T0) / PER), u = t - T0 - n * PER;
   if (u < SW) return u;
-  if (u < SW + HOLD) return SW;
-  return SW * (1 - settle(T0 + n * PER + SW + HOLD, BACK * .8));
+  return u < SW + HOLD + FADE ? SW : 0;
 }
-function curA() {                         // cursor marks: on while it runs, off while it glides back
+function curA() {                         // cursor marks: on while it runs and rests, out, then in at 0
   if (t < T0) return seg(.35, .15);
-  const n = Math.floor((t - T0) / PER), u = t - T0 - n * PER;
-  return u < SW + HOLD ? 1 : 1 - seg(T0 + n * PER + SW + HOLD, .25);
+  const n = Math.floor((t - T0) / PER), u = t - T0 - n * PER, b0 = T0 + n * PER;
+  if (u < SW + HOLD) return 1;
+  if (u < SW + HOLD + FADE) return 1 - seg(b0 + SW + HOLD, FADE);
+  return seg(b0 + SW + HOLD + FADE, FADE);
 }
 const POSTER_T = T0 + D.poster;
 
@@ -146,14 +148,14 @@ function panelB(tc, ca) {
   const sa = seg(.1, .25);
   const w0 = text('convolution,', 54, HB, {size: 17, color: C.body, alpha: sa});
   math('x(t) ∗ h(t) = y(t)', 60 + w0, HB, {size: 17, color: C.body, alpha: sa});
-  text('real time', PB.x + PB.w, HB, {size: 14, color: C.muted, align: 'right', alpha: seg(.5, .25)});
+  text('real time', PB.x + PB.w, HB, {size: 16, color: C.muted, align: 'right', alpha: seg(.5, .25)});
   const A1 = axes({x: PB.x, y: TOP.y, w: PB.w, h: TOP.h, xlim: [0, TT], ylim: [-1.15, 1.15],
                    xticks: [0, 1, 2, 3, 4, 5, 6, 7, 8], yticks: [-1, 0, 1], xfmt: () => '',
-                   progress: seg(.06, .35)});
+                   tickSize: 16, progress: seg(.06, .35)});
   math('τ', PB.x + PB.w + 10, TOP.y + TOP.h + 5, {size: 17, alpha: seg(.3, .2)});
   const A2 = axes({x: PB.x, y: BOT.y, w: PB.w, h: BOT.h, xlim: [0, TT], ylim: [-D.yax, D.yax],
                    xticks: [0, 1, 2, 3, 4, 5, 6, 7, 8], yticks: D.yticks, xlabel: 't\\ (\\rm{s})',
-                   progress: seg(.12, .35)});
+                   tickSize: 16, progress: seg(.12, .35)});
   A1.inside(() => line([[PB.x, A1.Y(0)], [PB.x + PB.w, A1.Y(0)]], {color: C.rule, width: 1}));
   A2.inside(() => line([[PB.x, A2.Y(0)], [PB.x + PB.w, A2.Y(0)]], {color: C.rule, width: 1}));
   // the product x(tau) h(t - tau): its area is y(t)
@@ -192,20 +194,20 @@ function panelB(tc, ca) {
   const la = seg(.3, .25), ly = TOP.y - 12;
   let lx = PB.x + 2;
   line([[lx, ly - 5], [lx + 26, ly - 5]], {color: C.navy, width: 2.2, alpha: la});
-  lx += 32 + title('input ', 'x(\\tau)', lx + 32, ly, {size: 15, align: 'left', alpha: la}) + 22;
+  lx += 32 + title('input ', 'x(\\tau)', lx + 32, ly, {size: 16, align: 'left', alpha: la}) + 22;
   line([[lx, ly - 5], [lx + 26, ly - 5]], {color: C.blue, width: 2, dash: [7, 4], alpha: la});
-  lx += 32 + title('flipped impulse response ', 'h(t - \\tau)', lx + 32, ly, {size: 15, align: 'left', alpha: la}) + 22;
+  lx += 32 + title('flipped impulse response ', 'h(t - \\tau)', lx + 32, ly, {size: 16, align: 'left', alpha: la}) + 22;
   ctx.save(); ctx.globalAlpha *= la; ctx.fillStyle = C.wash; ctx.fillRect(lx, ly - 11, 26, 12); ctx.restore();
   line([[lx, ly - 5], [lx + 26, ly - 5]], {color: C.accent, width: 1.6, alpha: la});
-  title('their product', '', lx + 32, ly, {size: 15, align: 'left', alpha: la});
+  title('their product', '', lx + 32, ly, {size: 16, align: 'left', alpha: la});
   // the bottom plot's title (29 Sep: "output plotuna"), and the running values of its point:
   // y(t) the page's own integral of the product
   const ba = seg(.35, .25), by = BOT.y - 12;
-  title('output ', 'y(t)\\rm{: the area of the product}', PB.x + 2, by, {size: 15, align: 'left', alpha: ba});
+  title('output ', 'y(t)\\rm{: the area of the product}', PB.x + 2, by, {size: 16, align: 'left', alpha: ba});
   if (ca > 0) {
     const ra = ca * seg(.5, .2);
-    const w2 = math(`y(t) = ${area.toFixed(3)}`, PB.x + PB.w, by, {size: 15, align: 'right', alpha: ra});
-    math(`t = ${tc.toFixed(1)}\\ \\rm{s}`, PB.x + PB.w - w2 - 18, by, {size: 15, color: C.body, align: 'right', alpha: ra});
+    const w2 = math(`y(t) = ${area.toFixed(3)}`, PB.x + PB.w, by, {size: 16, align: 'right', alpha: ra});
+    math(`t = ${tc.toFixed(1)}\\ \\rm{s}`, PB.x + PB.w - w2 - 18, by, {size: 16, color: C.body, align: 'right', alpha: ra});
   }
 }
 
@@ -245,7 +247,7 @@ function draw() {
   panelA(tc, ca);
   panelB(tc, ca);
   panelC();
-  math(D.params, 20, H - 14, {size: 14, color: C.muted, alpha: seg(.4, .3)});
+  math(D.params, 20, H - 14, {size: 15, color: C.muted, alpha: seg(.4, .3)});
 }
 boot();
 """
@@ -369,8 +371,8 @@ def validate(r):
     say("")
     say("DISPLAY")
     say("  (a) each plot titled with what it is and its symbol: input x(t), system, impulse response")
-    say("  h(t), output y(t). (b) runs in real time: 8 s of record in 8 s, then rests 1.1 s and glides")
-    say("  back; its top plot is titled by naming its three curves (input, flipped impulse response,")
+    say("  h(t), output y(t). (b) runs in real time: 8 s of record in 8 s, then rests 2.6 s; its marks fade")
+    say("  out and back in at t = 0 (no rewind); its top plot is titled by naming its three curves (input, flipped impulse response,")
     say("  their product), its bottom plot 'output y(t): the area of the product', with the running")
     say("  t and y(t) on the same row. The cursor is drawn inside each plot, never across the row")
     say("  between them. (c) states A x = b with each part named under a brace (A system, x input,")

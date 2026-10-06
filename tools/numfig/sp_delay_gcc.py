@@ -28,7 +28,7 @@ import common
 import sp_delay_lib as L
 
 NAME = "sp-delay-gcc"
-H = 708
+H = 700
 JS = L.JS
 TITLE = "Figure 12: One signal at two sensors, recovered by generalized cross-correlation and a Wiener filter"
 ARIA = ("Two sensor records of one signal, the second 48 ms later, each buried in its own noise. The figure steps "
@@ -36,7 +36,7 @@ ARIA = ("Two sensor records of one signal, the second 48 ms later, each buried i
         "cross-correlation, aligns the records, averages them, Wiener filters the average, and compares the "
         "estimate with the true signal. Chips choose the stage and the signal, a slider the SNR.")
 PARAMS = (r"f_{\rm{s}} = 500\ \rm{Hz, 2,048 samples;  }\tau\ = 48\ \rm{ms = 24 samples;  independent white noise;  "
-          r"Welch: Hann, 256 samples, 50% overlap;  amplitudes in signal RMS}")
+          r"Welch: Hann, 256 samples, 50% overlap;  signal RMS = 1}")
 
 
 def build():

@@ -75,17 +75,18 @@ const K = D.k;
 
 /* ------------------------------------------------------------ clock
    Intro (README, round 2): axes and curves by .8 s, labels by 1.2 s. The
-   descent starts at .6 s: one step every .22 s, each marker gliding to its
-   next iterate along the curve; the runs rest, glide back and start again. */
-const T0 = .6, STEP = .22, HOLD = 1.8, BACK = .9, REST = .35;
-const RUNT = K * STEP, PER = RUNT + HOLD + BACK + REST;
-function clock() {                      // iteration reached, glide within it, trail alpha
-  if (t < T0) return {k: 0, s: 0, back: 0, trail: 1};
+   descent starts at .6 s: one step every .3 s, each marker gliding to its
+   next iterate along the curve; the runs rest 2.6 s, fade out, fade back in
+   at w_0 and start again (no glide back through points never visited). */
+const T0 = .6, STEP = .3, HOLD = 2.6, FADE = .45, REST = .35;
+const RUNT = K * STEP, PER = RUNT + HOLD + 2 * FADE + REST;
+function clock() {                      // iteration reached, glide within it, alpha of the runs
+  if (t < T0) return {k: 0, s: 0, a: 1};
   const c = Math.floor((t - T0) / PER), u = t - T0 - c * PER, b0 = T0 + c * PER;
-  if (u < RUNT) { const k = Math.floor(u / STEP); return {k, s: settle(b0 + k * STEP, .18), back: 0, trail: 1}; }
-  if (u < RUNT + HOLD) return {k: K, s: 0, back: 0, trail: 1};
-  const g = settle(b0 + RUNT + HOLD, BACK * .8);
-  return {k: K, s: 0, back: g, trail: 1 - seg(b0 + RUNT + HOLD, .3)};
+  if (u < RUNT) { const k = Math.floor(u / STEP); return {k, s: settle(b0 + k * STEP, .2), a: 1}; }
+  if (u < RUNT + HOLD) return {k: K, s: 0, a: 1};
+  if (u < RUNT + HOLD + FADE) return {k: K, s: 0, a: 1 - seg(b0 + RUNT + HOLD, FADE)};
+  return {k: 0, s: 0, a: seg(b0 + RUNT + HOLD + FADE, FADE)};
 }
 const POSTER_T = T0 + RUNT + .8;
 
@@ -97,7 +98,7 @@ function landscape(o, st) {
   text(sub, x0 - 22, 34, {size: 17, color: C.body, alpha: seg(t0 + .03, .25)});
   const A = axes({x: x0, y: PY0, w: PW, h: PH, xlim: [-1.8, 1.8], ylim: YL,
                   xticks: [-1.5, -1, -0.5, 0, 0.5, 1, 1.5], yticks: [0, 1, 2, 3],
-                  xlabel: 'w', ylabel: 'f(w)', ylabelGap: 38, progress: seg(t0, .35)});
+                  xlabel: 'w', ylabel: 'f(w)', ylabelGap: 40, tickSize: 16, progress: seg(t0, .35)});
   const pts = []; for (let i = 0; i <= 360; i++) { const th = -1.8 + 3.6 * i / 360; pts.push([A.X(th), A.Y(f(th))]); }
   A.inside(() => line(pts, {color: C.navy, width: 2.4, progress: seg(t0 + .08, .4)}));
   // the runs: iterates visited (dots, and the chords of each jump), the marker, its tangent
@@ -109,29 +110,28 @@ function landscape(o, st) {
     const ls = lab(.5);
     math('w_0', A.X(it[0]) + R.lx, A.Y(f(it[0])) + R.ly + rise(ls), {size: 16, color: col, align: 'center', alpha: ls});
     if (t < T0) continue;
-    const k = st.k, tr = st.trail;
+    const k = st.k, tr = st.a;
     const chord = []; for (let j = 0; j <= Math.min(k, K); j++) chord.push([A.X(it[j]), A.Y(f(it[j]))]);
     if (chord.length > 1) A.inside(() => line(chord, {color: col, width: 1.1, alpha: .55 * tr}));
     for (let j = 1; j <= Math.min(k, K); j++) dot(A.X(it[j]), A.Y(f(it[j])), 2.6, {color: col, fill: col, width: .8, alpha: tr});
-    // the marker: gliding from iterate k to k + 1 along the curve, or back to the start
-    let th;
-    if (st.back > 0) th = lerp(it[K], it[0], st.back);
-    else th = k < K ? lerp(it[k], it[k + 1], st.s) : it[K];
+    // the marker: gliding from iterate k to k + 1 along the curve
+    const th = k < K ? lerp(it[k], it[k + 1], st.s) : it[K];
     const X = A.X(th), Y = A.Y(f(th));
     // the tangent, the local slope gradient descent follows: 60 units long on screen
     const dx = A.X(1) - A.X(0), dy = A.Y(g(th)) - A.Y(0), L = Math.hypot(dx, dy), ux = dx / L * 30, uy = dy / L * 30;
-    line([[X - ux, Y - uy], [X + ux, Y + uy]], {color: C.ink, width: 1.2, alpha: .75});
-    dot(X, Y, 6.2, {color: '#fff', fill: col, width: 1.8});
+    line([[X - ux, Y - uy], [X + ux, Y + uy]], {color: C.ink, width: 1.2, alpha: .75 * tr});
+    dot(X, Y, 6.2, {color: '#fff', fill: col, width: 1.8, alpha: tr});
   }
   return A;
 }
 
-/* a TikZ pin: the label above the point, a thin leader down to it */
-function pin_(A, at, s, a) {
+/* a TikZ pin: the label above the point, a thin leader down to it; dx moves the label
+   off a curve it would touch (the leader stays on the point) */
+function pin_(A, at, s, a, dx = 0) {
   if (a <= 0) return;
   const x = A.X(at[0]), y = A.Y(at[1]), top = A.Y(1.72);
   line([[x, top + 6 + rise(a)], [x, y - 12]], {color: C.guide, width: 1, alpha: a});
-  text(s, x, top + rise(a), {size: 15, color: C.body, align: 'center', alpha: a});
+  text(s, x + dx, top + rise(a), {size: 16, color: C.body, align: 'center', alpha: a});
 }
 
 function draw() {
@@ -144,18 +144,18 @@ function draw() {
   const B = landscape({x0: 576, letter: 'b', sub: 'nonconvex', f: FB, g: GB, t0: .06,
                        runs: [{p: D.b.left, col: C.accent, lx: 19, ly: 6}, {p: D.b.right, col: C.blue, lx: -19, ly: -8}]}, st);
   const mb = lab(.42), gy = B.Y(D.b.glob[1]), ly = B.Y(D.b.loc[1]), xl = B.X(D.b.loc[0]);
-  pin_(B, D.b.loc, 'local minimum', mb);
-  pin_(B, D.b.glob, 'global minimum', lab(.46));
+  pin_(B, D.b.loc, 'local minimum', mb, 10);
+  pin_(B, D.b.glob, 'global minimum', lab(.46), -12);
   // the level of the global minimum, and how far above it the local one stops
   B.inside(() => line([[xl - 22, gy], [B.X(D.b.glob[0]) - 10, gy]], {color: C.guide, width: 1, dash: [5, 4], alpha: mb}));
   if (mb > 0) {
     arrow(xl, gy, xl, ly + 9, {width: 1, head: 6, both: true, alpha: mb});
-    math(D.b.gap.toFixed(2), xl + 7, (gy + ly) / 2 + 9, {size: 15, alpha: mb});
+    math(D.b.gap.toFixed(2), xl + 7, (gy + ly) / 2 + 9, {size: 16, alpha: mb});
   }
   // the iteration counter
-  const ca = seg(.5, .2), kk = t < T0 ? 0 : st.back > 0 ? 0 : st.k;
-  math(`k = ${kk}`, 980, 34, {size: 16, align: 'right', alpha: ca});
-  math(D.params, 20, H - 14, {size: 14, color: C.muted, alpha: seg(.45, .3)});
+  const ca = seg(.5, .2), kk = t < T0 ? 0 : st.k;
+  math(`k = ${kk}`, 980, 34, {size: 16, align: 'right', alpha: ca * st.a});
+  math(D.params, 20, H - 14, {size: 15, color: C.muted, alpha: seg(.45, .3)});
 }
 boot();
 """
@@ -249,9 +249,11 @@ def validate(r):
     say(f"  4. The page's own f(w) in (a) and (b) against these at 9 points: {e_pg:.1e}.")
     say("")
     say("DISPLAY")
-    say("  One step every 0.22 s; between iterates the marker glides along the curve (a Motion")
+    say("  One step every 0.3 s; between iterates the marker glides along the curve (a Motion")
     say("  spring, for the eye only). The segments are the chords of the jumps; the short line")
-    say("  through each marker is the tangent, slope f'(w), that the next step follows.")
+    say("  through each marker is the tangent, slope f'(w), that the next step follows. The runs rest")
+    say("  2.6 s at w_20, fade out in 0.45 s and fade back in at w_0: the marker never travels through")
+    say("  points the descent did not visit. Parameter line at 15 units.")
     txt = "\n".join(L) + "\n"
     with open(os.path.join(common.HERE, "sp_landscape.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(txt)

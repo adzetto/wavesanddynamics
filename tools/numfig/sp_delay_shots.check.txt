@@ -66,4 +66,4 @@ DISPLAY
   an average that exists.
   Overlap check (engine ?overlap): 2490 frames (every state at the middle and end of every stage and the return,
   and every stage of the default state live): 0 with a collision.
-  Page size 244,504 bytes.
+  Page size 246,199 bytes.

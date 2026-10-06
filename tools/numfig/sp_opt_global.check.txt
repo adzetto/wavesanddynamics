@@ -111,15 +111,15 @@ THE PAGE'S OWN NUMBERS (headless Chromium)
   The populations, archives, personal bests and walker positions the page decodes: largest difference 0.
 
 OVERLAP CHECK (engine.js ?overlap)
-  The poster and 23 moments from 0.3 s to 18.3 s (intro, run, rest, fade, restart): 0 labels
+  The poster and 23 moments from 0.3 s to 22.1 s (intro, run, rest, fade, restart): 0 labels
   meeting, 0 strokes through a label. common.still() also checks every 0.25 s up to the poster.
-  Page 118 KB, poster 138 KB.
+  Page 118 KB, poster 133 KB.
 
 DISPLAY
   One shared clock: in each slot every algorithm spends 20 more evaluations (GA: a generation, PSO: an
   iteration, SA: 20 proposals, ACO_R: 10 iterations of 2 ants), so at every moment all four have used
-  the same budget, counted by n in (e). The first five slots take 1 s each, from the tenth on 0.5 s
-  (a smooth step between): the run takes 13.75 s, rests 2.6 s, fades and starts again.
+  the same budget, counted by n in (e). The first five slots take 1 s each, from the tenth on 0.8 s
+  (a smooth step between): the run takes 17.50 s, rests 2.6 s, fades and starts again.
   Each curve in (e) is drawn up to its own algorithm's count (GA's children are evaluated one by one
   as they are born; PSO's swarm all at once on arrival), with the whole run faint behind it.
   Contours of f every 0.2 from -1.7 to 0.1, then 0.4, 0.7, 1.0 (1632 points after Douglas-Peucker

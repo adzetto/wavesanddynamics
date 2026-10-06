@@ -447,13 +447,13 @@ function chip(x, y, w, h, words, sym, st = {}, a = 1) {
   const fill = st.on ? C.navy : st.down ? C.steel2 : st.hover ? C.steel : '#fff';
   const edge = st.on || st.hover || st.down ? C.navy : C.guide;
   line([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], {color: edge, width: 1, fill, close: true, alpha: a});
-  const col = st.on ? '#fff' : st.hover ? C.ink : C.body, size = 15;
+  const col = st.on ? '#fff' : st.hover ? C.ink : C.body, size = 16;
   const w1 = words ? tw(words, size) : 0, w2 = sym ? mw(sym, size) : 0, gap = words && sym ? 4 : 0;
-  const x0 = x + (w - w1 - gap - w2) / 2, yb = y + h / 2 + 5;
+  const x0 = x + (w - w1 - gap - w2) / 2, yb = y + h / 2 + 5.5;
   if (words) text(words, x0, yb, {size, color: col, alpha: a});
   if (sym) math(sym, x0 + w1 + gap, yb, {size, color: col, alpha: a});
 }
-function chipW(words, sym) { return (words ? tw(words, 15) : 0) + (sym ? mw(sym, 15) + 4 : 0) + 22; }
+function chipW(words, sym) { return (words ? tw(words, 16) : 0) + (sym ? mw(sym, 16) + 4 : 0) + 22; }
 
 /* ------------------------------------------------------------ lanes
    two stacked axes over the 4 s shown; y in units of the stage's RMS */
@@ -556,12 +556,15 @@ function group(name, label, items, get, set) {
   FIG.insertBefore(box, FIG.querySelector('.ctl'));
   return g;
 }
-function place(g, rects) {                              // each button over its chip, its hit area padded
-  if (STILL) return;
+function place(g, rects, chips) {                       // each button over its chip, its hit area padded;
+  if (STILL) return;                                     // its focus ring on the chip itself (chips: [x, y, w, h])
   rects.forEach((r, i) => {
     const b = g.buttons[i]; if (!b) return;
     b.style.left = r[0] / W * 100 + '%'; b.style.top = r[1] / H * 100 + '%';
     b.style.width = r[2] / W * 100 + '%'; b.style.height = r[3] / H * 100 + '%';
+    const c = chips ? chips[i] : r;
+    b.style.setProperty('--l', (c[0] - r[0]) / r[2] * 100 + '%'); b.style.setProperty('--r', (r[0] + r[2] - c[0] - c[2]) / r[2] * 100 + '%');
+    b.style.setProperty('--t', (c[1] - r[1]) / r[3] * 100 + '%'); b.style.setProperty('--b', (r[1] + r[3] - c[1] - c[3]) / r[3] * 100 + '%');
   });
 }
 let said = null;
@@ -573,7 +576,8 @@ const BANDS = [];                                       // [x0, y0, x1, y1]: cli
 if (!STILL) {
   document.head.insertAdjacentHTML('beforeend', '<style>.nfb{position:absolute;pointer-events:auto;box-sizing:border-box;margin:0;padding:0;' +
     'border:0;background:transparent;color:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
-    '.nfb:focus{outline:none}.nfb:focus-visible{outline:2px solid #095A94;outline-offset:-3px}</style>');
+    '.nfb:focus{outline:none}.nfb::after{content:"";position:absolute;left:var(--l);right:var(--r);top:var(--t);bottom:var(--b);pointer-events:none}' +
+    '.nfb:focus-visible::after{outline:2px solid #095A94;outline-offset:2px}</style>');
   said = document.createElement('div'); said.setAttribute('role', 'status');
   said.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none';
   FIG.appendChild(said);

@@ -66,23 +66,28 @@ _FB = "from-bridges-to-photons"
 # must stand alone, "alone": its neighbours are left out and the box is
 # widened with paper instead).
 PICKS = {
-    # the building figure, re-laid in landscape on 5 Oct 2026: its modes row,
-    # "Total vibration = 1st mode + 2nd mode +"
-    _VW: ("content:anim/nf-building.webp", "waves-guide", (14, 12, 860, 392), "alone"),
+    # the building figure, its modes row: "Total vibration = 1st mode + 2nd mode
+    # + 3rd mode + higher modes", as he asked for it on 5 Oct 2026
+    _VW: ("content:anim/nf-building.webp", "waves-guide", (10, 8, 1335, 380), "alone"),
     _FB: ("content:anim/nf-ph-slits.webp", "photons", (0, 187, 668, 563), "alone"),
     # the guide's cover since 5 Oct 2026, the shared foundations: its first two
-    # problems, each with its computed example
-    _SP: ("content:anim/nf-sp-foundations.webp", "signal-guide", (20, 0, 880, 285), "alone"),
-    _ML: ("content:anim/nf-mla-logreg.webp", "ml-guide", (126, 25, 1300, 685)),
-    "probability-statistics.html": ("content:anim/nf-pr-overview.webp", "probability-deck", None),
+    # problems, each with its computed example, without the arrows under them
+    # or the dashed link out to the third (the audit of 5 Oct 2026)
+    _SP: ("content:anim/nf-sp-foundations.webp", "signal-guide", (22, 56, 873, 319), "alone"),
+    # the whole plot, its axis and labels whole
+    _ML: ("content:anim/nf-mla-logreg.webp", "ml-guide", (8, 50, 1334, 668), "alone"),
+    # one panel to a card, which reads at a card's 190px where a whole poster
+    # of four was grey texture (the audit of 5 Oct 2026)
+    "probability-statistics.html": ("content:anim/nf-pr-overview.webp", "probability-deck",
+                                    (15, 0, 585, 335), "alone"),
     # his research documents' pictures are redrawn too (round 12): each card
     # shows its document's own figure in the family's style
     "brochure-shm-and-ndt-2-pages": ("content:anim/nf-shm-sensors.webp", "shm-brochure",
-                                     (0, 0, 1195, 672)),
+                                     (0, 0, 1344, 612), "alone"),
     "understanding-shm-and-ndt": ("content:anim/nf-shm-ndt.webp", "shm-introduction",
-                                  (0, 0, 1312, 738)),
+                                  (0, 37, 1320, 420), "alone"),
     "sound-detection-and-tracking": ("content:anim/nf-snd-array.webp", "sound",
-                                     (0, 0, 1330, 748)),
+                                     (697, 49, 1344, 636), "alone"),
     "presentation.html": ("content:deck-phd/web/s003-1600.webp", "phd-deck", None),
 }
 

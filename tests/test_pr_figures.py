@@ -180,16 +180,19 @@ def test_the_card_is_its_still_and_no_document_draws_it():
     sys.path.insert(0, os.path.join(ROOT, "tools"))
     import bp_art
     from PIL import Image
-    assert bp_art.PICKS[KEY] == ("content:anim/nf-pr-overview.webp", "probability-deck", None)
+    # one panel, Probability, which reads at a card's 190px where the whole
+    # poster of four was grey texture (the audit of 5 Oct 2026)
+    box = (15, 0, 585, 335)
+    assert bp_art.PICKS[KEY] == ("content:anim/nf-pr-overview.webp", "probability-deck", box, "alone")
     folder = os.path.join(ROOT, "content", "bigpicture")
     with open(os.path.join(folder, "art.json"), encoding="utf-8") as fh:
         assert json.load(fh)[KEY] == ["probability-deck.webp", 640, 360]
     with Image.open(os.path.join(ANIM, NAME + ".webp")) as im:
         im = im.convert("RGB")
-        want = bp_art.cut(im, bp_art.fit(None, im.size, 16 / 9)).resize((640, 360), Image.LANCZOS)
+        want = bp_art.cut(im, bp_art.fit(box, im.size, 16 / 9, True), box).resize((640, 360), Image.LANCZOS)
     with Image.open(os.path.join(folder, "probability-deck.webp")) as got:
         got = np.asarray(got.convert("RGB"), float)
-    assert np.abs(got - np.asarray(want, float)).mean() < 3        # the still, whole (WebP aside)
+    assert np.abs(got - np.asarray(want, float)).mean() < 3        # its panel of the still (WebP aside)
     with Image.open(os.path.join(ROOT, "content", "deck-probstat", "web", "s001-1600.webp")) as s1:
         slide = np.asarray(s1.convert("RGB").resize((640, 360), Image.LANCZOS), float)
     assert np.abs(got - slide).mean() > 10                        # no longer slide 1

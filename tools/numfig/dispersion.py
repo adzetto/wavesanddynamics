@@ -39,22 +39,34 @@ circumferential harmonics). The sweep here draws the curves; the page carries
 each mesh and solves every wave it shows with the same elements: a skyline
 LDL^T of K(k) - s M whose Sturm count pins the branch, then inverse iteration.
 The tour's glides take their packets' rates from exact group velocities
-computed here (glide_rates), so that a stop starts without solving 129 states.
+computed here (glide_rates), so that a stop starts without solving 129 states;
+while wave 2 glides, its shape is the exact eigenvector at the stop's keyframes
+(keyframes: chosen here so that the blend between two neighbours stays within 1 %
+of the drawn displacement), blended between them.
+
+Performance: the first stop of the bar (the section the page opens on) is solved
+here by the page's own script under node and carried in DATA (first_states), so
+the first frame solves nothing; the page assembles and solves everything else in
+small steps while it is idle (the other sections, the tour's states a stop ahead);
+once the intro is over the still parts are kept as a picture and laid down each
+frame; the waveguides' faces are filled through patterns (page_perf measures it).
 
 With no reader input it tours the modes (wave 1 low in frequency, wave 2 gliding
 up the same or another curve, its packet quickening and slowing with its c_g).
 The first touch pauses the tour ("resume tour" brings it back). A click or tap on
 a curve moves the nearer marker there; a marker, or its thumb under the frequency
-axis, drags along its curve; the markers are keyboard sliders. The waves pause
-and play from a control by the colour scale, or with Space. ?section=<key> (bar,
-ibeam, rail, pipe, plate) opens the page on that section.
+axis, drags along its curve; the markers are keyboard sliders. Space pauses and
+plays the waves (the frame's own buttons, under it in the guide, do too; nothing of
+the kind is drawn on the figure). ?section=<key> (bar, ibeam, rail, pipe, plate)
+opens the page on that section.
 
 Run: python tools/numfig/dispersion.py [--page | --text]   (writes content/anim/
 nf-dispersion.html and .webp, and dispersion.check.txt with its two extracts,
 dispersion_branches.check.txt and dispersion_plate.check.txt; --page writes the
 page only; --text writes the reports again from the page's checks, kept from the
 last full run while the page is unchanged). Figure 4a (dispersion_wavelength.py)
-is built from this page. The sweeps are cached in the temp folder.
+is built from the same sweeps, with each higher order branch's head (heads_of).
+The sweeps are cached in the temp folder.
 """
 import base64
 import functools
@@ -998,13 +1010,39 @@ def _herm(ka, wa, ga, kb, wb, gb, k):
     return (2 * t3 - 3 * t2 + 1) * wa + (t3 - 2 * t2 + t) * h * ga + (3 * t2 - 2 * t3) * wb + (t3 - t2) * h * gb
 
 
-def thinned(key, R):
+def _dp(k, w, cg):
+    """The indices of the points (k, w, slope cg) a cubic Hermite in k needs to give every other
+    point's w back within THIN: Douglas-Peucker on the Hermite's error, from the two points at
+    each end."""
+    keep = sorted({0, min(1, len(k) - 1), max(len(k) - 2, 0), len(k) - 1})
+    stack = list(zip(keep, keep[1:]))
+    keep = set(keep)
+    while stack:
+        i, j = stack.pop()
+        if j - i < 2:
+            continue
+        idx = np.arange(i + 1, j)
+        e = np.abs(_herm(k[i], w[i], cg[i], k[j], w[j], cg[j], k[idx]) / w[idx] - 1)
+        m = int(np.argmax(e))
+        if e[m] > THIN:
+            keep.add(int(idx[m]))
+            stack += [(i, int(idx[m])), (int(idx[m]), j)]
+    return np.array(sorted(keep))
+
+
+K4A = 1.0            # rad/m: Figure 4a's lowest wavenumber, the bottom of its logarithmic axis (1 to 1000 rad/m)
+
+
+def thinned(key, R, heads=None):
     """The curves as they travel to the page: of each branch's sweep points (those of
     curves_of), only the ones a cubic Hermite in k needs, its slopes the group velocity
     dw/dk from a spline through the whole branch, for every dropped eigenfrequency to
     come back within THIN; per branch f (kHz), then c_p and c_g (km/s), in float32.
     The first and last points inside the window always go, so that the page's window
     on a branch (its first and last points inside) is at least the sweep's.
+    heads (Figure 4a, heads_of): each higher order branch also from its cut-on, its head (the
+    wavenumbers from under K4A up to where Figure 4's curve begins) thinned on its own and put
+    before Figure 4's points, which stay exactly Figure 4's.
     Returns (brs, flat, stats): stats compares the page's curve (lay) at every sweep
     point with the sweep."""
     from scipy.interpolate import CubicSpline
@@ -1012,40 +1050,103 @@ def thinned(key, R):
     brs, flat = curves_of(key, R)
     out, packed = [], []
     st = {"n": 0, "kept": 0, "laid": 0, "err": 0.0}
-    for r in brs:
+    for bi, r in enumerate(brs):
         ks, W = R["br"][Z["classes"][r["ci"]][0]]
         w = W[:, r["b"]]
         f = flat[r["o"]:r["o"] + r["n"]]
         lo = int(np.argmin(np.abs(ks - 2 * np.pi * f[0] / flat[r["o"] + r["n"]])))
         k, wb = ks[lo:lo + r["n"]], w[lo:lo + r["n"]]
         cg = CubicSpline(ks, w)(k, 1)
-        keep = sorted({0, min(1, len(k) - 1), max(len(k) - 2, 0), len(k) - 1})
-        stack = list(zip(keep, keep[1:]))
-        keep = set(keep)
-        while stack:                                       # Douglas-Peucker on the Hermite's error
-            i, j = stack.pop()
-            if j - i < 2:
-                continue
-            idx = np.arange(i + 1, j)
-            e = np.abs(_herm(k[i], wb[i], cg[i], k[j], wb[j], cg[j], k[idx]) / wb[idx] - 1)
-            m = int(np.argmax(e))
-            if e[m] > THIN:
-                keep.add(int(idx[m]))
-                stack += [(i, int(idx[m])), (int(idx[m]), j)]
-        ix = np.array(sorted(keep))
-        tf, tc, tg = (np.asarray(a, np.float32) for a in (wb[ix] / 2e3 / np.pi, wb[ix] / k[ix] / 1e3, cg[ix] / 1e3))
-        out.append(dict(r, o=len(packed), n=len(ix)))
+        ix = _dp(k, wb, cg)
+        tk, tw, tg = k[ix], wb[ix], cg[ix]
+        hk = None
+        if heads is not None and bi in heads:
+            hk, hw = heads[bi]                             # the head, its last point Figure 4's first
+            assert abs(hk[-1] / k[0] - 1) < 1e-12 and abs(hw[-1] / wb[0] - 1) < 1e-12, (key, r["nm"], "head joins")
+            hg = CubicSpline(hk, hw)(hk, 1)
+            hg[-1] = cg[0]                                 # the joint's slope: Figure 4's
+            jx = _dp(hk, hw, hg)[:-1]
+            tk, tw, tg = np.concatenate([hk[jx], tk]), np.concatenate([hw[jx], tw]), np.concatenate([hg[jx], tg])
+            st["n"] += len(hk) - 1
+        tf, tc, tg = (np.asarray(a, np.float32) for a in (tw / 2e3 / np.pi, tw / tk / 1e3, tg / 1e3))
+        out.append(dict(r, o=len(packed), n=len(tf)))
         packed += list(tf) + list(tc) + list(tg)
         K, F, CL = lay(tf, tc, tg)
         st["n"] += len(k)
-        st["kept"] += len(ix)
+        st["kept"] += len(tf)
         st["laid"] += len(K)
-        st["err"] = max(st["err"], float(np.abs(np.interp(k, K, F) / (wb / 2e3 / np.pi) - 1).max()))
+        kall, wall = (k, wb) if hk is None else (np.concatenate([hk[:-1], k]), np.concatenate([hw[:-1], wb]))
+        st["err"] = max(st["err"], float(np.abs(np.interp(kall, K, F) / (wall / 2e3 / np.pi) - 1).max()))
         fs, cs = wb / 2e3 / np.pi, wb / k / 1e3
         ins = np.flatnonzero((fs <= Z["fmax"] / 1e3) & (cs <= CP_MAX / 1e3))
         inp = np.flatnonzero((F <= Z["fmax"] / 1e3) & (CL <= CP_MAX / 1e3))
         assert F[inp[0]] <= fs[ins[0]] * (1 + 1e-6) and F[inp[-1]] >= fs[ins[-1]] * (1 - 1e-6), (key, r["nm"], "window")
+        if hk is not None:                                 # Figure 4a's window: from K4A up
+            assert K[0] < K4A, (key, r["nm"], "head reaches the axis")
     return out, np.array(packed, np.float32), st
+
+
+def heads_of(key, R):
+    """Figure 4a's heads: each higher order branch drawn, from below K4A (the bottom of 4a's axis,
+    where it rises from its cut-on) up to the first point of Figure 4's curve (the sweep's last
+    point above c_p = 10 km/s, where Figure 4 begins it). The sweep's own points there, and more
+    between them, until neighbours lie within 2 units in 4a's own metric: f over the window and
+    log10 k over three decades, on 520 x 418 units (finer than the plot), as the sweep does in c_p.
+    Each new point is an eigenvalue of the same class, the branch the same index. {branch id:
+    (k rad/m, w rad/s)}, cached with the sweep."""
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{section_key(key)}-heads.pkl")
+    if os.path.exists(cache):
+        with open(cache, "rb") as fh:
+            return pickle.load(fh)
+    Z = SECTIONS[key]
+    fmax = Z["fmax"]
+    brs, flat = curves_of(key, R)
+    S = None
+    by = {}
+    for bi, r in enumerate(brs):
+        if r["type"]:
+            continue                                       # a fundamental's points from 0.4 rad/m are already its curve's
+        name = Z["classes"][r["ci"]][0]
+        ks = R["br"][name][0]
+        kj = 2 * np.pi * flat[r["o"]] / flat[r["o"] + r["n"]]
+        j = int(np.argmin(np.abs(ks - kj)))
+        assert abs(ks[j] / kj - 1) < 1e-5, (key, r["nm"], ks[j], kj)
+        if ks[j] > K4A:                                    # (Figure 4's curve may already begin under the axis)
+            by.setdefault(name, []).append((bi, r["b"], j))
+    out = {}
+    for name, items in by.items():
+        ks, W = R["br"][name]
+        klo = ks[ks < 0.9 * K4A].max() if np.any(ks < 0.9 * K4A) else ks[0]
+        jmax = max(j for _, _, j in items)
+        nb = max(b for _, b, _ in items) + 1
+        sel = (ks >= klo) & (ks <= ks[jmax])
+        kg, Wg = ks[sel], W[sel][:, :nb]
+        X = lambda w: np.minimum(w / (2 * np.pi), 1.04 * fmax) / fmax * REF_W
+        Y = lambda k: np.clip(np.log10(k) / 3, -.05, 1.05) * REF_H
+        for _ in range(14):
+            bad = np.zeros(len(kg) - 1, bool)
+            for bi, b, j in items:
+                d = np.hypot(np.diff(X(Wg[:, b])), np.diff(Y(kg)))
+                d[kg[1:] > ks[j] * (1 + 1e-12)] = 0          # past this branch's head
+                bad |= d > 2.0
+            if not bad.any():
+                break
+            if S is None:
+                S = make_section(key)
+            kn = 0.5 * (kg[:-1][bad] + kg[1:][bad])
+            Wn = np.array([S.omegas(name, k, nb) for k in kn])
+            kg = np.concatenate([kg, kn])
+            Wg = np.concatenate([Wg, Wn])
+            o = np.argsort(kg)
+            kg, Wg = kg[o], Wg[o]
+        for bi, b, j in items:
+            m = kg <= ks[j] * (1 + 1e-12)
+            hk, hw = kg[m], Wg[m, b]
+            hk[-1], hw[-1] = ks[j], W[j, b]                # the joint: exactly Figure 4's first point
+            out[bi] = (hk, hw)
+    with open(cache, "wb") as fh:
+        pickle.dump(out, fh)
+    return out
 
 
 def lay(f, cp, cg, tol=THIN):
@@ -1138,7 +1239,8 @@ def strip_of(key, R):
     degrees, ys the drawn width over the slice's, for the plate), the scale s (units a
     mm) that fits L and the receding depth between x = 40 and 970 units, and one clock:
     the steel's time slowed `slow` times, for every operating point and both waves (so
-    the crests of the tour's highest frequency f cycle at f / slow, about 7 Hz)."""
+    the crests of the tour's highest frequency f cycle at f / slow, about 7 Hz), written
+    "shown 20,000 × slower"."""
     Z = SECTIONS[key]
     G = dict(Z["strip"])
     S_nodes = (pipe_mesh() if key == "pipe" else Z["mesh"]())[0]
@@ -1146,15 +1248,16 @@ def strip_of(key, R):
     cd = G["d"] * np.cos(np.radians(G["a"]))
     s = 930.0 / (G["L"] + B * G["ys"] * cd)
     return dict(G, s=round(s, 5), x1=round(40 + s * G["L"], 3),
-                label=r"\rm{shown}\ " + sci(G["slow"]) + r"\ \rm{times slower than real time}")
+                label=r"\rm{shown}\ " + f"{int(round(G['slow'])):,}" + r"\ \times\ \rm{slower}")
 
 
-def section_blob(key, R):
-    """Everything the page needs of a section, as one blob."""
+def section_blob(key, R, heads=False):
+    """Everything the page needs of a section, as one blob (heads: Figure 4a's, each higher order
+    curve from its cut-on, heads_of)."""
     Z = SECTIONS[key]
     S = make_section(key)
     brs, flat = curves_of(key, R)
-    tb, tflat, _ = thinned(key, R)
+    tb, tflat, _ = thinned(key, R, heads_of(key, R) if heads else None)
     loops = boundary(S)
     fcs = faces(S, loops)
     B = float(np.ptp(S.nodes_mm[:, 0])); Hh = float(np.ptp(S.nodes_mm[:, 1]))
@@ -1166,7 +1269,7 @@ def section_blob(key, R):
     params = f"{Z['what']}; SAFE, {mesh_words(key, S)}, solved in the page"
     meta = {"key": key, "label": Z["label"], "kind": Z["kind"], "E": sm.E, "nu": sm.NU, "rho": sm.RHO,
             "classes": class_meta(Z), "fmax": Z["fmax"] / 1e3, "xticks": Z["xticks"], "strip": strip_of(key, R),
-            "nth": getattr(S, "nth", 0), "brs": tb, "fund": fund, "tour": tour_of(key, brs, flat), "loops": loops,
+            "nth": getattr(S, "nth", 0), "brs": tb, "fund": fund, "tour": [dict(s_, kf=k_) for s_, k_ in zip(tour_of(key, brs, flat), keyframes(key, R)[0])], "loops": loops,
             "faces": fcs, "B": B, "H": Hh, "sscale": round(min(160 / B, 300 / Hh), 4), "fc1": fc1, "cuts": cuts,
             "A": float(R["props"]["A"]), "legend": [[t, s_] for t, s_ in Z["legend"]], "params": params}
     arrays = [("nodes", np.asarray(S.nodes_mm, np.float32).ravel()),
@@ -1179,6 +1282,77 @@ def section_blob(key, R):
     arrays.append(("curves", tflat))
     arrays.append(("glide", glide_rates(key, R)))
     return blob(meta, arrays)
+
+
+KF_TOL = 0.01        # a glide's keyframes: the blend between two within 1 % of the drawn displacement
+KF_MIN = 0.25        # moments: keyframes no closer than this (of the glide's NG = 128)
+
+
+def keyframes(key, R):
+    """Wave 2's keyframes in each glide of the tour. The page draws wave 2, while it glides, as the
+    exact eigenvector at these moments of the glide (of its NG + 1, here also quarter moments) and,
+    between two, their blend (the two signs agreeing) at the wave's wavenumber, normalised in the mass.
+    Chosen here: every 16th moment, then each interval halved while the blend at its middle moment
+    differs from the exact eigenvector there by more than KF_TOL of the drawn displacement (each scaled
+    to a largest node displacement of 1), down to KF_MIN. Returns ([per stop: sorted moments], stats:
+    the keyframes a stop, and at the middle of every final interval the largest drawn difference and
+    1 - MAC (in the mass), with where). (cached with the sweep)"""
+    cache = os.path.join(tempfile.gettempdir(), f"nf-{NAME}-{key}-{section_key(key)}-kf.pkl")
+    if os.path.exists(cache):
+        with open(cache, "rb") as fh:
+            return pickle.load(fh)
+    Z, S = SECTIONS[key], make_section(key)
+    tb, curves = page_curve(key, R)
+    brs, flat = curves_of(key, R)
+    NG = TOUR_T["NG"]
+    out, st = [], {"n": [], "du": 0.0, "mac": 0.0, "where": "", "solves": 0}
+    for s_ in tour_of(key, brs, flat):
+        cv, r = curves[s_["b2"]], tb[s_["b2"]]
+        name, b = Z["classes"][r["ci"]][0], r["b"]
+        kof = lambda j: k_at_f(cv, s_["fa"] if j == 0 else s_["f2"] if j == NG else s_["fa"] + (s_["f2"] - s_["fa"]) * ease_in_out(j / NG))
+        memo = {}
+
+        def vec(j):                                        # the exact eigenvector at moment j (a sign of its own)
+            if j not in memo:
+                memo[j] = S.solve(name, kof(j), b + 1)[1][:, b]
+                st["solves"] += 1
+            return memo[j]
+
+        def drawn(x):                                      # as drawn: the largest node's displacement 1
+            u = x.reshape(-1, 3)
+            return u / np.linalg.norm(u, axis=1).max()
+
+        def err(j0, j1):                                   # the blend at the middle moment against the exact
+            jm = (j0 + j1) / 2
+            v0, v1, e = vec(j0), vec(j1), vec(jm)
+            if v1 @ (S.M @ v0) < 0:
+                v1 = -v1
+            k0, k1, km = kof(j0), kof(j1), kof(jm)
+            w = (km - k0) / (k1 - k0) if abs(k1 - k0) > 1e-12 * k1 else 0.0
+            x = (1 - w) * v0 + w * v1
+            x /= np.sqrt(x @ (S.M @ x))
+            if e @ (S.M @ x) < 0:
+                e = -e
+            mac = 1 - (x @ (S.M @ e)) ** 2 / ((x @ (S.M @ x)) * (e @ (S.M @ e)))
+            return float(np.linalg.norm(drawn(x) - drawn(e), axis=1).max()), float(mac), km
+
+        kf = list(range(0, NG + 1, 16))
+        i = 0
+        while i < len(kf) - 1:
+            j0, j1 = kf[i], kf[i + 1]
+            du, mac, km = err(j0, j1)
+            if du > KF_TOL and j1 - j0 > KF_MIN:
+                kf.insert(i + 1, (j0 + j1) / 2)
+                continue
+            if du > st["du"]:
+                st["du"], st["where"] = du, f"{r['nm']}, {km:.1f} rad/m"
+            st["mac"] = max(st["mac"], mac)
+            i += 1
+        out.append([float(j) for j in kf])
+        st["n"].append(len(kf))
+    with open(cache, "wb") as fh:
+        pickle.dump((out, st), fh)
+    return out, st
 
 
 def glide_rates(key, R):
@@ -2140,7 +2314,7 @@ def check_group(Rs, SV, TG, MS):
     p(f"  (the page's rule), against Simpson on {4 * TOUR_T['NG'] + 1} moments; the rates here from the travelling curve (the")
     p("  rule is what is checked). The page's own rates are exact: each moment's c_g computed here by shift-invert on")
     p("  the same model at the wavenumber the page takes (glide_rates) and carried with the section, so that a stop")
-    p(f"  begins without solving {TOUR_T['NG'] + 1} states; the wave drawn at each moment is still solved in the page.")
+    p(f"  begins without solving {TOUR_T['NG'] + 1} states (the wave drawn: KEYFRAMES below).")
     p("  Largest difference in the envelope's travel over a glide (mm of the page) and in the phase at its centre (rad):")
     from scipy.integrate import simpson
     for key in ORDER:
@@ -2526,7 +2700,10 @@ SOLVER = r"""
    kept as a skyline (profile) in an RCM order; a state (class, branch, k) is
    solved exactly: LDL^T of K(k) - s M, whose negative pivots count the
    eigenvalues below s (Sylvester), pins the branch; inverse iteration then
-   converges on its eigenpair. */
+   converges on its eigenpair. The basis, the assembly and the solve also run as
+   steps (generators), a few milliseconds each, so that the page can do them while
+   it is idle without holding up a frame; run through at once they give the same
+   numbers. */
 function safeModel(sec) {
   const Mo = sec, N = sec.nodes.length / 2, NE = sec.elems.length / 9;
   const MU = Mo.E / (2 * (1 + Mo.nu)), LAM = Mo.E * Mo.nu / ((1 + Mo.nu) * (1 - 2 * Mo.nu));
@@ -2550,26 +2727,32 @@ function safeModel(sec) {
     let m = ecache.get(key);
     if (m) return m;
     const K1 = new Float64Array(729), K2 = new Float64Array(729), K3 = new Float64Array(729), Me = new Float64Array(729);
+    const Ny = new Float64Array(9), Nz = new Float64Array(9), V1a = new Float64Array(27), V1b = new Float64Array(27), V2 = new Float64Array(27);
+    const DB1 = new Float64Array(162), DB2 = new Float64Array(162), Q1 = [[4, 5], [1, 3], [2, 3]], Q2 = [0, 5, 4];
     for (const G of GP) {
       let a11 = 0, a12 = 0, a21 = 0, a22 = 0;
       for (let l = 0; l < 9; l++) { a11 += G.Nx[l] * xy[l][0]; a12 += G.Nx[l] * xy[l][1]; a21 += G.Ne[l] * xy[l][0]; a22 += G.Ne[l] * xy[l][1]; }
       const det = a11 * a22 - a12 * a21, i11 = a22 / det, i12 = -a12 / det, i21 = -a21 / det, i22 = a11 / det;
-      const Ny = G.Nx.map((v, l) => i11 * v + i12 * G.Ne[l]), Nz = G.Nx.map((v, l) => i21 * v + i22 * G.Ne[l]);
-      const B1 = Array.from({length: 6}, () => new Float64Array(27)), B2 = Array.from({length: 6}, () => new Float64Array(27));
+      for (let l = 0; l < 9; l++) { Ny[l] = i11 * G.Nx[l] + i12 * G.Ne[l]; Nz[l] = i21 * G.Nx[l] + i22 * G.Ne[l]; }
+      // a column a = 3 l + c of B1 is not zero in rows Q1[c] (values V1), of B2 in row Q2[c] (N_l)
       for (let l = 0; l < 9; l++) {
-        B1[1][3 * l + 1] = Ny[l]; B1[2][3 * l + 2] = Nz[l];
-        B1[3][3 * l + 1] = Nz[l]; B1[3][3 * l + 2] = Ny[l];
-        B1[4][3 * l] = Nz[l]; B1[5][3 * l] = Ny[l];
-        B2[0][3 * l] = G.N[l]; B2[4][3 * l + 2] = G.N[l]; B2[5][3 * l + 1] = G.N[l];
+        V1a[3 * l] = Nz[l]; V1b[3 * l] = Ny[l]; V1a[3 * l + 1] = Ny[l]; V1b[3 * l + 1] = Nz[l];
+        V1a[3 * l + 2] = Nz[l]; V1b[3 * l + 2] = Ny[l]; V2[3 * l] = V2[3 * l + 1] = V2[3 * l + 2] = G.N[l];
       }
       const dA = G.w * det;
-      const DB = B => B.map((_, r) => new Float64Array(27).map((_, c) => Dm[r].reduce((s, d, q) => s + d * B[q][c], 0)));
-      const DB1 = DB(B1), DB2 = DB(B2);
-      for (let a = 0; a < 27; a++) for (let c = 0; c < 27; c++) {
-        let s1 = 0, s12 = 0, s21 = 0, s3 = 0;
-        for (let r = 0; r < 6; r++) { s1 += B1[r][a] * DB1[r][c]; s12 += B1[r][a] * DB2[r][c]; s21 += B2[r][a] * DB1[r][c]; s3 += B2[r][a] * DB2[r][c]; }
-        K1[a * 27 + c] += s1 * dA; K2[a * 27 + c] += (s12 - s21) * dA; K3[a * 27 + c] += s3 * dA;
-        if (a % 3 === c % 3) Me[a * 27 + c] += Mo.rho * G.N[a / 3 | 0] * G.N[c / 3 | 0] * dA;
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 27; c++) {             // D B1 and D B2
+        const q = Q1[c % 3];
+        DB1[r * 27 + c] = Dm[r][q[0]] * V1a[c] + Dm[r][q[1]] * V1b[c];
+        DB2[r * 27 + c] = Dm[r][Q2[c % 3]] * V2[c];
+      }
+      for (let a = 0; a < 27; a++) {
+        const q = Q1[a % 3], ra = 27 * q[0], rb = 27 * q[1], r2 = 27 * Q2[a % 3], ba = V1a[a], bb = V1b[a], b2 = V2[a];
+        for (let c = 0; c < 27; c++) {
+          const s1 = ba * DB1[ra + c] + bb * DB1[rb + c], s12 = ba * DB2[ra + c] + bb * DB2[rb + c];
+          const s21 = b2 * DB1[r2 + c], s3 = b2 * DB2[r2 + c];
+          K1[a * 27 + c] += s1 * dA; K2[a * 27 + c] += (s12 - s21) * dA; K3[a * 27 + c] += s3 * dA;
+          if (a % 3 === c % 3) Me[a * 27 + c] += Mo.rho * G.N[a / 3 | 0] * G.N[c / 3 | 0] * dA;
+        }
       }
     }
     // U_x = i V_x makes K2 real symmetric: axial rows against in-plane columns keep
@@ -2582,9 +2765,12 @@ function safeModel(sec) {
     ecache.set(key, m);
     return m;
   }
-  /* each class's basis: every dof in at most two columns (col0, v0; col1, v1) */
-  const bases = {};
-  function basis(ci) {
+  /* each class's basis: every dof in at most two columns (col0, v0; col1, v1); made a few orbits
+     at a time (basisSteps, for the idle queue) or at once (basis) */
+  const bases = {}, making = {};
+  const drain = g => { let r; while (!(r = g.next()).done); return r.value; };
+  function basis(ci) { return bases[ci] || drain(making[ci] || (making[ci] = basisSteps(ci))); }
+  function* basisSteps(ci) {
     if (bases[ci]) return bases[ci];
     const C = sec.classes[ci], nd = 3 * N;
     const c0 = new Int32Array(nd).fill(-1), c1 = new Int32Array(nd).fill(-1), v0 = new Float64Array(nd), v1 = new Float64Array(nd);
@@ -2611,7 +2797,9 @@ function safeModel(sec) {
       }
       const rank = C.pd ? sec.rank8 : sec.rank, reps = [];
       for (let n = 0; n < N; n++) if (rank[n] >= 0) reps[rank[n]] = n;
+      let done = 0;
       for (const n of reps) {
+        if ((++done & 15) === 0) yield;
         const acc = [];
         for (let c = 0; c < 3; c++) {
           const v = new Map();
@@ -2673,46 +2861,52 @@ function safeModel(sec) {
         }
       }
     }
+    delete making[ci];
     return (bases[ci] = {m, c0, c1, v0, v1});
   }
-  /* a class's four matrices as a skyline: row i holds columns first[i]..i at ptr[i] */
-  const classes = {};
-  function cls(ci) {
+  /* a class's four matrices as a skyline: row i holds columns first[i]..i at ptr[i]; assembled
+     a few elements at a time (prep, for the idle queue) or at once (cls) */
+  const classes = {}, building = {};
+  function cls(ci) { return classes[ci] || drain(building[ci] || (building[ci] = clsSteps(ci))); }
+  function* clsSteps(ci) {
     if (classes[ci]) return classes[ci];
-    const Bs = basis(ci), n = Bs.m, first = new Int32Array(n);
+    const Bs = bases[ci] || (yield* (making[ci] || (making[ci] = basisSteps(ci)))), n = Bs.m, first = new Int32Array(n);
     for (let i = 0; i < n; i++) first[i] = i;
-    const cols = g => { const o = []; if (Bs.c0[g] >= 0) o.push(Bs.c0[g]); if (Bs.c1[g] >= 0) o.push(Bs.c1[g]); return o; };
+    const c0 = Bs.c0, c1 = Bs.c1, v0 = Bs.v0, v1 = Bs.v1, el = sec.elems;
     for (let e = 0; e < NE; e++) {
-      const cs = [];
-      for (let l = 0; l < 9; l++) for (let c = 0; c < 3; c++) cs.push(...cols(3 * sec.elems[9 * e + l] + c));
       let lo = Infinity;
-      for (const c of cs) lo = Math.min(lo, c);
-      for (const c of cs) first[c] = Math.min(first[c], lo);
+      for (let a = 0; a < 27; a++) { const g = 3 * el[9 * e + (a / 3 | 0)] + a % 3; if (c0[g] >= 0) lo = Math.min(lo, c0[g]); if (c1[g] >= 0) lo = Math.min(lo, c1[g]); }
+      for (let a = 0; a < 27; a++) { const g = 3 * el[9 * e + (a / 3 | 0)] + a % 3; if (c0[g] >= 0) first[c0[g]] = Math.min(first[c0[g]], lo); if (c1[g] >= 0) first[c1[g]] = Math.min(first[c1[g]], lo); }
     }
     const ptr = new Int32Array(n + 1);
     for (let i = 0; i < n; i++) ptr[i + 1] = ptr[i] + i - first[i] + 1;
-    const mats = [0, 1, 2, 3].map(() => new Float64Array(ptr[n]));
+    const mats = [0, 1, 2, 3].map(() => new Float64Array(ptr[n])), [A1, A2, A3, A4] = mats;
+    // each element's dofs as their (column, value) pairs, a dof's first column before its second
+    const pc = new Int32Array(54), pv = new Float64Array(54), pa = new Int32Array(54);
     for (let e = 0; e < NE; e++) {
-      const Ke = element(e), dof = [];
-      for (let l = 0; l < 9; l++) for (let c = 0; c < 3; c++) dof.push(3 * sec.elems[9 * e + l] + c);
+      if ((e & 3) === 3) yield;
+      const [E1, E2, E3, E4] = element(e);
+      let m = 0;
       for (let a = 0; a < 27; a++) {
-        const ga = dof[a];
-        for (const [ca, va] of [[Bs.c0[ga], Bs.v0[ga]], [Bs.c1[ga], Bs.v1[ga]]]) {
-          if (ca < 0) continue;
-          for (let b = 0; b < 27; b++) {
-            const gb = dof[b];
-            for (const [cb, vb] of [[Bs.c0[gb], Bs.v0[gb]], [Bs.c1[gb], Bs.v1[gb]]]) {
-              if (cb < 0 || cb > ca) continue;
-              const at = ptr[ca] + cb - first[ca], f = va * vb;
-              for (let q = 0; q < 4; q++) mats[q][at] += f * Ke[q][a * 27 + b];
-            }
-          }
+        const g = 3 * el[9 * e + (a / 3 | 0)] + a % 3;
+        if (c0[g] >= 0) { pc[m] = c0[g]; pv[m] = v0[g]; pa[m] = a; m++; }
+        if (c1[g] >= 0) { pc[m] = c1[g]; pv[m] = v1[g]; pa[m] = a; m++; }
+      }
+      for (let i = 0; i < m; i++) {
+        const ca = pc[i], va = pv[i], a27 = 27 * pa[i], base = ptr[ca] - first[ca];
+        for (let j = 0; j < m; j++) {
+          const cb = pc[j];
+          if (cb > ca) continue;
+          const at = base + cb, f = va * pv[j], ab = a27 + pa[j];
+          A1[at] += f * E1[ab]; A2[at] += f * E2[ab]; A3[at] += f * E3[ab]; A4[at] += f * E4[ab];
         }
       }
     }
-    return (classes[ci] = {n, first, ptr, K1: mats[0], K2: mats[1], K3: mats[2], M: mats[3]});
+    delete building[ci];
+    return (classes[ci] = {n, first, ptr, K1: A1, K2: A2, K3: A3, M: A4});
   }
-  function ldl(A, C) {                                  // in place: L below the diagonal, D apart
+  const prep = ci => classes[ci] ? [][Symbol.iterator]() : building[ci] || (building[ci] = clsSteps(ci));
+  function* ldl(A, C) {                                 // in place: L below the diagonal, D apart; a pause every 8 rows
     const {n, first, ptr} = C, d = new Float64Array(n), u = new Float64Array(n);
     let neg = 0;
     for (let i = 0; i < n; i++) {
@@ -2727,6 +2921,7 @@ function safeModel(sec) {
       for (let q = fi; q < i; q++) dd -= u[q] * A[pi + q];
       if (Math.abs(dd) < 1e-300) dd = 1e-300;
       d[i] = dd; if (dd < 0) neg++;
+      if ((i & 7) === 7) yield;
     }
     return {d, neg};
   }
@@ -2755,29 +2950,36 @@ function safeModel(sec) {
      (the nearest above the shift) unless one below is nearer: then the branch's alone is
      bracketed (`branch` eigenvalues under the lower end, more under the upper), the bracket
      narrowed by bisection, and the iteration run from its middle. */
-  function solve(ci, branch, k, wTab, x0) {
-    const C = cls(ci), len = C.ptr[C.n], K = new Float64Array(len), w2t = wTab * wTab;
+  function* steps(ci, branch, k, wTab, x0) {
+    // K(k) and each factorisation in a skyline array of the class, two kept for its next solve (every
+    // entry is written before it is read: the same numbers, without megabytes of garbage a solve)
+    const C = cls(ci), len = C.ptr[C.n], pool = C.pool || (C.pool = []), w2t = wTab * wTab;
+    const take = () => pool.pop() || new Float64Array(len), give = A => { if (pool.length < 2) pool.push(A); };
+    const K = take();
     for (let i = 0; i < len; i++) K[i] = C.K1[i] + k * C.K2[i] + k * k * C.K3[i];
-    const factor = s => { const A = new Float64Array(len); for (let i = 0; i < len; i++) A[i] = K[i] - s * C.M[i]; const g = ldl(A, C); g.A = A; g.s = s; return g; };
-    const iterate = (F, start) => {                    // M x of one step is the next step's right side
+    const factor = function* (s) { const A = take(); for (let i = 0; i < len; i++) A[i] = K[i] - s * C.M[i]; const g = yield* ldl(A, C); g.A = A; g.s = s; return g; };
+    const iterate = function* (F, start) {                    // M x of one step is the next step's right side
       let x = new Float64Array(C.n);
       if (start) x.set(start);
       else for (let i = 0; i < C.n; i++) x[i] = Math.sin(12.9898 * (i + 1)) * 43758.5453 % 1;   // a fixed start
       let w2 = F.s, Mx = mul(C.M, C, x);
       for (let it = 0; it < 40; it++) {
         x = ldlSolve(F.A, C, F.d, Mx);
+        yield;
         Mx = mul(C.M, C, x);
         const nm = Math.sqrt(dot(x, Mx));
         for (let i = 0; i < C.n; i++) { x[i] /= nm; Mx[i] /= nm; }
         const w2n = dot(x, mul(K, C, x)), done = Math.abs(w2n - w2) < 1e-13 * w2n;
         w2 = w2n;
         if (done && it > 0) break;
+        yield;
       }
       return {x, w2};
     };
     let off = 2e-4, lo = -Infinity, hi = Infinity, f = null, tries = 0;
     for (let s = w2t * (1 - off); ; ) {
-      f = factor(s);
+      if (f) give(f.A);
+      f = yield* factor(s);
       if (f.neg === branch || ++tries > 80) break;
       if (f.neg > branch) hi = s; else lo = s;
       if (lo > -Infinity && hi < Infinity) s = (lo + hi) / 2;
@@ -2785,17 +2987,26 @@ function safeModel(sec) {
     }
     const count = f.neg;
     lo = f.s;
-    let r = iterate(f, x0 && x0.length === C.n ? x0 : null);
+    let r = yield* iterate(f, x0 && x0.length === C.n ? x0 : null);
+    give(f.A);
     if (!(r.w2 > lo && r.w2 < hi)) {
       for (let j = 0; hi === Infinity && j < 40; j++) {
-        const s = f.s * (1 + 1e-3 * 2 ** j), g = factor(s); tries++;
+        const s = f.s * (1 + 1e-3 * 2 ** j), g = yield* factor(s); tries++;
+        give(g.A);
         if (g.neg > branch) hi = s; else lo = s;
       }
-      for (let j = 0; j < 60 && hi - lo > 1e-6 * hi; j++) { const m = (lo + hi) / 2, g = factor(m); tries++; if (g.neg > branch) hi = m; else lo = m; }
-      r = iterate(factor((lo + hi) / 2), null);
+      for (let j = 0; j < 60 && hi - lo > 1e-6 * hi; j++) { const m = (lo + hi) / 2, g = yield* factor(m); tries++; give(g.A); if (g.neg > branch) hi = m; else lo = m; }
+      const F = yield* factor((lo + hi) / 2);
+      r = yield* iterate(F, null);
+      give(F.A);
     }
+    give(K);
     return {w: Math.sqrt(r.w2), x: r.x, count, tries, ok: count === branch && r.w2 > lo && r.w2 < hi};
   }
+  /* a solve run through at once; steps() is the same solve, paused now and then, for the idle queue */
+  function solve(ci, branch, k, wTab, x0) { return drain(steps(ci, branch, k, wTab, x0)); }
+  /* a class vector's norm in the mass, sqrt(x^T M x) */
+  function mnorm(ci, x) { const C = cls(ci); return Math.sqrt(dot(x, mul(C.M, C, x))); }
   /* the nodal field (ux, uy, uz at every node) of a class vector */
   function nodal(ci, x) {
     const B = basis(ci), U = new Float64Array(3 * N);
@@ -2812,7 +3023,7 @@ function safeModel(sec) {
     const C = cls(ci);
     return (dot(x, mul(C.K2, C, x)) + 2 * k * dot(x, mul(C.K3, C, x))) / (2 * w * dot(x, mul(C.M, C, x)));
   }
-  return {cls, solve, nodal, basis, N, cg};
+  return {cls, solve, steps, prep, has: ci => !!classes[ci], nodal, basis, N, cg, mnorm, element, NE};
 }
 """
 
@@ -2841,9 +3052,9 @@ const wrapX = (T, x) => x - T.rep * Math.floor((x - T.xl) / T.rep);   // a packe
 // a state's rates: the envelope's speed (mm/s on the page) and its centre phase's (rad/s);
 // k in rad/m, f in kHz, c_g in km/s
 const rates = (sec, k, f, cg) => ({v: cg * 1e6 / sec.T.slow, r: (k * cg - 2 * Math.PI * f) * 1e3 / sec.T.slow});
-const SW_ = {x0: 624, x1: 986, y0: 17, y1: 43};          // the section switcher's cells
-const PLAY = {x: 862, y: 430, r: 10};                     // the play control, its label to the right
-const CBAR = {x: 650, y: 426, w: 190, h: 8};              // the colour scale
+const SW_ = {x0: 624, x1: 986, y0: 14, y1: 46, hit: 6};  // the section switcher's cells; each one's DOM stand-in `hit` taller above and below
+const CBAR = {x: 700, y: 426, w: 200, h: 8};              // the colour scale
+const RES = {y: 16, h: 30, pad: 14, hit: 4};              // the chip that hands back to the tour, right-aligned over the plot
 const STY = {
   vertical:  {color: C.navy, width: 2.6, dash: null},
   lateral:   {color: C.navy, width: 2.2, dash: [9, 5]},
@@ -2883,6 +3094,21 @@ function lay(f, cp, cg, tol = 1e-5) {                    // k (rad/m), f (kHz), 
   for (let i = 0; i + 1 < n; i++) rec(i, k(i), w(i), k(i + 1), w(i + 1), 0);
   return {k: Float64Array.from(K), f: Float64Array.from(W, x => x / (2 * Math.PI)), cp: Float64Array.from(W, (x, i) => x / K[i])};
 }
+/* a branch's travelling points laid out, and its stretch inside the window: the first and last points
+   there (i0, i1), its frequencies' range, and whether f rises all along it (a backward wave, f falling
+   as k grows below its cut-on, makes f(k) turn back) */
+const inWindow = (f, cp, k, fm) => f <= fm && cp <= CM;
+function curveOf(C_, r, fm) {
+  const {k, f, cp} = lay(C_.subarray(r.o, r.o + r.n), C_.subarray(r.o + r.n, r.o + 2 * r.n), C_.subarray(r.o + 2 * r.n, r.o + 3 * r.n));
+  const inw = i => inWindow(f[i], cp[i], k[i], fm);
+  let i0 = 0, i1 = f.length - 1;
+  while (!inw(i0)) i0++;
+  while (!inw(i1)) i1--;
+  let mono = true, fmin = Infinity, fmax = -Infinity;
+  for (let i = i0; i <= i1; i++) { fmin = Math.min(fmin, f[i]); fmax = Math.max(fmax, f[i]); if (i > Math.max(0, i0 - 1) && f[i] <= f[i - 1]) mono = false; }
+  if (i0 > 0 && f[i0] <= f[i0 - 1]) mono = false;
+  return {f, cp, k, i0, i1, mono, fmin, fmax};
+}
 const NXS = 413;                                         // samples along each drawn waveguide
 function prepare(buf) {
   const {meta, arr} = parseBlob(buf), sec = {...meta, key: meta.key, meta};
@@ -2902,17 +3128,9 @@ function prepare(buf) {
   T.rep = T.L + T.pw; T.xl = -T.L - T.pw / 2; T.dx = T.L / (NXS - 1);
   T.XM = Float32Array.from({length: NXS}, (_, m) => (m - (NXS - 1)) * T.dx);
   sec.BR = inWin(sec, () => meta.brs.map((r, id) => {
-    const C_ = arr.curves, {k, f, cp} = lay(C_.subarray(r.o, r.o + r.n), C_.subarray(r.o + r.n, r.o + 2 * r.n), C_.subarray(r.o + 2 * r.n, r.o + 3 * r.n));
+    const c = curveOf(arr.curves, r, sec.fm), {f, cp} = c;
     const xy = Array.from(f, (_, i) => [PX(Math.min(f[i], 1.04 * sec.fm)), PY(Math.min(cp[i], 1.04 * CM))]);
-    const inw = i => f[i] <= sec.fm && cp[i] <= CM;
-    let i0 = 0, i1 = f.length - 1;
-    while (!inw(i0)) i0++;
-    while (!inw(i1)) i1--;
-    // a backward wave (f falling as k grows, below its cut-on) makes f(k) turn back
-    let mono = true, fmin = Infinity, fmax = -Infinity;
-    for (let i = i0; i <= i1; i++) { fmin = Math.min(fmin, f[i]); fmax = Math.max(fmax, f[i]); if (i > Math.max(0, i0 - 1) && f[i] <= f[i - 1]) mono = false; }
-    if (i0 > 0 && f[i0] <= f[i0 - 1]) mono = false;
-    return {...r, id, f, cp, k, xy, i0, i1, mono, fmin, fmax};
+    return {...r, id, ...c, xy};
   }));
   sec.HG = fc => Math.min(4, Math.floor(5 * (fc - meta.fc1) / (sec.fm - meta.fc1 || 1)));
   sec.TOUR = meta.tour.map(s => ({...s, k1: kAtF(sec.BR[s.b1], s.f1), ka: kAtF(sec.BR[s.b2], s.fa), k2: kAtF(sec.BR[s.b2], s.f2)}));
@@ -2995,46 +3213,73 @@ function nearest(sec, X, Y) {
    centre, the drawn shapes at a fixed largest size. A state's sign follows the
    wave's last one on the same branch, so a wave never jumps half a wavelength while
    dragged or gliding. */
-const CACHE = new Map(), LAST = [null, null], HF = new Map(), XS = new Map();
-/* a state's frequency and group velocity alone (the tour's rates, the tooltip), remembered;
-   its last few eigenpairs kept too (XS), so that solved() need not solve them again */
-function exact(sec, id, k) {
-  const key = sec.key + ':' + id + ':' + k.toFixed(6), c = CACHE.get(key);
-  if (c) return c;
-  let r = HF.get(key);
-  if (!r) {
-    const br = sec.BR[id], s = sec.model.solve(br.ci, br.b, k, 2e3 * Math.PI * atK(br, k).f, null);
-    r = {k, f: s.w / (2e3 * Math.PI), cg: sec.model.cg(br.ci, k, s.x, s.w) / 1e3};
-    HF.set(key, r);
-    if (HF.size > 800) HF.delete(HF.keys().next().value);
-    XS.set(key, s);
-    if (XS.size > 4) XS.delete(XS.keys().next().value);
-  }
-  return r;
+const CACHE = new Map(), LAST = [null, null];
+/* Each eigenpair is solved once and remembered (RAW, with its group velocity): from DATA (the first
+   stop of the section the page opens on), from the idle queue (the tour's states a stop ahead, the
+   other sections' classes and first states), or by the frame that first needs it, which finishes
+   a queued solve where it stands (RUN). */
+const RAW = new Map(), RUN = new Map();
+const kkey = (sec, id, k) => sec.key + ':' + id + ':' + k.toFixed(6);
+function* solveJob(sec, id, k) {                         // a state's eigenpair, a step at a time, into RAW
+  const key = kkey(sec, id, k);
+  if (RAW.has(key)) return RAW.get(key);
+  const br = sec.BR[id];
+  yield* sec.model.prep(br.ci);
+  const it = sec.model.steps(br.ci, br.b, k, 2e3 * Math.PI * atK(br, k).f, null);
+  let r;
+  while (!(r = it.next()).done) yield;
+  const s = r.value;
+  s.cg = sec.model.cg(br.ci, k, s.x, s.w) / 1e3;
+  RAW.set(key, s); RUN.delete(key);
+  if (RAW.size > 320) RAW.delete(RAW.keys().next().value);
+  return s;
 }
+function need(sec, id, k) {                              // a state's eigenpair: remembered, or solved now
+  const s = RAW.get(kkey(sec, id, k));
+  if (s) return s;
+  const job = RUN.get(kkey(sec, id, k)) || solveJob(sec, id, k);
+  let r;
+  while (!(r = job.next()).done);
+  return r.value || RAW.get(kkey(sec, id, k)) || need(sec, id, k);
+}
+function queueSolve(sec, id, k, hi) {                    // solve it while the page is idle
+  const key = kkey(sec, id, k);
+  if (RAW.has(key) || RUN.has(key)) return;
+  const job = solveJob(sec, id, k);
+  RUN.set(key, job);
+  later(() => job, hi);
+}
+/* a state's frequency and group velocity alone (the tour's rates, the tooltip) */
+function exact(sec, id, k) { const s = need(sec, id, k); return {k, f: s.w / (2e3 * Math.PI), cg: s.cg}; }
 const rateOf = (sec, id, k) => { const e = exact(sec, id, k); return rates(sec, k, e.f, e.cg); };
+/* the drawn state of an eigenpair: its sign ref's (a state nearby on the same branch), else the
+   largest entry positive; its nodal shape at a fixed largest size and its colours (|u| / U_rms) */
+function stateFrom(sec, id, k, s, ref) {
+  const x = Float64Array.from(s.x);
+  if (ref) { let d = 0; for (let i = 0; i < x.length; i++) d += x[i] * ref.x[i]; if (d < 0) for (let i = 0; i < x.length; i++) x[i] = -x[i]; }
+  else {
+    let m = 0;
+    for (let i = 1; i < x.length; i++) if (Math.abs(x[i]) > Math.abs(x[m])) m = i;
+    if (x[m] < 0) for (let i = 0; i < x.length; i++) x[i] = -x[i];
+  }
+  return shaped(sec, id, k, x, s.w / (2e3 * Math.PI), s.w / k / 1e3, s.cg, s.ok);
+}
+function shaped(sec, id, k, x, f, cp, cg, ok) {
+  const br = sec.BR[id], RMS = 1 / Math.sqrt(sec.rho * sec.meta.A * 1e-6);
+  const U = sec.model.nodal(br.ci, x), N = sec.N, AX = new Float32Array(N), TR = new Float32Array(N), Un = new Float32Array(3 * N);
+  let um = 0;
+  for (let n = 0; n < N; n++) {
+    const ux = U[3 * n] / RMS, uy = U[3 * n + 1] / RMS, uz = U[3 * n + 2] / RMS;
+    AX[n] = ux * ux; TR[n] = uy * uy + uz * uz; um = Math.max(um, Math.hypot(U[3 * n], U[3 * n + 1], U[3 * n + 2]));
+  }
+  for (let g = 0; g < 3 * N; g++) Un[g] = U[g] / um;
+  return {sec: sec.key, id, k, x, U: Un, AX, TR, f, cp, cg, lam: 2e3 * Math.PI / k, ok};
+}
 function solved(sec, st, w) {
-  const br = sec.BR[st.id], key = sec.key + ':' + st.id + ':' + st.k.toFixed(6);
+  const key = kkey(sec, st.id, st.k), p = LAST[w], near = p && p.sec === sec.key && p.id === st.id && Math.abs(p.k - st.k) < .08 * st.k;
   let r = CACHE.get(key);
-  const p = LAST[w], near = p && p.sec === sec.key && p.id === st.id && Math.abs(p.k - st.k) < .08 * st.k;
   if (!r) {
-    const s = XS.get(key) || sec.model.solve(br.ci, br.b, st.k, 2e3 * Math.PI * atK(br, st.k).f, near ? p.x : null);
-    const x = Float64Array.from(s.x);
-    if (!near) {                                         // a fixed sign: the largest entry positive
-      let m = 0;
-      for (let i = 1; i < x.length; i++) if (Math.abs(x[i]) > Math.abs(x[m])) m = i;
-      if (x[m] < 0) for (let i = 0; i < x.length; i++) x[i] = -x[i];
-    }
-    const RMS = 1 / Math.sqrt(sec.rho * sec.meta.A * 1e-6);
-    const U = sec.model.nodal(br.ci, x), N = sec.N, AX = new Float32Array(N), TR = new Float32Array(N), Un = new Float32Array(3 * N);
-    let um = 0;
-    for (let n = 0; n < N; n++) {
-      const ux = U[3 * n] / RMS, uy = U[3 * n + 1] / RMS, uz = U[3 * n + 2] / RMS;
-      AX[n] = ux * ux; TR[n] = uy * uy + uz * uz; um = Math.max(um, Math.hypot(U[3 * n], U[3 * n + 1], U[3 * n + 2]));
-    }
-    for (let g = 0; g < 3 * N; g++) Un[g] = U[g] / um;
-    r = {sec: sec.key, id: st.id, k: st.k, x, U: Un, AX, TR, f: s.w / (2e3 * Math.PI), cp: s.w / st.k / 1e3,
-         cg: sec.model.cg(br.ci, st.k, x, s.w) / 1e3, lam: 2e3 * Math.PI / st.k, ok: s.ok};
+    r = stateFrom(sec, st.id, st.k, need(sec, st.id, st.k), near ? p : null);
     CACHE.set(key, r);
     if (CACHE.size > 240) CACHE.delete(CACHE.keys().next().value);
   }
@@ -3045,6 +3290,110 @@ function solved(sec, st, w) {
   }
   LAST[w] = r;
   return r;
+}
+/* wave 2 in a glide of the tour: its shape is the exact eigenvector at the stop's keyframes (moments
+   of the glide's NG, chosen by dispersion.py so that the blend between two neighbours stays within
+   1 % of the drawn displacement: denser where a veering turns the shape), each solved once, a stop
+   ahead in the idle queue, the sign of each the one before's; between two, their blend at the wave's
+   wavenumber, normalised in the mass. Its frequency and phase velocity are its curve's there, its
+   group velocity the glide's exact rates'. */
+const KEYS = new Map();
+const momentK = (sec, i, j) => { const s = sec.TOUR[i]; return j <= 0 ? s.ka : j >= NG ? s.k2 : kAtF(sec.BR[s.b2], s.fa + (s.f2 - s.fa) * easeInOut(j / NG)); };
+function keyState(sec, i, q) {                           // wave 2 at stop i's q-th keyframe
+  const key = sec.key + ':' + i + ':' + q;
+  let r = KEYS.get(key);
+  if (r) return r;
+  const id = sec.TOUR[i].b2, k = momentK(sec, i, sec.TOUR[i].kf[q]);
+  r = stateFrom(sec, id, k, need(sec, id, k), q > 0 ? keyState(sec, i, q - 1) : null);
+  KEYS.set(key, r);
+  if (KEYS.size > 120) KEYS.delete(KEYS.keys().next().value);
+  return r;
+}
+function glided(sec, g) {
+  const s = sec.TOUR[g.i], br = sec.BR[s.b2], kf = s.kf;
+  if (g.X <= 0 || g.X >= 1) return keyState(sec, g.i, g.X <= 0 ? 0 : kf.length - 1);
+  const u = g.X * NG;
+  let q = 0;
+  while (q < kf.length - 2 && kf[q + 1] <= u) q++;
+  const A = keyState(sec, g.i, q), B = keyState(sec, g.i, q + 1), dk = B.k - A.k;
+  const w = Math.abs(dk) > 1e-12 * B.k ? clamp((g.k - A.k) / dk) : 0, n = A.x.length, x = new Float64Array(n);
+  for (let i = 0; i < n; i++) x[i] = (1 - w) * A.x[i] + w * B.x[i];
+  const nm = sec.model.mnorm(br.ci, x);
+  for (let i = 0; i < n; i++) x[i] /= nm;
+  const c = atK(br, g.k);
+  return shaped(sec, s.b2, g.k, x, c.f, c.cp, g.cg, A.ok && B.ok);
+}
+function statesNow(q) {                                  // the two waves this frame
+  const S1 = solved(CUR, q.st[0], 0);
+  if (!q.g2) return [S1, solved(CUR, q.st[1], 1)];
+  const S2 = glided(CUR, q.g2);
+  LAST[1] = S2;
+  return [S1, S2];
+}
+
+/* ---------------------------------------------------------------- work in idle time
+   A queue of small jobs run while the page is idle (requestIdleCallback, or a timer where there is
+   none), a few milliseconds at a time, so that no frame waits for them: the tour's states a stop
+   ahead (hi), and every other section read, its elements' matrices and classes assembled and its
+   first stop's two states solved (lo), so that choosing it is quick. A job is a function; one that
+   returns an iterator (a solve's steps) is run a step at a time; one marked big (a section read
+   whole) only while the page is idle. A frame that leaves time runs some too (pump in draw): headless
+   Chromium, and a busy page, give no idle time while a figure plays. The printed still and the check
+   do it all at once, when needed. */
+const IDLE = {hi: [], lo: [], cur: {hi: null, lo: null}, on: false};
+function later(job, hi) { (hi ? IDLE.hi : IDLE.lo).push(job); wakeIdle(); }
+const idleLeft = () => IDLE.cur.hi || IDLE.cur.lo || IDLE.hi.length || IDLE.lo.length;
+function wakeIdle() {
+  if (IDLE.on || STILL || CHECK) return;
+  IDLE.on = true;
+  if (window.requestIdleCallback) requestIdleCallback(idleRun, {timeout: 60}); else setTimeout(() => idleRun(null), 30);
+}
+function pump(ms, hiOnly, steps) {                       // queue work for about ms milliseconds, the tour's first
+  const end = performance.now() + ms;                    // (steps: in a frame, no big job)
+  while (performance.now() < end) {
+    const p = IDLE.cur.hi || IDLE.hi.length ? 'hi' : hiOnly ? null : 'lo';
+    if (!p) break;
+    if (IDLE.cur[p]) { if (IDLE.cur[p].next().done) IDLE.cur[p] = null; continue; }
+    if (steps && IDLE[p].length && IDLE[p][0].big) break;
+    const job = IDLE[p].shift();
+    if (!job) break;
+    const r = job();
+    if (r && typeof r.next === 'function') IDLE.cur[p] = r;
+  }
+}
+function idleRun(dl) {
+  try { pump(clamp(dl ? dl.timeRemaining() - 1 : 4, 3, 10), false); }
+  finally { IDLE.on = false; if (idleLeft()) wakeIdle(); }
+}
+let AHEAD = '';
+function ahead(q) {                                      // the tour's states for this stop and the next, queued once a stop
+  if (STILL || CHECK || USER || HAND || SW) return;
+  const sec = CUR, T = sec.TOUR, tau = t - TOUR.off, n = tau < T1 ? -1 : Math.floor((tau - T1) / TS), key = sec.key + ':' + n;
+  if (key === AHEAD) return;
+  AHEAD = key;
+  for (const m of [n, n + 1]) {
+    const i = ((m + 1) % T.length + T.length) % T.length, s = T[i];
+    queueSolve(sec, s.b1, s.k1, true);
+    if (m < 0) { queueSolve(sec, s.b2, s.k2, true); continue; }
+    for (const j of s.kf) queueSolve(sec, s.b2, momentK(sec, i, j), true);
+  }
+}
+function* sectionJob(key) {                              // a section's classes for its first stop, and that stop's two states
+  const sec = LOADED[key];
+  if (!sec) return;
+  const T = sec.TOUR[0];
+  for (const [id, k] of [[T.b1, T.k1], [T.b2, T.k2]]) {
+    const kk = kkey(sec, id, k);
+    if (RAW.has(kk)) continue;
+    if (!RUN.has(kk)) RUN.set(kk, solveJob(sec, id, k));
+    yield* RUN.get(kk);
+  }
+}
+function prepAll() {                                     // every section made ready while the page is idle
+  for (const s of D.secs) {
+    later(Object.assign(() => { if (!LOADED[s.key]) prepare(b64buf(D.blobs[s.key])); }, {big: true}), false);
+    later(() => sectionJob(s.key), false);
+  }
 }
 
 /* ---------------------------------------------------------------- the tour
@@ -3116,10 +3465,11 @@ function tourAt(sec, tau) {
   const X = clamp((ta - TG0) / TGD), f2 = s.fa + (s.f2 - s.fa) * easeInOut(X);
   const G = glideOf(sec, i), g2 = glideAt(G, ta);
   const R1 = rateOf(sec, s.b1, s.k1), out = 1 - seg(t0 + TS - 1, 1);
-  return {st: [{id: s.b1, k: s.k1}, {id: s.b2, k: X <= 0 ? s.ka : X >= 1 ? s.k2 : kAtF(sec.BR[s.b2], f2)}],
+  const k2 = X <= 0 ? s.ka : X >= 1 ? s.k2 : kAtF(sec.BR[s.b2], f2);
+  return {st: [{id: s.b1, k: s.k1}, {id: s.b2, k: k2}],
           X: [sec.T.xl + R1.v * ta, sec.T.xl + g2.x], ps: [PH0 + R1.r * ta, PH0 + g2.p], rt: [R1, {v: g2.v, r: g2.r}],
           amp: settle(t0 + .25, .8) * out, mk: [settle(t0 + .2, .28) * out, settle(t0 + .3, .28) * out],
-          lab: settle(t0 + .2, .4) * out};
+          lab: settle(t0 + .2, .4) * out, g2: {i, X, k: k2, cg: g2.v * sec.T.slow / 1e6}};
 }
 
 /* ---------------------------------------------------------------- the reader
@@ -3147,7 +3497,7 @@ function handState() {
   const q = userState(), e = seg(HAND.t0, .35);
   return {...q, amp: q.amp * (1 - e), mk: q.mk.map(m => m * (1 - e)), lab: 1 - e};
 }
-function reset() { USER = null; HAND = null; GRAB = null; HOVER = null; LAST[0] = LAST[1] = null; TOUR.off = 0; }
+function reset() { USER = null; HAND = null; GRAB = null; HOVER = null; LAST[0] = LAST[1] = null; TOUR.off = 0; AHEAD = ''; }
 function userState() {
   const dt = Math.max(0, t - USER.tl);
   USER.tl = t;
@@ -3246,7 +3596,7 @@ function textW(s, size) { ctx.save(); ctx.font = font({size}); const w = ctx.mea
 function mathW(s, size) { ctx.save(); const w = _mathDraw(_runs(s), 0, 0, size, C.ink, false); ctx.restore(); return w; }
 const FOOT_GAP = 8;
 // the right end of a section's parameter lines (drawing units): both must clear the page controls
-const footW = sc => 18 + Math.max(textW(sc.params, 14), textW(D.steel + ';', 14) + FOOT_GAP + mathW(sc.T.label, 14));
+const footW = sc => 18 + Math.max(textW(sc.params, 15), textW(D.steel + ';', 15) + FOOT_GAP + mathW(sc.T.label, 15));
 function tri(x, y, s, color, a = 1, up = true) {
   ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = color; ctx.beginPath();
   if (up) { ctx.moveTo(x, y); ctx.lineTo(x - s * .72, y + s); ctx.lineTo(x + s * .72, y + s); }
@@ -3285,40 +3635,48 @@ function xTicks(sec, a) {                                // a section's frequenc
       const x = PX(v);
       line([[x, P.y + P.h], [x, P.y + P.h - 5]], {color: C.ink, width: 1.1, alpha: a});
       line([[x, P.y], [x, P.y + 5]], {color: C.ink, width: 1.1, alpha: a});
-      math(fmt(v), x, P.y + P.h + 21, {size: 15, align: 'center', alpha: a});
+      math(fmt(v), x, P.y + P.h + 22, {size: 16, align: 'center', alpha: a});
     }
   });
 }
 const GUIDE = {color: C.guide, width: 1, dash: [5, 4]};
-const LEG = {y: P.y + P.h + 76, dy: 19, gap: 24};         // the legend: two rows under the frequency axis
+const LEG = {y: P.y + P.h + 78, dy: 21, gap: 22};         // the legend: two rows under the frequency axis
 function legend(sec, a) {                                // three columns of two, centred under the plot, off every curve
   if (a <= 0) return;
   const E = [...sec.legend, ['guide', 'shear, Rayleigh']], cols = [];
   for (let i = 0; i < E.length; i += 2) cols.push(E.slice(i, i + 2));
-  const cw = cols.map(c => Math.max(...c.map(([, s]) => textW(s, 14))) + 32 + LEG.gap), LW = cw.reduce((x, y) => x + y, 0) - LEG.gap;
+  const cw = cols.map(c => Math.max(...c.map(([, s]) => textW(s, 16))) + 34 + LEG.gap), LW = cw.reduce((x, y) => x + y, 0) - LEG.gap;
   let x0 = P.x + (P.w - LW) / 2;
   cols.forEach((c, j) => {
     c.forEach(([type, s], r) => {
       const y = LEG.y + r * LEG.dy, st = type === 'guide' ? GUIDE : type ? STY[type] : HIGH;
-      line([[x0, y - 5], [x0 + 26, y - 5]], {...st, alpha: a});
-      text(s, x0 + 32, y, {size: 14, alpha: a});
+      if (type === 'cut') {                              // a cut-on mark, as on the frame
+        const x = x0 + 13, yb = y - 5.5 - 3.5 * CUT.dir;
+        ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.guide; ctx.beginPath();
+        ctx.moveTo(x, yb + 7 * CUT.dir); ctx.lineTo(x - 3.8, yb); ctx.lineTo(x + 3.8, yb); ctx.closePath(); ctx.fill(); ctx.restore();
+      } else line([[x0, y - 5.5], [x0 + 26, y - 5.5]], {...st, alpha: a});
+      text(s, x0 + 34, y, {size: 16, alpha: a});
     });
     x0 += cw[j];
   });
 }
-function plotA(S, q, sw) {
+const clipPlot = f => { ctx.save(); ctx.beginPath(); ctx.rect(P.x, P.y, P.w, P.h); ctx.clip(); f(); ctx.restore(); };
+const CUT = {y: P.y + 1, dir: 1};                         // the cut-on marks: on the top frame, pointing in
+/* panel (a) in two parts: what stays (frame, ticks, labels, shading, every curve, the legend), kept
+   in the still layer once the intro is over, and what moves (the waves' curves lifted, the cut-on
+   marks, the markers, the hint), drawn each frame. sw: a section switch under way (its progress p,
+   A the section it leaves, e its easing, out and inn the old and new sections' alphas) */
+function plotStatic(sw, p, A, e, out, inn) {
   panel('a', 18, 34, {alpha: lab(0)});
   text('dispersion curves', 52, 34 + rise(lab(.03)), {size: 17, color: C.body, alpha: lab(.03)});
-  const ax = axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, WIN.fm], ylim: [0, CM],
-    xticks: [], yticks: [0, 2, 4, 6, 8, 10],
+  axes({x: P.x, y: P.y, w: P.w, h: P.h, xlim: [0, WIN.fm], ylim: [0, CM],
+    xticks: [], yticks: [0, 2, 4, 6, 8, 10], tickSize: 16,
     xlabel: '\\rm{frequency}\\ f\\ \\rm{(kHz)}', ylabel: '\\rm{phase velocity}\\ c_{\\rm{p}}\\ \\rm{(km/s)}',
-    ylabelGap: 44, progress: seg(0, .35)});
-  const p = sw ? swP() : 1, A = sw ? sw.from : CUR, e = easeInOut(clamp((p - .1) / .8));
-  const out = sw ? 1 - clamp(p / .4) : 0, inn = sw ? clamp((p - .35) / .45) : 1;
+    ylabelGap: 46, progress: seg(0, .35)});
   // each section's own frequency ticks: the old fade before the new arrive
   const ta = clamp(seg(0, .35) * 1.4);
   if (sw) { xTicks(A, ta * (1 - clamp(p / .35))); xTicks(CUR, ta * clamp((p - .45) / .35)); } else xTicks(CUR, ta);
-  ax.inside(() => {
+  clipPlot(() => {
     for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]]) {
       if (a <= 0) continue;
       ctx.save(); ctx.globalAlpha = .55 * seg(.3, .3) * a; ctx.fillStyle = C.steel;
@@ -3328,8 +3686,24 @@ function plotA(S, q, sw) {
       line([[P.x, PY(c)], [P.x + P.w, PY(c)]], {color: C.guide, width: 1, dash: [5, 4], progress: seg(a0, .35)});
     if (sw) { curvesOf(A, out, null, true); curvesOf(CUR, inn, null, true); morphFund(A, CUR, e, 1); }
     else curvesOf(CUR, 1, br => seg(.40 + .06 * CUR.HG(br.fc), .38));
-    // the waves' curves and the one under the pointer, lifted over the rest
-    const em = seg(.9, .3) * (sw ? clamp((p - .85) / .15) : 1), sel = new Set([S[0].id, S[1].id]);
+  });
+  const ca = lab(.40);
+  for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]]) cutLabel(sec, ca * a);
+  const ga = lab(.55);
+  // the guide speeds named at the lines' right ends, outside the frame (the legend says which is which)
+  math('c_{\\rm{T}}', P.x + P.w + 6, PY(D.ct) - 1 + rise(ga), {size: 16, color: C.body, alpha: ga});
+  math('c_{\\rm{R}}', P.x + P.w + 6, PY(D.cr) + 13 + rise(ga), {size: 16, color: C.body, alpha: ga});
+  const la = lab(.65);
+  if (sw) { legend(A, la * (1 - clamp(p / .35))); legend(CUR, la * clamp((p - .45) / .35)); } else legend(CUR, la);
+}
+// the word over the first cut-on mark, above the frame
+function cutLabel(sec, a) {
+  text('cut-on', Math.max(P.x + 2, inWin(sec, () => PX(sec.fc1)) - 2), P.y - 8 + rise(lab(.40)), {size: 16, color: C.muted, alpha: a});
+}
+function plotLive(S, q, sw, p, A, e, out, inn) {
+  // the waves' curves and the one under the pointer, lifted over the rest
+  const em = seg(.9, .3) * (sw ? clamp((p - .85) / .15) : 1), sel = new Set([S[0].id, S[1].id]);
+  clipPlot(() => {
     for (const id of [...sel, HOVER ? HOVER.id : -1]) {
       if (id < 0 || em <= 0 || !CUR.BR[id]) continue;
       const br = CUR.BR[id], st = styleOf(br), hot = HOVER && id === HOVER.id && !sel.has(id);
@@ -3337,23 +3711,14 @@ function plotA(S, q, sw) {
       line(br.xy, {...st, color: hot ? C.ink : st.color === C.sky ? C.blue : st.color, width: st.width + 1, alpha: em});
     }
   });
-  // cut-on frequencies on the top frame
+  // the cut-on frequencies on the frame, where those branches begin
   for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]]) for (const fc of sec.cuts) {
     const s = settle(.40 + .06 * sec.HG(fc), .28) * a;
     if (s <= 0 || fc > sec.fm) continue;
-    const x = inWin(sec, () => PX(fc)), y = P.y + 1;
+    const x = inWin(sec, () => PX(fc)), y = CUT.y;
     ctx.save(); ctx.globalAlpha = s; ctx.fillStyle = C.guide; ctx.beginPath();
-    ctx.moveTo(x, y + 7 * s); ctx.lineTo(x - 3.8, y); ctx.lineTo(x + 3.8, y); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.moveTo(x, y + CUT.dir * 7 * s); ctx.lineTo(x - 3.8, y); ctx.lineTo(x + 3.8, y); ctx.closePath(); ctx.fill(); ctx.restore();
   }
-  const ca = lab(.40);
-  for (const [sec, a] of sw ? [[A, out], [CUR, inn]] : [[CUR, 1]])
-    text('cut-on', Math.max(P.x + 2, inWin(sec, () => PX(sec.fc1)) - 2), P.y - 8 + rise(ca), {size: 14, color: C.muted, alpha: ca * a});
-  const ga = lab(.55);
-  // the guide speeds named at the lines' right ends, outside the frame (the legend says which is which)
-  math('c_{\\rm{T}}', P.x + P.w + 6, PY(D.ct) - 1 + rise(ga), {size: 15, color: C.body, alpha: ga});
-  math('c_{\\rm{R}}', P.x + P.w + 6, PY(D.cr) + 12 + rise(ga), {size: 15, color: C.body, alpha: ga});
-  const la = lab(.65);
-  if (sw) { legend(A, la * (1 - clamp(p / .35))); legend(CUR, la * clamp((p - .45) / .35)); } else legend(CUR, la);
   // the waves: a thumb under the frequency axis, and the marker on the curve
   const pos = markerPos(S, q, sw, e);
   for (let w = 0; w < 2; w++) {
@@ -3375,22 +3740,19 @@ function plotA(S, q, sw) {
     badge(w, labels[w].x, labels[w].y, pos[w].a);
   }
   if (!STILL && HOVER && !GRAB && !sw) tooltip();
-  // the slot: how to use it until it is used, then the way back to the tour
+  // the slot: a short hint until the figure is used, then a chip back to the tour
   if (!STILL) {
     const hint = 1 - (USED ? seg(USED, .4) : 0), back = USER && !HAND ? settle(USER.t0 + .3, .3) : 0;
-    if (hint > .01) text('drag 1 or 2 along its curve, or pick a curve', P.x + P.w, 34, {size: 14, color: C.muted, align: 'right', alpha: hint * lab(1.2)});
-    if (back > .01) {
-      const w_ = textW('resume tour', 14);
-      tri(P.x + P.w - w_ - 9, 29.5, 10, C.blue, back, false);
-      text('resume tour', P.x + P.w, 34, {size: 14, color: C.blue, align: 'right', alpha: back});
-    }
+    if (hint > .01) text('drag 1 or 2', P.x + P.w, 34, {size: 16, color: C.muted, align: 'right', alpha: hint * lab(1.2)});
+    if (back > .01) { const r = resBox(); uiChip(r.x0, RES.y, r.x1 - r.x0, RES.h, 'resume tour', {size: 16, hover: RESHOT}, back); }
     placeResume(back > .5);
   }
 }
-function markerLabels(pos) {
+function markerLabels(pos) {                             // two markers close together: the higher one's label up, the other's down
   const labels = pos.map(p => ({...p}));
   if (pos.every(p => p.a > .35) && Math.hypot(pos[0].x-pos[1].x, pos[0].y-pos[1].y) < 24) {
-    labels[0].y -= 14; labels[1].y += 14;
+    const up = pos[0].y <= pos[1].y ? 0 : 1;
+    labels[up].y -= 14; labels[1 - up].y += 14;
   }
   return labels;
 }
@@ -3417,14 +3779,14 @@ function tooltip() {                                     // the curve under the 
   dot(x, y, 4.5, {color: C.ink, fill: '#fff', width: 1.2});
   const L = [['t', br.nm], ['m', 'f = ' + q.f.toFixed(1) + '\\ \\rm{kHz},\\ \\ \\lambda\\ = ' + lamTex(2e3 * Math.PI / HOVER.k)],
              ['m', 'c_{\\rm{p}} = ' + q.cp.toFixed(2) + '\\ \\rm{km/s},\\ \\ c_{\\rm{g}} = ' + e.cg.toFixed(2) + '\\ \\rm{km/s}']];
-  const w = Math.max(...L.map(([k, s]) => k === 't' ? textW(s, 14) : math(s, 0, -1e4, {size: 14, alpha: 0}))) + 16, h = 60;
+  const w = Math.max(...L.map(([k, s]) => k === 't' ? textW(s, 16) : math(s, 0, -1e4, {size: 16, alpha: 0}))) + 18, h = 68;
   // beside the point, inside the plot, never over the point itself
   let bx = x + 14 + w < P.x + P.w - 4 ? x + 14 : x - 14 - w, by = y - h - 12;
   bx = clamp(bx, P.x + 4, P.x + P.w - 4 - w);
   if (by < P.y + 4) by = y + 12;
   ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.fillRect(bx, by, w, h); ctx.strokeRect(bx, by, w, h); ctx.restore();
-  L.forEach(([k, s], i) => k === 't' ? text(s, bx + 8, by + 18 + 17 * i, {size: 14, color: C.ink}) :
-    math(s, bx + 8, by + 18 + 17 * i, {size: 14, color: C.body}));
+  L.forEach(([k, s], i) => k === 't' ? text(s, bx + 9, by + 20 + 20 * i, {size: 16, color: C.ink}) :
+    math(s, bx + 9, by + 20 + 20 * i, {size: 16, color: C.body}));
 }
 
 /* ---------------------------------------------------------------- (b) switcher */
@@ -3448,7 +3810,7 @@ function switcher() {
   for (let i = 1; i < n; i++) { ctx.beginPath(); ctx.moveTo(SW_.x0 + cw * i, y0 + 5); ctx.lineTo(SW_.x0 + cw * i, y0 + h - 5); ctx.stroke(); }
   ctx.restore();
   D.secs.forEach((s, i) => {
-    const on = i === i1, cx = SW_.x0 + cw * i, lw = textW(s.label, 15), ix = cx + (cw - lw - 20) / 2 + 6, iy = y0 + h / 2;
+    const on = i === i1, cx = SW_.x0 + cw * i, lw = textW(s.label, 16), ix = cx + (cw - lw - 20) / 2 + 6, iy = y0 + h / 2;
     const pend = PENDING[s.key] && !LOADED[s.key];
     ctx.save(); ctx.globalAlpha = a * (pend ? .5 + .3 * Math.sin(now() * 6) : 1); ctx.lineWidth = 1; ctx.strokeStyle = on ? C.ink : C.body;
     ctx.fillStyle = on ? C.navy : C.mist;
@@ -3456,7 +3818,7 @@ function switcher() {
     if (ICON[s.key] === 'ring') { ctx.arc(ix, iy, 6, 0, 2 * Math.PI); ctx.arc(ix, iy, 4, 0, 2 * Math.PI, true); }
     else for (const poly of ICON[s.key]) poly.forEach(([x, y], j) => j ? ctx.lineTo(ix + x, iy + y) : ctx.moveTo(ix + x, iy + y));
     ctx.closePath(); ctx.fill('evenodd'); ctx.restore();
-    text(s.label, ix + 12, y0 + h / 2 + 5, {size: 15, color: on ? C.ink : C.body, alpha: a});
+    text(s.label, ix + 12, y0 + h / 2 + 5.5, {size: 16, color: on ? C.ink : C.body, alpha: a});
   });
 }
 
@@ -3464,9 +3826,11 @@ function switcher() {
    Each wave's cross-section as its packet carries it: the section at the packet's
    centre, u = Re{U exp(i psi)}, which turns at k c_g - w, so it holds still for a
    wave that does not disperse and turns over for one that does. */
+const SVB = [{}, {}];
 function sectionView(sec, w, S, psi, amp, draw_, fillA, la) {
   const cx = SEC.cx[w], cy = SEC.cy, s = sec.sscale, g = SEC.G * amp, c = Math.cos(psi), sn = Math.sin(psi), U = S.U, N = sec.N;
-  const xs = new Float32Array(N), ys = new Float32Array(N), mg = new Float32Array(N);
+  const B_ = SVB[w].xs && SVB[w].xs.length === N ? SVB[w] : (SVB[w] = {xs: new Float32Array(N), ys: new Float32Array(N), mg: new Float32Array(N)});
+  const xs = B_.xs, ys = B_.ys, mg = B_.mg;              // (arrays reused frame to frame)
   for (let n = 0; n < N; n++) {                          // U_x = i V_x: the in-plane parts go as cos psi, the axial as sin psi
     xs[n] = cx + sec.GY[n] * s + g * U[3 * n + 1] * c;
     ys[n] = cy - sec.GZ[n] * s - g * U[3 * n + 2] * c;
@@ -3499,10 +3863,10 @@ function sectionView(sec, w, S, psi, amp, draw_, fillA, la) {
   for (const L of sec.loops) line(L.map(n => [cx + sec.GY[n] * s, cy - sec.GZ[n] * s]),
     {color: C.ink, width: 1, dash: [4, 3], alpha: .6 * fillA, close: true});
   // its label: the wave's mark and frequency, over it
-  const lw = math('f = ' + num(S.f, 1) + '\\ \\rm{kHz}', 0, -1e4, {size: 16, alpha: 0}), lx = cx - (lw + 26) / 2;
+  const lw = math('f = ' + num(S.f, 1) + '\\ \\rm{kHz}', 0, -1e4, {size: 17, alpha: 0}), lx = cx - (lw + 26) / 2;
   const ly = Math.max(64, cy - sec.H * s / 2 - SEC.G - 8);  // just over the section, whatever its height
   badge(w, lx + 10, ly - 6, la);
-  math('f = ' + num(S.f, 1) + '\\ \\rm{kHz}', lx + 26, ly, {size: 16, alpha: la});
+  math('f = ' + num(S.f, 1) + '\\ \\rm{kHz}', lx + 26, ly, {size: 17, alpha: la});
 }
 
 /* ---------------------------------------------------------------- (b) along the waveguide
@@ -3535,7 +3899,7 @@ const MIX = new Uint32Array(256), MIXB = new Uint8Array(MIX.buffer), STEEL = [0x
 function faceImage(w, sec, S, cs, sn, ca, fillA) {
   const A = IMG[w], W_ = NXS + 2 * PADX, H_ = sec.draw.reduce((a, F) => a + F.nodes.length + 2 * PAD, 0);
   if (A.cv.width !== W_ || A.cv.height !== H_ || !A.im) {
-    A.cv.width = W_; A.cv.height = H_;
+    A.cv.width = W_; A.cv.height = H_; A.l0 = null;
     A.im = A.cv.getContext('2d').createImageData(W_, H_); A.px = new Uint32Array(A.im.data.buffer);
     A.a = new Float32Array(W_); A.b = new Float32Array(W_);
   }
@@ -3553,29 +3917,42 @@ function faceImage(w, sec, S, cs, sn, ca, fillA) {
     a[i] = sn[m] * sn[m]; b[i] = cs[m] * cs[m];
     if (a[i] + b[i] > 0) { if (i < i0) i0 = i; i1 = i + 1; }
   }
+  // off the packet every pixel is the scale's zero: only the columns the packet covers now or covered
+  // in the frame before are written, unless that colour or the section changed
+  const l0 = LUT[0], full = A.l0 !== l0 || A.sec !== sec.key;
+  const c0 = full ? 0 : Math.min(A.p0, i0), c1 = full ? W_ : Math.max(A.p1, i1);
   let y0 = 0;
   A.r0 = sec.draw.map(F => {
     const rows = F.nodes.length;
     for (let j = 0; j < rows + 2 * PAD; j++) {
       const n = F.nodes[clamp(j - PAD, 0, rows - 1)], ax = S.AX[n], tr = S.TR[n], o = (y0 + j) * W_;
-      px.fill(LUT[0], o, o + W_);
+      if (c1 > c0) px.fill(l0, o + c0, o + c1);
       for (let i = i0; i < i1; i++) px[o + i] = LUT[Math.min(255, Math.round(Math.sqrt(ax * a[i] + tr * b[i]) * sc))];
     }
     y0 += rows + 2 * PAD;
     return y0 - rows - PAD;
   });
-  A.cv.getContext('2d').putImageData(A.im, 0, 0);
+  if (c1 > c0) A.cv.getContext('2d').putImageData(A.im, 0, 0, c0, 0, c1 - c0, H_);
+  A.l0 = l0; A.sec = sec.key; A.p0 = i0; A.p1 = i1;
+  // the image as a pattern for the pieces: filling a parallelogram with a pattern mapped onto it
+  // draws the same pixels as drawImage of the image's part, at a tenth of its cost
+  A.pat = ctx.createPattern(A.cv, 'no-repeat');
   return A;
 }
 // the samples [m, m + mw] of a face's block laid on P0 + u U + v V, reaching ea before and eb
 // after along U, ev past along V
+const PM = typeof DOMMatrix === 'function' ? new DOMMatrix() : null;
 function piece(img, m, mw, r0, rows, P0, U, V, ea, eb, ev) {
   const LU = Math.hypot(U[0], U[1]) || 1, LV = Math.hypot(V[0], V[1]) || 1, c0 = PADX + .5 + m;
   const da = Math.min(ea / LU, (PADX - 1) / mw), db = Math.min(eb / LU, (PADX - 1) / mw), dv = Math.min(ev / LV, PAD / rows);
   ctx.save(); ctx.transform(U[0], U[1], V[0], V[1], P0[0], P0[1]);
-  ctx.drawImage(img, c0 - da * mw, r0 - dv * rows, mw * (1 + da + db), rows * (1 + 2 * dv), -da, -dv, 1 + da + db, 1 + 2 * dv);
+  if (img.pat && PM) {                                   // the image's pixel (c, r) at (c - c0) / mw, (r - r0) / rows
+    PM.a = 1 / mw; PM.b = 0; PM.c = 0; PM.d = 1 / rows; PM.e = -c0 / mw; PM.f = -r0 / rows;
+    img.pat.setTransform(PM); ctx.fillStyle = img.pat; ctx.fillRect(-da, -dv, 1 + da + db, 1 + 2 * dv);
+  } else ctx.drawImage(img.cv, c0 - da * mw, r0 - dv * rows, mw * (1 + da + db), rows * (1 + 2 * dv), -da, -dv, 1 + da + db, 1 + 2 * dv);
   ctx.restore();
 }
+const ROWS = [[], []], ENDS = [{}, {}];
 function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
   const T = sec.T, s = T.s, yc = STR.yc[w], U = S.U, k = S.k / 1e3, NX = NXS, N = sec.N, y0 = sec.ymin;
   const XM = T.XM, PW = T.pw, CD = T.cd, SD = T.sd, x1 = T.x1, ys = T.ys;
@@ -3591,24 +3968,30 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
     if (m < p0) p0 = m;
     p1 = m;
   }
-  const rows = new Map();                                // a node's deformed, projected positions along x
+  const rows = new Map(), pool = ROWS[w];                 // a node's deformed, projected positions along x (arrays reused frame to frame)
+  let used = 0;
   const row = n => {
     let r = rows.get(n);
     if (r) return r;
-    const X = new Float32Array(NX), Y = new Float32Array(NX), e = (sec.GY[n] - y0) * ys;
+    r = pool[used] || (pool[used] = {X: new Float32Array(NX), Y: new Float32Array(NX)});
+    used++;
+    const X = r.X, Y = r.Y, e = (sec.GY[n] - y0) * ys;
     const ux = g * U[3 * n], uy = g * U[3 * n + 1], uz = g * U[3 * n + 2];
     for (let m = 0; m < NX; m++) {
       const d = e + uy * cs[m];
       X[m] = x1 + s * (XM[m] - ux * sn[m] + d * CD);
       Y[m] = yc - s * (sec.GZ[n] + uz * cs[m] + d * SD);
     }
-    rows.set(n, r = {X, Y});
+    rows.set(n, r);
     return r;
   };
   const c0 = cs[NX - 1], s0 = sn[NX - 1];
-  const end = n => { const d = (sec.GY[n] - y0) * ys + g * U[3 * n + 1] * c0;
-    return [x1 + s * (-g * U[3 * n] * s0 + d * CD), yc - s * (sec.GZ[n] + g * U[3 * n + 2] * c0 + d * SD)]; };
-  const E_ = Array.from({length: N}, (_, n) => end(n));
+  // the face at x = 0, each node's position (arrays reused frame to frame)
+  const EB = ENDS[w].x && ENDS[w].x.length === N ? ENDS[w] : (ENDS[w] = {x: new Float64Array(N), y: new Float64Array(N)}), EX = EB.x, EY = EB.y;
+  for (let n = 0; n < N; n++) {
+    const d = (sec.GY[n] - y0) * ys + g * U[3 * n + 1] * c0;
+    EX[n] = x1 + s * (-g * U[3 * n] * s0 + d * CD); EY[n] = yc - s * (sec.GZ[n] + g * U[3 * n + 2] * c0 + d * SD);
+  }
   const mag = (n, m) => Math.sqrt(S.AX[n] * sn[m] * sn[m] + S.TR[n] * cs[m] * cs[m]);
   // pieces along x: straight lines between their ends stay within 0.6 units of the deformed edge,
   // which bends with the carrier and the envelope together (wavenumbers 2 pi / lambda and 2 pi / PW)
@@ -3624,23 +4007,33 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
   };
   const pts = r => Array.from({length: NX}, (_, m) => [r.X[m], r.Y[m]]);
   const o = {color: C.ink, width: 1.4, progress: draw_};
+  // a line along the waveguide through every st-th sample from 0: off the packet the waveguide is
+  // straight, so there the line is one segment, the same line as through each of its samples
+  const qa = p1 < 0 ? NX - 1 : Math.max(0, p0 - 1), qb = p1 < 0 ? NX - 1 : Math.min(NX - 1, p1 + 1);
+  const along = (r, st) => {
+    ctx.moveTo(r.X[0], r.Y[0]);
+    let m = st * Math.floor(qa / st);
+    if (m > 0) ctx.lineTo(r.X[m], r.Y[m]);
+    for (m += st; m < qb + st && m < NX; m += st) ctx.lineTo(r.X[m], r.Y[m]);
+    if (m - st !== NX - 1) ctx.lineTo(r.X[NX - 1], r.Y[NX - 1]);
+  };
   // an edge along the beam: through line() while it draws itself or the check records it,
   // else straight from the arrays (the same stroke, without a point array a frame)
   const edge = r => {
     if (CHECK || draw_ < 1) return line(pts(r), o);
-    ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(r.X[0], r.Y[0]);
-    for (let m = 1; m < NX; m++) ctx.lineTo(r.X[m], r.Y[m]);
-    ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.beginPath(); along(r, 1); ctx.stroke(); ctx.restore();
   };
   const lo = F => F.outer ? 0 : NX - 1 - 24;              // a bore shows only through its open end
   const IM = fillA > 0 && ca > 0 ? faceImage(w, sec, S, cs, sn, ca, fillA) : null;
   sec.draw.forEach((F, fi) => {
     const A = row(F.nodes[0]), B = row(F.nodes[F.nodes.length - 1]), ms = breaks(lo(F));
     if (fillA > 0) {
-      const path = new Path2D();
-      ms.forEach((m, i) => i ? path.lineTo(A.X[m], A.Y[m]) : path.moveTo(A.X[m], A.Y[m]));
-      for (let i = ms.length - 1; i >= 0; i--) path.lineTo(B.X[ms[i]], B.Y[ms[i]]);
-      path.closePath();
+      const path = IM ? null : new Path2D();             // the face's outline, for a plain fill (no picture of its colours)
+      if (path) {
+        ms.forEach((m, i) => i ? path.lineTo(A.X[m], A.Y[m]) : path.moveTo(A.X[m], A.Y[m]));
+        for (let i = ms.length - 1; i >= 0; i--) path.lineTo(B.X[ms[i]], B.Y[ms[i]]);
+        path.closePath();
+      }
       // no clip (a clip a face costs more than all its pieces): the pieces follow the
       // deformed edges within 0.6 units and barely cross them. A piece is the parallelogram
       // of its quad's mean sides; its corners are off the quad's by the quad's twist d (along
@@ -3657,7 +4050,7 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
           const Vv = [(bl[0] - tl[0] + br[0] - tr[0]) / 2, (bl[1] - tl[1] + br[1] - tr[1]) / 2];
           const Q0 = [(tl[0] + tr[0] + bl[0] + br[0]) / 4 - (Uv[0] + Vv[0]) / 2, (tl[1] + tr[1] + bl[1] + br[1]) / 4 - (Uv[1] + Vv[1]) / 2];
           const ex = .8 + Math.hypot(tl[0] + br[0] - tr[0] - bl[0], tl[1] + br[1] - tr[1] - bl[1]) / 2;
-          piece(IM.cv, m, n - m, r0, F.nodes.length, Q0, Uv, Vv, first ? .8 : ex, last ? .8 : ex, .35);
+          piece(IM, m, n - m, r0, F.nodes.length, Q0, Uv, Vv, first ? .8 : ex, last ? .8 : ex, .35);
         }
       }
       ctx.restore();
@@ -3665,7 +4058,7 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
       if (F.outer) {
         ctx.save(); ctx.globalAlpha *= .45 * fillA; ctx.strokeStyle = C.sky; ctx.lineWidth = .6; ctx.beginPath();
         const lj = F.nodes.length <= 3 ? 1 : T.lj;          // a face of one element across: its middle line
-        for (let j = lj; j < F.nodes.length - 1; j += lj) { const r = row(F.nodes[j]); ctx.moveTo(r.X[0], r.Y[0]); for (let m = 2; m < NX; m += 2) ctx.lineTo(r.X[m], r.Y[m]); }
+        for (let j = lj; j < F.nodes.length - 1; j += lj) along(row(F.nodes[j]), 2);
         const R_ = F.nodes.map(row);
         for (let m = NX - 1; m > 0; m -= T.lm) { ctx.moveTo(R_[0].X[m], R_[0].Y[m]); for (let j = 1; j < R_.length; j++) ctx.lineTo(R_[j].X[m], R_[j].Y[m]); }
         ctx.stroke(); ctx.restore();
@@ -3678,93 +4071,142 @@ function stripView(sec, w, S, Xc, psi, amp, draw_, fillA, la) {
   // the face at x = 0: the section there, coloured as above
   if (fillA > 0) {
     ctx.save(); ctx.beginPath();
-    for (const L of sec.loops) L.forEach((n, i) => i ? ctx.lineTo(...E_[n]) : ctx.moveTo(...E_[n]));
+    for (const L of sec.loops) L.forEach((n, i) => i ? ctx.lineTo(EX[n], EY[n]) : ctx.moveTo(EX[n], EY[n]));
     ctx.globalAlpha *= fillA; ctx.fillStyle = C.steel; ctx.fill('evenodd'); ctx.restore();
-    if (ca > 0) {
+    if (ca > 0 && c0 === 0 && s0 === 0) {               // the packet away from the end: |u| = 0 over the whole face
+      ctx.save(); ctx.beginPath();
+      for (const L of sec.loops) L.forEach((n, i) => i ? ctx.lineTo(EX[n], EY[n]) : ctx.moveTo(EX[n], EY[n]));
+      ctx.globalAlpha *= ca; ctx.fillStyle = SEQC[0]; ctx.fill('evenodd'); ctx.restore();
+    } else if (ca > 0) {
       const paths = Array.from({length: LEV}, () => new Path2D()), el = sec.elems, SUB = [[0, 1, 4, 3], [1, 2, 5, 4], [3, 4, 7, 6], [4, 5, 8, 7]];
       const mg = Float32Array.from({length: N}, (_, n) => mag(n, NX - 1));
       for (let e = 0; e < sec.NE; e++) for (const q of SUB) {
         const a = el[9 * e + q[0]], b = el[9 * e + q[1]], cc = el[9 * e + q[2]], d = el[9 * e + q[3]];
-        const p = paths[lev((mg[a] + mg[b] + mg[cc] + mg[d]) / 4)], A = E_[a], B = E_[b], Cc = E_[cc], Dd = E_[d];
-        p.moveTo(A[0], A[1]); p.lineTo(B[0], B[1]); p.lineTo(Cc[0], Cc[1]); p.lineTo(Dd[0], Dd[1]); p.lineTo(A[0], A[1]);
+        const p = paths[lev((mg[a] + mg[b] + mg[cc] + mg[d]) / 4)];
+        p.moveTo(EX[a], EY[a]); p.lineTo(EX[b], EY[b]); p.lineTo(EX[cc], EY[cc]); p.lineTo(EX[d], EY[d]); p.lineTo(EX[a], EY[a]);
       }
       ctx.save(); ctx.globalAlpha *= ca; ctx.lineWidth = .5; ctx.lineJoin = 'miter';
       for (let l = 0; l < LEV; l++) { ctx.fillStyle = ctx.strokeStyle = SEQC[l]; ctx.fill(paths[l]); ctx.stroke(paths[l]); }
       ctx.restore();
     }
   }
-  for (const L of sec.loops) line(L.map(n => E_[n]), {...o, close: true});
+  for (const L of sec.loops) line(L.map(n => [EX[n], EY[n]]), {...o, close: true});
   // the header: the wave's mark and mode, its two speeds and its wavelength
   const hy = yc - 96;
-  badge(w, 26, hy - 5, la);
-  text(sec.BR[S.id].nm, 44, hy, {size: 16, color: C.ink, alpha: la});
+  badge(w, 26, hy - 5.5, la);
+  text(sec.BR[S.id].nm, 44, hy, {size: 17, color: C.ink, alpha: la});
   math('c_{\\rm{p}} = ' + S.cp.toFixed(2) + '\\ \\rm{km/s},\\ \\ \\ c_{\\rm{g}} = ' + S.cg.toFixed(2) + '\\ \\rm{km/s},\\ \\ \\ \\lambda\\ = ' +
-       lamTex(S.lam), 982, hy, {size: 16, align: 'right', alpha: la});
+       lamTex(S.lam), 982, hy, {size: 17, align: 'right', alpha: la});
 }
 
-/* ---------------------------------------------------------------- the play control */
-function playControl() {
-  if (STILL) return;
-  const a = lab(.6), x = PLAY.x, y = PLAY.y;
-  dot(x, y, PLAY.r, {color: playing ? C.ink : C.navy, fill: playing ? '#fff' : C.navy, width: 1.2, alpha: a});
-  ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = playing ? C.ink : '#fff';
-  if (playing) { ctx.fillRect(x - 3.6, y - 4.5, 2.6, 9); ctx.fillRect(x + 1, y - 4.5, 2.6, 9); }
-  else { ctx.beginPath(); ctx.moveTo(x - 2.6, y - 4.8); ctx.lineTo(x + 4.6, y); ctx.lineTo(x - 2.6, y + 4.8); ctx.closePath(); ctx.fill(); }
-  ctx.restore();
-  if (!playing) text('paused', x + 16, CBAR.y + 8, {size: 15, color: C.ink, alpha: a});
+/* ---------------------------------------------------------------- the still layer
+   Once the intro is over and no section is changing, what does not move (panel (a)'s frame, ticks,
+   labels, shading and curves, the legend, the colour scale, the parameter lines) is drawn once and
+   kept: a copy of the frame's pixels just after it is drawn, laid down again at each frame before
+   anything that moves (where it lies, nothing still is drawn over what moves). The check
+   (?overlap) and the printed still draw everything each time. */
+const LAYER = {cv: null, key: ''}, LAYER_AT = 2.6;        // s: every still part's intro is over by then
+// the parts of the frame the still layer covers, in drawing units: panel (a) and its legend, the colour scale, the parameter lines
+const LAYER_BOX = [[0, 0, 612, 506], [598, 410, 330, 56], [0, H - 56, 880, 56]];
+function stillLayer(sw, p, A, e, out, inn) {
+  const key = STILL || CHECK || sw || t < LAYER_AT ? null : CUR.key + ':' + cv.width + 'x' + cv.height;
+  if (key && LAYER.key === key) {
+    const k = cv.width / W;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const [x, y, w, h] of LAYER_BOX) {
+      const X0 = Math.max(0, Math.floor(x * k)), Y0 = Math.max(0, Math.floor(y * k));
+      const X1 = Math.min(cv.width, Math.ceil((x + w) * k)), Y1 = Math.min(cv.height, Math.ceil((y + h) * k));
+      ctx.drawImage(LAYER.cv, X0, Y0, X1 - X0, Y1 - Y0, X0, Y0, X1 - X0, Y1 - Y0);
+    }
+    ctx.restore();
+    return;
+  }
+  plotStatic(sw, p, A, e, out, inn);
+  colourBar(lab(.6));
+  footers(sw, p);
+  if (key) {
+    const L = LAYER.cv || (LAYER.cv = document.createElement('canvas'));
+    if (L.width !== cv.width || L.height !== cv.height) { L.width = cv.width; L.height = cv.height; }
+    const g = L.getContext('2d');
+    g.clearRect(0, 0, L.width, L.height); g.drawImage(cv, 0, 0);
+    LAYER.key = key;
+  }
+}
+function colourBar(ca) {                                 // the colour scale: |u| / U_rms from 0 to CB
+  if (ca <= 0) return;
+  const BY = CBAR.y + rise(ca);
+  ctx.save(); ctx.globalAlpha = ca;
+  for (let i = 0; i < 100; i++) { ctx.fillStyle = seq((i + .5) / 100); ctx.fillRect(CBAR.x + CBAR.w * i / 100, BY, CBAR.w / 100 + .6, CBAR.h); }
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(CBAR.x, BY, CBAR.w, CBAR.h); ctx.restore();
+  for (let v = 0; v <= CB; v++) {
+    line([[CBAR.x + CBAR.w * v / CB, BY + CBAR.h], [CBAR.x + CBAR.w * v / CB, BY + CBAR.h + 4]], {width: 1, alpha: ca});
+    math(String(v), CBAR.x + CBAR.w * v / CB, BY + CBAR.h + 21, {size: 16, align: 'center', alpha: ca});
+  }
+  math('|u|\\,/\\,U_{\\rm{rms}}', CBAR.x - 10, BY + 8.5, {size: 16, align: 'right', alpha: ca});
+}
+function footers(sw, p) {                                // the section and its mesh, then the steel and the section's one clock
+  const pa = lab(.7), foot = (sc, a) => {
+    if (a <= 0) return;
+    text(sc.params, 18, H - 36, {size: 15, color: C.muted, alpha: a});
+    const w = text(D.steel + ';', 18, H - 15, {size: 15, color: C.muted, alpha: a});
+    math(sc.T.label, 18 + w + FOOT_GAP, H - 15, {size: 15, color: C.muted, alpha: a});
+  };
+  if (sw) { foot(sw.from, pa * (1 - clamp(p / .4))); foot(CUR, pa * clamp((p - .45) / .4)); }
+  else foot(CUR, pa);
 }
 
 /* ---------------------------------------------------------------- draw */
 function draw() {
+  const F0 = performance.now();
   WIN = CUR;
   const q = stateNow(), sw = SW, p = swP();
   if (sw && p >= 1 && FROZEN === null) { SW = null; syncSwitch(); if (NEXT) setTimeout(() => chooseSection(NEXT)); }
-  const S = [solved(CUR, q.st[0], 0), solved(CUR, q.st[1], 1)];
-  plotA(S, q, sw && p < 1 ? sw : null);
+  const S = statesNow(q);
+  const ws = sw && p < 1 ? sw : null, A = ws ? ws.from : CUR, e = ws ? easeInOut(clamp((p - .1) / .8)) : 1;
+  const out = ws ? 1 - clamp(p / .4) : 0, inn = ws ? clamp((p - .35) / .45) : 1;
+  stillLayer(ws, p, A, e, out, inn);
+  plotLive(S, q, ws, p, A, e, out, inn);
   switcher();
   // the waves: the old section's fading out, then the new one's coming in
   let sec = CUR, SS = S, env = 1, V = q;
-  if (sw && p < 1) {
+  if (ws) {
     if (p < .4) { sec = sw.from; V = fading(sw); SS = sw.S0[0] && sw.S0[1] ? sw.S0 : [solved(sw.from, V.st[0], 0), solved(sw.from, V.st[1], 1)]; env = 1 - easeInOut(p / .4); }
     else env = easeInOut((p - .4) / .6);
   }
   const dr = seg(.10, .40), fl = seg(.35, .30);
   for (let w = 0; w < 2; w++) sectionView(sec, w, SS[w], V.ps[w], V.amp * env, dr, fl, V.lab * lab(.3) * env);
-  // the colour scale and the play control
-  const ca = lab(.6), BY = CBAR.y + rise(ca);
-  if (ca > 0) {
-    ctx.save(); ctx.globalAlpha = ca;
-    for (let i = 0; i < 100; i++) { ctx.fillStyle = seq((i + .5) / 100); ctx.fillRect(CBAR.x + CBAR.w * i / 100, BY, CBAR.w / 100 + .6, CBAR.h); }
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(CBAR.x, BY, CBAR.w, CBAR.h); ctx.restore();
-    for (let v = 0; v <= CB; v++) {
-      line([[CBAR.x + CBAR.w * v / CB, BY + CBAR.h], [CBAR.x + CBAR.w * v / CB, BY + CBAR.h + 4]], {width: 1, alpha: ca});
-      math(String(v), CBAR.x + CBAR.w * v / CB, BY + CBAR.h + 20, {size: 14, align: 'center', alpha: ca});
-    }
-    math('|u|\\,/\\,U_{\\rm{rms}}', CBAR.x - 10, BY + 8, {size: 15, align: 'right', alpha: ca});
-  }
-  playControl();
   const dr2 = seg(.15, .45), fl2 = seg(.40, .30);
   for (let w = 0; w < 2; w++) stripView(sec, w, SS[w], V.X[w], V.ps[w], V.amp * env, dr2, fl2, V.lab * lab(.35) * env);
-  // the parameters: the section and its mesh, then the steel and the section's one clock (its slow-motion factor)
-  const pa = lab(.7), foot = (sc, a) => {
-    if (a <= 0) return;
-    text(sc.params, 18, H - 36, {size: 14, color: C.muted, alpha: a});
-    const w = text(D.steel + ';', 18, H - 16, {size: 14, color: C.muted, alpha: a});
-    math(sc.T.label, 18 + w + FOOT_GAP, H - 16, {size: 14, color: C.muted, alpha: a});
-  };
-  if (sw && p < 1) { foot(sw.from, pa * (1 - clamp(p / .4))); foot(CUR, pa * clamp((p - .45) / .4)); }
-  else foot(CUR, pa);
   place(S);
+  ahead(q);
+  // the queue's work, as far as the frame leaves time: on a light frame up to 4 ms of it (in steps), else a
+  // millisecond of the tour's coming states
+  if (!STILL && !CHECK && idleLeft()) {
+    const used = performance.now() - F0;
+    if (used < 6) pump(Math.min(4, 9 - used), false, true); else if (IDLE.cur.hi || IDLE.hi.length) pump(1, true);
+  }
 }
 
 // ?section=rail (bar, ibeam, rail, pipe or plate) opens the page on that section, for the checks and a
 // still of each; without it the page opens on the bar
 const SEL = (/[?&]section=(\w+)/.exec(location.search) || [])[1];
 CUR = prepare(b64buf(D.blobs[SEL in D.blobs ? SEL : 'bar']));
+/* the first stop's two eigenpairs of the section the page opens without a choice, solved at build
+   time by this script's own solver (dispersion.py, first_states), so that the first frame solves
+   nothing; taken only where they are this page's own states */
+if (D.first && D.first.key === CUR.key) {
+  const T = CUR.TOUR[0];
+  D.first.s.forEach((f, w) => {
+    const id = w ? T.b2 : T.b1, k = w ? T.k2 : T.k1;
+    if (f.id === id && +f.k === k)
+      RAW.set(kkey(CUR, id, k), {w: +f.w, x: Float64Array.from(b64f32(f.x)), count: f.count, tries: f.tries, ok: f.ok, cg: +f.cg, data: true});
+  });
+}
+prepAll();
 
 /* ---------------------------------------------------------------- input */
 const FIG = document.querySelector('.fig'), OV = [], RG = [];
-let RESUME = null, PLAYB = null;
+let RESUME = null;
 function toUnits(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
 const inPlot = (X, Y) => X > P.x - 6 && X < P.x + P.w + 6 && Y > P.y - 6 && Y < P.y + P.h + 16;
 function redraw() { if (!playing) render(); }
@@ -3793,18 +4235,14 @@ function place(S) {                                      // the overlays follow 
     }
   }
   const n = D.secs.length, cw = (SW_.x1 - SW_.x0) / n;
-  RG.forEach((b, i) => box(b, SW_.x0 + cw * i, SW_.y0, SW_.x0 + cw * (i + 1), SW_.y1));
-  box(PLAYB, PLAY.x - PLAY.r - 4, PLAY.y - PLAY.r - 4, PLAY.x + 96, PLAY.y + PLAY.r + 4);
+  RG.forEach((b, i) => box(b, SW_.x0 + cw * i, SW_.y0 - SW_.hit, SW_.x0 + cw * (i + 1), SW_.y1 + SW_.hit));
 }
+let RESHOT = false;                                      // the pointer over the chip
+const resBox = () => { const w = textW('resume tour', 16) + 2 * RES.pad; return {x0: P.x + P.w - w, x1: P.x + P.w}; };
 function placeResume(on) {
   if (!RESUME) return;
   RESUME.hidden = !on;
-  if (on) { const w_ = textW('resume tour', 14); box(RESUME, P.x + P.w - w_ - 18, 18, P.x + P.w + 4, 40); }
-}
-function syncPlay() {
-  if (!PLAYB) return;
-  PLAYB.setAttribute('aria-label', (playing ? 'Pause' : 'Play') + ' the waves (Space)');
-  PLAYB.setAttribute('aria-pressed', String(!playing));
+  if (on) { const r = resBox(); box(RESUME, r.x0 - RES.hit, RES.y - RES.hit - 2, r.x1 + RES.hit, RES.y + RES.h + RES.hit + 2); }
 }
 function syncSwitch() {
   const k = NEXT || (SW ? SW.to.key : CUR.key);
@@ -3866,17 +4304,13 @@ if (!STILL) {
     el.addEventListener('keydown', e => key(w, e));
     OV.push(el);
   }
-  // play and pause the waves; Space does it anywhere but on a button
-  PLAYB = add(document.createElement('button'));
-  PLAYB.type = 'button'; PLAYB.className = 'nfb';
-  PLAYB.addEventListener('click', e => { e.stopPropagation(); setPlay(!playing); });
+  // back to the tour: a chip over the plot once the reader has taken over
   RESUME = add(document.createElement('button'));
   RESUME.type = 'button'; RESUME.className = 'nfb'; RESUME.hidden = true; RESUME.textContent = 'resume tour';
   RESUME.setAttribute('aria-label', 'Resume the tour of the modes');
-  RESUME.addEventListener('click', e => { e.stopPropagation(); resumeTour(); RESUME.blur(); redraw(); });
-  const setPlay0 = setPlay;
-  setPlay = p => { setPlay0(p); syncPlay(); if (!p) render(); };
-  syncPlay();
+  RESUME.addEventListener('click', e => { e.stopPropagation(); RESHOT = false; resumeTour(); RESUME.blur(); redraw(); });
+  RESUME.addEventListener('pointerenter', () => { RESHOT = true; redraw(); });
+  RESUME.addEventListener('pointerleave', () => { RESHOT = false; redraw(); });
   // Space plays and pauses anywhere, a section's cell too (its choice is made by the arrows);
   // only on the other buttons it presses them
   document.addEventListener('keydown', e => {
@@ -3937,11 +4371,11 @@ FIGURE = FIGURE.replace("yc: [%d, %d]", f"yc: [{STR_YC[0]}, {STR_YC[1]}]")   # o
 JS = "const D = DATA;\n" + SOLVER + FIGURE + "\nboot();\n"
 
 
-def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
+def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf, swp=None):
     L = ["Figure 4 (nf-dispersion): SAFE dispersion curves of guided waves in five steel waveguides, each over",
          "the frequency window of its reference: published curves for four (the bar, the rail, the pipe, the",
          "plate), and for the I-beam, of which none were found, the same model on a mesh refined twice; every",
-         "wave the page shows solved in the page by the same SAFE model", ""]
+         "wave the page shows solved in the page by the same SAFE model (wave 2 gliding: between keyframes so solved)", ""]
     p = L.append
     p("MATERIAL AND METHOD")
     p(f"  steel: E = {sm.E / 1e9:.0f} GPa, nu = {sm.NU}, rho = {sm.RHO:.0f} kg/m^3: c_L = {sm.C_L:.1f} m/s, c_T = {sm.C_T:.1f} m/s,")
@@ -3955,9 +4389,10 @@ def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
     p("  onto the true outline; a half or quarter meshed and mirrored, so the mirror planes hold exactly.")
     p(f"  The window of every section: f up to its own fmax and c_p up to {CP_MAX / 1e3:g} km/s. fmax is chosen in a gap")
     p("  between the frequencies where branches enter the window (their c_p falling through its top), so that every")
-    p("  branch drawn enters well before fmax and none is about to (each is drawn once); in all but the bar this is")
-    p("  also a gap between cut-on frequencies. The cut-on marks on the top frame are the k = 0 frequencies of")
-    p("  exactly the drawn higher order branches.")
+    p("  branch drawn enters well before fmax and none is about to (each is drawn once). A branch that cuts on below")
+    p("  fmax but enters the window only above it is not drawn: " + "; ".join(
+        f"{SECTIONS[k]['label']} " + ", ".join(f"{f / 1e3:.2f}" for f in undrawn(k, Rs[k])) + " kHz" for k in ORDER if undrawn(k, Rs[k])) + ".")
+    p("  The cut-on marks on the top frame are the k = 0 frequencies of exactly the drawn higher order branches.")
     p("")
     p("SUMMARY")
     p("  section  window        reference                                      branches   mesh                    per shortest")
@@ -3980,7 +4415,7 @@ def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
     ref, gen = sm.Safe(NE_BAR, NE_BAR, SQ / 1e3, SQ / 1e3), make_section("bar")
     pairs = ((gen.K1, ref.K1), (gen.K2, ref.K2), (gen.K3, ref.K3), (gen.M, ref.M))
     dm = max(abs(A - B).max() / abs(B).max() for A, B in pairs)
-    p("THE PAGE SOLVES EVERY WAVE IT SHOWS")
+    p("THE PAGE SOLVES THE WAVES IT SHOWS")
     p("  Each section travels as its mesh (nodes in float32, the Python model reading the same rounded")
     p("  values) and its symmetry. The page builds the same isoparametric Q9 elements (3 x 3 Gauss),")
     p("  assembles each class on its own basis (the projections of each orbit's displacements, orthonormalised:")
@@ -4001,14 +4436,61 @@ def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
               f"max (1 - MAC) = {v['em']:.1e}, Sturm count wrong or rejected: {v['bad']},")
             p(f"            shift moved at most {v['tries']} time(s), {v['ms']:.2f} ms a solve (node, this machine);"
               f" classes (size, skyline): " + ", ".join(f"{a} {b}" for a, b in v["dims"]))
+    p("  The basis, the assembly and the solve also run as steps (generators) of a millisecond or so, which the")
+    p("  page runs while it is idle: run through at once (as above) they are the same arithmetic, the same numbers.")
+    p("")
+    p("KEYFRAMES: WAVE 2 WHILE IT GLIDES")
+    p("  While wave 2 glides along its curve (a new wavenumber every frame), its shape is the exact eigenvector")
+    p("  at the stop's keyframes, moments of the glide's 128 (and quarter moments) solved once, ahead of time, and")
+    p("  between two keyframes their blend at its wavenumber (the signs agreeing, normalised in the mass); its")
+    p("  frequency and phase velocity are its curve's there, its group velocity the glide's exact rates'. At its")
+    p("  ends, held and dragged, every wave is solved exactly. The keyframes are chosen here: every 16th moment,")
+    p("  each interval halved while the blend at its middle moment differs from the exact eigenvector there by more")
+    p(f"  than {100 * KF_TOL:g} % of the drawn displacement (each scaled to a largest node displacement of 1), to {KF_MIN:g} of a moment.")
+    p("  Per section: keyframes a stop, and at the middle of every final interval the largest drawn difference")
+    p("  and 1 - MAC (in the mass):")
+    for key in ORDER:
+        kf, st = keyframes(key, Rs[key])
+        p(f"    {SECTIONS[key]['label']:7s} {', '.join(str(n) for n in st['n'])} keyframes; largest difference {100 * st['du']:.2f} %"
+          f" ({st['where']}), 1 - MAC at most {st['mac']:.1e}")
+    p("  (Blending every 4th moment instead, as a first try did, would differ by up to 17 % on the I-beam and 20 % on")
+    p("  the rail, where the axial branch veers: the shape turns within a fraction of a kHz.)")
+    p("")
+    p("PERFORMANCE")
+    p("  The page opens without solving: the bar's first stop (both waves: their eigenvectors, frequencies and")
+    p("  group velocities) is solved at build time by the page's own script under node and carried in DATA,")
+    p("  exactly what the page would solve. Everything else is done in small steps (about a millisecond each)")
+    p("  while the page is idle (requestIdleCallback): every other section read, its elements' matrices and the")
+    p("  classes of its first stop assembled and that stop's two waves solved, so that choosing it is quick; and")
+    p("  the tour's states a stop ahead (wave 1, wave 2's keyframes). A frame that leaves time runs some of it too")
+    p("  (on a frame under 6 ms, up to 4 ms of solving steps; else a millisecond of the tour's states): headless")
+    p("  Chromium gives no idle time while the figure plays, so the queue (about half a second of work in all) would")
+    p("  otherwise drain only by requestIdleCallback's timeout, 3 ms at a time (measured here at 1280 px: empty 2.5 s")
+    p("  after the page opens on the bar, against 11.5 s so). The element matrices and the assembly lost their")
+    p("  allocations (the same sums in the same order: the same matrices to the bit; 4 to 5 times quicker). Once")
+    p("  the intro is over, the still parts (panel (a)'s frame, ticks, labels, shading and curves, the legend, the")
+    p("  colour scale and the parameter lines) are drawn once and kept as a picture of the frame's pixels, laid")
+    p("  down at each frame before what moves. The waveguides' faces are filled through a pattern of their colour")
+    p("  image rather than drawn as parts of it (the same pixels, within 3 of 255; a tenth of the cost), only the")
+    p("  columns of that image the packet covers are written each frame, and the lines along a waveguide are one")
+    p("  segment where the packet is not (it is straight there).")
     if perf:
-        p("  In headless Chromium (the page at 672 px, this shared machine): from choosing a section to its first")
-        p("  frame (its data read, its classes' matrices assembled, its two waves solved and drawn), and a frame")
-        p("  of its first glide (wave 2 at a wavenumber not met before: one state solved, both beams drawn):")
-        for key in ORDER:
-            q = perf.get(key)
-            if q:
-                p(f"    {SECTIONS[key]['label']:7s} switch to the first frame {q['switch']:.0f} ms; a glide frame {q['frame']:.0f} ms")
+        p("  Measured in headless Chromium at 1280 x 800 CSS px (a 1280 px canvas, as the site's audit measured),")
+        p("  this shared machine (4 cores, loaded by other work: single numbers vary by tens of per cent), by page_perf,")
+        p("  per section (the bar is the page as it opens): load, the longest task from the start to 3 s after;")
+        p("  held, the script time of an animation frame from 2.5 to 5.5 s (median / 95th percentile / longest); gliding,")
+        p("  the same from 2.5 to 9.5 s after the tour is moved on to its second stop, the page let settle first (wave 2")
+        p("  gliding from 2 s on, a new wavenumber each frame), and the longest task meanwhile; render, one render() at a")
+        p("  held moment, at 1280 / 672 px:")
+        for tag, pf in (("before (the page of 5 Oct 2026, commit e6205c0)", BEFORE_PERF.get(NAME)), ("now", perf)):
+            if not pf:
+                continue
+            p(f"   {tag}:")
+            for key in ORDER:
+                if key in pf:
+                    p(f"    {SECTIONS[key]['label']:7s} {perf_row(pf[key])}")
+    if swp:
+        L.extend(switch_lines(BEFORE_SWITCH.get(NAME), swp))
     p("  The curves travel thinned: only the eigenfrequencies a cubic Hermite in k needs (its slopes the group")
     p(f"  velocity, from a spline through the branch) to give every dropped one back within {THIN:.0e}; the page lays")
     p(f"  each segment out again within {THIN:.0e}. The page's curve at every point of the sweep:")
@@ -4067,6 +4549,10 @@ def check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf):
     p("  the new section. Hover names a curve and gives f, wavelength, c_p and c_g there; a marker or its thumb")
     p("  drags along its curve (on a backward-wave branch, to the crossing nearest the wave), the arrows step")
     p("  it (1 kHz on a 200 kHz window, in proportion on the others), up and down move it to the next curve.")
+    p("  Once a reader takes over, a chip 'resume tour' over the plot hands back to the tour. Hit areas in the guide")
+    p("  (672 px): a section's cell 48.7 x 29.6 px (its stand-in 6 units taller than the drawn cell above and below),")
+    p("  a marker 24 x 24 px, the chip 79 x 28 px. Nothing to play or pause is drawn on the figure: the frame's own")
+    p("  buttons (in the guide, the row under it) and Space do that, and a click on a control never pauses.")
     p("")
     p("PAYLOAD")
     p(f"  nf-dispersion.html {sizes['page'] / 1024:.0f} KB: the engine, this script and all five sections inside (no request is")
@@ -4101,17 +4587,84 @@ ARIA = ("Phase velocity against frequency for steel waveguides computed with a S
 HEIGHT = 880
 
 
-def build_page(Rs=None):
-    """The sweeps (cached), the sections' blobs and the page. Returns (Rs, page path, blobs)."""
-    Rs = Rs or {key: compute_section(key) for key in ORDER}
-    blobs = {key: section_blob(key, Rs[key]) for key in ORDER}
+def js_defs(src, names):
+    """The definitions of `names` in a script: a function's text to its closing brace at the start of
+    a line, a const's to the end of its statement's line."""
+    out = []
+    for nm in names:
+        m = re.search(r"^(function\*? %s\(|const %s = )" % (nm, nm), src, re.M)
+        assert m, nm
+        if m.group(1).startswith("function"):
+            out.append(src[m.start():src.index("\n}\n", m.start()) + 3])
+        else:
+            out.append(src[m.start():src.index("\n", m.start()) + 1])
+    return "".join(out)
+
+
+def first_states(script, blob):
+    """The first stop's two eigenpairs of a section (the page opens on it): the page's own script
+    under node (its curves laid out, its first stop's wavenumbers taken from them, and its solver),
+    so that the page starts from exactly what it would have solved. DATA's "first"."""
+    node = shutil.which("node")
+    if not node:
+        return None
+    L = struct.unpack("<I", blob[:4])[0]
+    meta = json.loads(blob[4:4 + L])
+    base = (4 + L + 3) & ~3
+    T = {"f4": np.float32, "u2": np.uint16, "i2": np.int16}
+    arr = {nm: np.frombuffer(blob, T[t], ln, base + off).tolist() for nm, (t, off, ln) in meta["arrays"].items()}
+    data = {"meta": {k_: meta[k_] for k_ in ("E", "nu", "rho", "kind", "nth", "classes", "brs", "tour", "fmax")}, "arr": arr,
+            "cm": CP_MAX / 1e3}
+    defs = js_defs(script, ["P", "lay", "inWindow", "curveOf", "seek", "atK", "kAtF"])
+    harness = ("const fs = require('fs'); const T = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));\n"
+               "const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, s) => a + (b - a) * s, CM = T.cm;\n"
+               + SOLVER + defs +
+               "const M = T.meta, A = T.arr, curves = Float32Array.from(A.curves);\n"
+               "const BR = M.brs.map(r => curveOf(curves, r, M.fmax));\n"
+               "const m = safeModel({E: M.E, nu: M.nu, rho: M.rho, nodes: Float32Array.from(A.nodes), elems: Int32Array.from(A.elems),"
+               " kind: M.kind, rank: A.rank ? Int32Array.from(A.rank) : null, rank8: A.rank8 ? Int32Array.from(A.rank8) : null,"
+               " nth: M.nth, classes: M.classes});\n"
+               "const s = M.tour[0], out = [[s.b1, kAtF(BR[s.b1], s.f1)], [s.b2, kAtF(BR[s.b2], s.f2)]].map(([id, k]) => {\n"
+               "  const r = M.brs[id], q = m.solve(r.ci, r.b, k, 2e3 * Math.PI * atK(BR[id], k).f, null);\n"
+               "  return {id, k, w: q.w, x: Array.from(q.x), count: q.count, tries: q.tries, ok: q.ok, cg: m.cg(r.ci, k, q.x, q.w) / 1e3};\n"
+               "});\n"
+               "fs.writeFileSync(process.argv[3], JSON.stringify(out));\n")
+    tmp = tempfile.mkdtemp(prefix="nf-disp-")
+    try:
+        with open(os.path.join(tmp, "in.json"), "w") as fh:
+            json.dump(data, fh)
+        with open(os.path.join(tmp, "h.js"), "w", encoding="utf-8") as fh:
+            fh.write(harness)
+        subprocess.run([node, os.path.join(tmp, "h.js"), os.path.join(tmp, "in.json"), os.path.join(tmp, "out.json")], check=True)
+        with open(os.path.join(tmp, "out.json")) as fh:
+            out = json.load(fh)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    assert all(q["ok"] for q in out), out
+    # k, w and c_g as their exact doubles in text (build_html rounds DATA's numbers to 5 decimals)
+    return {"key": meta["key"], "s": [dict(q, x=common.f32(q["x"]), k=repr(q["k"]), w=repr(q["w"]), cg=repr(q["cg"])) for q in out]}
+
+
+def page_data(blobs, script):
+    """DATA of a page from its sections' blobs: the bar's (the section a page opens on) first stop
+    solved at build time (first_states), the rest as the page reads them."""
     b64 = {key: base64.b64encode(blobs[key]).decode("ascii") for key in ORDER}
     for key, s_ in b64.items():                  # the site's check for his private details reads text files
         if re.search(r"gmail|300\W{0,3}4065", s_, re.I):
             raise RuntimeError(f"the {key} blob's base64 happens to spell a private pattern")
     data = {"cmax": CP_MAX / 1e3, "ct": sm.C_T / 1e3, "cr": sm.C_R / 1e3, "poster": POSTER,
             "secs": [{"key": k, "label": SECTIONS[k]["label"]} for k in ORDER], "steel": STEEL, "blobs": b64}
-    path = common.build_html(NAME, TITLE, ARIA, 1000, HEIGHT, data, JS)
+    first = first_states(script, blobs[ORDER[0]])
+    if first:
+        data["first"] = first
+    return data
+
+
+def build_page(Rs=None):
+    """The sweeps (cached), the sections' blobs and the page. Returns (Rs, page path, blobs)."""
+    Rs = Rs or {key: compute_section(key) for key in ORDER}
+    blobs = {key: section_blob(key, Rs[key]) for key in ORDER}
+    path = common.build_html(NAME, TITLE, ARIA, 1000, HEIGHT, page_data(blobs, JS), JS)
     return Rs, path, blobs
 
 
@@ -4131,13 +4684,31 @@ def plate_text(refs, convs, SV):
     return "\n".join(L) + "\n"
 
 
+def undrawn(key, R):
+    """The branches that cut on below a section's end but are not drawn (their phase velocity stays above
+    the window until past its end): their cut-on frequencies (Hz), by class and index."""
+    Z = SECTIONS[key]
+    drawn = {(Z["classes"][r["ci"]][0], r["b"]) for r in curves_of(key, R)[0]}
+    return sorted(float(f) for c in R["cut"] for b, f in enumerate(R["cut"][c]) if f < Z["fmax"] and (c, b) not in drawn)
+
+
 def branches_text(Rs, refs, text_):
     """The branch count audit (dispersion_branches.check.txt): each section's drawn branches against
-    its reference, from the full report."""
+    its reference, from the full report; and Figure 4a's, the same branches each from its cut-on."""
+    miss = {key: undrawn(key, Rs[key]) for key in ORDER}
+    said = "; ".join(f"in the {SECTIONS[k]['label']} {len(v)}, cutting on at " + ", ".join(f"{f / 1e3:.2f}" for f in v) + " kHz"
+                     for k, v in miss.items() if v)
     L = ["Displayed branch count audit (dispersion.py; the full report is dispersion.check.txt)",
          f"Each section over its own frequency window and c_p up to {CP_MAX / 1e3:g} km/s; the window's end lies in a gap",
          "between the frequencies where branches enter it, so every branch drawn enters well before the end and",
-         "none is about to (in the bar three branches cut on below its end but enter only above it: not drawn).", ""]
+         "none is about to. Branches that cut on below the end but enter only above it are not drawn",
+         f"({said or 'none'}), as the published figures have them only above their phase-velocity limit.", ""]
+    L += ["FIGURE 4a (dispersion_wavelength.py): the same branches, so the same counts, on a logarithmic",
+          "wavenumber axis (1 to 1000 rad/m). A branch cuts on at k -> 0, the bottom of that plot, so there each",
+          f"higher order branch is drawn from its cut-on: its window is f up to the section's end and k from {K4A:g} rad/m,",
+          "each branch's head (from under 1 rad/m up to where Figure 4's curve begins, at c_p = 10 km/s) computed",
+          "on the same model (heads_of), and its cut-on mark on the bottom frame where it rises. The branches not",
+          "drawn in Figure 4 are not drawn in Figure 4a either.", ""]
     L += ["SUMMARY"] + text_.split("SUMMARY\n", 1)[1].split("\n\n", 1)[0].split("\n") + [""]
     starts = {"bar": "THE COUNT", "ibeam": "branches below", "rail": "branches below", "pipe": "branches below",
               "plate": "exact cut-ons below"}
@@ -4149,52 +4720,187 @@ def branches_text(Rs, refs, text_):
             if not l.strip() or l.strip().startswith(("SAFE against", "T(0,1)")):
                 break
             L.append(l)
+        if miss[key] and key != "bar":
+            L.append(f"  (cutting on below {SECTIONS[key]['fmax'] / 1e3:g} kHz but entering the window only above it, not drawn: "
+                     + ", ".join(f"{f / 1e3:.2f}" for f in miss[key]) + " kHz)")
         L.append("")
     return "\n".join(L)
 
 
-def page_perf():
-    """Headless Chromium: for each section, the time from choosing it to its first frame drawn (its
-    data read, its classes assembled, its two waves solved: what a reader waits for), and the time of
-    a frame in the first glide (wave 2 at a wavenumber not solved before: one state solved, both
-    beams drawn), the heaviest frame of the tour."""
+_PERF_INIT = r"""
+(() => {
+  window.__fr = []; window.__lt = [];
+  const raf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = cb => raf(ts => {
+    const a = performance.now(); cb(ts); const d = performance.now() - a;
+    if (window.__fr.length < 20000) window.__fr.push([typeof t === 'number' ? t : -1, d]);
+  });
+  try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([Math.round(e.startTime), Math.round(e.duration)]); })
+    .observe({type: 'longtask', buffered: true}); } catch (e) {}
+})();
+"""
+
+
+def page_perf(folder=None, keys=None, rounds=1):
+    """The page's cost in headless Chromium at 1280 x 800 CSS px, one device pixel a CSS pixel (a 1280 px
+    canvas, as the site's audit measured it), per section (?section=<key>; the bar is the page as it
+    opens): load, the longest task from the start to 3 s after (PerformanceObserver); held, the script
+    time of each animation frame (its requestAnimationFrame callback) from 2.5 to 5.5 s of the page's
+    clock, the first stop after the intro, both waves held; glide, the page let settle (its idle work
+    done, where it has any), then its tour moved on to its second stop, whose wave 2 glides along its
+    curve from 2 s on (a new wavenumber every frame): the script time of each frame from 2.5 to 9.5 s
+    after, and the long tasks meanwhile; render, one render() at a held moment (every state solved, the
+    idle queue empty), at 1280 and at 672 px (the page's width in the guide), the quickest of 6 rounds of 4.
+    Medians and the 95th percentile of the frames; folder: where the page is (content/anim); keys: the
+    sections (all); rounds: so many runs a section, each number the median of the runs'."""
     from playwright.sync_api import sync_playwright
     tmp = tempfile.mkdtemp(prefix="numfig-")
     out = {}
+    pct = lambda v, q: round(sorted(v)[min(len(v) - 1, int(q * len(v)))], 1) if v else None
+    render = ("() => { t = 6; render(); render(); let best = 1e9; for (let r = 0; r < 6; r++) { const a = performance.now();"
+              " for (let i = 0; i < 4; i++) { t = 6 + i / 60; render(); } best = Math.min(best, (performance.now() - a) / 4); } return best; }")
     try:
         os.makedirs(os.path.join(tmp, "anim"))
         shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
-        shutil.copy(os.path.join(common.ANIM, f"nf-{NAME}.html"), os.path.join(tmp, "anim"))
+        shutil.copy(os.path.join(folder or common.ANIM, f"nf-{NAME}.html"), os.path.join(tmp, "anim"))
         srv = common._server(tmp)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         with sync_playwright() as p:
             b = p.chromium.launch()
-            pg = b.new_page(viewport={"width": 672, "height": 1400})
             errs = []
-            pg.on("pageerror", lambda e: errs.append(str(e)))
-            pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-{NAME}.html?still")
-            pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=60000)
-            for key in ORDER:
-                ms = pg.evaluate("""async key => {
-                  if (key !== CUR.key) { delete LOADED[key]; delete PENDING[key]; }
-                  CACHE.clear(); HF.clear(); XS.clear(); LAST[0] = LAST[1] = null; t = POSTER_T;
-                  const t0 = performance.now();
-                  await setSectionNow(key);
-                  const t1 = performance.now();
-                  t = TOUR.off + T1 + TG0 + 3; render();
-                  const t2 = performance.now();
-                  t += 1 / 60; render();
-                  const t3 = performance.now();
-                  return {switch: t1 - t0, frame: t3 - t2};
-                }""", key)
-                out[key] = ms
+            for key in [k_ for _ in range(rounds) for k_ in keys or ORDER]:
+                url = f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-{NAME}.html" + ("" if key == ORDER[0] else f"?section={key}")
+                q = {}
+                ctx = b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=1)
+                ctx.add_init_script(_PERF_INIT)
+                pg = ctx.new_page()
+                pg.on("pageerror", lambda e: errs.append(str(e)))
+                pg.goto(url, wait_until="load")
+                pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=60000)
+                pg.wait_for_function("t > 5.6", timeout=60000)
+                fr, lt = pg.evaluate("[window.__fr, window.__lt]")
+                held = [d_ for tt, d_ in fr if 2.5 <= tt <= 5.5]
+                q["load"] = max([d_ for s_, d_ in lt if s_ < 3000] or [0])
+                q["held"] = [pct(held, .5), pct(held, .95), round(max(held), 1) if held else None]
+                pg.evaluate("setPlay(false)")
+                pg.wait_for_function("typeof idleLeft !== 'function' || !idleLeft()", timeout=120000)
+                q["render"] = [round(pg.evaluate(render), 1)]
+                pg.set_viewport_size({"width": 672, "height": 800})
+                pg.wait_for_timeout(300)
+                q["render"].append(round(pg.evaluate(render), 1))
+                ctx.close()
+                ctx = b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=1)
+                ctx.add_init_script(_PERF_INIT)
+                pg = ctx.new_page()
+                pg.on("pageerror", lambda e: errs.append(str(e)))
+                pg.goto(url, wait_until="load")
+                pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=60000)
+                pg.wait_for_function("t > 3 && (typeof idleLeft !== 'function' || !idleLeft())", timeout=120000)
+                t0, p0 = pg.evaluate("(() => { TOUR.off = t - T1; return [t, performance.now()]; })()")
+                pg.wait_for_function(f"t > {t0 + 9.6}", timeout=120000)
+                fr, lt = pg.evaluate("[window.__fr, window.__lt]")
+                gl = [d_ for tt, d_ in fr if t0 + 2.5 <= tt <= t0 + 9.5]
+                q["glide"] = [pct(gl, .5), pct(gl, .95), round(max(gl), 1) if gl else None]
+                q["glide_long"] = max([d_ for s_, d_ in lt if s_ >= p0 + 2500] or [0])
+                ctx.close()
+                out.setdefault(key, []).append(q)
             if errs:
                 raise RuntimeError(f"page errors: {errs}")
             b.close()
         srv.shutdown()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    return out
+    med = lambda v: round(float(np.median(v)), 1)
+    return {key: {"load": med([q["load"] for q in qs]), "glide_long": med([q["glide_long"] for q in qs]),
+                  **{f: [med([q[f][i] for q in qs]) for i in range(len(qs[0][f]))] for f in ("held", "glide", "render")}}
+            for key, qs in out.items()}
+
+
+def switch_perf(folder=None, rounds=1):
+    """A reader's section switch, in headless Chromium at 1280 x 800 CSS px, one device pixel a CSS pixel:
+    the page opened as in the guide (on the bar, no query), played 6 s (its idle work done by then, where
+    it has any), then each other section's cell clicked in turn and the bar's last, 2.5 s apart. Per
+    section: the longest task from the click to 2.5 s after (PerformanceObserver), and the script time of
+    the frames meanwhile (median / 95th percentile / longest; the switch itself takes 0.8 s, both sections
+    drawn). Each number the median of the rounds; folder: where the page is (content/anim)."""
+    from playwright.sync_api import sync_playwright
+    tmp = tempfile.mkdtemp(prefix="numfig-")
+    runs = {}
+    pct = lambda v, q: round(sorted(v)[min(len(v) - 1, int(q * len(v)))], 1) if v else None
+    try:
+        os.makedirs(os.path.join(tmp, "anim"))
+        shutil.copytree(common.FONTS, os.path.join(tmp, "fonts"))
+        shutil.copy(os.path.join(folder or common.ANIM, f"nf-{NAME}.html"), os.path.join(tmp, "anim"))
+        srv = common._server(tmp)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            errs = []
+            for _ in range(rounds):
+                ctx = b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=1)
+                ctx.add_init_script(_PERF_INIT)
+                pg = ctx.new_page()
+                pg.on("pageerror", lambda e: errs.append(str(e)))
+                pg.goto(f"http://127.0.0.1:{srv.server_address[1]}/anim/nf-{NAME}.html", wait_until="load")
+                pg.wait_for_function("document.documentElement.dataset.ready === '1'", timeout=60000)
+                pg.wait_for_function("t > 6", timeout=60000)
+                for key in ORDER[1:] + ORDER[:1]:
+                    t0, p0 = pg.evaluate("[t, performance.now()]")
+                    pg.locator(f"button[aria-label='{SECTIONS[key]['label']}']").click()
+                    pg.wait_for_timeout(2500)
+                    fr, lt = pg.evaluate("[window.__fr, window.__lt]")
+                    if pg.evaluate("CUR.key") != key:
+                        raise RuntimeError(f"switch_perf: the page did not switch to {key}")
+                    fs = [d_ for tt, d_ in fr if t0 <= tt <= t0 + 2.5]
+                    runs.setdefault(key, []).append({"long": max([d_ for s_, d_ in lt if s_ >= p0 - 5] or [0]),
+                                                     "frames": [pct(fs, .5), pct(fs, .95), round(max(fs), 1) if fs else None]})
+                ctx.close()
+            if errs:
+                raise RuntimeError(f"page errors: {errs}")
+            b.close()
+        srv.shutdown()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    med = lambda v: round(float(np.median(v)), 1)
+    return {key: {"long": med([q["long"] for q in qs]), "frames": [med([q["frames"][i] for q in qs]) for i in range(3)]}
+            for key, qs in runs.items()}
+
+
+def switch_lines(before, now):
+    """switch_perf's numbers, before and now, as the check files print them."""
+    L = ["  A reader's switch (switch_perf): the page opened as in the guide and played 6 s, then each section's cell",
+         "  clicked in turn, 2.5 s apart (the bar's last): the longest task from the click to 2.5 s after, and the",
+         "  frames' script time meanwhile (median / 95th percentile / longest; the switch itself takes 0.8 s, both",
+         "  sections drawn), the medians of three rounds:"]
+    for key in ORDER[1:] + ORDER[:1]:
+        row = []
+        for tag, q in (("before", (before or {}).get(key)), ("now", (now or {}).get(key))):
+            if q:
+                row.append(f"{tag} {q['long']:4.0f} ms, frames {q['frames'][0]:4.1f} / {q['frames'][1]:4.1f} / {q['frames'][2]:5.1f} ms")
+        L.append(f"    {SECTIONS[key]['label']:7s} " + ";  ".join(row))
+    return L
+
+
+# page_perf on the pages as they were before this round's work (commit e6205c0, 5 Oct 2026: the play control
+# drawn on the figure, every glide frame solved, no idle work, the still parts drawn each frame), measured
+# on this machine with the same method as the check measures the page now (the medians of two runs, each
+# section's before and after measured in turn, 6 Oct 2026)
+BEFORE_PERF = {
+    "dispersion": {"bar": {"load": 167, "held": [5.3, 9.1, 17.9], "glide": [6.1, 9.7, 25.3], "glide_long": 0, "render": [6.5, 7.1]}, "ibeam": {"load": 595.5, "held": [12.6, 22.9, 39.7], "glide": [18.4, 51, 79.3], "glide_long": 115.5, "render": [44.8, 33.2]}, "rail": {"load": 730, "held": [11.5, 17.1, 37], "glide": [36.9, 56.5, 129.8], "glide_long": 160.5, "render": [37.9, 30.4]}, "pipe": {"load": 236, "held": [6.4, 10, 18], "glide": [5.8, 9.7, 21.6], "glide_long": 0, "render": [8.9, 9.8]}, "plate": {"load": 0, "held": [2.8, 5.1, 11.1], "glide": [2.7, 5.2, 8], "glide_long": 0, "render": [4, 3.3]}},
+    "dispersion-wavelength": {"bar": {"load": 124, "held": [5.2, 7.6, 13.5], "glide": [6.3, 9.4, 18], "glide_long": 0, "render": [6.5, 7.3]}, "ibeam": {"load": 602.5, "held": [11.8, 18.1, 23.9], "glide": [18.8, 48.2, 71.7], "glide_long": 110, "render": [46.8, 33.4]}, "rail": {"load": 721, "held": [11.8, 16.4, 35.7], "glide": [37.3, 57.2, 72.4], "glide_long": 103.5, "render": [37.6, 31.5]}, "pipe": {"load": 243, "held": [6.6, 9.7, 23.1], "glide": [6.2, 9.8, 20], "glide_long": 0, "render": [8.4, 12.2]}, "plate": {"load": 57.5, "held": [2.8, 4.9, 13.8], "glide": [2.8, 5.7, 11.8], "glide_long": 0, "render": [4.3, 4.4]}}}
+
+
+# switch_perf on the same pages before this round's work (commit e6205c0), measured on this machine the
+# same way, the medians of three rounds (6 Oct 2026)
+BEFORE_SWITCH = {"dispersion": {"ibeam": {"long": 736.0, "frames": [15.2, 36.9, 720.1]}, "rail": {"long": 748.0, "frames": [14.2, 28.0, 734.8]}, "pipe": {"long": 242.0, "frames": [8.0, 15.1, 213.7]}, "plate": {"long": 0.0, "frames": [3.9, 9.5, 20.6]}, "bar": {"long": 0.0, "frames": [6.1, 8.2, 12.9]}},
+                 "dispersion-wavelength": {"ibeam": {"long": 702.0, "frames": [15.4, 39.3, 686.0]}, "rail": {"long": 758.0, "frames": [14.2, 34.6, 744.6]}, "pipe": {"long": 254.0, "frames": [8.3, 16.9, 223.8]}, "plate": {"long": 0.0, "frames": [3.6, 9.6, 15.9]}, "bar": {"long": 0.0, "frames": [6.1, 8.2, 10.5]}}}
+
+
+def perf_row(q):
+    """One section's numbers of page_perf, as the check files print them."""
+    return (f"load {q['load']:4.0f} ms; held {q['held'][0]:5.1f} / {q['held'][1]:5.1f} / {q['held'][2]:5.1f} ms;"
+            f" gliding {q['glide'][0]:5.1f} / {q['glide'][1]:5.1f} / {q['glide'][2]:5.1f} ms (longest task {q['glide_long']:.0f});"
+            f" render {q['render'][0]:4.1f} / {q['render'][1]:4.1f} ms")
 
 
 def main():
@@ -4226,18 +4932,24 @@ def main():
         SV = check_solver_all(Rs)
         print("page solver:", {k: (v["ew"], v["bad"], v["ms"]) for k, v in SV.items()} if "skipped" not in SV else SV)
         TG = tour_group(Rs)
-        perf = page_perf()
+        perf = page_perf(rounds=2)
         print("perf:", perf)
+        swp = switch_perf(rounds=3)
+        print("switch:", swp)
         look = common.still(NAME)          # the bar's poster, and the overlap check to it (raises on a collision)
         ov = overlaps_all(tour_times())
         ovl = overlaps_all([.9, POSTER, 20, 29, 40], live=True)
         MS = measure_screen(axial_dip(Rs["bar"]))
         print("on screen:", MS)
-        got = dict(page=page_hash, SV=SV, TG=TG, perf=perf, look=look, ov=ov, ovl=ovl, MS=MS)
+        got = dict(page=page_hash, SV=SV, TG=TG, perf=perf, look=look, ov=ov, ovl=ovl, MS=MS, switch=swp)
+        with open(keep, "wb") as fh:
+            pickle.dump(got, fh)
+    if "switch" not in got:                # checks kept from before switch_perf was part of them
+        got["switch"] = switch_perf(rounds=3)
         with open(keep, "wb") as fh:
             pickle.dump(got, fh)
     SV, TG, perf, look, ov, ovl, MS = (got[k] for k in ("SV", "TG", "perf", "look", "ov", "ovl", "MS"))
-    text_ = check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf)
+    text_ = check_text(Rs, refs, convs, SV, sizes, ov, ovl, TG, MS, perf, got["switch"])
     with open(os.path.join(HERE, f"{NAME}.check.txt"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text_)
     for nm, t_ in ((f"{NAME}_branches.check.txt", branches_text(Rs, refs, text_)),

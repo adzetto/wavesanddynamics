@@ -1,15 +1,71 @@
-Figure 4a: the same meshes, curves, solver, wave packets and clocks as Figure 4 (nf-dispersion.html's
-data, all five sections inside the page: nothing is fetched).
-No second fitted dispersion relation: k = 2 pi f/c_p exactly, at every point of Figure 4's curves.
-Units: k in rad/m, f in kHz, c_p in km/s.
-At f = 50 kHz and c_p = 5 km/s: k = 62.832 rad/m.
-Each section over its own frequency window, as in Figure 4: bar 0 to 190 kHz, I-beam 0 to 52 kHz, rail 0 to 22.5 kHz, pipe 0 to 175 kHz, plate 0 to 250 kHz; the same branches
-(Figure 4's count, checked there against each section's reference) and Figure 4's phase-velocity window
-(c_p up to 10 km/s), so a branch begins where it enters that window, not at k = 0.
-The shear and Rayleigh references become the curves k = 2 pi f/c_T and 2 pi f/c_R.
-Curves are adaptively refined in log(k) to a midpoint chord error below 0.2 drawing units.
-Vertical range 1 to 1000 rad/m, logarithmic; k tends to zero as frequency tends to zero.
+Figure 4a (nf-dispersion-wavelength): the same meshes, branches, solver, wave packets and clocks as
+Figure 4 (all five sections inside the page: nothing is fetched), wavenumber on a logarithmic axis.
+No second fitted dispersion relation: k = 2 pi f/c_p exactly, at every point of the curves.
+Units: k in rad/m, f in kHz, c_p in km/s. At f = 50 kHz and c_p = 5 km/s: k = 62.832 rad/m.
+Each section over its own frequency window, as in Figure 4: bar 0 to 190 kHz, I-beam 0 to 52 kHz, rail 0 to 22.5 kHz, pipe 0 to 175 kHz, plate 0 to 250 kHz.
+
+THE BRANCHES AND THE WINDOW
+  The same branches as Figure 4, so each section holds as many as its reference (Figure 4's count, checked
+  there: dispersion_branches.check.txt): those whose phase velocity falls under 10 km/s within the window.
+  A branch cuts on at k -> 0, which is the bottom of this plot, so here each higher order branch is drawn
+  from its cut-on: 4a's window is f up to the section's end and k from 1 rad/m (the axis' bottom),
+  and a marker drags along the whole drawn curve. Below the point where Figure 4's curve begins (the sweep's
+  last point above 10 km/s) comes the branch's head: the sweep's own eigenvalues there and more between them,
+  each the same class's eigenvalue of the same index, until neighbours lie within 2 units in this plot's
+  metric (f over the window, log10 k over three decades, on 520 x 418 units, finer than the plot). The
+  heads are thinned for the cubic Hermite in k as Figure 4's curves are; Figure 4's own points follow
+  unchanged (the same travelling points, so the tour's wavenumbers are Figure 4's).
+  As in Figure 4, a branch that cuts on below a section's end but stays above 10 km/s until past it is
+  not drawn (the published figures have them only above their phase-velocity limit): bar 161.01, 165.35, 180.01 kHz; I-beam 45.77 kHz; none in the others.
+  section  branches  higher order: with a head (points), under 1 rad/m already   first head point (k)   its f against the k = 0 cut-on
+  bar       11         8 ( 2013), 0                          0.809 rad/m            within 0.007 %
+  I-beam    20        15 ( 4918), 1                          0.881 rad/m            within 0.271 %
+  rail      16        11 ( 3569), 1                          0.821 rad/m            within 0.828 %
+  pipe      22        19 ( 5089), 0                          0.800 rad/m            within 0.031 %
+  plate      5         2 (  455), 0                          0.841 rad/m            within 0.001 %
+  The travelling curves at every point of the sweep and the heads (the page lays each segment out within
+  1e-5 in f, in log10 k within 0.2 units, and in c_p within 1e-5 where c_p is under 10 km/s):
+    bar     213 points travel, laid out as 11880 (Python's layout): max |f_page/f - 1| = 1.6e-05
+    I-beam  587 points travel, laid out as 20160 (Python's layout): max |f_page/f - 1| = 1.7e-05
+    rail    475 points travel, laid out as 12345 (Python's layout): max |f_page/f - 1| = 1.6e-05
+    pipe    385 points travel, laid out as 25450 (Python's layout): max |f_page/f - 1| = 1.7e-05
+    plate   76 points travel, laid out as 4127 (Python's layout): max |f_page/f - 1| = 1.1e-05
+  The cut-on marks sit on the bottom frame, pointing up, at the k = 0 frequency of each higher order branch
+  drawn (Figure 4's marks): where its head rises from the axis. The legend names them ('cut-on').
+  The shear and Rayleigh references become the curves k = 2 pi f/c_T and 2 pi f/c_R.
+  Vertical range 1 to 1000 rad/m, logarithmic; k tends to zero as frequency tends to zero.
+
+THE PAGE
+  The first stop of the bar (the section the page opens on) is solved at build time by the page's own
+  script under node and carried in DATA; the other sections are made ready and the tour's coming states
+  solved while the page is idle or a frame leaves time (a few milliseconds at a time); the still parts
+  are kept as a picture once the intro is over (Figure 4's check file, PERFORMANCE).
+  In headless Chromium at 1280 x 800 CSS px, this shared machine (dispersion.page_perf: load, the longest
+  task to 3 s; the script time of a frame held and gliding, median / 95th percentile / longest, and the
+  longest task while gliding; render() at a held moment, 1280 / 672 px):
+   before (the page of 5 Oct 2026, commit e6205c0):
+    bar     load  124 ms; held   5.2 /   7.6 /  13.5 ms; gliding   6.3 /   9.4 /  18.0 ms (longest task 0); render  6.5 /  7.3 ms
+    I-beam  load  602 ms; held  11.8 /  18.1 /  23.9 ms; gliding  18.8 /  48.2 /  71.7 ms (longest task 110); render 46.8 / 33.4 ms
+    rail    load  721 ms; held  11.8 /  16.4 /  35.7 ms; gliding  37.3 /  57.2 /  72.4 ms (longest task 104); render 37.6 / 31.5 ms
+    pipe    load  243 ms; held   6.6 /   9.7 /  23.1 ms; gliding   6.2 /   9.8 /  20.0 ms (longest task 0); render  8.4 / 12.2 ms
+    plate   load   58 ms; held   2.8 /   4.9 /  13.8 ms; gliding   2.8 /   5.7 /  11.8 ms (longest task 0); render  4.3 /  4.4 ms
+   now:
+    bar     load    0 ms; held   3.3 /   4.8 /  12.8 ms; gliding   3.0 /   5.3 /  13.7 ms (longest task 0); render  4.4 /  4.3 ms
+    I-beam  load  231 ms; held   9.7 /  13.6 /  25.9 ms; gliding   6.8 /  11.3 /  24.4 ms (longest task 25); render 11.5 / 11.2 ms
+    rail    load  337 ms; held  10.0 /  14.6 /  22.7 ms; gliding   7.1 /  12.3 /  40.8 ms (longest task 100); render 14.5 / 10.9 ms
+    pipe    load   93 ms; held   5.4 /  10.0 /  17.9 ms; gliding   3.8 /   6.8 /  10.9 ms (longest task 0); render  6.5 /  7.2 ms
+    plate   load    0 ms; held   1.9 /   3.4 /  10.1 ms; gliding   1.8 /   3.4 /   6.8 ms (longest task 0); render  2.3 /  2.5 ms
+  A reader's switch (switch_perf): the page opened as in the guide and played 6 s, then each section's cell
+  clicked in turn, 2.5 s apart (the bar's last): the longest task from the click to 2.5 s after, and the
+  frames' script time meanwhile (median / 95th percentile / longest; the switch itself takes 0.8 s, both
+  sections drawn), the medians of three rounds:
+    I-beam  before  702 ms, frames 15.4 / 39.3 / 686.0 ms;  now   58 ms, frames 10.6 / 16.3 /  29.4 ms
+    rail    before  758 ms, frames 14.2 / 34.6 / 744.6 ms;  now    0 ms, frames 11.4 / 15.9 /  19.3 ms
+    pipe    before  254 ms, frames  8.3 / 16.9 / 223.8 ms;  now   50 ms, frames  9.0 / 13.0 /  23.6 ms
+    plate   before    0 ms, frames  3.6 /  9.6 /  15.9 ms;  now    0 ms, frames  7.1 /  9.7 /  12.5 ms
+    bar     before    0 ms, frames  6.1 /  8.2 /  10.5 ms;  now    0 ms, frames  4.1 /  5.4 /   8.9 ms
 Overlaps (engine ?overlap): the bar at the poster and t = 0.6, 3, 6.67 and 20 s; every section at
-t = 0.9, 6.66667, 20, 29, 40, 47, 65 s with every switch held at 30, 60 and 85 %, and live (the controls
+59 moments across its tour with every switch held at 30, 60 and 85 %, and live (the controls
 drawn) at 5 moments: none.
-Page 324 KB. Poster and intro sampled by common.still, frames at 0.6, 3 and 20 s.
+Page 356 KB. Poster and intro sampled by common.still, frames at 0.6, 3 and 20 s.
+(built in 451 s)

@@ -8,8 +8,11 @@ pair of free edges.
 
 Figure 4a plots wavenumber on a logarithmic vertical axis, in radians per
 metre, against frequency. It uses Figure 4's same meshes, branches and SAFE
-solver. It computes wavenumber directly as `k = 2πf/c_p`. It retains the same
-phase-velocity window so the two figures compare the same branches.
+solver, and computes wavenumber as `k = 2πf/c_p`. It draws the same branches
+as Figure 4, each higher order branch from its cut-on: below the point where
+Figure 4's curve enters at a phase velocity of 10 km/s, the branch's head down
+to k = 1 rad/m is solved on the same SAFE model, and the cut-on marks sit on
+the bottom frame.
 
 The machine-learning guide has two additional figures:
 
@@ -50,6 +53,10 @@ python -m pytest tests/test_anim_figures.py tests/test_guide_supplements.py test
 The full `dispersion.py` run also refreshes its original still and complete
 validation report. `dispersion_plate.check.txt` records the new independent
 plate checks and the browser solver against SciPy for all five sections.
+`dispersion.py --text` writes the reports again from the page's checks, kept
+from the last full run while the page is unchanged. `dispersion_wavelength.py`
+builds Figure 4a from the sweeps `dispersion.py` caches in the temp folder
+(it computes them itself when they are missing).
 
 `content/anim/anim.supplements.json` registers the additional animation assets.
 `content/anim/supplements.json` sets their captions and placement anchors.
@@ -121,3 +128,18 @@ Figure 5's SAFE panel uses the same mesh. Each section runs on one clock,
 labelled in its parameter line; on screen, packets move at the group velocity
 and crests at the phase velocity. `dispersion_branches.check.txt` holds the
 branch audit, and `dispersion.check.txt` the full report.
+
+## Figures 4 and 4a after the audit of 6 October 2026
+
+- Figure 4a draws every higher order branch from its cut-on at the bottom of
+  the plot (k from 1 rad/m), with the cut-on marks on the bottom frame and in
+  the legend. The plate's A1 and SH1 now rise at 161 kHz instead of starting
+  in mid-air.
+- The page blocks less while it opens: the longest task in its first 3 s fell
+  from 167 to 0 ms for the bar (the page as it opens), 596 to 239 ms for the
+  I-beam and 730 to 356 ms for the rail. Switching section fell from 736 to
+  51 ms for the I-beam and from 748 to 53 ms for the rail.
+- The section tabs are 29.6 px tall at the guide's width. The pause button
+  drawn on the figure is gone (the frame's own buttons do that); "resume
+  tour" is a word chip. Type is 16 units, the slow-motion factor is stated
+  ("shown 24,000 × slower" for the plate) and the hint reads "drag 1 or 2".

@@ -1,7 +1,15 @@
 Displayed branch count audit (dispersion.py; the full report is dispersion.check.txt)
 Each section over its own frequency window and c_p up to 10 km/s; the window's end lies in a gap
 between the frequencies where branches enter it, so every branch drawn enters well before the end and
-none is about to (in the bar three branches cut on below its end but enter only above it: not drawn).
+none is about to. Branches that cut on below the end but enter only above it are not drawn
+(in the bar 3, cutting on at 161.01, 165.35, 180.01 kHz; in the I-beam 1, cutting on at 45.77 kHz), as the published figures have them only above their phase-velocity limit.
+
+FIGURE 4a (dispersion_wavelength.py): the same branches, so the same counts, on a logarithmic
+wavenumber axis (1 to 1000 rad/m). A branch cuts on at k -> 0, the bottom of that plot, so there each
+higher order branch is drawn from its cut-on: its window is f up to the section's end and k from 1 rad/m,
+each branch's head (from under 1 rad/m up to where Figure 4's curve begins, at c_p = 10 km/s) computed
+on the same model (heads_of), and its cut-on mark on the bottom frame where it rises. The branches not
+drawn in Figure 4 are not drawn in Figure 4a either.
 
 SUMMARY
   section  window        reference                                      branches   mesh                    per shortest
@@ -35,6 +43,7 @@ bar:
 
 I-beam:
   branches below 52 kHz: 20, 4 from zero frequency, the rest cutting on at 1.24, 2.79, 6.29, 9.40, 9.75, 12.54, 13.24, 22.60, 23.44, 26.42, 30.75, 35.69, 36.72, 36.72, 42.94, 45.58 kHz
+  (cutting on below 52 kHz but entering the window only above it, not drawn: 45.77 kHz)
 
 rail:
   branches below 22.5 kHz: 16 drawn (4 from zero frequency, 12 cutting on); Ramatlo et al.: 16 (12 cutting on)

@@ -245,7 +245,7 @@ def test_his_figures_keep_their_numbers_and_captions(slug, monkeypatch):
     # (a picture redrawn as several figures stands for the list of them)
     moved = {re.search(r"/(image\d+)\.webp", was).group(1): srcs if len(srcs) > 1 else srcs[0]
              for was, now in zip(before, after) if "<iframe" in now
-             for srcs in [re.findall(r'<iframe class="anim" src="\.\./anim/([^"]+)"', now)]}
+             for srcs in [re.findall(r'<iframe class="anim"[^>]*? src="\.\./anim/([^"]+)"', now)]}
     # anim.json's pictures of the document and its fragments' (anim.<name>.json),
     # those in its body (a cover in the head is drawn apart)
     want = dict(EXPECTED[slug])
